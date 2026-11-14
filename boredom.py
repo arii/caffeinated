@@ -12,6 +12,13 @@ import re
 import subprocess
 import sys
 
+METER_PATH = Path(__file__).parent / "boredom_meter"
+if str(METER_PATH) not in sys.path:
+    sys.path.insert(0, str(METER_PATH))
+
+import meter as descriptor_meter
+from replay_autoresearch import classify as classify_descriptor
+
 
 DEFAULT_WEIGHTS = (0.45, 0.45, 0.10)
 _DIGITS = r"\d(?:_?\d)*"
@@ -232,6 +239,74 @@ def message_trailer(message, name):
     return matches[-1] if matches else None
 
 
+def descriptor_from_message(message, description, profile):
+    value = message_trailer(message, "Descriptor")
+    if value is None:
+        descriptor = classify_descriptor(description)
+    else:
+        match = re.fullmatch(
+            rf"([A-Za-z0-9_]+)/([A-Za-z0-9_]+)"
+            rf"(?:\s+value=({NUMBER_PATTERN}))?",
+            value,
+        )
+        if not match:
+            raise ValueError(f"invalid Descriptor trailer: {value}")
+        descriptor = dict(zip(profile["levels"], match.group(1, 2)))
+        if match.group(3) is not None:
+            descriptor["params"] = {"value": float(match.group(3))}
+    descriptor_meter.validate_descriptor(profile, descriptor)
+    return descriptor
+
+
+def ledger_events(rows, repo, profile):
+    events = []
+    for seq, row in enumerate(rows, 1):
+        message = commit_message(row["commit"], repo) if repo is not None else ""
+        descriptor = descriptor_from_message(
+            message, row.get("description", ""), profile
+        )
+        score = None
+        if row.get("status") != "crash":
+            try:
+                score = float(row.get("val_bpb", "nan"))
+            except (TypeError, ValueError):
+                score = None
+        sources, _ = source_trailers(message)
+        events.append(
+            {
+                "seq": seq,
+                "agent": message_trailer(message, "Agent") or "agent",
+                "status": row.get("status"),
+                "score": score,
+                "descriptor": descriptor,
+                "sources": sources,
+            }
+        )
+    return events
+
+
+def effective_profile(args):
+    profile = descriptor_meter.load_profile(args.profile)
+    for name in ("k", "eps", "weights"):
+        value = getattr(args, name, None)
+        if value is not None:
+            profile[name] = value
+    if args.command == "gate":
+        gate = profile.setdefault("gate", {})
+        if args.delta_min is not None:
+            gate["snap_min_distance"] = args.delta_min
+        if args.failed_delta is not None:
+            gate["failed_min_distance"] = args.failed_delta
+    if profile["k"] < 1:
+        raise ValueError("k must be at least 1")
+    if profile["eps"] < 0 or not math.isfinite(profile["eps"]):
+        raise ValueError("eps must be a finite non-negative number")
+    profile["_hash"] = descriptor_meter.sha(
+        {key: value for key, value in profile.items() if not key.startswith("_")}
+    )
+    return profile
+
+
 def prior_art_trailers(message):
     values = []
     for line in message.splitlines():
@@ -345,45 +420,46 @@ def timestamp():
     return datetime.now(timezone.utc).isoformat()
 
 
-def status_record(rows, metrics, k, weights):
+def status_record(rows, events, metrics, profile, disabled):
+    best_seq = metrics["best_seq"]
+    best_commit = rows[best_seq - 1]["commit"] if best_seq else None
+    regime = "EXPLOIT" if disabled else metrics["regime"]
     return {
         "ts": timestamp(),
-        "n_rows": metrics["n_rows"],
+        "n_rows": len(rows),
         "last_commit": rows[-1]["commit"] if rows else None,
         "B": metrics["B"],
-        "regime": metrics["regime"],
+        "regime": regime,
         "novelty": metrics["novelty"],
         "stagnation": metrics["stagnation"],
         "overload": metrics["overload"],
         "frontier_stall": metrics["frontier_stall"],
-        "best_val_bpb": metrics["best_val_bpb"],
-        "best_commit": metrics["best_commit"],
-        "weights": list(weights),
-        "k": k,
-        "disabled": metrics["disabled"],
+        "best_val_bpb": metrics["best"],
+        "best_commit": best_commit,
+        "weights": list(profile["weights"]),
+        "k": profile["k"],
+        "eps": profile["eps"],
+        "disabled": disabled,
+        "ledger_sha256": metrics["ledger_sha256"],
+        "profile_sha256": profile["_hash"],
+        "profile_version": profile.get("version"),
+        "descriptor": events[-1]["descriptor"] if events else None,
+        "directive": profile.get("directives", {}).get(regime, ""),
     }
 
 
-def print_directive(regime):
+def print_directive(regime, directive):
     print(f"{regime} directive:")
-    if regime == "EXPLOIT":
-        print("  Refine the best result with one small, targeted change.")
-        print("  Keep the search local while progress remains steady.")
-    elif regime == "BOREDOM_SNAP":
-        print("  Micro-tweaks are banned; consult the failed-ideas list below.")
-        print("  Propose a structurally different idea and consider a parallel divergent burst.")
-    else:
-        print("  Change the framing itself: try another architecture/optimizer family, data ordering, or training regime.")
-        print("  Reset to the best commit before trying the new framing.")
+    print(f"  {directive}")
 
 
 def run_status(args):
-    raw_rows = read_results(args.results)
-    rows, zs = load_history(raw_rows, args.repo)
-    metrics = compute_meter(
-        rows, zs, k=args.k, eps=args.eps, weights=args.weights, disabled=is_disabled()
-    )
-    record = status_record(rows, metrics, args.k, args.weights)
+    rows = read_results(args.results)
+    profile = effective_profile(args)
+    events = ledger_events(rows, args.repo, profile)
+    metrics = descriptor_meter.status(profile, events)
+    disabled = is_disabled()
+    record = status_record(rows, events, metrics, profile, disabled)
     append_log(args.log, record)
 
     if args.json:
@@ -403,7 +479,7 @@ def run_status(args):
             f"best_val_bpb={record['best_val_bpb']:.6f} "
             f"best_commit={record['best_commit']}"
         )
-    print_directive(record["regime"])
+    print_directive(record["regime"], record["directive"])
 
     if record["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT"):
         print("Episodic memory (last 10 discard/crash attempts):")
@@ -419,22 +495,21 @@ def run_status(args):
 
 
 def run_gate(args):
-    raw_rows = read_results(args.results)
-    rows, zs = load_history(raw_rows, args.repo)
-    metrics = compute_meter(
-        rows, zs, k=args.k, eps=args.eps, weights=args.weights, disabled=is_disabled()
-    )
+    rows = read_results(args.results)
+    profile = effective_profile(args)
+    events = ledger_events(rows, args.repo, profile)
     candidate_description = commit_subject(args.commit, args.repo)
     candidate_message = commit_message(args.commit, args.repo)
     cited_sources, has_source_trailer = source_trailers(candidate_message)
+    candidate_agent = message_trailer(candidate_message, "Agent") or "agent"
+    disabled = is_disabled()
+    metrics = descriptor_meter.status(profile, events, candidate_agent)
+    regime = "EXPLOIT" if disabled else metrics["regime"]
     known_sources = read_research_sources(args.research_log)
     prior_art, has_prior_art, invalid_prior_art, none_found_queries = (
         prior_art_trailers(candidate_message)
     )
-    prior_art_enabled = (
-        os.environ.get("PRIOR_ART", "").casefold() == "required"
-        and not metrics["disabled"]
-    )
+    prior_art_enabled = os.environ.get("PRIOR_ART", "").casefold() == "required"
     research_ids = (
         read_research_ids(args.research_log)
         if prior_art_enabled
@@ -444,39 +519,39 @@ def run_gate(args):
     unknown_sources = [
         source_id for source_id in cited_sources if source_id not in known_sources
     ]
-    candidate_z, diff_lines, _ = commit_representation(
-        args.commit, candidate_description, args.repo
-    )
-    recent_distances = [
-        jaccard_distance(candidate_z, z) for z in zs[-args.k :]
-    ]
-    failed_distances = [
-        jaccard_distance(candidate_z, z)
-        for row, z in zip(rows, zs)
-        if row.get("status") in ("discard", "crash")
-    ]
-    min_recent = min(recent_distances) if recent_distances else None
-    min_failed = min(failed_distances) if failed_distances else None
-
     reasons = []
-    if metrics["regime"] not in ("EXPLOIT",) and not metrics["disabled"]:
-        if diff_lines < args.min_lines:
-            reasons.append(
-                f"diff has {diff_lines} changed lines; minimum is {args.min_lines}"
+    candidate_descriptor = None
+    descriptor_trailer = message_trailer(candidate_message, "Descriptor")
+    meter_gate = {}
+    if descriptor_trailer is not None:
+        try:
+            candidate_descriptor = descriptor_from_message(
+                candidate_message, candidate_description, profile
             )
-        if min_recent is not None and min_recent < args.delta_min:
-            reasons.append(
-                f"near-duplicate of a recent attempt (distance {min_recent:.3f} "
-                f"< {args.delta_min:.3f})"
+        except ValueError as error:
+            if not disabled:
+                reasons.append(f"invalid-descriptor: {error}")
+                candidate_descriptor = None
+            else:
+                candidate_descriptor = None
+    elif not disabled:
+        reasons.append("no-descriptor")
+    if not disabled and candidate_descriptor is not None:
+        try:
+            meter_gate = descriptor_meter.gate(
+                profile,
+                events,
+                candidate_descriptor,
+                agent=candidate_agent,
+                sources=valid_sources,
             )
-        if min_failed is not None and min_failed < args.failed_delta:
-            reasons.append(
-                f"too close to a failed basin (distance {min_failed:.3f} "
-                f"< {args.failed_delta:.3f})"
-            )
+            regime = meter_gate["regime"]
+            reasons.extend(meter_gate["reasons"])
+        except ValueError as error:
+            reasons.append(f"invalid-descriptor: {error}")
+
     grounding_enabled = (
-        metrics["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
-        and not metrics["disabled"]
+        regime in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
         and os.environ.get("GROUNDING", "").casefold() != "off"
     )
     grounded = bool(valid_sources)
@@ -515,18 +590,25 @@ def run_gate(args):
                 reasons.append(
                     "no-prior-art: unknown id " + ", ".join(unknown_prior_art)
                 )
+    _, diff_lines, _ = commit_representation(
+        args.commit, candidate_description, args.repo
+    )
     passed = not reasons
     record = {
         "type": "gate",
         "ts": timestamp(),
         "candidate_commit": args.commit,
-        "n_rows": metrics["n_rows"],
-        "regime": metrics["regime"],
-        "disabled": metrics["disabled"],
+        "n_rows": len(rows),
+        "regime": regime,
+        "disabled": disabled,
         "pass": passed,
+        "descriptor": candidate_descriptor,
+        "ledger_sha256": metrics["ledger_sha256"],
+        "profile_sha256": profile["_hash"],
+        "profile_version": profile.get("version"),
         "diff_lines": diff_lines,
-        "min_recent_dist": min_recent,
-        "min_failed_dist": min_failed,
+        "min_recent_dist": meter_gate.get("min_recent_distance"),
+        "min_failed_dist": meter_gate.get("min_failed_distance"),
         "sources": valid_sources,
         "grounded": grounded,
         "prior_art": prior_art,
@@ -534,12 +616,14 @@ def run_gate(args):
         "agent": message_trailer(candidate_message, "Agent"),
         "reasons": reasons,
         "min_lines": args.min_lines,
-        "delta_min": args.delta_min,
-        "failed_delta": args.failed_delta,
+        "delta_min": profile["gate"].get("snap_min_distance"),
+        "failed_delta": profile["gate"].get("failed_min_distance"),
     }
     append_log(args.log, record)
 
-    print(f"candidate={args.commit} regime={metrics['regime']} diff_lines={diff_lines}")
+    print(f"candidate={args.commit} regime={regime} diff_lines={diff_lines}")
+    min_recent = record["min_recent_dist"]
+    min_failed = record["min_failed_dist"]
     if min_recent is not None:
         print(f"minimum recent distance: {min_recent:.3f}")
     else:
@@ -572,12 +656,16 @@ def add_common_options(parser, suppress_defaults=False):
     parser.add_argument("--results", default=default if suppress_defaults else "results.tsv")
     parser.add_argument("--log", default=default if suppress_defaults else "boredom_log.jsonl")
     parser.add_argument("--repo", default=default if suppress_defaults else ".")
-    parser.add_argument("--k", type=int, default=default if suppress_defaults else 5)
-    parser.add_argument("--eps", type=float, default=default if suppress_defaults else 0.0005)
+    parser.add_argument(
+        "--profile",
+        default=default if suppress_defaults else "boredom_meter/profiles/autoresearch_llm.json",
+    )
+    parser.add_argument("--k", type=int, default=default if suppress_defaults else None)
+    parser.add_argument("--eps", type=float, default=default if suppress_defaults else None)
     parser.add_argument(
         "--weights",
         type=parse_weights,
-        default=default if suppress_defaults else DEFAULT_WEIGHTS,
+        default=default if suppress_defaults else None,
     )
 
 
@@ -595,8 +683,8 @@ def build_parser():
     add_common_options(gate_parser, suppress_defaults=True)
     gate_parser.add_argument("--commit", default="HEAD")
     gate_parser.add_argument("--min-lines", type=int, default=4)
-    gate_parser.add_argument("--delta-min", type=float, default=0.35)
-    gate_parser.add_argument("--failed-delta", type=float, default=0.25)
+    gate_parser.add_argument("--delta-min", type=float)
+    gate_parser.add_argument("--failed-delta", type=float)
     gate_parser.add_argument("--research-log", default="research_log.jsonl")
     gate_parser.set_defaults(func=run_gate)
     return parser
@@ -605,18 +693,18 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.k < 1:
+    if args.k is not None and args.k < 1:
         parser.error("--k must be at least 1")
-    if args.eps < 0 or not math.isfinite(args.eps):
+    if args.eps is not None and (
+        args.eps < 0 or not math.isfinite(args.eps)
+    ):
         parser.error("--eps must be a finite non-negative number")
     if args.command == "gate":
         if args.min_lines < 0:
             parser.error("--min-lines must be non-negative")
-        if (
-            not math.isfinite(args.delta_min)
-            or args.delta_min < 0
-            or not math.isfinite(args.failed_delta)
-            or args.failed_delta < 0
+        if any(
+            value is not None and (not math.isfinite(value) or value < 0)
+            for value in (args.delta_min, args.failed_delta)
         ):
             parser.error("distance thresholds must be finite and non-negative")
     args.repo = str(Path(args.repo).resolve())

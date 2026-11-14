@@ -90,11 +90,11 @@ d4e5f6g	0.000000	0.0	crash	double model width (OOM)
 
 ## The Boredom Meter
 
-After every logged experiment, run `python3 boredom.py status`. It reads `results.tsv` and the git diffs of `train.py`, prints a boredom score B in [0, 1] and a regime, and appends a JSON record to `boredom_log.jsonl`:
+After every logged experiment, run `python3 boredom.py status`. It reads `results.tsv` and each commit's descriptor (from its `Descriptor:` trailer, or inferred from the description), prints a boredom score B in [0, 1] and a regime, and appends a JSON record to `boredom_log.jsonl`:
 
-- **novelty**: how different the latest diff is from the previous k attempts (low novelty means you are repeating yourself; re-tuning the same constant counts as repetition).
-- **stagnation**: how many runs in a row failed to beat the best val_bpb.
-- **overload**: crash rate, or rate of trivial (2 lines or fewer) diffs.
+- **novelty**: mean hierarchical descriptor distance to the nearest archive members (low novelty means you are repeating a mechanism or method).
+- **stagnation**: frontier stall relative to the profile's patience.
+- **overload**: the larger of the recent failure rate and near-duplicate descriptor rate.
 - B = 0.45·(1 − novelty) + 0.45·stagnation + 0.10·overload.
 
 Regimes and what you must do:
@@ -102,8 +102,23 @@ Regimes and what you must do:
 - **EXPLOIT** (B < 0.70): normal hill-climbing. Make one focused change to the current best `train.py`.
 - **BOREDOM_SNAP** (0.70 ≤ B < 0.85): micro-tweaks are banned. Read the episodic memory (failed ideas) that `status` prints and do not revisit those basins. Propose an idea that is structurally different from everything in the last k attempts (a different component of the model or training loop, not another value for a knob you already turned). Strongly consider a **parallel divergent burst**: write 3 orthogonal candidates as 3 separate commits on top of the current best (each on its own temporary branch or as sibling commits), then run all at once with `modal run modal_run.py --commits <c1>,<c2>,<c3> > burst.log 2>&1`. Logs land in `runs/<commit>.log`. Log every candidate as its own row in `results.tsv`; advance the branch to the winner only if it beats the best.
 - **PARADIGM_BREAKOUT** (B ≥ 0.85): the current framing is exhausted. `git reset --hard <best_commit>` first, then change the framing itself: a different architecture family or attention scheme, a different optimizer family or schedule shape, a different model shape/size trade-off for the 5-minute budget, a different batch/sequence regime. Small or medium ideas are not allowed here.
+- **CONVERGED**: after the frontier stalls for 3×patience and every mechanism except `baseline` has been tried, re-run the current best descriptor as a confirmation instead of proposing a new idea. A significant improvement exits CONVERGED.
 
-**Novelty gate.** Before running any candidate (after `git commit`, before `modal run`), run `python3 boredom.py gate --commit HEAD`. If it prints `REJECT` (exit code 1), do not run it: amend or replace the idea with something more novel and gate it again. In EXPLOIT the gate always passes. Do not fiddle with the idea just to slip past the gate; make it genuinely different.
+Every candidate commit must include a descriptor trailer from the profile vocabulary:
+
+```text
+baseline/none
+batch/total_batch
+lr_schedule/warmup | warmdown | final_lr
+optimizer/matrix_lr | embed_lr | unembed_lr | adam_beta | weight_decay | family
+architecture/depth | width | head_dim | mlp | norm | family
+attention/window | softcap | family
+data/ordering | sequence
+```
+
+Add `value=<number>` for a parameterized descriptor when applicable. For example, `Descriptor: optimizer/matrix_lr value=0.03`. In CONVERGED, the gate only allows the current best descriptor as a confirmation run.
+
+**Novelty gate.** Before running any candidate (after `git commit`, before `modal run`), run `python3 boredom.py gate --commit HEAD`. If it prints `REJECT` (exit code 1), do not run it: amend or replace the idea with something more novel and gate it again. The scoring gate passes in EXPLOIT, but every enabled run still needs a valid `Descriptor:` trailer and configured preconditions such as prior-art. Do not fiddle with the idea just to slip past the gate; make it genuinely different.
 
 **Decision log.** Judges must be able to follow every decision. Each `results.tsv` description must start with the regime you were in, e.g. `[SNAP] replace ReLU^2 with SwiGLU MLP`. When the regime changes, write one line in `notes.md` (untracked) saying what B was, which regime you entered, and what kind of idea you picked because of it.
 
@@ -113,12 +128,14 @@ In BOREDOM_SNAP and PARADIGM_BREAKOUT, ground every candidate in retrieved resea
 
 ```bash
 python3 research.py search "<query naming the current bottleneck>"
-git commit -m "[SNAP] <research-grounded change>" -m "Source: S<k>"
+git commit -m "[SNAP] <research-grounded change>" \
+  -m "Source: S<k>" -m "Descriptor: architecture/mlp"
 ```
 
 Use a `[BREAKOUT]` subject in PARADIGM_BREAKOUT. The cited `S<k>` must be an id printed by the search and present in `research_log.jsonl`; the novelty gate rejects ungrounded SNAP/BREAKOUT candidates. In `notes.md`, add one line per grounded candidate mapping its source to the change. Research is optional in EXPLOIT. At completion, copy `research_log.jsonl` into `experiments/<arm>/` alongside the arm results.
 
 If `PRIOR_ART=required`, run `python3 research.py prior-art "<candidate idea>"` and add a `Prior-art: S<k>` trailer for a returned source, or `Prior-art: none-found Q<k>` if the search finds none. The gate checks these IDs against the research log.
+This prior-art requirement remains active when `BOREDOM=off`.
 
 ## Memory
 

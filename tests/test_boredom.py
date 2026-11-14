@@ -10,8 +10,11 @@ from unittest.mock import patch
 
 from boredom import (
     compute_meter,
+    descriptor_from_message,
+    descriptor_meter,
     is_disabled,
     jaccard_distance,
+    ledger_events,
     parse_train_diff,
     read_results,
     representation_from_diff,
@@ -122,6 +125,35 @@ class DiffTokenTests(unittest.TestCase):
         self.assertIn("* * <num>", shingles)
 
 
+class DescriptorTests(unittest.TestCase):
+    def setUp(self):
+        self.profile = descriptor_meter.load_profile(
+            Path(__file__).resolve().parents[1]
+            / "boredom_meter/profiles/autoresearch_llm.json"
+        )
+
+    def test_descriptor_trailer_and_classifier_fallback(self):
+        explicit = descriptor_from_message(
+            "candidate\n\nDescriptor: optimizer/matrix_lr value=0.03",
+            "ignored description",
+            self.profile,
+        )
+        inferred = descriptor_from_message(
+            "",
+            "[EXPLOIT] increase matrix lr to 0.03",
+            self.profile,
+        )
+        self.assertEqual(
+            explicit,
+            {
+                "mechanism": "optimizer",
+                "method": "matrix_lr",
+                "params": {"value": 0.03},
+            },
+        )
+        self.assertEqual(inferred, explicit)
+
+
 class CliIntegrationTests(unittest.TestCase):
     def run_cli(self, repo, results, log, command, *extra, env=None):
         environment = os.environ.copy()
@@ -208,7 +240,9 @@ class CliIntegrationTests(unittest.TestCase):
                 lines = train_file.read_text(encoding="utf-8").splitlines()
                 lines[block * 4 : block * 4 + 4] = ["VALUE = 1"] * 4
                 train_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                commits.append(commit("experiment"))
+                commits.append(
+                    commit("experiment\n\nDescriptor: optimizer/matrix_lr")
+                )
 
             results = Path(directory) / "results.tsv"
             log = Path(directory) / "boredom_log.jsonl"
@@ -216,7 +250,7 @@ class CliIntegrationTests(unittest.TestCase):
                 results,
                 [
                     (sha, "1.000000", "1.0", "keep", "experiment")
-                    for sha in commits[:4]
+                    for sha in commits
                 ],
             )
 
@@ -224,7 +258,11 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertEqual(status.returncode, 0, status.stderr)
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
-            self.assertEqual(record["n_rows"], 4)
+            self.assertEqual(record["n_rows"], 5)
+            self.assertEqual(record["profile_version"], 2)
+            self.assertEqual(record["descriptor"]["mechanism"], "optimizer")
+            self.assertEqual(len(record["ledger_sha256"]), 64)
+            self.assertEqual(len(record["profile_sha256"]), 64)
             print("integration fixture status --json:", status.stdout.strip())
 
             rejected = self.run_cli(
@@ -250,6 +288,10 @@ class CliIntegrationTests(unittest.TestCase):
                 if json.loads(line).get("type") == "gate"
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
+            self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "optimizer")
+            self.assertEqual(logged_gates[0]["profile_version"], 2)
+            self.assertEqual(len(logged_gates[0]["ledger_sha256"]), 64)
+            self.assertEqual(len(logged_gates[0]["profile_sha256"]), 64)
 
     def test_gate_requires_research_grounding_only_in_snap_and_breakout(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -259,7 +301,9 @@ class CliIntegrationTests(unittest.TestCase):
             train_file = repo / "train.py"
             train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
 
-            def commit(message, value):
+            def commit(message, value, descriptor=None):
+                if descriptor is not None:
+                    message = f"{message}\n\nDescriptor: {descriptor}"
                 train_file.write_text(
                     "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
                 )
@@ -301,13 +345,23 @@ class CliIntegrationTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            history_commits = [commit("experiment", value) for value in range(1, 7)]
-            no_source_commit = commit("candidate without source", 7)
+            history_commits = [
+                commit("experiment", value, "optimizer/matrix_lr")
+                for value in range(1, 7)
+            ]
+            no_source_commit = commit(
+                "candidate without source", 7, "architecture/depth"
+            )
             unknown_source_commit = commit(
-                "candidate with unknown source\n\nSource: S9", 8
+                "candidate with unknown source\n\nSource: S9", 8, "architecture/depth"
             )
             valid_source_commit = commit(
-                "candidate with valid source\n\nSource: S1, S2", 9
+                "candidate with valid source\n\nSource: S1, S2",
+                9,
+                "architecture/depth",
+            )
+            missing_descriptor_commit = commit(
+                "candidate missing descriptor", 10
             )
 
             results = Path(directory) / "results.tsv"
@@ -357,6 +411,10 @@ class CliIntegrationTests(unittest.TestCase):
 
             grounded = gate(valid_source_commit)
             self.assertEqual(grounded.returncode, 0, grounded.stdout)
+
+            missing_descriptor = gate(missing_descriptor_commit)
+            self.assertEqual(missing_descriptor.returncode, 1, missing_descriptor.stdout)
+            self.assertIn("no-descriptor", missing_descriptor.stdout)
 
             grounding_disabled = gate(no_source_commit, env={"GROUNDING": "off"})
             self.assertEqual(grounding_disabled.returncode, 0, grounding_disabled.stdout)
@@ -457,7 +515,10 @@ class CliIntegrationTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            history = [commit("history", value) for value in range(1, 7)]
+            history = [
+                commit("history\n\nDescriptor: optimizer/matrix_lr", value)
+                for value in range(1, 7)
+            ]
             missing = commit("[BREAKOUT] missing prior art\n\nSource: S1", 7)
             unknown = commit(
                 "[BREAKOUT] unknown prior art\n\nSource: S1\nPrior-art: S9", 8
@@ -495,7 +556,9 @@ class CliIntegrationTests(unittest.TestCase):
             gate_log = Path(directory) / "boredom_log.jsonl"
 
             def gate(commit_id, prior_art=None):
-                environment = {"PRIOR_ART": "required"} if prior_art else None
+                environment = {"BOREDOM": "off"}
+                if prior_art:
+                    environment["PRIOR_ART"] = "required"
                 return self.run_cli(
                     repo,
                     results,
@@ -552,7 +615,9 @@ class CliIntegrationTests(unittest.TestCase):
                 "0",
                 env={"PRIOR_ART": "required", "BOREDOM": "off"},
             )
-            self.assertEqual(disabled_result.returncode, 0, disabled_result.stdout)
+            self.assertEqual(disabled_result.returncode, 1, disabled_result.stdout)
+            self.assertIn("no-prior-art: missing Prior-art trailer", disabled_result.stdout)
+            self.assertNotIn("no-descriptor", disabled_result.stdout)
 
             records = [
                 json.loads(line)
@@ -577,25 +642,22 @@ class CliIntegrationTests(unittest.TestCase):
 class ControlReplayTests(unittest.TestCase):
     def test_control_replay_reaches_snap(self):
         rows = read_results(CONTROL_REPLAY / "results.tsv")
-        representations = []
-        for row in rows:
-            diff_path = CONTROL_REPLAY / "diffs" / f"{row['commit']}.diff"
-            representation, diff_lines = representation_from_diff(
-                diff_path.read_text(encoding="utf-8"), row.get("description", "")
-            )
-            row["diff_lines"] = diff_lines
-            row["resolvable"] = True
-            representations.append(representation)
-
+        profile = descriptor_meter.load_profile(
+            Path(__file__).resolve().parents[1]
+            / "boredom_meter/profiles/autoresearch_llm.json"
+        )
+        events = ledger_events(rows, None, profile)
         trajectory = []
         first_snap = None
         for run_index in range(1, len(rows)):
-            metrics = compute_meter(
-                rows[: run_index + 1], representations[: run_index + 1]
-            )
+            metrics = descriptor_meter.status(profile, events[: run_index + 1])
             trajectory.append((run_index, metrics["B"], metrics["regime"]))
             if first_snap is None and metrics["regime"] != "EXPLOIT":
                 first_snap = run_index
+
+        print("control replay B/regime (post-baseline run index):")
+        for run_index, score, regime in trajectory:
+            print(f"{run_index:>2} {score:.6f} {regime}")
 
         self.assertEqual(len(rows), 26)
         self.assertIsNotNone(first_snap)
