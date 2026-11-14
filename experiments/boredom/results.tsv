@@ -1,0 +1,12 @@
+commit	val_bpb	memory_gb	status	description
+7017194	0.995814	44.0	keep	baseline
+04246ac	0.987304	43.9	keep	[EXPLOIT] halve total batch size to 2**18 (more optimizer steps)
+914c653	0.990956	22.2	discard	[EXPLOIT] halve batch again to 2**17 tokens, device batch 64
+e9bf9f9	0.986378	43.9	keep	[EXPLOIT] shrink sliding short window from 1/2 to 1/4 context for throughput
+ce6a3d9	0.985007	43.9	keep	[EXPLOIT] lengthen LR warmdown from 50% to 70% of budget
+415c79d	0.982042	66.2	keep	[EXPLOIT] deepen model from 8 to 10 layers (dim 640)
+9277f48	0.985998	66.2	discard	[EXPLOIT] raise Muon matrix LR 0.04 -> 0.05
+fa03dc9	0.983205	66.2	discard	[EXPLOIT] lengthen warmdown further to 85% of budget
+25e8261	0.982406	66.2	discard	[EXPLOIT] end warmdown at 10% of peak LR instead of 0
+61e49f8	0.980406	66.2	keep	[EXPLOIT] raise lm_head Adam LR 0.004 -> 0.006
+cde335c	0.983246	66.2	discard	[EXPLOIT] shrink sliding short window to 1/8 context

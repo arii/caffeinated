@@ -1,0 +1,2 @@
+- start: B=0.100, regime EXPLOIT -> focused single-knob hill climbing (batch size, schedule).
+- run 5 (B=0.108, EXPLOIT): a protocol update switched EXPLOIT to 5-wide bursts and cut budget to 10; runs 6-10 (9277f48,fa03dc9,25e8261,61e49f8,cde335c) were launched as one 5-wide EXPLOIT burst before the batching instruction was reverted. Runs 1-5 were sequential; no other EXPLOIT bursts.
