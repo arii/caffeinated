@@ -106,9 +106,11 @@ def prepare(num_shards: int = 10):
         "/root/.cache/huggingface": HF_CACHE_VOLUME,
     },
 )
-def train(train_src: str, label: str) -> dict:
+def train(train_src: str, label: str, seed: int = 42) -> dict:
     WORK_DIR.mkdir(parents=True, exist_ok=True)
     (WORK_DIR / "train.py").write_text(train_src, encoding="utf-8")
+    environment = os.environ.copy()
+    environment["AUTORESEARCH_SEED"] = str(seed)
     timed_out = False
     try:
         try:
@@ -118,6 +120,7 @@ def train(train_src: str, label: str) -> dict:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
+                env=environment,
                 timeout=10 * 60,
                 check=False,
             )
@@ -176,8 +179,10 @@ def format_memory_gb(result):
 
 
 @app.local_entrypoint()
-def main(commits: str = "", out_dir: str = "runs"):
-    if not commits:
+def main(commits: str = "", seeds: str = "", out_dir: str = "runs"):
+    if commits and seeds:
+        raise SystemExit("--commits and --seeds are mutually exclusive")
+    if not commits and not seeds:
         train_src = Path("train.py").read_text(encoding="utf-8")
         result = train.remote(train_src=train_src, label="baseline")
         sys.stdout.write(result.get("log", ""))
@@ -186,9 +191,54 @@ def main(commits: str = "", out_dir: str = "runs"):
             raise SystemExit(1)
         return
 
-    commit_list = [commit.strip() for commit in commits.split(",") if commit.strip()]
     output_dir = Path(out_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    if seeds:
+        try:
+            seed_list = [
+                int(seed.strip())
+                for seed in seeds.split(",")
+                if seed.strip()
+            ]
+        except ValueError as error:
+            raise SystemExit(
+                "--seeds must be a comma-separated list of integers"
+            ) from error
+        if not seed_list or len(seed_list) != len(set(seed_list)):
+            raise SystemExit("--seeds must contain at least one unique seed")
+
+        train_src = Path("train.py").read_text(encoding="utf-8")
+        remote_jobs = [(train_src, f"seed_{seed}", seed) for seed in seed_list]
+        remote_results = train.starmap(remote_jobs, return_exceptions=True)
+        results_by_seed = {}
+        for seed, result in zip(seed_list, remote_results):
+            if isinstance(result, BaseException):
+                results_by_seed[seed] = {
+                    "label": f"seed_{seed}",
+                    "returncode": 1,
+                    "timed_out": False,
+                    "log": f"Remote training failed: {result}\n",
+                    "metrics": {},
+                }
+            else:
+                results_by_seed[seed] = result
+
+        for seed in seed_list:
+            result = results_by_seed[seed]
+            (output_dir / f"seed_{seed}.log").write_text(
+                result.get("log", ""), encoding="utf-8"
+            )
+
+        print("seed\tval_bpb\tstatus")
+        for seed in seed_list:
+            result = results_by_seed[seed]
+            status = "ok" if is_successful(result) else "crash"
+            print(f"{seed}\t{format_val_bpb(result)}\t{status}")
+        if any(not is_successful(result) for result in results_by_seed.values()):
+            raise SystemExit(1)
+        return
+
+    commit_list = [commit.strip() for commit in commits.split(",") if commit.strip()]
     results_by_commit = {}
     remote_jobs = []
     remote_labels = []

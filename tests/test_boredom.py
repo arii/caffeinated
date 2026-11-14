@@ -13,10 +13,13 @@ from boredom import (
     is_disabled,
     jaccard_distance,
     parse_train_diff,
+    read_results,
+    representation_from_diff,
 )
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "boredom.py"
+CONTROL_REPLAY = Path(__file__).parent / "fixtures" / "control_replay"
 
 
 def make_row(commit, value, status="keep", diff_lines=8):
@@ -90,26 +93,30 @@ class ComputeMeterTests(unittest.TestCase):
 
 
 class DiffTokenTests(unittest.TestCase):
-    def test_numeric_value_tweaks_have_identical_shingles(self):
-        first, _ = parse_train_diff(
+    def test_knob_assignments_collapse_but_structural_lines_stay_distinct(self):
+        first, first_lines = parse_train_diff(
             "--- a/train.py\n+++ b/train.py\n"
             "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.05\n"
         )
-        second, _ = parse_train_diff(
+        second, second_lines = parse_train_diff(
             "--- a/train.py\n+++ b/train.py\n"
-            "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.03\n"
+            "-WARMDOWN_RATIO = 0.5\n+WARMDOWN_RATIO = 0.7  # longer\n"
         )
-        different_constant, _ = parse_train_diff(
+        structural, structural_lines = parse_train_diff(
             "--- a/train.py\n+++ b/train.py\n"
-            "-WEIGHT_DECAY = 0.04\n+WEIGHT_DECAY = 0.05\n"
+            "-        x = self.attn(x)\n+        x = self.attention(x)\n"
         )
         self.assertEqual(jaccard_distance(first, second), 0.0)
-        self.assertGreater(jaccard_distance(first, different_constant), 0.0)
+        self.assertEqual(first_lines, 2)
+        self.assertEqual(second_lines, 2)
+        self.assertEqual(structural_lines, 2)
+        self.assertGreater(jaccard_distance(first, structural), 0.0)
+        self.assertEqual(jaccard_distance(set(), set()), 0.0)
 
     def test_scientific_and_exponent_literals_are_single_numeric_tokens(self):
         shingles, _ = parse_train_diff(
             "--- a/train.py\n+++ b/train.py\n"
-            "-LR = 1e-3\n+WIDTH = 2**19\n"
+            "-lr = 1e-3\n+width = 2**19\n"
         )
         self.assertIn("<num> * *", shingles)
         self.assertIn("* * <num>", shingles)
@@ -398,6 +405,46 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertEqual(valid_record["sources"], ["S1", "S2"])
             self.assertTrue(valid_record["grounded"])
             self.assertTrue(gate_records[-1]["disabled"])
+
+
+class ControlReplayTests(unittest.TestCase):
+    def test_control_replay_reaches_snap(self):
+        rows = read_results(CONTROL_REPLAY / "results.tsv")
+        representations = []
+        for row in rows:
+            diff_path = CONTROL_REPLAY / "diffs" / f"{row['commit']}.diff"
+            representation, diff_lines = representation_from_diff(
+                diff_path.read_text(encoding="utf-8"), row.get("description", "")
+            )
+            row["diff_lines"] = diff_lines
+            row["resolvable"] = True
+            representations.append(representation)
+
+        trajectory = []
+        first_snap = None
+        for run_index in range(1, len(rows)):
+            metrics = compute_meter(
+                rows[: run_index + 1], representations[: run_index + 1]
+            )
+            trajectory.append((run_index, metrics["B"], metrics["regime"]))
+            if first_snap is None and metrics["regime"] != "EXPLOIT":
+                first_snap = run_index
+
+        self.assertEqual(len(rows), 26)
+        self.assertIsNotNone(first_snap)
+        self.assertGreaterEqual(first_snap, 5)
+        self.assertLessEqual(first_snap, 12)
+        self.assertTrue(
+            all(
+                regime != "EXPLOIT"
+                for run_index, _, regime in trajectory
+                if 11 <= run_index <= 14
+            )
+        )
+        self.assertEqual(
+            next(regime for run_index, _, regime in trajectory if run_index == 16),
+            "EXPLOIT",
+        )
 
 
 if __name__ == "__main__":

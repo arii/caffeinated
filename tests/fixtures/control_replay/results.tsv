@@ -1,0 +1,27 @@
+commit	val_bpb	memory_gb	status	description
+7017194	0.995814	44.0	keep	baseline
+8351f61	0.986898	43.9	keep	batch 2**18
+3f6d00d	1.002292	44.0	discard	warmdown 0.7
+aad0573	0.995525	44.0	discard	matrix lr 0.05 (tiny gain, superseded)
+de62553	1.035185	66.5	discard	depth 10
+ae211be	0.996443	44.0	discard	final lr frac 0.1
+47bda38	0.991148	22.2	discard	batch 2**17
+325893a	0.990555	43.9	discard	matrix lr 0.05
+50622de	0.986775	43.9	keep	matrix lr 0.03
+5d57e19	0.988858	43.9	discard	warmdown 0.35
+5e5f36b	1.023365	26.5	discard	depth 6
+7e12ac3	0.986739	43.9	keep	matrix lr 0.025
+b5efe86	0.988033	43.9	discard	embedding lr 0.4
+f41d411	0.987263	43.9	discard	unembedding lr 0.006
+edadf4a	0.987030	43.9	discard	weight decay 0.1
+eb33dc5	0.993940	44.0	discard	head dim 64
+0af5531	0.983012	53.9	keep	aspect ratio 80 (dim 640)
+2c2fdac	0.985068	43.9	discard	short window 1/4 context (promising)
+b2d0296	0.990095	43.9	discard	logit softcap 30
+86285bc	0.986329	43.9	discard	warmup 0.03
+9455f51	0.988680	43.9	discard	adam beta1 0.9
+b9ef13c	0.978532	53.9	keep	short window 1/4 context
+834ba7a	0.983025	63.9	discard	aspect ratio 96 (dim 768)
+8f67c5f	0.981114	53.9	discard	short window 1/4 + warmup 0.03
+7f08de5	0.981456	63.9	discard	aspect 96 + short window 1/4
+54ab83e	0.980693	53.9	discard	warmup 0.03

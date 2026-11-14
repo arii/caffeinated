@@ -19,6 +19,7 @@ NUMBER_PATTERN = rf"(?:{_DIGITS}(?:\.(?:{_DIGITS})?)?|\.(?:{_DIGITS}))(?:[eE][+-
 NUMBER_RE = re.compile(NUMBER_PATTERN)
 TOKEN_RE = re.compile(NUMBER_PATTERN + r"|\w+|[^\w\s]")
 WORD_RE = re.compile(r"\w+")
+KNOB_ASSIGNMENT_RE = re.compile(r"^\s*[A-Z][A-Z0-9_]*\s*=")
 
 
 def jaccard_distance(a, b):
@@ -136,20 +137,28 @@ def parse_train_diff(diff_text):
         if line.startswith("+++") or line.startswith("---"):
             continue
         if line.startswith("+") or line.startswith("-"):
-            content = " ".join(line[1:].split())
-            changed_lines.append(content)
+            changed_lines.append(line[1:])
 
     tokens = []
     for line in changed_lines:
+        if KNOB_ASSIGNMENT_RE.match(line):
+            tokens.extend(("<knob>", "=", "<val>"))
+            continue
+        content = " ".join(line.split())
         tokens.extend(
             "<num>" if NUMBER_RE.fullmatch(token) else token.casefold()
-            for token in TOKEN_RE.findall(line)
+            for token in TOKEN_RE.findall(content)
         )
     shingles = {
         " ".join(tokens[index : index + 3])
         for index in range(max(0, len(tokens) - 2))
     }
     return shingles, len(changed_lines)
+
+
+def representation_from_diff(diff_text, description):
+    shingles, diff_lines = parse_train_diff(diff_text)
+    return shingles | description_tokens(description), diff_lines
 
 
 def commit_representation(commit, description, repo):
@@ -165,8 +174,10 @@ def commit_representation(commit, description, repo):
     except (OSError, subprocess.CalledProcessError):
         return description_tokens(description), 0, False
 
-    shingles, diff_lines = parse_train_diff(result.stdout)
-    return shingles | description_tokens(description), diff_lines, True
+    representation, diff_lines = representation_from_diff(
+        result.stdout, description
+    )
+    return representation, diff_lines, True
 
 
 def commit_subject(commit, repo):
