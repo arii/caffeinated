@@ -34,7 +34,7 @@ image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("torch==2.9.1", index_url=TORCH_INDEX_URL)
     .pip_install(
-        "kernels>=0.11.7",
+        "kernels==0.12.1",
         "matplotlib",
         "numpy",
         "pandas",
