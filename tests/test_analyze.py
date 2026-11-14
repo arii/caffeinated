@@ -50,12 +50,54 @@ class AnalyzeCliTests(unittest.TestCase):
             self.assertIn("EXPLOIT 3 / SNAP 3 / BREAKOUT 5", summary_text)
             self.assertIn("N/A (<2 resolvable kept diffs;", summary_text)
 
+    def test_max_runs_truncates_results_and_reports_available_rows(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--arm",
+                    f"control={FIXTURE_ROOT / 'control'}",
+                    "--arm",
+                    f"boredom={FIXTURE_ROOT / 'boredom'}",
+                    "--max-runs",
+                    "5",
+                    "--repo",
+                    str(REPO_ROOT),
+                    "--out",
+                    str(output),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+            summary_text = (output / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("| control | 0.994500 |", summary_text)
+            self.assertIn("| boredom | 0.994200 |", summary_text)
+            self.assertIn(
+                "Comparison truncated to first 5 runs per arm "
+                "(12 total rows available for control; "
+                "12 total rows available for boredom).",
+                summary_text,
+            )
+
     def test_trace_keeps_last_status_for_row_count_and_gate_rejections(self):
         log_path = FIXTURE_ROOT / "boredom" / "boredom_log.jsonl"
         statuses, rejected = trace_records(read_boredom_log(log_path))
         status_by_rows = {record["n_rows"]: record for record in statuses}
         self.assertEqual(status_by_rows[4]["B"], 0.78)
         self.assertEqual(rejected, [4, 7])
+
+        truncated_statuses, truncated_rejected = trace_records(
+            read_boredom_log(log_path), max_run_index=5
+        )
+        self.assertTrue(
+            all(int(record["n_rows"]) - 1 <= 5 for record in truncated_statuses)
+        )
+        self.assertEqual(truncated_rejected, [4])
 
 
 if __name__ == "__main__":

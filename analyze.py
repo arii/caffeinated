@@ -196,19 +196,36 @@ def format_number(value, decimals=6):
     return "N/A" if value is None else f"{value:.{decimals}f}"
 
 
-def build_summary(arms, repo):
+def build_summary(arms, repo, max_runs=None, available_rows=None):
     summaries = [arm_summary(name, rows, repo) for name, rows, _ in arms]
     lines = [
         "# Autoresearch experiment comparison",
         "",
-        f"Baseline val_bpb: {BASELINE_VAL_BPB:.6f}. "
-        "Δ is best val_bpb minus baseline (negative is better).",
-        "",
-        "| Arm | Best val_bpb | Δ vs baseline (absolute, %) | "
-        "Runs to first improvement | Runs until best | Keep / discard / crash | "
-        "Regime counts | Structural diversity |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |",
     ]
+    truncated_arms = [
+        f"{available_rows[name]} total rows available for {name}"
+        for name, rows, _ in arms
+        if max_runs is not None and available_rows[name] > len(rows)
+    ]
+    if truncated_arms:
+        lines.extend(
+            [
+                f"Comparison truncated to first {max_runs} runs per arm "
+                f"({'; '.join(truncated_arms)}).",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            f"Baseline val_bpb: {BASELINE_VAL_BPB:.6f}. "
+            "Δ is best val_bpb minus baseline (negative is better).",
+            "",
+            "| Arm | Best val_bpb | Δ vs baseline (absolute, %) | "
+            "Runs to first improvement | Runs until best | Keep / discard / crash | "
+            "Regime counts | Structural diversity |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+        ]
+    )
     for summary in summaries:
         if summary["delta"] is None:
             delta_text = "N/A"
@@ -238,7 +255,7 @@ def build_summary(arms, repo):
     return "\n".join(lines)
 
 
-def comparison_plot(arms, output_path):
+def comparison_plot(arms, output_path, run_count):
     colors = plt.get_cmap("tab10").colors
     arm_colors = {
         name: colors[index % len(colors)]
@@ -334,7 +351,9 @@ def comparison_plot(arms, output_path):
     )
     axis.set_xlabel("Run index (baseline = 0)")
     axis.set_ylabel("val_bpb (lower is better)")
-    axis.set_title("Boredom Meter vs greedy autoresearch (40 H100 runs each)")
+    axis.set_title(
+        f"Boredom Meter vs greedy autoresearch ({run_count} H100 runs each)"
+    )
     axis.grid(axis="y", alpha=0.2)
 
     legend_handles = [
@@ -390,21 +409,25 @@ def read_boredom_log(path):
     return entries
 
 
-def trace_records(entries):
+def trace_records(entries, max_run_index=None):
     statuses = {}
     rejected_gates = []
     for record in entries:
         if record.get("type") == "gate":
             if record.get("pass") is False and record.get("n_rows") is not None:
-                rejected_gates.append(int(record["n_rows"]))
+                gate_x = int(record["n_rows"])
+                if max_run_index is None or gate_x <= max_run_index:
+                    rejected_gates.append(gate_x)
             continue
         if record.get("n_rows") is None or record.get("B") is None:
             continue
-        statuses[int(record["n_rows"])] = record
+        status_x = int(record["n_rows"]) - 1
+        if max_run_index is None or status_x <= max_run_index:
+            statuses[int(record["n_rows"])] = record
     return [statuses[key] for key in sorted(statuses)], rejected_gates
 
 
-def trace_plot(arms, output_path):
+def trace_plot(arms, output_path, max_run_index=None):
     trace_arms = [
         (name, rows, log_path, read_boredom_log(log_path))
         for name, rows, log_path in arms
@@ -430,7 +453,7 @@ def trace_plot(arms, output_path):
     max_x = 0
     for index, (name, rows, _, entries) in enumerate(trace_arms):
         color = colors[index % len(colors)]
-        statuses, rejected_gates = trace_records(entries)
+        statuses, rejected_gates = trace_records(entries, max_run_index)
         status_x = [int(record["n_rows"]) - 1 for record in statuses]
         status_y = [float(record["B"]) for record in statuses]
         if statuses:
@@ -473,7 +496,10 @@ def trace_plot(arms, output_path):
         )
         max_x = max(max_x, len(rows) - 1)
 
-    if any(trace_records(entries)[1] for _, _, _, entries in trace_arms):
+    if any(
+        trace_records(entries, max_run_index)[1]
+        for _, _, _, entries in trace_arms
+    ):
         trace_handles.append(
             Line2D(
                 [0], [0], marker="X", color="#222222", linestyle="none",
@@ -524,7 +550,14 @@ def main(argv=None):
     )
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out", default="experiments/")
+    parser.add_argument(
+        "--max-runs",
+        type=int,
+        help="include the baseline plus at most N experiment runs per arm",
+    )
     args = parser.parse_args(argv)
+    if args.max_runs is not None and args.max_runs < 0:
+        parser.error("--max-runs must be non-negative")
 
     names = [name for name, _ in args.arm]
     if len(set(names)) != len(names):
@@ -533,17 +566,26 @@ def main(argv=None):
     output_dir = Path(args.out)
     try:
         arms = []
+        available_rows = {}
         for name, path in args.arm:
             directory = Path(path)
             rows = read_results(directory)
+            available_rows[name] = len(rows)
+            if args.max_runs is not None:
+                rows = rows[: args.max_runs + 1]
             log_path = directory / "boredom_log.jsonl"
             arms.append((name, rows, log_path if log_path.is_file() else None))
 
+        max_run_index = max(len(rows) - 1 for _, rows, _ in arms)
+        run_count = (
+            args.max_runs if args.max_runs is not None else max_run_index
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
-        comparison_plot(arms, output_dir / "comparison.png")
-        trace_plot(arms, output_dir / "boredom_trace.png")
+        comparison_plot(arms, output_dir / "comparison.png", run_count)
+        trace_plot(arms, output_dir / "boredom_trace.png", args.max_runs)
         (output_dir / "summary.md").write_text(
-            build_summary(arms, repo), encoding="utf-8"
+            build_summary(arms, repo, args.max_runs, available_rows),
+            encoding="utf-8",
         )
     except (OSError, ValueError) as error:
         print(f"analyze.py: {error}", file=sys.stderr)
