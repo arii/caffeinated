@@ -49,6 +49,18 @@ class AnalyzeCliTests(unittest.TestCase):
             self.assertIn("| boredom | 0.987500 |", summary_text)
             self.assertIn("EXPLOIT 3 / SNAP 3 / BREAKOUT 5", summary_text)
             self.assertIn("N/A (<2 resolvable kept diffs;", summary_text)
+            self.assertIn("| Grounded |", summary_text)
+            self.assertIn("| 1 / 3 |", summary_text)
+            self.assertIn("## Cited sources", summary_text)
+            self.assertIn(
+                "S1` — Efficient Attention Paper — "
+                "https://example.test/attention-paper",
+                summary_text,
+            )
+            control_line = next(
+                line for line in summary_text.splitlines() if line.startswith("| control |")
+            )
+            self.assertTrue(control_line.endswith("| N/A |"), control_line)
 
     def test_max_runs_truncates_results_and_reports_available_rows(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -83,6 +95,7 @@ class AnalyzeCliTests(unittest.TestCase):
                 "12 total rows available for boredom).",
                 summary_text,
             )
+            self.assertIn("| 0 / 1 |", summary_text)
 
     def test_trace_keeps_last_status_for_row_count_and_gate_rejections(self):
         log_path = FIXTURE_ROOT / "boredom" / "boredom_log.jsonl"

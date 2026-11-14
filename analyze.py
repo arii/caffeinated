@@ -196,8 +196,68 @@ def format_number(value, decimals=6):
     return "N/A" if value is None else f"{value:.{decimals}f}"
 
 
-def build_summary(arms, repo, max_runs=None, available_rows=None):
+def research_summary(log_path, research_log_path, max_run_index=None):
+    if research_log_path is None:
+        return "N/A", []
+
+    entries = (
+        read_boredom_log(log_path)
+        if log_path is not None and log_path.is_file()
+        else []
+    )
+    if max_run_index is not None:
+        entries = [
+            record
+            for record in entries
+            if record.get("type") != "gate"
+            or record.get("n_rows") is None
+            or int(record["n_rows"]) <= max_run_index
+        ]
+    grounded_gates = [
+        record
+        for record in entries
+        if record.get("type") == "gate"
+        and record.get("regime") in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
+    ]
+    if grounded_gates:
+        grounded_passes = sum(
+            record.get("pass") is True and record.get("grounded") is True
+            for record in grounded_gates
+        )
+        grounded_text = f"{grounded_passes} / {len(grounded_gates)}"
+    else:
+        grounded_text = "N/A"
+
+    research_records = read_boredom_log(research_log_path)
+    sources_by_id = {
+        record["id"]: record
+        for record in research_records
+        if record.get("type") == "source" and record.get("id")
+    }
+    cited_ids = []
+    for record in entries:
+        if record.get("type") != "gate":
+            continue
+        for source_id in record.get("sources", []):
+            if source_id not in cited_ids:
+                cited_ids.append(source_id)
+    citations = [
+        (source_id, sources_by_id.get(source_id, {})) for source_id in cited_ids
+    ]
+    return grounded_text, citations
+
+
+def build_summary(
+    arms, repo, max_runs=None, available_rows=None, research_logs=None
+):
+    research_logs = research_logs or {}
     summaries = [arm_summary(name, rows, repo) for name, rows, _ in arms]
+    grounded_by_arm = {}
+    citations_by_arm = {}
+    for name, _, log_path in arms:
+        grounded_by_arm[name], citations_by_arm[name] = research_summary(
+            log_path, research_logs.get(name), max_runs
+        )
     lines = [
         "# Autoresearch experiment comparison",
         "",
@@ -222,8 +282,8 @@ def build_summary(arms, repo, max_runs=None, available_rows=None):
             "",
             "| Arm | Best val_bpb | Δ vs baseline (absolute, %) | "
             "Runs to first improvement | Runs until best | Keep / discard / crash | "
-            "Regime counts | Structural diversity |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+            "Regime counts | Structural diversity | Grounded |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |",
         ]
     )
     for summary in summaries:
@@ -241,7 +301,7 @@ def build_summary(arms, repo, max_runs=None, available_rows=None):
             f"{summary['runs_until_best'] if summary['runs_until_best'] is not None else 'N/A'} | "
             f"{summary['counts']['keep']} / {summary['counts']['discard']} / "
             f"{summary['counts']['crash']} | {summary['regimes']} | "
-            f"{summary['diversity']} |"
+            f"{summary['diversity']} | {grounded_by_arm[summary['name']]} |"
         )
     lines.extend(
         [
@@ -252,6 +312,18 @@ def build_summary(arms, repo, max_runs=None, available_rows=None):
             "",
         ]
     )
+    if any(research_logs.values()):
+        lines.extend(["", "## Cited sources", ""])
+        has_citations = False
+        for name, _, _ in arms:
+            for source_id, source in citations_by_arm[name]:
+                has_citations = True
+                title = source.get("title") or "(untitled)"
+                url = source.get("url") or "(URL unavailable)"
+                lines.append(f"- **{name}** `{source_id}` — {title} — {url}")
+        if not has_citations:
+            lines.append("No cited sources.")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -567,6 +639,7 @@ def main(argv=None):
     try:
         arms = []
         available_rows = {}
+        research_logs = {}
         for name, path in args.arm:
             directory = Path(path)
             rows = read_results(directory)
@@ -575,6 +648,10 @@ def main(argv=None):
                 rows = rows[: args.max_runs + 1]
             log_path = directory / "boredom_log.jsonl"
             arms.append((name, rows, log_path if log_path.is_file() else None))
+            research_log_path = directory / "research_log.jsonl"
+            research_logs[name] = (
+                research_log_path if research_log_path.is_file() else None
+            )
 
         max_run_index = max(len(rows) - 1 for _, rows, _ in arms)
         run_count = (
@@ -584,7 +661,9 @@ def main(argv=None):
         comparison_plot(arms, output_dir / "comparison.png", run_count)
         trace_plot(arms, output_dir / "boredom_trace.png", args.max_runs)
         (output_dir / "summary.md").write_text(
-            build_summary(arms, repo, args.max_runs, available_rows),
+            build_summary(
+                arms, repo, args.max_runs, available_rows, research_logs
+            ),
             encoding="utf-8",
         )
     except (OSError, ValueError) as error:

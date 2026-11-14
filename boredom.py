@@ -183,6 +183,55 @@ def commit_subject(commit, repo):
     return result.stdout.strip()
 
 
+def commit_message(commit, repo):
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%B", commit],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    return result.stdout
+
+
+def source_trailers(message):
+    sources = []
+    has_trailer = False
+    for line in message.splitlines():
+        match = re.fullmatch(r"\s*Source:\s*(.*?)\s*", line)
+        if not match:
+            continue
+        has_trailer = True
+        for source_id in match.group(1).split(","):
+            source_id = source_id.strip()
+            if re.fullmatch(r"S\d+", source_id) and source_id not in sources:
+                sources.append(source_id)
+    return sources, has_trailer
+
+
+def read_research_sources(path):
+    path = Path(path)
+    if not path.exists():
+        return set()
+    sources = set()
+    with path.open(encoding="utf-8") as log_file:
+        for line_number, line in enumerate(log_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"invalid JSON in {path}, line {line_number}"
+                ) from error
+            if record.get("type") == "source" and record.get("id"):
+                sources.add(str(record["id"]))
+    return sources
+
+
 def read_results(path):
     path = Path(path)
     if not path.exists() or path.stat().st_size == 0:
@@ -308,6 +357,13 @@ def run_gate(args):
         rows, zs, k=args.k, eps=args.eps, weights=args.weights, disabled=is_disabled()
     )
     candidate_description = commit_subject(args.commit, args.repo)
+    candidate_message = commit_message(args.commit, args.repo)
+    cited_sources, has_source_trailer = source_trailers(candidate_message)
+    known_sources = read_research_sources(args.research_log)
+    valid_sources = [source_id for source_id in cited_sources if source_id in known_sources]
+    unknown_sources = [
+        source_id for source_id in cited_sources if source_id not in known_sources
+    ]
     candidate_z, diff_lines, _ = commit_representation(
         args.commit, candidate_description, args.repo
     )
@@ -338,6 +394,21 @@ def run_gate(args):
                 f"too close to a failed basin (distance {min_failed:.3f} "
                 f"< {args.failed_delta:.3f})"
             )
+    grounding_enabled = (
+        metrics["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
+        and not metrics["disabled"]
+        and os.environ.get("GROUNDING", "").casefold() != "off"
+    )
+    grounded = bool(valid_sources)
+    if grounding_enabled and not grounded:
+        if not has_source_trailer:
+            reasons.append("ungrounded: no Source trailer")
+        elif unknown_sources:
+            reasons.append(
+                "ungrounded: unknown id " + ", ".join(unknown_sources)
+            )
+        else:
+            reasons.append("ungrounded: no valid source id in Source trailer")
     passed = not reasons
     record = {
         "type": "gate",
@@ -350,6 +421,8 @@ def run_gate(args):
         "diff_lines": diff_lines,
         "min_recent_dist": min_recent,
         "min_failed_dist": min_failed,
+        "sources": valid_sources,
+        "grounded": grounded,
         "reasons": reasons,
         "min_lines": args.min_lines,
         "delta_min": args.delta_min,
@@ -415,6 +488,7 @@ def build_parser():
     gate_parser.add_argument("--min-lines", type=int, default=4)
     gate_parser.add_argument("--delta-min", type=float, default=0.35)
     gate_parser.add_argument("--failed-delta", type=float, default=0.25)
+    gate_parser.add_argument("--research-log", default="research_log.jsonl")
     gate_parser.set_defaults(func=run_gate)
     return parser
 

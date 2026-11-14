@@ -116,7 +116,12 @@ class DiffTokenTests(unittest.TestCase):
 
 
 class CliIntegrationTests(unittest.TestCase):
-    def run_cli(self, repo, results, log, command, *extra):
+    def run_cli(self, repo, results, log, command, *extra, env=None):
+        environment = os.environ.copy()
+        environment.pop("BOREDOM", None)
+        environment.pop("GROUNDING", None)
+        if env:
+            environment.update(env)
         return subprocess.run(
             [
                 sys.executable,
@@ -133,6 +138,7 @@ class CliIntegrationTests(unittest.TestCase):
             text=True,
             capture_output=True,
             check=False,
+            env=environment,
         )
 
     def write_results(self, path, rows):
@@ -236,6 +242,162 @@ class CliIntegrationTests(unittest.TestCase):
                 if json.loads(line).get("type") == "gate"
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
+
+    def test_gate_requires_research_grounding_only_in_snap_and_breakout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory) / "repo"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            train_file = repo / "train.py"
+            train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
+
+            def commit(message, value):
+                train_file.write_text(
+                    "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
+                )
+                subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+                subprocess.run(
+                    [
+                        "git",
+                        "-c",
+                        "user.name=Test",
+                        "-c",
+                        "user.email=test@example.com",
+                        "commit",
+                        "-m",
+                        message,
+                    ],
+                    cwd=repo,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                return subprocess.check_output(
+                    ["git", "rev-parse", "--short", "HEAD"], cwd=repo, text=True
+                ).strip()
+
+            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Test",
+                    "-c",
+                    "user.email=test@example.com",
+                    "commit",
+                    "-m",
+                    "initial",
+                ],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            history_commits = [commit("experiment", value) for value in range(1, 7)]
+            no_source_commit = commit("candidate without source", 7)
+            unknown_source_commit = commit(
+                "candidate with unknown source\n\nSource: S9", 8
+            )
+            valid_source_commit = commit(
+                "candidate with valid source\n\nSource: S1, S2", 9
+            )
+
+            results = Path(directory) / "results.tsv"
+            results.write_text("", encoding="utf-8")
+            self.write_results(
+                results,
+                [
+                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    for sha in history_commits
+                ],
+            )
+            research_log = Path(directory) / "research_log.jsonl"
+            research_log.write_text(
+                '{"type":"source","id":"S1","title":"Known source"}\n'
+                '{"type":"source","id":"S2","title":"Second known source"}\n',
+                encoding="utf-8",
+            )
+            gate_log = Path(directory) / "boredom_log.jsonl"
+
+            def gate(commit_id, *extra, env=None):
+                return self.run_cli(
+                    repo,
+                    results,
+                    gate_log,
+                    "gate",
+                    "--commit",
+                    commit_id,
+                    "--research-log",
+                    str(research_log),
+                    "--min-lines",
+                    "0",
+                    "--delta-min",
+                    "0",
+                    "--failed-delta",
+                    "0",
+                    *extra,
+                    env=env,
+                )
+
+            ungrounded = gate(no_source_commit)
+            self.assertEqual(ungrounded.returncode, 1, ungrounded.stdout)
+            self.assertIn("ungrounded: no Source trailer", ungrounded.stdout)
+
+            unknown = gate(unknown_source_commit)
+            self.assertEqual(unknown.returncode, 1, unknown.stdout)
+            self.assertIn("ungrounded: unknown id S9", unknown.stdout)
+
+            grounded = gate(valid_source_commit)
+            self.assertEqual(grounded.returncode, 0, grounded.stdout)
+
+            grounding_disabled = gate(no_source_commit, env={"GROUNDING": "off"})
+            self.assertEqual(grounding_disabled.returncode, 0, grounding_disabled.stdout)
+
+            self.write_results(
+                results,
+                [
+                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    for sha in history_commits
+                ],
+            )
+            breakout = gate(no_source_commit)
+            self.assertEqual(breakout.returncode, 1, breakout.stdout)
+            self.assertIn("regime=PARADIGM_BREAKOUT", breakout.stdout)
+            self.assertIn("ungrounded: no Source trailer", breakout.stdout)
+
+            self.write_results(
+                results,
+                [
+                    (sha, f"{1.0 - index * 0.1:.6f}", "1.0", "keep", "experiment")
+                    for index, sha in enumerate(history_commits)
+                ],
+            )
+            exploit = gate(no_source_commit)
+            self.assertEqual(exploit.returncode, 0, exploit.stdout)
+            self.assertIn("regime=EXPLOIT", exploit.stdout)
+
+            self.write_results(
+                results,
+                [
+                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    for sha in history_commits
+                ],
+            )
+            boredom_disabled = gate(no_source_commit, env={"BOREDOM": "off"})
+            self.assertEqual(boredom_disabled.returncode, 0, boredom_disabled.stdout)
+
+            gate_records = [
+                json.loads(line)
+                for line in gate_log.read_text(encoding="utf-8").splitlines()
+            ]
+            valid_record = next(
+                record
+                for record in gate_records
+                if record["candidate_commit"] == valid_source_commit
+            )
+            self.assertEqual(valid_record["sources"], ["S1", "S2"])
+            self.assertTrue(valid_record["grounded"])
+            self.assertTrue(gate_records[-1]["disabled"])
 
 
 if __name__ == "__main__":

@@ -22,5 +22,6 @@ dev/
 # Results file
 /results.tsv
 /boredom_log.jsonl
+/research_log.jsonl
 run.log
 runs/

@@ -3,9 +3,10 @@
 {"ts":"2026-11-01T00:02:00+00:00","n_rows":3,"B":0.72,"regime":"BOREDOM_SNAP"}
 {"ts":"2026-11-01T00:03:00+00:00","n_rows":4,"B":0.74,"regime":"BOREDOM_SNAP"}
 {"ts":"2026-11-01T00:04:00+00:00","n_rows":4,"B":0.78,"regime":"BOREDOM_SNAP"}
-{"type":"gate","ts":"2026-11-01T00:04:30+00:00","n_rows":4,"pass":false,"candidate_commit":"fake-boredom-04"}
+{"type":"gate","ts":"2026-11-01T00:04:30+00:00","n_rows":4,"pass":false,"regime":"BOREDOM_SNAP","grounded":false,"sources":[],"candidate_commit":"fake-boredom-04"}
 {"ts":"2026-11-01T00:05:00+00:00","n_rows":6,"B":0.9,"regime":"PARADIGM_BREAKOUT"}
-{"type":"gate","ts":"2026-11-01T00:05:30+00:00","n_rows":7,"pass":false,"candidate_commit":"fake-boredom-07"}
+{"type":"gate","ts":"2026-11-01T00:05:30+00:00","n_rows":7,"pass":false,"regime":"PARADIGM_BREAKOUT","grounded":false,"sources":[],"candidate_commit":"fake-boredom-07"}
+{"type":"gate","ts":"2026-11-01T00:06:30+00:00","n_rows":8,"pass":true,"regime":"PARADIGM_BREAKOUT","grounded":true,"sources":["S1"],"candidate_commit":"fake-boredom-08"}
 {"ts":"2026-11-01T00:08:00+00:00","n_rows":9,"B":0.88,"regime":"PARADIGM_BREAKOUT"}
 {"ts":"2026-11-01T00:10:00+00:00","n_rows":11,"B":0.68,"regime":"EXPLOIT"}
 {"ts":"2026-11-01T00:11:00+00:00","n_rows":12,"B":0.65,"regime":"EXPLOIT"}
