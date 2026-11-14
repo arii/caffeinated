@@ -1,0 +1,266 @@
+"""All model calls go through here: JSON chat, embeddings, cache, token cap, prompt log.
+
+MOCK=1 returns canned JSON and seeded embeddings with no network.
+Real mode uses the OpenAI SDK; model names come from env vars.
+"""
+import hashlib
+import json
+import os
+import time
+from pathlib import Path
+
+import numpy as np
+from pydantic import BaseModel
+
+MOCK = os.environ.get("MOCK") == "1"
+MODEL_CHEAP = os.environ.get("MODEL_CHEAP", "gpt-5-mini")
+MODEL_STRONG = os.environ.get("MODEL_STRONG", "gpt-5")
+MODEL_JUDGE_B = os.environ.get("MODEL_JUDGE_B", "gpt-5-mini")
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
+CACHE_DIR = Path(os.environ.get("LLM_CACHE_DIR", Path(__file__).parent / ".cache"))
+TOKEN_CAP = int(os.environ.get("TOKEN_CAP", "0") or 0)  # 0 = unlimited
+MOCK_EMBED_DIM = 64
+
+
+class TokenCapExceeded(RuntimeError):
+    pass
+
+
+class LLMResult(BaseModel):
+    data: dict
+    tokens: int
+    latency_ms: int
+    model: str
+    cached: bool = False
+
+
+usage = {"tokens": 0}
+_prompt_log: Path | None = None
+_client = None
+
+
+def set_prompt_log(path: str | Path | None) -> None:
+    """Record every prompt sent (used by the judge-isolation test)."""
+    global _prompt_log
+    _prompt_log = Path(path) if path else None
+
+
+def _log_prompt(model: str, system: str, user: str) -> None:
+    if _prompt_log is None:
+        return
+    _prompt_log.parent.mkdir(parents=True, exist_ok=True)
+    with open(_prompt_log, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"model": model, "system": system, "user": user}) + "\n")
+
+
+def _hash(*parts: str) -> str:
+    h = hashlib.sha256()
+    for p in parts:
+        h.update(p.encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()
+
+
+def _charge(tokens: int) -> None:
+    usage["tokens"] += tokens
+    if TOKEN_CAP and usage["tokens"] > TOKEN_CAP:
+        raise TokenCapExceeded(f"token cap {TOKEN_CAP} exceeded ({usage['tokens']})")
+
+
+def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
+              max_tokens: int = 900, mock_context: dict | None = None) -> LLMResult:
+    """One chat call that must return a JSON object.
+
+    `kind` names the caller (propose, refine, talk, study_code, abstract, lesson,
+    judge_a, judge_b) so mock mode can pick a valid canned shape.
+    `mock_context` is structured info only the mock uses (instrument names etc.).
+    """
+    _log_prompt(model, system, user)
+    if MOCK:
+        data = _mock_json(kind, _hash(system, user, str(seed)), mock_context or {})
+        tokens = (len(system) + len(user) + len(json.dumps(data))) // 4
+        _charge(tokens)
+        return LLMResult(data=data, tokens=tokens, latency_ms=0, model=f"mock-{model}")
+
+    key = _hash("chat", model, system, user, str(seed), str(max_tokens))
+    cache_file = CACHE_DIR / "llm" / f"{key}.json"
+    if cache_file.exists():
+        cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        return LLMResult(**cached, cached=True)
+
+    client = _openai()
+    t0 = time.monotonic()
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=max_tokens,
+        seed=seed,
+    )
+    latency_ms = int((time.monotonic() - t0) * 1000)
+    text = resp.choices[0].message.content or "{}"
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        data = {"_raw": text, "_parse_error": True}
+    tokens = resp.usage.total_tokens if resp.usage else 0
+    _charge(tokens)
+    result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text(json.dumps(result.model_dump(exclude={"cached"})), encoding="utf-8")
+    return result
+
+
+def embed(texts: list[str]) -> np.ndarray:
+    """Return unit-norm embeddings, shape (len(texts), dim). Cached per text."""
+    if not texts:
+        return np.zeros((0, MOCK_EMBED_DIM))
+    if MOCK:
+        rows = []
+        for t in texts:
+            h = int(_hash("embed", t)[:8], 16)
+            v = np.random.default_rng(h).normal(size=MOCK_EMBED_DIM)
+            rows.append(v / np.linalg.norm(v))
+        return np.vstack(rows)
+
+    out: list[np.ndarray | None] = [None] * len(texts)
+    missing: list[int] = []
+    for i, t in enumerate(texts):
+        f = CACHE_DIR / "embed" / f"{_hash(EMBED_MODEL, t)}.json"
+        if f.exists():
+            out[i] = np.array(json.loads(f.read_text()))
+        else:
+            missing.append(i)
+    if missing:
+        resp = _openai().embeddings.create(model=EMBED_MODEL, input=[texts[i] for i in missing])
+        _charge(resp.usage.total_tokens if resp.usage else 0)
+        for i, item in zip(missing, resp.data):
+            v = np.array(item.embedding)
+            v = v / (np.linalg.norm(v) or 1.0)
+            out[i] = v
+            f = CACHE_DIR / "embed" / f"{_hash(EMBED_MODEL, texts[i])}.json"
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps(v.tolist()))
+    return np.vstack(out)  # type: ignore[arg-type]
+
+
+def cosine(a: np.ndarray, b: np.ndarray) -> float:
+    na, nb = np.linalg.norm(a), np.linalg.norm(b)
+    if na == 0 or nb == 0:
+        return 0.0
+    return float(np.dot(a, b) / (na * nb))
+
+
+def _openai():
+    global _client
+    if _client is None:
+        from openai import OpenAI
+        _client = OpenAI()  # reads OPENAI_API_KEY (and OPENAI_BASE_URL) from env
+    return _client
+
+
+# ----------------------------------------------------------------- mock data
+_IDEAS = [
+    "Do {noun} behave differently on Mondays? A {method} study of weekday effects",
+    "Measuring the {noun} response to being politely asked to stop",
+    "Does the volume of background humming change {noun} outcomes? A {method} test",
+    "Left-handed {noun}: an unexplained asymmetry revisited with {method}",
+    "The {noun} that waited: latency as a function of observer boredom",
+    "Can {noun} tell the difference between real and fake applause? {method}",
+    "Round numbers in {noun} data: a {method} audit of human rounding habits",
+    "The optimal nap length for {noun} performance, estimated by {method}",
+    "Do {noun} records improve when the lab plays jazz? {method} evidence",
+    "Why {noun} measurements cluster near coffee breaks: a {method} analysis",
+    "Counting the uncountable: {noun} and the illusion of precision via {method}",
+    "A {method} replication of folklore about {noun} and full moons",
+]
+_TALK = [
+    "In my field we would frame that as a sampling problem. What is your unit of analysis?",
+    "That reminds me of an old result on {topic}. The effect flipped sign under replication.",
+    "Have you considered that the measurement itself changes the thing measured?",
+    "I can offer an instrument that reads {topic} if you want an outside check.",
+    "The funny part is also the testable part. Predict the direction before you look.",
+]
+_LESSONS = [
+    "Predict smaller effects; my last predictions were too confident.",
+    "Replication halves disagree when the sample is tiny. Ask for more data first.",
+    "Ideas close to my last five bored me. Next time borrow a method from another lab.",
+    "Crashes came from instrument misuse. Read the instrument list before writing code.",
+]
+
+
+def _pick(seq, h: str, offset: int = 0):
+    return seq[(int(h[offset:offset + 8], 16)) % len(seq)]
+
+
+def _mock_json(kind: str, h: str, ctx: dict) -> dict:
+    noun = ctx.get("noun", "participants")
+    method = ctx.get("method", "regression")
+    n = int(h[:8], 16)
+    if kind in ("propose", "refine"):
+        text = _pick(_IDEAS, h).format(noun=noun, method=method)
+        if kind == "refine":
+            text = "Refined: " + text + f" (variant {n % 7})"
+        return {
+            "title": text[:60],
+            "idea": text,
+            "hypothesis": f"{noun} differ measurably under the manipulated condition.",
+            "method": method,
+            "prediction": {"direction": "+" if n % 2 == 0 else "-",
+                           "effect_size": round(0.1 + (n % 80) / 100, 2)},
+        }
+    if kind == "talk":
+        return {"text": _pick(_TALK, h).format(topic=ctx.get("topic", "measurement error"))}
+    if kind == "study_code":
+        return {"code": _mock_study_code(n, ctx), "requests": _mock_requests(n, ctx)}
+    if kind == "abstract":
+        ok = ctx.get("ok", True)
+        verdict = "The effect replicated." if ok else "The effect did not survive the split-half check."
+        return {"abstract": f"We asked whether {noun} change under a mundane manipulation. "
+                            f"Using {method}, we measured {ctx.get('n', 'a modest number of')} observations. "
+                            f"{verdict} We discuss what this says about {noun} and about us."}
+    if kind == "lesson":
+        return {"lesson": _pick(_LESSONS, h)}
+    if kind in ("judge_a", "judge_b"):
+        base = 3 + (n % 7)
+        return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),
+                "think": max(1, min(10, base + (n >> 12) % 3 - 1)),
+                "targets_group": (n % 23) == 0,
+                "reason": "mock judgement"}
+    return {"text": "mock"}
+
+
+def _mock_requests(n: int, ctx: dict) -> list[dict]:
+    """Statistician (no instruments) asks other labs for measurements."""
+    if ctx.get("instruments"):
+        return []
+    peers = [p for p in ctx.get("peers", []) if p.get("instruments")]
+    if not peers:
+        return []
+    reqs = []
+    for i in range(2):
+        p = peers[(n + i) % len(peers)]
+        inst = p["instruments"][(n // 7 + i) % len(p["instruments"])]
+        reqs.append({"owner": p["agent"], "instrument": inst, "args": {}})
+    return reqs
+
+
+def _mock_study_code(n: int, ctx: dict) -> str:
+    variant = n % 10
+    if ctx.get("instruments"):
+        head = ("from lab_runtime import instruments, instrument, report, report_corr\n"
+                "names = instruments()\n"
+                "x = instrument(names[0])\n"
+                "y = instrument(names[-1]) if len(names) > 1 else instrument(names[0], offset=1)\n")
+    else:
+        head = ("from lab_runtime import measurement, report, report_corr\n"
+                "x = measurement(0)\n"
+                "y = measurement(1)\n")
+    if variant == 9:
+        return head + "raise RuntimeError('mock crash: forgot to load the plate')\n"
+    if variant >= 6:
+        return head + ("m = min(len(x), len(y))\n"
+                       f"report_corr(x[:m], y[:m], direction='{'+' if n % 2 == 0 else '-'}', "
+                       f"effect_size={round(0.1 + (n % 80) / 100, 2)})\n")
+    return head + (f"report(x, y, direction='{'+' if n % 2 == 0 else '-'}', "
+                   f"effect_size={round(0.1 + (n % 80) / 100, 2)})\n")
