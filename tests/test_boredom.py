@@ -8,7 +8,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from boredom import compute_meter, is_disabled
+from boredom import (
+    compute_meter,
+    is_disabled,
+    jaccard_distance,
+    parse_train_diff,
+)
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "boredom.py"
@@ -82,6 +87,32 @@ class ComputeMeterTests(unittest.TestCase):
         self.assertGreaterEqual(meter["B"], 0.85)
         self.assertEqual(meter["regime"], "EXPLOIT")
         self.assertTrue(meter["disabled"])
+
+
+class DiffTokenTests(unittest.TestCase):
+    def test_numeric_value_tweaks_have_identical_shingles(self):
+        first, _ = parse_train_diff(
+            "--- a/train.py\n+++ b/train.py\n"
+            "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.05\n"
+        )
+        second, _ = parse_train_diff(
+            "--- a/train.py\n+++ b/train.py\n"
+            "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.03\n"
+        )
+        different_constant, _ = parse_train_diff(
+            "--- a/train.py\n+++ b/train.py\n"
+            "-WEIGHT_DECAY = 0.04\n+WEIGHT_DECAY = 0.05\n"
+        )
+        self.assertEqual(jaccard_distance(first, second), 0.0)
+        self.assertGreater(jaccard_distance(first, different_constant), 0.0)
+
+    def test_scientific_and_exponent_literals_are_single_numeric_tokens(self):
+        shingles, _ = parse_train_diff(
+            "--- a/train.py\n+++ b/train.py\n"
+            "-LR = 1e-3\n+WIDTH = 2**19\n"
+        )
+        self.assertIn("<num> * *", shingles)
+        self.assertIn("* * <num>", shingles)
 
 
 class CliIntegrationTests(unittest.TestCase):
@@ -163,7 +194,7 @@ class CliIntegrationTests(unittest.TestCase):
                 lines = train_file.read_text(encoding="utf-8").splitlines()
                 lines[block * 4 : block * 4 + 4] = ["VALUE = 1"] * 4
                 train_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                commits.append(commit(f"attempt {block}"))
+                commits.append(commit("experiment"))
 
             results = Path(directory) / "results.tsv"
             log = Path(directory) / "boredom_log.jsonl"

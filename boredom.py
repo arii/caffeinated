@@ -14,7 +14,10 @@ import sys
 
 
 DEFAULT_WEIGHTS = (0.45, 0.45, 0.10)
-TOKEN_RE = re.compile(r"\w+|[^\w\s]")
+_DIGITS = r"\d(?:_?\d)*"
+NUMBER_PATTERN = rf"(?:{_DIGITS}(?:\.(?:{_DIGITS})?)?|\.(?:{_DIGITS}))(?:[eE][+-]?{_DIGITS})?"
+NUMBER_RE = re.compile(NUMBER_PATTERN)
+TOKEN_RE = re.compile(NUMBER_PATTERN + r"|\w+|[^\w\s]")
 WORD_RE = re.compile(r"\w+")
 
 
@@ -138,7 +141,10 @@ def parse_train_diff(diff_text):
 
     tokens = []
     for line in changed_lines:
-        tokens.extend(token.casefold() for token in TOKEN_RE.findall(line))
+        tokens.extend(
+            "<num>" if NUMBER_RE.fullmatch(token) else token.casefold()
+            for token in TOKEN_RE.findall(line)
+        )
     shingles = {
         " ".join(tokens[index : index + 3])
         for index in range(max(0, len(tokens) - 2))
@@ -161,6 +167,20 @@ def commit_representation(commit, description, repo):
 
     shingles, diff_lines = parse_train_diff(result.stdout)
     return shingles | description_tokens(description), diff_lines, True
+
+
+def commit_subject(commit, repo):
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%s", commit],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+    return result.stdout.strip()
 
 
 def read_results(path):
@@ -287,7 +307,10 @@ def run_gate(args):
     metrics = compute_meter(
         rows, zs, k=args.k, eps=args.eps, weights=args.weights, disabled=is_disabled()
     )
-    candidate_z, diff_lines, _ = commit_representation(args.commit, "", args.repo)
+    candidate_description = commit_subject(args.commit, args.repo)
+    candidate_z, diff_lines, _ = commit_representation(
+        args.commit, candidate_description, args.repo
+    )
     recent_distances = [
         jaccard_distance(candidate_z, z) for z in zs[-args.k :]
     ]
