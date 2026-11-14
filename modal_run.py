@@ -101,7 +101,10 @@ def prepare(num_shards: int = 10):
     image=image,
     gpu=GPU,
     timeout=15 * 60,
-    volumes={"/root/.cache/huggingface": HF_CACHE_VOLUME},
+    volumes={
+        "/root/.cache/autoresearch": CACHE_VOLUME,
+        "/root/.cache/huggingface": HF_CACHE_VOLUME,
+    },
 )
 def train(train_src: str, label: str) -> dict:
     WORK_DIR.mkdir(parents=True, exist_ok=True)

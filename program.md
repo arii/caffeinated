@@ -20,7 +20,7 @@ Once you get confirmation, kick off the experimentation.
 
 ## Experimentation
 
-Each experiment runs on a single GPU. The training script runs for a **fixed time budget of 5 minutes** (wall clock training time, excluding startup/compilation). You launch it on a remote H100 via Modal: `modal run modal_run.py` (this ships your working-tree `train.py` to the GPU and streams the log back).
+Each experiment runs on a single GPU. The training script runs for a **fixed time budget of 5 minutes** (wall clock training time, excluding startup/compilation). You launch it on a remote H100 via Modal: `modal run modal_run.py` (this ships your working-tree `train.py` to the GPU and streams the log back). Put the Modal client on your PATH first: `export PATH=~/.venvs/modal/bin:$PATH`.
 
 **What you CAN do:**
 - Modify `train.py` — this is the only file you edit. Everything is fair game: model architecture, optimizer, hyperparameters, training loop, batch size, model size, etc.
