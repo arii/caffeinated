@@ -118,15 +118,17 @@ git commit -m "[SNAP] <research-grounded change>" -m "Source: S<k>"
 
 Use a `[BREAKOUT]` subject in PARADIGM_BREAKOUT. The cited `S<k>` must be an id printed by the search and present in `research_log.jsonl`; the novelty gate rejects ungrounded SNAP/BREAKOUT candidates. In `notes.md`, add one line per grounded candidate mapping its source to the change. Research is optional in EXPLOIT. At completion, copy `research_log.jsonl` into `experiments/<arm>/` alongside the arm results.
 
+If `PRIOR_ART=required`, run `python3 research.py prior-art "<candidate idea>"` and add a `Prior-art: S<k>` trailer for a returned source, or `Prior-art: none-found Q<k>` if the search finds none. The gate checks these IDs against the research log.
+
 ## Memory
 
-Durable memory through past.dev is optional and requires `PAST_API_KEY`; if it is absent, skip memory commands silently. Before committing a candidate, run `python3 memory.py recall "<one-line description of the idea>"`. If memory shows the idea was already discarded or crashed in this or another session/arm, choose something else or note in `notes.md` why this variant differs. After logging each result to `results.tsv`, run:
+Memory defaults to local storage when `PAST_API_KEY` is absent and past.dev when it is present; `--backend` can select `none`, `local`, or `pastdev`. Before committing a candidate, run `python3 memory.py recall "<one-line description of the idea>"`. If memory shows the idea was already discarded or crashed in this or another session/arm, choose something else or note in `notes.md` why this variant differs. After logging each result to `results.tsv`, run:
 
 ```bash
 python3 memory.py remember --commit <short> --val-bpb <v> --memory-gb <m> --status <status> --description "<description>"
 ```
 
-At completion, copy `memory_log.jsonl` into `experiments/<arm>/`.
+At completion, copy `memory.jsonl` and `memory_log.jsonl` into `experiments/<arm>/`.
 
 ## The experiment loop
 

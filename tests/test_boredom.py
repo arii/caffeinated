@@ -127,6 +127,7 @@ class CliIntegrationTests(unittest.TestCase):
         environment = os.environ.copy()
         environment.pop("BOREDOM", None)
         environment.pop("GROUNDING", None)
+        environment.pop("PRIOR_ART", None)
         if env:
             environment.update(env)
         return subprocess.run(
@@ -405,6 +406,172 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertEqual(valid_record["sources"], ["S1", "S2"])
             self.assertTrue(valid_record["grounded"])
             self.assertTrue(gate_records[-1]["disabled"])
+
+    def test_gate_prior_art_and_persona_trailers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory) / "repo"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            train_file = repo / "train.py"
+
+            def commit(message, value):
+                train_file.write_text(
+                    "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
+                )
+                subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+                subprocess.run(
+                    [
+                        "git",
+                        "-c",
+                        "user.name=Test",
+                        "-c",
+                        "user.email=test@example.com",
+                        "commit",
+                        "-m",
+                        message,
+                    ],
+                    cwd=repo,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                return subprocess.check_output(
+                    ["git", "rev-parse", "--short", "HEAD"], cwd=repo, text=True
+                ).strip()
+
+            train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n")
+            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Test",
+                    "-c",
+                    "user.email=test@example.com",
+                    "commit",
+                    "-m",
+                    "initial",
+                ],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            history = [commit("history", value) for value in range(1, 7)]
+            missing = commit("[BREAKOUT] missing prior art\n\nSource: S1", 7)
+            unknown = commit(
+                "[BREAKOUT] unknown prior art\n\nSource: S1\nPrior-art: S9", 8
+            )
+            valid_source = commit(
+                "[BREAKOUT] cited source\n\nSource: S1\nPrior-art: S1\n"
+                "Lead: lead-1\nAgent: worker-1",
+                9,
+            )
+            valid_query = commit(
+                "[BREAKOUT] no prior art found\n\nSource: S1\n"
+                "Prior-art: none-found Q1",
+                10,
+            )
+            unknown_query = commit(
+                "[BREAKOUT] unknown query\n\nSource: S1\n"
+                "Prior-art: none-found Q9",
+                11,
+            )
+
+            results = Path(directory) / "results.tsv"
+            self.write_results(
+                results,
+                [
+                    (sha, "1.000000", "1.0", "keep", "history")
+                    for sha in history
+                ],
+            )
+            research_log = Path(directory) / "research_log.jsonl"
+            research_log.write_text(
+                '{"type":"source","id":"S1","title":"known"}\n'
+                '{"type":"query","id":"Q1","purpose":"prior-art"}\n',
+                encoding="utf-8",
+            )
+            gate_log = Path(directory) / "boredom_log.jsonl"
+
+            def gate(commit_id, prior_art=None):
+                environment = {"PRIOR_ART": "required"} if prior_art else None
+                return self.run_cli(
+                    repo,
+                    results,
+                    gate_log,
+                    "gate",
+                    "--commit",
+                    commit_id,
+                    "--research-log",
+                    str(research_log),
+                    "--min-lines",
+                    "0",
+                    "--delta-min",
+                    "0",
+                    "--failed-delta",
+                    "0",
+                    env=environment,
+                )
+
+            missing_result = gate(missing, prior_art=True)
+            self.assertEqual(missing_result.returncode, 1, missing_result.stdout)
+            self.assertIn("no-prior-art: missing Prior-art trailer", missing_result.stdout)
+
+            unknown_result = gate(unknown, prior_art=True)
+            self.assertEqual(unknown_result.returncode, 1, unknown_result.stdout)
+            self.assertIn("no-prior-art: unknown id S9", unknown_result.stdout)
+
+            source_result = gate(valid_source, prior_art=True)
+            self.assertEqual(source_result.returncode, 0, source_result.stdout)
+
+            query_result = gate(valid_query, prior_art=True)
+            self.assertEqual(query_result.returncode, 0, query_result.stdout)
+
+            unknown_query_result = gate(unknown_query, prior_art=True)
+            self.assertEqual(unknown_query_result.returncode, 1, unknown_query_result.stdout)
+            self.assertIn("no-prior-art: unknown id Q9", unknown_query_result.stdout)
+
+            legacy_result = gate(missing)
+            self.assertEqual(legacy_result.returncode, 0, legacy_result.stdout)
+
+            disabled_result = self.run_cli(
+                repo,
+                results,
+                gate_log,
+                "gate",
+                "--commit",
+                missing,
+                "--research-log",
+                str(research_log),
+                "--min-lines",
+                "0",
+                "--delta-min",
+                "0",
+                "--failed-delta",
+                "0",
+                env={"PRIOR_ART": "required", "BOREDOM": "off"},
+            )
+            self.assertEqual(disabled_result.returncode, 0, disabled_result.stdout)
+
+            records = [
+                json.loads(line)
+                for line in gate_log.read_text(encoding="utf-8").splitlines()
+            ]
+            source_record = next(
+                record
+                for record in records
+                if record.get("candidate_commit") == valid_source
+            )
+            query_record = next(
+                record
+                for record in records
+                if record.get("candidate_commit") == valid_query
+            )
+            self.assertEqual(source_record["prior_art"], ["S1"])
+            self.assertEqual(source_record["lead"], "lead-1")
+            self.assertEqual(source_record["agent"], "worker-1")
+            self.assertEqual(query_record["prior_art"], ["Q1"])
 
 
 class ControlReplayTests(unittest.TestCase):

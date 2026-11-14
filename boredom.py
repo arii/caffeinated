@@ -223,6 +223,42 @@ def source_trailers(message):
     return sources, has_trailer
 
 
+def message_trailer(message, name):
+    matches = []
+    for line in message.splitlines():
+        match = re.fullmatch(rf"\s*{re.escape(name)}:\s*(.*?)\s*", line)
+        if match:
+            matches.append(match.group(1))
+    return matches[-1] if matches else None
+
+
+def prior_art_trailers(message):
+    values = []
+    for line in message.splitlines():
+        match = re.fullmatch(r"\s*Prior-art:\s*(.*?)\s*", line)
+        if match:
+            values.append(match.group(1))
+
+    ids = []
+    invalid = []
+    query_ids = []
+    for value in values:
+        none_found = re.fullmatch(r"none-found\s+(Q\d+)", value)
+        if none_found:
+            query_ids.append(none_found.group(1))
+            if none_found.group(1) not in ids:
+                ids.append(none_found.group(1))
+            continue
+        for item in value.split(","):
+            item = item.strip()
+            if re.fullmatch(r"S\d+", item):
+                if item not in ids:
+                    ids.append(item)
+            else:
+                invalid.append(item)
+    return ids, bool(values), invalid, query_ids
+
+
 def read_research_sources(path):
     path = Path(path)
     if not path.exists():
@@ -241,6 +277,27 @@ def read_research_sources(path):
             if record.get("type") == "source" and record.get("id"):
                 sources.add(str(record["id"]))
     return sources
+
+
+def read_research_ids(path):
+    path = Path(path)
+    if not path.exists():
+        return {"source": set(), "query": set()}
+    ids = {"source": set(), "query": set()}
+    with path.open(encoding="utf-8") as log_file:
+        for line_number, line in enumerate(log_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"invalid JSON in {path}, line {line_number}"
+                ) from error
+            record_type = record.get("type")
+            if record_type in ids and record.get("id"):
+                ids[record_type].add(str(record["id"]))
+    return ids
 
 
 def read_results(path):
@@ -371,6 +428,18 @@ def run_gate(args):
     candidate_message = commit_message(args.commit, args.repo)
     cited_sources, has_source_trailer = source_trailers(candidate_message)
     known_sources = read_research_sources(args.research_log)
+    prior_art, has_prior_art, invalid_prior_art, none_found_queries = (
+        prior_art_trailers(candidate_message)
+    )
+    prior_art_enabled = (
+        os.environ.get("PRIOR_ART", "").casefold() == "required"
+        and not metrics["disabled"]
+    )
+    research_ids = (
+        read_research_ids(args.research_log)
+        if prior_art_enabled
+        else {"source": set(), "query": set()}
+    )
     valid_sources = [source_id for source_id in cited_sources if source_id in known_sources]
     unknown_sources = [
         source_id for source_id in cited_sources if source_id not in known_sources
@@ -420,6 +489,32 @@ def run_gate(args):
             )
         else:
             reasons.append("ungrounded: no valid source id in Source trailer")
+    if prior_art_enabled:
+        if not has_prior_art:
+            reasons.append("no-prior-art: missing Prior-art trailer")
+        elif invalid_prior_art:
+            reasons.append(
+                "no-prior-art: invalid id " + ", ".join(invalid_prior_art)
+            )
+        elif not prior_art:
+            reasons.append("no-prior-art: empty Prior-art trailer")
+        else:
+            unknown_prior_art = [
+                item
+                for item in prior_art
+                if (
+                    item in none_found_queries
+                    and item not in research_ids["query"]
+                )
+                or (
+                    item not in none_found_queries
+                    and item not in research_ids["source"]
+                )
+            ]
+            if unknown_prior_art:
+                reasons.append(
+                    "no-prior-art: unknown id " + ", ".join(unknown_prior_art)
+                )
     passed = not reasons
     record = {
         "type": "gate",
@@ -434,6 +529,9 @@ def run_gate(args):
         "min_failed_dist": min_failed,
         "sources": valid_sources,
         "grounded": grounded,
+        "prior_art": prior_art,
+        "lead": message_trailer(candidate_message, "Lead"),
+        "agent": message_trailer(candidate_message, "Agent"),
         "reasons": reasons,
         "min_lines": args.min_lines,
         "delta_min": args.delta_min,

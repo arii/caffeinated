@@ -6,6 +6,7 @@ import csv
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -24,6 +25,7 @@ DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
 RESULT_COLUMNS = {"commit", "val_bpb", "memory_gb", "status", "description"}
+MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
 
 
 def utc_now():
@@ -72,8 +74,102 @@ def parse_float(value):
 
 def safe_text(value):
     text = str(value)
-    api_key = os.environ.get("PAST_API_KEY")
-    return text.replace(api_key, "[REDACTED]") if api_key else text
+    secrets = sorted(
+        (
+            secret
+            for name, secret in os.environ.items()
+            if name.startswith("PAST_API_KEY") and secret
+        ),
+        key=len,
+        reverse=True,
+    )
+    for secret in secrets:
+        text = text.replace(secret, "[REDACTED]")
+    return text
+
+
+def api_key_for_arm(arm=None):
+    arm = arm or os.environ.get("AUTORESEARCH_ARM")
+    if arm:
+        key = os.environ.get(f"PAST_API_KEY_{arm.upper()}")
+        if key:
+            return key
+    return os.environ.get("PAST_API_KEY")
+
+
+def selected_backend(backend=None, arm=None):
+    backend = backend or os.environ.get("MEMORY_BACKEND")
+    if backend is None:
+        backend = "pastdev" if api_key_for_arm(arm) else "local"
+    backend = backend.casefold()
+    if backend not in {"none", "local", "pastdev"}:
+        raise ValueError("memory backend must be none, local, or pastdev")
+    return backend
+
+
+def selected_mirror(mirror=None):
+    return Path(mirror or os.environ.get("MEMORY_MIRROR", "memory.jsonl"))
+
+
+def selected_log(log=None):
+    return Path(log or os.environ.get("MEMORY_LOG", "memory_log.jsonl"))
+
+
+def append_jsonl(path, record):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as log_file:
+        log_file.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def memory_payload(mem_type, memory_id, content, author, metadata, timestamp):
+    if mem_type not in MEMORY_TYPES:
+        raise ValueError(f"memory type must be one of {', '.join(sorted(MEMORY_TYPES))}")
+    if not memory_id or "/" in memory_id:
+        raise ValueError("memory id must be non-empty and must not contain '/'")
+    if not isinstance(metadata, dict):
+        raise ValueError("metadata must be a JSON object")
+    enriched_metadata = {**metadata, "type": mem_type, "author": author}
+    return {
+        "id": memory_id,
+        "content": content,
+        "label": f"{mem_type} by {author}",
+        "timestamp": timestamp,
+        "metadata": enriched_metadata,
+        "identity": author,
+    }
+
+
+def append_mirror(mirror, payload, source_id):
+    append_jsonl(
+        mirror,
+        {
+            "id": payload["id"],
+            "sourceId": source_id or payload["id"],
+            "content": payload["content"],
+            "label": payload["label"],
+            "timestamp": payload["timestamp"],
+            "author": payload["identity"],
+            "metadata": payload["metadata"],
+        },
+    )
+
+
+def append_write_log(log, memory_id, mem_type, author, backend, latency_ms,
+                     completed_ms):
+    append_jsonl(
+        log,
+        {
+            "type": "write",
+            "ts": utc_now(),
+            "agent": author,
+            "backend": backend,
+            "id": memory_id,
+            "mem_type": mem_type,
+            "latency_ms": latency_ms,
+            "completed_ms": completed_ms,
+        },
+    )
 
 
 def regime_for(description):
@@ -154,8 +250,8 @@ def run_data_point(arm, row, repo, research_log):
     }
 
 
-def api_request(method, path, payload=None):
-    api_key = os.environ.get("PAST_API_KEY")
+def api_request(method, path, payload=None, api_key=None):
+    api_key = api_key or api_key_for_arm()
     if not api_key:
         raise RuntimeError("PAST_API_KEY is required")
     base_url = os.environ.get("PAST_BASE_URL", "https://api.past.dev").rstrip("/")
@@ -195,7 +291,7 @@ def api_request(method, path, payload=None):
     return result
 
 
-def wait_for_ingestion(response, wait):
+def wait_for_ingestion(response, wait, api_key=None, started_at=None):
     status = response.get("status")
     if status == "failed":
         raise RuntimeError(f"ingestion failed: {safe_text(response.get('failure'))}")
@@ -204,7 +300,7 @@ def wait_for_ingestion(response, wait):
             f"unexpected past.dev ingestion response: {safe_text(json.dumps(response))}"
         )
     if status == "completed":
-        return
+        return 0
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
         raise RuntimeError(
@@ -212,7 +308,7 @@ def wait_for_ingestion(response, wait):
             f"{safe_text(json.dumps(response))}"
         )
     if not wait:
-        return
+        return None
     try:
         interval = float(os.environ.get("PAST_POLL_SECONDS", "2"))
     except ValueError as error:
@@ -220,6 +316,7 @@ def wait_for_ingestion(response, wait):
     if interval < 0:
         raise RuntimeError("PAST_POLL_SECONDS must be a non-negative number")
 
+    started_at = started_at or time.monotonic()
     deadline = time.monotonic() + 180
     while True:
         remaining = deadline - time.monotonic()
@@ -227,11 +324,11 @@ def wait_for_ingestion(response, wait):
             raise RuntimeError(f"timed out waiting for ingestion {ingestion_id}")
         time.sleep(min(interval, remaining))
         result = api_request(
-            "GET", f"/ingest/{quote(str(ingestion_id), safe='')}"
+            "GET", f"/ingest/{quote(str(ingestion_id), safe='')}", api_key=api_key
         )
         status = result.get("status")
         if status == "completed":
-            return
+            return int((time.monotonic() - started_at) * 1000)
         if status == "failed":
             failure = result.get("failure")
             raise RuntimeError(f"ingestion failed: {safe_text(failure)}")
@@ -242,7 +339,55 @@ def wait_for_ingestion(response, wait):
             )
 
 
+def write(type, id, content, author, metadata, timestamp=None, wait=False,
+          *, backend=None, mirror=None, log=None, arm=None):
+    mem_type = type
+    memory_id = id
+    backend = selected_backend(backend, arm)
+    mirror_path = selected_mirror(mirror)
+    log_path = selected_log(log)
+    when = timestamp or utc_now()
+    payload = memory_payload(
+        mem_type, memory_id, content, author, metadata, when
+    )
+    ingestion_id = None
+    completed_ms = None
+    if backend == "none":
+        source_id = None
+        latency_ms = 0
+        completed_ms = 0
+    elif backend == "local":
+        source_id = memory_id
+        latency_ms = 0
+        completed_ms = 0
+        append_mirror(mirror_path, payload, source_id)
+    else:
+        api_key = api_key_for_arm(arm)
+        if not api_key:
+            raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+        started_at = time.monotonic()
+        response = api_request("POST", "/ingest", payload, api_key=api_key)
+        latency_ms = int((time.monotonic() - started_at) * 1000)
+        completed_ms = wait_for_ingestion(
+            response, wait, api_key=api_key, started_at=started_at
+        )
+        source_id = response.get("sourceId") or memory_id
+        ingestion_id = response.get("ingestionId")
+        append_mirror(mirror_path, payload, source_id)
+
+    append_write_log(
+        log_path, memory_id, mem_type, author, backend, latency_ms, completed_ms
+    )
+    return {
+        "sourceId": source_id,
+        "ingestionId": ingestion_id,
+        "latency_ms": latency_ms,
+        "completed_ms": completed_ms,
+    }
+
+
 def remember(args):
+    arm = args.arm or os.environ.get("AUTORESEARCH_ARM") or "boredom"
     row = {
         "commit": args.commit,
         "val_bpb": args.val_bpb,
@@ -250,9 +395,20 @@ def remember(args):
         "status": args.status,
         "description": args.description,
     }
-    item = run_data_point(args.arm, row, args.repo, args.research_log)
-    response = api_request("POST", "/ingest", item)
-    wait_for_ingestion(response, args.wait)
+    item = run_data_point(arm, row, args.repo, args.research_log)
+    write(
+        "result",
+        item["id"],
+        item["content"],
+        DATA_IDENTITY,
+        item["metadata"],
+        timestamp=item["timestamp"],
+        wait=args.wait,
+        backend=args.backend,
+        mirror=args.mirror,
+        log=args.log,
+        arm=arm,
+    )
     print(f"remembered {item['id']} ({args.status})")
     return 0
 
@@ -280,19 +436,79 @@ def sync(args):
         print(f"synced 0 runs for {args.arm} (ingestion none)")
         return 0
 
-    serialized_items = json.dumps(items, sort_keys=True, separators=(",", ":"))
+    backend = selected_backend(args.backend, args.arm)
+    typed_items = [
+        memory_payload(
+            "result",
+            item["id"],
+            item["content"],
+            DATA_IDENTITY,
+            item["metadata"],
+            item["timestamp"],
+        )
+        for item in items
+    ]
+    if backend != "pastdev":
+        for item in typed_items:
+            write(
+                "result",
+                item["id"],
+                item["content"],
+                DATA_IDENTITY,
+                item["metadata"],
+                timestamp=item["timestamp"],
+                backend=backend,
+                mirror=args.mirror,
+                log=args.log,
+                arm=args.arm,
+            )
+        print(f"synced {len(items)} runs for {args.arm} (ingestion {backend})")
+        return 0
+
+    api_key = api_key_for_arm(args.arm)
+    if not api_key:
+        raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+    serialized_items = json.dumps(typed_items, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(serialized_items.encode("utf-8")).hexdigest()[:16]
     idempotency_key = f"sync:{args.arm}:{digest}"
+    started_at = time.monotonic()
     response = api_request(
         "POST",
         "/ingest/batch",
-        {"idempotencyKey": idempotency_key, "items": items},
+        {"idempotencyKey": idempotency_key, "items": typed_items},
+        api_key=api_key,
     )
-    wait_for_ingestion(response, args.wait)
+    latency_ms = int((time.monotonic() - started_at) * 1000)
+    completed_ms = wait_for_ingestion(
+        response, args.wait, api_key=api_key, started_at=started_at
+    )
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
         raise RuntimeError(
             f"unexpected past.dev batch response: {safe_text(json.dumps(response))}"
+        )
+    response_items = response.get("items") or []
+    ordinals = [
+        response_item.get("ordinal")
+        for response_item in response_items
+        if isinstance(response_item.get("ordinal"), int)
+    ]
+    ordinal_base = 0 if 0 in ordinals else 1
+    for ordinal, item in enumerate(typed_items):
+        source_id = item["id"]
+        for response_item in response_items:
+            if response_item.get("ordinal") == ordinal + ordinal_base:
+                source_id = response_item.get("sourceId") or source_id
+                break
+        append_mirror(selected_mirror(args.mirror), item, source_id)
+        append_write_log(
+            selected_log(args.log),
+            item["id"],
+            "result",
+            DATA_IDENTITY,
+            backend,
+            latency_ms,
+            completed_ms,
         )
     print(f"synced {len(items)} runs for {args.arm} (ingestion {ingestion_id})")
     return 0
@@ -316,54 +532,285 @@ def pending_count(value):
     return 1 if value else 0
 
 
-def recall(args):
-    response = api_request(
-        "POST",
-        "/recall",
-        {"query": args.query, "identity": RECALL_IDENTITY, "limit": args.limit},
+def read_mirror(mirror):
+    path = Path(mirror)
+    if not path.exists():
+        return []
+    records = []
+    with path.open(encoding="utf-8") as mirror_file:
+        for line_number, line in enumerate(mirror_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"invalid JSON in {path}, line {line_number}"
+                ) from error
+    return records
+
+
+def mirror_source_index(mirror):
+    indexed = {}
+    for record in read_mirror(mirror):
+        source_id = record.get("sourceId") or record.get("id")
+        if source_id:
+            indexed[str(source_id)] = record
+    return indexed
+
+
+def source_author_type(source, mirror_index):
+    source_id = str(source.get("sourceId") or "")
+    metadata = source.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+    mirror_record = mirror_index.get(source_id, {})
+    mirror_metadata = mirror_record.get("metadata")
+    if not isinstance(mirror_metadata, dict):
+        mirror_metadata = {}
+    author = (
+        source.get("author")
+        or metadata.get("author")
+        or mirror_record.get("author")
+        or mirror_metadata.get("author")
     )
-    results = response.get("results")
-    if not isinstance(results, list):
+    mem_type = (
+        metadata.get("type")
+        or mirror_metadata.get("type")
+        or source.get("type")
+        or mirror_record.get("type")
+    )
+    return author, mem_type
+
+
+def word_tokens(value):
+    return set(re.findall(r"\w+", str(value or "").casefold()))
+
+
+def timestamp_value(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def is_before_query_timestamp(value, query_timestamp):
+    if query_timestamp is None:
+        return True
+    occurred_at = timestamp_value(value)
+    return occurred_at is None or occurred_at <= query_timestamp
+
+
+def local_recall_results(query, limit, query_timestamp, mirror):
+    query_words = word_tokens(query)
+    records = [
+        record
+        for record in read_mirror(mirror)
+        if is_before_query_timestamp(
+            record.get("timestamp") or record.get("occurred_at"), query_timestamp
+        )
+    ]
+    documents = [word_tokens(record.get("content")) for record in records]
+    document_frequency = {
+        word: sum(word in document for document in documents)
+        for word in query_words
+    }
+    inverse_frequency = {
+        word: math.log((len(records) + 1) / (frequency + 1)) + 1
+        for word, frequency in document_frequency.items()
+    }
+    scored = []
+    for index, (record, document) in enumerate(zip(records, documents)):
+        score = sum(
+            inverse_frequency[word]
+            for word in query_words
+            if word in document
+        )
+        if score <= 0:
+            continue
+        metadata = record.get("metadata") or {}
+        source_id = record.get("sourceId") or record.get("id")
+        scored.append(
+            (
+                score,
+                str(record.get("timestamp") or ""),
+                index,
+                {
+                    "content": record.get("content", ""),
+                    "kind": metadata.get("type") or record.get("type") or "unknown",
+                    "occurred_at": record.get("timestamp") or "",
+                    "sources": [
+                        {
+                            "sourceId": source_id,
+                            "label": record.get("label", ""),
+                            "author": record.get("author")
+                            or metadata.get("author"),
+                            "type": metadata.get("type") or record.get("type"),
+                        }
+                    ],
+                },
+            )
+        )
+    scored.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+    results = []
+    for rank, (_, _, _, result) in enumerate(scored[:limit], start=1):
+        results.append({"rank": rank, **result})
+    used_tokens = sum(len(word_tokens(result["content"])) for result in results)
+    return results, used_tokens
+
+
+def normalize_pastdev_results(response, mirror):
+    raw_results = response.get("results")
+    if not isinstance(raw_results, list):
         raise RuntimeError(
             "unexpected past.dev recall response: "
             f"{safe_text(json.dumps(response))}"
         )
+    mirror_index = mirror_source_index(mirror)
+    results = []
+    for index, result in enumerate(raw_results, start=1):
+        artifact = result.get("artifact") or {}
+        sources = []
+        for source in result.get("sources") or []:
+            author, mem_type = source_author_type(source, mirror_index)
+            sources.append(
+                {
+                    "sourceId": source.get("sourceId", ""),
+                    "label": source.get("label", ""),
+                    "author": author,
+                    "type": mem_type,
+                }
+            )
+        results.append(
+            {
+                "rank": result.get("rank", index),
+                "content": result.get("content") or "",
+                "kind": artifact.get("kind", "unknown"),
+                "occurred_at": result.get("occurredAt") or "",
+                "sources": sources,
+            }
+        )
+    return results
 
+
+def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
+            mirror=None, log=None, arm=None):
+    backend = selected_backend(backend, arm)
+    mirror_path = selected_mirror(mirror)
+    log_path = selected_log(log)
+    cutoff = timestamp_value(query_timestamp)
+    started_at = time.monotonic()
+    pending = 0
+    raw_response = None
+    if backend == "none":
+        results = []
+        used_tokens = 0
+    elif backend == "local":
+        results, used_tokens = local_recall_results(
+            query, limit, cutoff, mirror_path
+        )
+    else:
+        api_key = api_key_for_arm(arm)
+        if not api_key:
+            raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+        response = api_request(
+            "POST",
+            "/recall",
+            {"query": query, "identity": agent, "limit": limit},
+            api_key=api_key,
+        )
+        raw_response = response
+        results = normalize_pastdev_results(response, mirror_path)
+        if cutoff is not None:
+            results = [
+                result
+                for result in results
+                if is_before_query_timestamp(result.get("occurred_at"), cutoff)
+            ]
+        used_tokens = response.get("usedEvidenceTokens", 0)
+        pending = pending_count(response.get("pending"))
+
+    latency_ms = int((time.monotonic() - started_at) * 1000)
     source_ids = []
+    authors = []
     for result in results:
         for source in result.get("sources") or []:
             source_id = source.get("sourceId")
+            author = source.get("author")
             if source_id and source_id not in source_ids:
                 source_ids.append(source_id)
+            if author and author not in authors:
+                authors.append(author)
     append_recall_log(
-        args.log,
+        log_path,
         {
             "type": "recall",
             "ts": utc_now(),
-            "query": args.query,
+            "agent": agent,
+            "backend": backend,
+            "query": query,
+            "latency_ms": latency_ms,
+            "used_evidence_tokens": used_tokens,
             "n_results": len(results),
             "source_ids": source_ids,
+            "authors": authors,
+            "pending": pending,
         },
     )
+    recall_result = {
+        "results": results,
+        "latency_ms": latency_ms,
+        "used_evidence_tokens": used_tokens,
+        "pending": pending,
+    }
+    if raw_response is not None:
+        recall_result["_raw_response"] = raw_response
+    return recall_result
 
-    if "pending" in response:
+
+def recall(query, agent, limit=8, query_timestamp=None):
+    result = _recall(query, agent, limit, query_timestamp)
+    result.pop("_raw_response", None)
+    return result
+
+
+def recall_command(args):
+    result = _recall(
+        args.query,
+        args.agent or os.environ.get("AUTORESEARCH_AGENT") or RECALL_IDENTITY,
+        args.limit,
+        args.query_timestamp,
+        backend=args.backend,
+        mirror=args.mirror,
+        log=args.log,
+        arm=args.arm,
+    )
+    raw_response = result.pop("_raw_response", None)
+    if result["pending"]:
         print(
-            f"note: {pending_count(response['pending'])} ingestions still processing",
+            f"note: {result['pending']} ingestions still processing",
             file=sys.stderr,
         )
     if args.json:
-        print(json.dumps(response, ensure_ascii=False))
-    elif not results:
+        print(
+            json.dumps(
+                raw_response if raw_response is not None else result,
+                ensure_ascii=False,
+            )
+        )
+    elif not result["results"]:
         print("No memories found.")
     else:
-        for index, result in enumerate(results, start=1):
-            rank = result.get("rank", index)
-            occurred_at = str(result.get("occurredAt") or "")[:10]
-            artifact = result.get("artifact") or {}
-            kind = artifact.get("kind", "unknown")
-            content = str(result.get("content") or "")[:300]
-            print(f"#{rank} {occurred_at} [{kind}] {content}")
-            for source in result.get("sources") or []:
+        for item in result["results"]:
+            occurred_at = str(item.get("occurred_at") or "")[:10]
+            content = str(item.get("content") or "")[:300]
+            print(f"#{item['rank']} {occurred_at} [{item['kind']}] {content}")
+            for source in item.get("sources") or []:
                 print(
                     f"   from: {source.get('sourceId', '')} — "
                     f"{source.get('label', '')}"
@@ -371,9 +818,51 @@ def recall(args):
     return 0
 
 
+def write_command(args):
+    try:
+        metadata = json.loads(args.metadata)
+    except json.JSONDecodeError as error:
+        raise ValueError("--metadata must be a JSON object") from error
+    if not isinstance(metadata, dict):
+        raise ValueError("--metadata must be a JSON object")
+    write(
+        args.type,
+        args.id,
+        args.content,
+        args.author,
+        metadata,
+        timestamp=args.timestamp,
+        wait=args.wait,
+        backend=args.backend,
+        mirror=args.mirror,
+        log=args.log,
+        arm=args.arm,
+    )
+    print(f"wrote {args.id} ({args.type})")
+    return 0
+
+
+def add_backend_options(parser):
+    parser.add_argument("--backend", choices=("none", "local", "pastdev"))
+    parser.add_argument("--mirror")
+    parser.add_argument("--log")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    write_parser = subparsers.add_parser("write")
+    write_parser.add_argument("--type", required=True, choices=sorted(MEMORY_TYPES))
+    write_parser.add_argument("--id", required=True)
+    write_parser.add_argument("--content", required=True)
+    write_parser.add_argument("--author", required=True)
+    write_parser.add_argument("--metadata", default="{}")
+    write_parser.add_argument("--timestamp")
+    write_parser.add_argument("--wait", action="store_true")
+    write_parser.add_argument("--arm")
+    add_backend_options(write_parser)
+    write_parser.set_defaults(func=write_command)
 
     remember_parser = subparsers.add_parser("remember")
     remember_parser.add_argument("--commit", required=True)
@@ -381,10 +870,11 @@ def build_parser():
     remember_parser.add_argument("--status", required=True)
     remember_parser.add_argument("--description", required=True)
     remember_parser.add_argument("--memory-gb", type=float)
-    remember_parser.add_argument("--arm", default="boredom")
+    remember_parser.add_argument("--arm")
     remember_parser.add_argument("--repo", default=".")
     remember_parser.add_argument("--research-log", default="research_log.jsonl")
     remember_parser.add_argument("--wait", action="store_true")
+    add_backend_options(remember_parser)
     remember_parser.set_defaults(func=remember)
 
     sync_parser = subparsers.add_parser("sync")
@@ -393,14 +883,18 @@ def build_parser():
     sync_parser.add_argument("--repo", default=".")
     sync_parser.add_argument("--research-log", default="research_log.jsonl")
     sync_parser.add_argument("--wait", action="store_true")
+    add_backend_options(sync_parser)
     sync_parser.set_defaults(func=sync)
 
     recall_parser = subparsers.add_parser("recall")
     recall_parser.add_argument("query")
     recall_parser.add_argument("--limit", type=int, default=8)
     recall_parser.add_argument("--json", action="store_true")
-    recall_parser.add_argument("--log", default="memory_log.jsonl")
-    recall_parser.set_defaults(func=recall)
+    recall_parser.add_argument("--agent")
+    recall_parser.add_argument("--arm")
+    recall_parser.add_argument("--query-timestamp")
+    add_backend_options(recall_parser)
+    recall_parser.set_defaults(func=recall_command)
     return parser
 
 
@@ -410,8 +904,6 @@ def main(argv=None):
     if args.command == "recall" and args.limit < 1:
         parser.error("--limit must be at least 1")
     try:
-        if not os.environ.get("PAST_API_KEY"):
-            raise RuntimeError("PAST_API_KEY is required")
         return args.func(args)
     except (OSError, ValueError, RuntimeError) as error:
         print(f"memory.py: {error}", file=sys.stderr)

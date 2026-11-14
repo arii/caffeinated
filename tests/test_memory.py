@@ -8,6 +8,9 @@ import tempfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
 import unittest
+from unittest.mock import patch
+
+import memory
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +87,16 @@ class MemoryCliTests(unittest.TestCase):
 
     def run_cli(self, server, *args, env=None):
         environment = os.environ.copy()
+        for name in tuple(environment):
+            if name.startswith("PAST_API_KEY"):
+                environment.pop(name)
+        for name in (
+            "MEMORY_BACKEND",
+            "MEMORY_MIRROR",
+            "MEMORY_LOG",
+            "AUTORESEARCH_ARM",
+        ):
+            environment.pop(name, None)
         environment["PAST_API_KEY"] = TEST_API_KEY
         environment["PAST_BASE_URL"] = f"http://127.0.0.1:{server.server_port}"
         if env:
@@ -175,6 +188,10 @@ class MemoryCliTests(unittest.TestCase):
                 str(repo),
                 "--research-log",
                 str(research_log),
+                "--mirror",
+                str(Path(directory) / "memory.jsonl"),
+                "--log",
+                str(Path(directory) / "memory_log.jsonl"),
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(
@@ -192,6 +209,8 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(body["metadata"]["status"], "keep")
             self.assertEqual(body["metadata"]["regime"], "BOREDOM_SNAP")
             self.assertEqual(body["metadata"]["sources"], ["S1"])
+            self.assertEqual(body["metadata"]["type"], "result")
+            self.assertEqual(body["metadata"]["author"], "autoresearch-agent")
             self.assertIn("Outcome: keep (val_bpb 0.98", body["content"])
             self.assertIn(
                 "Sources: S1 A useful paper https://example.test/paper",
@@ -224,6 +243,10 @@ class MemoryCliTests(unittest.TestCase):
                 str(repo),
                 "--research-log",
                 str(Path(directory) / "research_log.jsonl"),
+                "--mirror",
+                str(Path(directory) / "memory.jsonl"),
+                "--log",
+                str(Path(directory) / "memory_log.jsonl"),
             ]
             first_sync = self.run_cli(server, *command)
             second_sync = self.run_cli(server, *command)
@@ -265,6 +288,10 @@ class MemoryCliTests(unittest.TestCase):
                 "--repo",
                 str(repo),
                 "--wait",
+                "--mirror",
+                str(Path(directory) / "memory.jsonl"),
+                "--log",
+                str(Path(directory) / "memory_log.jsonl"),
             ]
             completed = self.run_cli(
                 server, *args, env={"PAST_POLL_SECONDS": "0"}
@@ -329,6 +356,8 @@ class MemoryCliTests(unittest.TestCase):
                 "5",
                 "--log",
                 str(log),
+                "--mirror",
+                str(Path(directory) / "memory.jsonl"),
             )
             self.assertEqual(recalled.returncode, 0, recalled.stderr)
             request = server.requests[0]
@@ -358,6 +387,8 @@ class MemoryCliTests(unittest.TestCase):
                 "no result",
                 "--log",
                 str(log),
+                "--mirror",
+                str(Path(directory) / "memory.jsonl"),
             )
             self.assertEqual(empty.returncode, 0, empty.stderr)
             self.assertEqual(empty.stdout.strip(), "No memories found.")
@@ -367,7 +398,9 @@ class MemoryCliTests(unittest.TestCase):
         server = self.start_server()
         with tempfile.TemporaryDirectory() as directory:
             env = os.environ.copy()
-            env.pop("PAST_API_KEY", None)
+            for name in tuple(env):
+                if name.startswith("PAST_API_KEY"):
+                    env.pop(name)
             env["PAST_BASE_URL"] = f"http://127.0.0.1:{server.server_port}"
             missing = subprocess.run(
                 [
@@ -375,6 +408,8 @@ class MemoryCliTests(unittest.TestCase):
                     str(SCRIPT),
                     "recall",
                     "test",
+                    "--backend",
+                    "pastdev",
                     "--log",
                     str(Path(directory) / "memory_log.jsonl"),
                 ],
@@ -391,12 +426,268 @@ class MemoryCliTests(unittest.TestCase):
                 server,
                 "recall",
                 "test",
+                "--backend",
+                "pastdev",
                 "--log",
                 str(Path(directory) / "memory_log.jsonl"),
             )
             self.assertEqual(failed.returncode, 2)
             self.assertIn("memory.py: past.dev returned HTTP 500", failed.stderr)
             self.assertNotIn(TEST_API_KEY, failed.stderr)
+
+    def test_typed_write_uses_author_identity_and_arm_key(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            arm_key = "arm-specific-test-secret"
+            result = self.run_cli(
+                server,
+                "write",
+                "--type",
+                "lesson",
+                "--id",
+                "lesson:1",
+                "--content",
+                "Try a different schedule.",
+                "--author",
+                "worker-1",
+                "--metadata",
+                '{"project":"autoresearch"}',
+                "--timestamp",
+                "2025-01-02T03:04:05Z",
+                "--arm",
+                "boredom",
+                "--backend",
+                "pastdev",
+                "--mirror",
+                str(mirror),
+                "--log",
+                str(log),
+                env={"PAST_API_KEY_BOREDOM": arm_key},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            request = server.requests[0]
+            self.assertEqual(request["path"], "/api/v1/ingest")
+            self.assertEqual(request["authorization"], f"Bearer {arm_key}")
+            self.assertNotIn(arm_key, result.stdout + result.stderr)
+            self.assertEqual(
+                request["body"],
+                {
+                    "id": "lesson:1",
+                    "content": "Try a different schedule.",
+                    "label": "lesson by worker-1",
+                    "timestamp": "2025-01-02T03:04:05Z",
+                    "metadata": {
+                        "project": "autoresearch",
+                        "type": "lesson",
+                        "author": "worker-1",
+                    },
+                    "identity": "worker-1",
+                },
+            )
+            mirror_record = json.loads(mirror.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(mirror_record["sourceId"], "source-single")
+            event = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(event["type"], "write")
+            self.assertEqual(event["mem_type"], "lesson")
+            self.assertIn("latency_ms", event)
+            self.assertIn("completed_ms", event)
+
+    def test_local_backend_ranks_by_idf_and_none_backend_stays_empty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            for memory_id, content, author in (
+                ("m:common", "alpha beta generic", "worker-common"),
+                ("m:rare", "alpha beta raretoken special", "worker-rare"),
+            ):
+                written = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT),
+                        "write",
+                        "--type",
+                        "result",
+                        "--id",
+                        memory_id,
+                        "--content",
+                        content,
+                        "--author",
+                        author,
+                        "--backend",
+                        "local",
+                        "--mirror",
+                        str(mirror),
+                        "--log",
+                        str(log),
+                    ],
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(written.returncode, 0, written.stderr)
+            recalled = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "recall",
+                    "alpha raretoken",
+                    "--limit",
+                    "2",
+                    "--backend",
+                    "local",
+                    "--mirror",
+                    str(mirror),
+                    "--log",
+                    str(log),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(recalled.returncode, 0, recalled.stderr)
+            self.assertIn("#1", recalled.stdout)
+            self.assertLess(
+                recalled.stdout.index("alpha beta raretoken"),
+                recalled.stdout.index("alpha beta generic"),
+            )
+            records = [json.loads(line) for line in log.read_text().splitlines()]
+            self.assertEqual([record["type"] for record in records].count("write"), 2)
+            self.assertEqual(records[-1]["type"], "recall")
+            self.assertEqual(records[-1]["authors"][0], "worker-rare")
+
+            none_mirror = Path(directory) / "none.jsonl"
+            none_log = Path(directory) / "none_log.jsonl"
+            no_memory = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "write",
+                    "--type",
+                    "claim",
+                    "--id",
+                    "claim:1",
+                    "--content",
+                    "nothing is stored",
+                    "--author",
+                    "worker",
+                    "--backend",
+                    "none",
+                    "--mirror",
+                    str(none_mirror),
+                    "--log",
+                    str(none_log),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(no_memory.returncode, 0, no_memory.stderr)
+            self.assertFalse(none_mirror.exists())
+            none_recall = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "recall",
+                    "nothing is stored",
+                    "--backend",
+                    "none",
+                    "--mirror",
+                    str(none_mirror),
+                    "--log",
+                    str(none_log),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(none_recall.returncode, 0, none_recall.stderr)
+            self.assertEqual(none_recall.stdout.strip(), "No memories found.")
+
+    def test_recall_resolves_author_from_local_mirror(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            local_write = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "write",
+                    "--type",
+                    "assignment",
+                    "--id",
+                    "mirror:source",
+                    "--content",
+                    "Check the validation loss.",
+                    "--author",
+                    "worker-mirror",
+                    "--backend",
+                    "local",
+                    "--mirror",
+                    str(mirror),
+                    "--log",
+                    str(log),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(local_write.returncode, 0, local_write.stderr)
+            server.recall_response = {
+                "asOf": "2025-02-01T00:00:00Z",
+                "usedEvidenceTokens": 4,
+                "results": [
+                    {
+                        "rank": 1,
+                        "occurredAt": "2025-01-02T03:04:05Z",
+                        "content": "Check the validation loss.",
+                        "artifact": {"kind": "memory"},
+                        "sources": [
+                            {"sourceId": "mirror:source", "label": "assignment by worker-mirror"}
+                        ],
+                    },
+                    {
+                        "rank": 2,
+                        "occurredAt": "2025-01-01T03:04:05Z",
+                        "content": "A remote lesson.",
+                        "artifact": {"kind": "memory"},
+                        "sources": [
+                            {
+                                "sourceId": "remote:source",
+                                "label": "lesson by worker-remote",
+                                "metadata": {
+                                    "author": "worker-remote",
+                                    "type": "lesson",
+                                },
+                            }
+                        ],
+                    },
+                ],
+            }
+            with patch.dict(
+                os.environ,
+                {
+                    "PAST_API_KEY": TEST_API_KEY,
+                    "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+                    "MEMORY_BACKEND": "pastdev",
+                    "MEMORY_MIRROR": str(mirror),
+                    "MEMORY_LOG": str(log),
+                },
+            ):
+                result = memory.recall("validation loss", "worker-1")
+            request = server.requests[0]
+            self.assertEqual(request["body"]["identity"], "worker-1")
+            self.assertEqual(
+                result["results"][0]["sources"][0]["author"], "worker-mirror"
+            )
+            self.assertEqual(
+                result["results"][0]["sources"][0]["type"], "assignment"
+            )
+            self.assertEqual(
+                result["results"][1]["sources"][0]["author"], "worker-remote"
+            )
 
 
 if __name__ == "__main__":

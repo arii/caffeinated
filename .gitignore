@@ -24,5 +24,7 @@ dev/
 /boredom_log.jsonl
 /research_log.jsonl
 /memory_log.jsonl
+/memory.jsonl
+/exa_cache/
 run.log
 runs/
