@@ -23,5 +23,6 @@ dev/
 /results.tsv
 /boredom_log.jsonl
 /research_log.jsonl
+/memory_log.jsonl
 run.log
 runs/

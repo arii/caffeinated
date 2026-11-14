@@ -116,6 +116,16 @@ git commit -m "[SNAP] <research-grounded change>" -m "Source: S<k>"
 
 Use a `[BREAKOUT]` subject in PARADIGM_BREAKOUT. The cited `S<k>` must be an id printed by the search and present in `research_log.jsonl`; the novelty gate rejects ungrounded SNAP/BREAKOUT candidates. In `notes.md`, add one line per grounded candidate mapping its source to the change. Research is optional in EXPLOIT. At completion, copy `research_log.jsonl` into `experiments/<arm>/` alongside the arm results.
 
+## Memory
+
+Durable memory through past.dev is optional and requires `PAST_API_KEY`; if it is absent, skip memory commands silently. Before committing a candidate, run `python3 memory.py recall "<one-line description of the idea>"`. If memory shows the idea was already discarded or crashed in this or another session/arm, choose something else or note in `notes.md` why this variant differs. After logging each result to `results.tsv`, run:
+
+```bash
+python3 memory.py remember --commit <short> --val-bpb <v> --memory-gb <m> --status <status> --description "<description>"
+```
+
+At completion, copy `memory_log.jsonl` into `experiments/<arm>/`.
+
 **Decision log.** Judges must be able to follow every decision. Each `results.tsv` description must start with the regime you were in, e.g. `[SNAP] replace ReLU^2 with SwiGLU MLP`. When the regime changes, write one line in `notes.md` (untracked) saying what B was, which regime you entered, and what kind of idea you picked because of it.
 
 ## The experiment loop
