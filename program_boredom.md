@@ -105,6 +105,8 @@ Regimes and what you must do:
 
 **Novelty gate.** Before running any candidate (after `git commit`, before `modal run`), run `python3 boredom.py gate --commit HEAD`. If it prints `REJECT` (exit code 1), do not run it: amend or replace the idea with something more novel and gate it again. In EXPLOIT the gate always passes. Do not fiddle with the idea just to slip past the gate; make it genuinely different.
 
+**Decision log.** Judges must be able to follow every decision. Each `results.tsv` description must start with the regime you were in, e.g. `[SNAP] replace ReLU^2 with SwiGLU MLP`. When the regime changes, write one line in `notes.md` (untracked) saying what B was, which regime you entered, and what kind of idea you picked because of it.
+
 ## Research grounding
 
 In BOREDOM_SNAP and PARADIGM_BREAKOUT, ground every candidate in retrieved research before running it. `research.py` uses Exa and requires the `EXA_API_KEY` environment variable. Search for the current bottleneck, derive the candidate idea from a result, and cite that result in the commit message:
@@ -125,8 +127,6 @@ python3 memory.py remember --commit <short> --val-bpb <v> --memory-gb <m> --stat
 ```
 
 At completion, copy `memory_log.jsonl` into `experiments/<arm>/`.
-
-**Decision log.** Judges must be able to follow every decision. Each `results.tsv` description must start with the regime you were in, e.g. `[SNAP] replace ReLU^2 with SwiGLU MLP`. When the regime changes, write one line in `notes.md` (untracked) saying what B was, which regime you entered, and what kind of idea you picked because of it.
 
 ## The experiment loop
 
