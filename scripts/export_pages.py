@@ -1,4 +1,4 @@
-"""Export directory recordings exactly as the Lab server serves them, for the static Pages site."""
+"""Export static Pages recordings, rewriting notes and Ig Nobel metric copy for pre-committee runs."""
 
 import gzip
 import hashlib
@@ -14,6 +14,11 @@ from backend.replay import RecordingCatalog  # noqa: E402
 
 PRE_COMMITTEE_NOTE = (
     "Pre-committee run: loss 0 = passed preregistered gates, 1 = failed; not committee-judged."
+)
+PRE_COMMITTEE_IGNOBEL_METRIC_LABEL = "split-half consistency loss"
+PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION = (
+    "split-half consistency loss: 0 = the study passed its preregistered gates and "
+    "split-half consistency, 1 = failed"
 )
 DIRECT_COMMITTEE_FIELDS = ("score", "scores", "judges", "verdicts")
 COMMITTEE_EVENT_TYPES = {
@@ -70,9 +75,30 @@ def _rewrite_committee_metric_descriptions(value):
             _rewrite_committee_metric_descriptions(child)
 
 
+def _rewrite_ignobel_metric_fields(value):
+    if isinstance(value, dict):
+        metric = value.get("metric")
+        if isinstance(metric, dict):
+            label = str(metric.get("label") or "").casefold()
+            description = str(metric.get("description") or "").casefold()
+            if (
+                metric.get("name") == "replicated_findings"
+                or "replication loss" in label
+                or "replicated and significant" in description
+            ):
+                metric["label"] = PRE_COMMITTEE_IGNOBEL_METRIC_LABEL
+                metric["description"] = PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION
+        for child in value.values():
+            _rewrite_ignobel_metric_fields(child)
+    elif isinstance(value, list):
+        for child in value:
+            _rewrite_ignobel_metric_fields(child)
+
+
 def _rewrite_pre_committee_notes(manifest):
     manifest["proxy_note"] = PRE_COMMITTEE_NOTE
     _rewrite_committee_note_fields(manifest)
+    _rewrite_ignobel_metric_fields(manifest)
     _rewrite_committee_metric_descriptions(manifest)
 
 
@@ -155,6 +181,7 @@ def export(viewer_dir, out_dir):
                 _rewrite_pre_committee_notes(m)
         if _is_pre_committee_ignobel(recording):
             _rewrite_committee_note_fields(recording)
+            _rewrite_ignobel_metric_fields(recording)
             _rewrite_committee_metric_descriptions(recording)
         content = deepcopy(recording)
         for key in ("contentVersion", "lastUpdateTs", "staleAfterSeconds"):

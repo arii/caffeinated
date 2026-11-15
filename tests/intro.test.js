@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
 import {researchTrail,researchResults,introResults,introHtml} from '../src/engine/intro.ts';
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const config=JSON.parse(readFileSync(new URL('../data/pages/intro.json',import.meta.url),'utf8'));
@@ -12,7 +13,7 @@ test('intro follows the requested order and keeps its secondary sections collaps
  assert.ok(at('<summary>Hack</summary>')<at('<summary>Tools</summary>')&&at('<summary>Tools</summary>')<at('<summary>Authors</summary>')&&at('<summary>Authors</summary>')<at('<summary>Boredom</summary>')&&at('<summary>Boredom</summary>')<at('<summary>Exa</summary>'));
  for(const t of ['Tinker','Exa','past.dev','Devin'])assert.match(html,new RegExp(t));
  assert.match(html,/class="placeholder"/);
- assert.match(html,/This year the Ig Nobel research prize was discovered early by a phenomenal breakthrough in artificial scientist swarms\./);
+ assert.match(html,/This year the Ig Nobel research prize was discovered early by a phenomenal/);
  assert.match(html,/<h1><span class="satire-badge">Satire<\/span> This year the Ig Nobel research prize/);
  assert.match(html,/The secret: making AI less boring\./);
  assert.match(html,/tongue-in-cheek headline/);
@@ -62,15 +63,15 @@ test('real results report recorded studies, passed findings, award entries, and 
  ]};
  const results=researchResults(r),html=introHtml(config,researchTrail(r),esc,results,r.manifest);
  assert.deepEqual(results,{studies:1,registered:1,ran:1,confirmed:1,underCurrentRules:0,passed:1,awards:['Ig Nobel · A playful award'],proxyNote:'Synthetic benchmark, not a clinical trial.',isIgnobel:true,preCommittee:false});
- assert.match(html,/Real result so far: 0 of 1 preregistered tests that ran held up \(1 registered\)/);
- assert.match(html,/<p>1 registered · 1 confirmed \(0 under current rules\)<\/p>/);
+ assert.match(html,/Real result so far: 1 of 1 tests that ran passed their preregistered gates; 0 also pass the \|ρ\| ≥ 0\.1 floor added after the run \(1 registered\)/);
+ assert.match(html,/<p>1 registered · 1 confirmed \(0 under the post-hoc \|ρ\| ≥ 0\.1 floor\)<\/p>/);
  assert.match(html,/<p>Prizes awarded: 1<\/p>/);
  assert.doesNotMatch(html,/award\.issued/);
  assert.match(html,/<p class="track3-note">BixBench held-out: baseline 1\/7 → swarm best 6\/7 \(one run; 95% CI 0\.49–0\.97\)<\/p>/);
  assert.match(html,/Synthetic benchmark, not a clinical trial\./);
- assert.match(html,/Track 3 check \(exploratory, 3 runs each\): the preregistered set, stopped early, ranks boredom swarm 0\.26 &gt; single agent 0\.24 &gt; no meter 0\.11; the complete set, picked after it finished, ranks single agent 0\.30 &gt; no meter 0\.09 &gt; boredom swarm 0\.06\. Neither ordering is significant\./);
+ assert.match(html,/Track 3 check \(exploratory, 3 runs each\): preregistered primary \(guard2, stopped early, guarded\) B 0\.26 &gt; S 0\.24 &gt; A 0\.11; complete strict-guard set, picked after it finished, S 0\.30 &gt; A 0\.09 &gt; B 0\.06\. B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate for the known integer-loop-bound false positive \(unguarded 0\.333\); S beats B on the other two runs\./);
  assert.doesNotMatch(html,/beat the boredom swarm|3\/3 seeds/);
- assert.match(html,/<p class="track3-note"><a href="https:\/\/github\.com\/arii\/caffeinated\/blob\/main\/experiments\/memory-comparison\/README\.md" target="_blank" rel="noopener noreferrer">past\.dev vs local memory on 419 real memories: hit@1 0\.65 vs 0\.30, 562 ms vs 15 ms \(hand-written probes\)<\/a><\/p>/);
+ assert.match(html,/<p class="track3-note"><a href="https:\/\/github\.com\/arii\/caffeinated\/blob\/agent\/devin\/overnight\/experiments\/memory-comparison\/README\.md" target="_blank" rel="noopener noreferrer">past\.dev vs local memory on 419 real memories: hit@1 0\.65 vs 0\.30, 562 ms vs 15 ms \(hand-written probes\)<\/a><\/p>/);
  assert.doesNotMatch(html,/<details id="intro-real-results"[^>]* open/);
 });
 test('real results replace a current Ig Nobel proxy note for pre-committee recordings',()=>{
@@ -118,5 +119,17 @@ test('Ig Nobel factual line counts accepted finite-p results as ran and register
  assert.equal(researchResults(run,0).ran,0);
  const results=introResults(run),html=introHtml(config,researchTrail(run),esc,results,run.manifest,run);
  assert.equal(results.registered,21);assert.equal(results.ran,13);assert.equal(results.underCurrentRules,10);
- assert.match(html,/Real result so far: 10 of 13 preregistered tests that ran held up \(21 registered\); no committee score yet/);
+ assert.match(html,/Real result so far: 13 of 13 tests that ran passed their preregistered gates; 10 also pass the \|ρ\| ≥ 0\.1 floor added after the run \(21 registered\); no committee score yet/);
+});
+test('published Ig Nobel counts distinct studies and does not count study.replicated as another test',()=>{
+ const catalog=JSON.parse(readFileSync(new URL('../docs/recordings/index.json',import.meta.url),'utf8'));
+ const published=catalog.find(item=>item.id==='50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929');
+ assert.ok(published);
+ const recording=JSON.parse(gunzipSync(readFileSync(new URL(`../docs/recordings/${published.id}.json.gz`,import.meta.url))));
+ const results=introResults(recording);
+ assert.equal(results.registered,21);
+ assert.equal(results.ran,13);
+ assert.equal(results.confirmed,11);
+ assert.equal(results.underCurrentRules,10);
+ assert.equal(recording.events.filter(event=>event.type==='study.replicated').length,1);
 });

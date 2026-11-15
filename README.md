@@ -1,6 +1,6 @@
 # Lab Environment — research replay
 
-A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
+A first-person lab for walking through recorded research. The Pages site replays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. Experiments are launched from this repository's research tools, and their recordings can be supplied through the same data boundary.
 
 Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
@@ -16,17 +16,22 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 ## Results (with caveats)
 
 Track 3 has two orderings: preregistered primary (guard2, stopped early, guarded), B 0.26 > S
-0.24 > A 0.11; complete strict-guard set, headlined after seeing which set finished, S 0.30 >
-A 0.09 > B 0.06. Minimum sign-flip p = 0.25 (complete strict-guard set) and 0.5 (guard2
-primary); 3 runs (orchestration seeds; Kimi sampling is not seeded), neither ordering is
-significant. Under the earlier grader the means were A 0.093, B 0.056, S 0.074.
+0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06.
+The smallest observed sign-flip p (with 3 paired runs the smallest attainable is 0.25) is 0.25
+(complete strict-guard set) and 0.5 (guard2 primary); 3 runs (orchestration seeds; Kimi sampling
+is not seeded), neither ordering is significant.
+B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate
+for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two
+runs. Under the earlier grader the means were A 0.093, B 0.056, S 0.074.
 See [full results](docs/results.md) and
 [judge Q&A](docs/judge-qa.md).
 
 The Ig Nobel run tested gate-passing correlations on public teaching datasets (Cars93, cats,
-sleepstudy, and others): known relationships, not discoveries. Of 21 studies registered and
-13 run, 10 are held; the |ρ| ≥ 0.1 floor was added post-hoc, and the ρ = 0.07 x/y coordinate
-study, registered twice, is the failure case. No committee score was run on the published recording.
+sleepstudy, and others): known relationships, not discoveries. It had 21 registered studies,
+13 run, 11 passed the preregistered gates, and 10 also pass the |ρ| ≥ 0.1 floor added after the
+run. The ρ = 0.07 x/y coordinate study is the failure case; it also appears as a second confirmed
+row because the critic re-ran it (a `study.replicated` event), not as a separate test. No committee
+score was run on the published recording.
 
 ## Run
 
@@ -70,9 +75,9 @@ The room’s movement is illustrative. Metric values, event order, agent identit
 
 ## Data and future integration
 
-The source bundle is `data/replays/swarm-viewer-sample-runs.zip` for local replay; Pages exports one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory. The bundle contains three autoresearch histories and one Ig Nobel sample, with manifests, ordered events, entities, and sparse keyframes. No candidate executables or plot images are included.
+The source bundle is `data/replays/swarm-viewer-sample-runs.zip` for local replay; Pages exports one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory. The bundle contains three provenance-backed Kimi/Exa/past.dev autoresearch histories, with manifests, ordered events, entities, and sparse keyframes. The fake Ig Nobel sample was removed from the default bundle. No candidate executables or plot images are included.
 
-`backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts replicated findings. Agent details use the event prefix, rather than reading later fields from final entities.
+`backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts confirmed studies. Agent details use the event prefix, rather than reading later fields from final entities.
 
 | Read-only endpoint | Response |
 | --- | --- |

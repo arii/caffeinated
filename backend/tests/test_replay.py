@@ -27,9 +27,9 @@ class ReplayTests(unittest.TestCase):
         environment.start()
         self.addCleanup(environment.stop)
 
-    def test_all_four_archive_recordings_and_no_lookahead(self):
+    def test_all_three_archive_recordings_and_no_lookahead(self):
         c = RecordingCatalog(ROOT / "data/replays/swarm-viewer-sample-runs.zip")
-        self.assertEqual(len(c.list()), 4)
+        self.assertEqual(len(c.list()), 3)
         for manifest in c.list():
             names = [
                 a["display_name"]
@@ -116,28 +116,27 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(frames[3]["snapshot"]["value"], 0.5)
         self.assertEqual(frames[1]["snapshot"]["results"][0]["value"], 1)
 
-    def test_ignobel_sample_is_a_swarm_task_recording_with_real_sources(self):
+    def test_default_bundle_contains_only_provenance_backed_real_model_runs(self):
         c = RecordingCatalog(ROOT / "data/replays/swarm-viewer-sample-runs.zip")
+        self.assertEqual(len(c.list()), 3)
         self.assertEqual({m["swarm"] for m in c.list()}, {"autoresearch"})
-        b = next(c.get(m["id"]) for m in c.list() if m["title"].startswith("Ig Nobel"))
-        self.assertIn("ignobel", b["manifest"]["provenance"]["command"])
-        self.assertEqual(b["frames"][-1]["snapshot"]["metric"]["direction"], "minimize")
-        self.assertTrue(b["manifest"]["sample"])
-        self.assertEqual(b["manifest"]["provenance"]["llm_mode"], "fake")
-        self.assertEqual(
-            b["manifest"]["description"], "Recorded offline run · fake LLM (scripted agents)"
-        )
-        self.assertEqual(
-            {
-                c.get(m["id"])["manifest"]["description"]
-                for m in c.list()
-                if not m["title"].startswith("Ig Nobel")
-            },
-            {"Recorded research · no live model calls"},
-        )
-        urls = [s["url"] for s in b["entities"]["sources"]]
-        self.assertTrue(urls)
-        self.assertTrue(all(u.startswith("https://") and "example.org" not in u for u in urls))
+        expected_calls = {
+            "13b40061-3d64-520c-8b31-deb2aea4e475": 36,
+            "7137b725-1954-5e6f-b87f-85c33fdb130e": 33,
+            "9b212145-3ecf-5463-8024-b406c890cd37": 30,
+        }
+        self.assertEqual(set(c.manifests), set(expected_calls))
+        for manifest in c.list():
+            recording = c.get(manifest["id"])
+            provenance = recording["manifest"]["provenance"]
+            self.assertEqual(provenance["llm"], "moonshotai/Kimi-K3.1-Pro:peft:262144")
+            self.assertEqual(provenance["exa"], "live")
+            self.assertEqual(provenance["memory_backend"], "pastdev")
+            self.assertTrue(provenance["native_run_id"])
+            self.assertNotEqual(provenance.get("llm_mode"), "fake")
+            calls = recording["entities"]["llm_calls"]
+            self.assertEqual(len(calls), expected_calls[manifest["id"]])
+            self.assertTrue(all(call["model"] == provenance["llm"] for call in calls))
 
     def test_backend_team_can_select_a_bundle_without_replacing_sample_data(self):
         with tempfile.TemporaryDirectory() as d:
@@ -148,20 +147,26 @@ class ReplayTests(unittest.TestCase):
                 TestClient(create_app(Path(d) / "state", runner=False)) as c,
             ):
                 rows = c.get("/api/recordings").json()
-                self.assertEqual(len(rows), 4)
+                self.assertEqual(len(rows), 3)
                 self.assertEqual(c.get("/api/recordings/" + rows[0]["id"]).status_code, 200)
                 self.assertFalse(c.get("/api/health").json()["executionEnabled"])
 
     def test_zip_artifacts_are_served_confined_to_the_recording(self):
         sample = ROOT / "data/replays/swarm-viewer-sample-runs.zip"
         with zipfile.ZipFile(sample) as z:
-            name = next(n for n in z.namelist() if n.endswith(".diff"))
-            expected = z.read(name).decode()
-        rid, relative = name.removeprefix("runs/").split("/artifacts/")
+            manifest = next(
+                name
+                for name in z.namelist()
+                if name.startswith("runs/") and name.endswith("/manifest.json")
+            )
+        rid = manifest.removeprefix("runs/").split("/", 1)[0]
+        relative = "runs/audit-fixture.diff"
+        expected = "diff fixture"
         with tempfile.TemporaryDirectory() as d:
             archive = Path(d) / "bundle.zip"
             archive.write_bytes(sample.read_bytes())
             with zipfile.ZipFile(archive, "a") as z:
+                z.writestr(f"runs/{rid}/artifacts/{relative}", expected)
                 z.writestr(f"runs/{rid}/secret.txt", "secret")
                 z.writestr(f"runs/{rid}/artifacts/big.log", "x" * (ARTIFACT_MAX_BYTES + 1))
             with (
@@ -189,15 +194,15 @@ class ReplayTests(unittest.TestCase):
                 self.assertEqual(
                     c.get("/api/recordings/nope/artifacts/" + relative).status_code, 404
                 )
-        catalog = RecordingCatalog(sample)
-        self.assertIsNone(catalog.artifact(rid, "/" + relative))
-        self.assertIsNone(catalog.artifact(rid, "runs/../../manifest.json"))
-        self.assertIsNotNone(catalog.artifact(rid, "runs/./" + relative.split("/", 1)[1]))
+            catalog = RecordingCatalog(archive)
+            self.assertIsNone(catalog.artifact(rid, "/" + relative))
+            self.assertIsNone(catalog.artifact(rid, "runs/../../manifest.json"))
+            self.assertIsNotNone(catalog.artifact(rid, "runs/./" + relative.split("/", 1)[1]))
 
     def test_read_only_api_serves_recordings_with_cache_and_rejects_execution(self):
         with tempfile.TemporaryDirectory() as d, TestClient(create_app(d, runner=False)) as c:
             rows = c.get("/api/recordings").json()
-            self.assertEqual(len(rows), 4)
+            self.assertEqual(len(rows), 3)
             path = "/api/recordings/" + rows[0]["id"]
             r = c.get(path)
             self.assertEqual(r.status_code, 200)

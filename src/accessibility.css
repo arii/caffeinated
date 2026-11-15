@@ -1,0 +1,3 @@
+.replay-heading{pointer-events:none}
+.replay-heading button,.replay-heading a{pointer-events:auto}
+.sidebar small,.identity .eyebrow,.intro .eyebrow,.chip,.status-chip,.regime-chip,.warn-chip,.proxy-chip,.dialog-heading,.results-dialog .dialog-heading,dialog.character-popup .dialog-heading,#console .dialog-heading,kbd,.camera-hint,.orchestration-hint{font-size:11px}

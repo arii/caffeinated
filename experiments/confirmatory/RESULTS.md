@@ -4,22 +4,26 @@
 the held-out grader all changed after the preregistration (see "Deviations from preregistration and
 their direction"). Nothing below is a confirmatory test.
 
-## Summary (3 runs per comparison; orchestration seeds, Kimi sampling is not seeded)
+## Summary (3 runs (orchestration seeds; Kimi sampling is not seeded))
 - **Preregistered primary (guard2, stopped early, guarded):** B 0.26, S 0.24, A 0.11.
   **Complete strict-guard set, headlined after seeing which set finished:** S 0.30, A 0.09,
-  B 0.06. Minimum sign-flip p = 0.25 (complete strict-guard set) and 0.5 (guard2 primary);
-  3 runs (orchestration seeds; Kimi sampling is not seeded), neither ordering is significant.
+  B 0.06. The smallest observed sign-flip p (with 3 paired runs the smallest attainable is
+  0.25) is 0.25 (complete strict-guard set) and 0.5 (guard2 primary); 3 runs (orchestration
+  seeds; Kimi sampling is not seeded), neither ordering is significant.
 - In the guard2 primary set, B > S > A on guarded accuracy; S leads only in the unguarded column
-  (0.352). For seed 3001, S is 0.000 vs B 0.278 guarded. No arm is consistently best.
-- **The S lead depends on the 01:34 grader fix (a0d4fcd).** Under the grader before that fix
+  (0.352). Guarded per-run accuracy (runs 3001/3002/3003): A 0/.167/.167, B .278/.333/.167,
+  S 0/.444/.278. B leads S on mean only because S scored 0 on run 3001, where the guard rejected
+  its candidate for the known integer-loop-bound false positive (`bix-52-q3`, `heldout_status
+  crash`; unguarded 0.333); S beats B on the other two runs. No arm is consistently best.
+- **The strict-set S lead depends on the 01:34 grader fix (a0d4fcd).** Under the grader before that fix
   (c31ab55), the same nine winners score A 0.093, B 0.056, S 0.074. S still beats B on the mean,
   but only on 1 of 3 runs (orchestration seeds; Kimi sampling is not seeded), and S is below A.
   See `results/heldout_by_grader.tsv`.
 - **Confounds:** S has no critic or confirmation step, so S > B is confounded with acceptance rules.
   B's best is 1/18 held-out on every seed. Agents see the held-out question text and the full public
   data; held-out grading hides only the grade (see "Leakage and confound limits").
-- **Guarded vs unguarded held-out accuracy (mean over 3 runs; orchestration seeds, Kimi
-  sampling is not seeded):**
+- **Guarded vs unguarded held-out accuracy (mean over 3 runs (orchestration seeds; Kimi
+  sampling is not seeded)):**
 
   | set | A guarded / unguarded | B guarded / unguarded | S guarded / unguarded |
   |---|---|---|---|
@@ -43,9 +47,9 @@ Status at 01:45 PST, 2026-11-15: both Tinker keys returned HTTP 402 and all live
 Only one set finished all its rounds: the **strict-guard bixbench_numeric A/B/S set, runs 3001-3003**.
 The fixed-guard rerun (`guard2`) and hadamard29 stopped partway. They are reported below at a
 matched budget, using only rounds that completed before the cutoff. They are exploratory.
-With 3 runs (orchestration seeds; Kimi sampling is not seeded), the minimum sign-flip p is 0.25
-for the complete strict-guard set and 0.5 for the guard2 primary, so neither ordering is
-significant. Every run is shown.
+With 3 runs (orchestration seeds; Kimi sampling is not seeded), the smallest observed sign-flip p
+(with 3 paired runs the smallest attainable is 0.25) is 0.25 (complete strict-guard set) and
+0.5 (guard2 primary), so neither ordering is significant. Every run is shown.
 
 Arms: **A** = 4 workers, fixed allocation (meter off). **B** = 4 workers, Boredom-Meter allocation,
 gate and critic. **S** = single agent: 1 worker, no meter, no scouts, no critic, 48 rounds, so its
@@ -188,14 +192,18 @@ no verified best determinant for n=29 is shipped with the task.
 ## Reading
 - **Track 3 (single agent vs swarm):** the two orderings disagree. The preregistered primary
   guard2 set stopped early and ranks B 0.259 > S 0.241 > A 0.111 guarded; the complete strict-guard
-  set, headlined after seeing which set finished, ranks S 0.296 > A 0.093 > B 0.056. In the primary
-  set S leads only unguarded (0.352). Minimum sign-flip p = 0.25 (complete strict-guard set) and
-  0.5 (guard2 primary); 3 runs (orchestration seeds; Kimi sampling is not seeded), neither
-  ordering is significant.
+  set, picked after it finished, ranks S 0.296 > A 0.093 > B 0.056. In the primary set S leads only
+  in the unguarded column (0.352). B leads S on mean only because S scored 0 on run 3001 after the
+  guard rejected its candidate for the known integer-loop-bound false positive (`bix-52-q3`,
+  `heldout_status crash`; unguarded 0.333); S beats B on the other two runs. The smallest observed
+  sign-flip p (with 3 paired runs the smallest attainable is 0.25) is 0.25 (complete strict-guard
+  set) and 0.5 (guard2 primary); 3 runs (orchestration seeds; Kimi sampling is not seeded),
+  neither ordering is significant.
   These are held-out scores on a numeric subset of 10 capsules, not the full-BixBench 0.523
   reference.
-- **Boredom Meter (B vs A):** no evidence of benefit at matched candidate count on any task so far,
-  at about 1.75x the token cost on BixBench.
+- **Boredom Meter (B vs A):** no significant evidence of benefit; results are mixed: ahead of A
+  in the guard2 primary, behind A in the complete strict-guard set, tied on hadamard29, at about
+  1.75x the token cost on BixBench.
 - **Open issue:** the gold-literal guard's false positives (conventional constants, tolerances,
   integer loop bounds) confound BixBench searches. A guard that checks the values the candidate
   actually outputs, rather than source literals, would remove this class of error.

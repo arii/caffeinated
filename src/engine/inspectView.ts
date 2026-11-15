@@ -47,7 +47,7 @@ export function studyCardHtml(s:StudyCard,c:ViewContext){
 <dl><dt>Dataset</dt><dd>${d.url?link(c,d.url,hostOf(d.url)+' · '+(d.url.split('/').at(-1)||'')):e(d.id||'—')}<br>X: ${variable(d.x,d.xLevel)}<br>Y: ${variable(d.y,d.yLevel)}</dd>
 <dt>Correlation</dt><dd>Predicted ${rho(s.predictedRho)} → observed <b>${rho(r?.rho??null)}</b>${r?` · p ${pValue(r.p)} · n ${r.n??'—'}`:''}${rhoBar(s.predictedRho,r?.rho??null)}</dd>
 <dt>Two halves</dt><dd>${r?halves:'<p class="muted">Awaiting analysis.</p>'}</dd>
-<dt>Checks</dt><dd>${r?`${state(r.significant,'significant','not significant')} ${state(r.replicated,'replicated','not replicated')}`:'<span class="pill">pending</span>'}</dd></dl>
+<dt>Checks</dt><dd>${r?`${state(r.significant,'significant','not significant')}, ${state(r.replicated,'split-half consistent','not split-half consistent')}`:'<span class="pill">pending</span>'}</dd></dl>
 ${r?.rejected?`<p class="muted">Rejected: ${e(r.rejected)}</p>`:r?.headline?`<p class="headline">${e(r.headline)}</p>`:''}${reps}${committee}<div class="chips">${s.experimentId?experimentButton(c,s.experimentId):''}${s.citations.map(u=>`<span class="chip">${link(c,u,clip(u.replace(/^https?:\/\/(doi\.org\/)?/,''),32))}</span>`).join('')}</div></article>`;
 }
 export function studyCardsHtml(cards:StudyCard[],c:ViewContext){return cards.length?`<div class="card-grid">${cards.map(s=>studyCardHtml(s,c)).join('')}</div>`:'';}

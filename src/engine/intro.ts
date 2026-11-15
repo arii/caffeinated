@@ -28,7 +28,7 @@ export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
 
 export function researchResults(r:Recording|null,tick=Number.MAX_SAFE_INTEGER){
  const cards=studyCards(r,tick),awards=momentsBetween(r?.events||[],-1,tick).filter(m=>m.kind==='award');
- const ran=cards.filter(s=>s.result&&s.result.rejected==null&&s.result.p!=null&&Number.isFinite(s.result.p)).length;
+ const ran=new Set(cards.filter(s=>s.result&&s.result.rejected==null&&s.result.p!=null&&Number.isFinite(s.result.p)).map(s=>s.id)).size;
  const confirmed=cards.filter(s=>s.result?.confirmed===true||s.result?.replicated===true||s.replications.some(x=>x.confirmed===true||x.replicated===true));
  const underCurrentRules=confirmed.filter(s=>currentRules(s.result?{...s.result,direction:s.direction||undefined}:null,currentRuleThresholds(r?.manifest?.judging)).pass).length;
  const proxyNote=recordingProxyNote(r?.manifest,r)||'';
@@ -57,7 +57,7 @@ export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,e
  const cites=trail.citations.slice(0,12).map(x=>`<li><span>${esc(x.study)}</span> ${x.sourceId?`<button class="chip" data-source="${esc(x.sourceId)}">${esc(c.labels.source)} ${esc(x.title||x.url)}</button>`:`${/^https?:\/\//i.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.url)}</a>`:`<code>${esc(x.url)}</code>`} <em>${esc(c.labels.missingExa)}</em>`}</li>`).join('');
  const fill=(template:string,values:Record<string,string|number>)=>template.replace(/\{([^}]+)\}/g,(_,key:string)=>String(values[key]??''));
  const studySummary=results.studies?`<p>${esc(fill(c.results.countLine,{N:results.registered,M:results.confirmed,K:results.underCurrentRules}))}</p>`:`<p>${esc(c.results.noStudies)}</p>`;
- const factualLine=results.isIgnobel&&results.studies?`<p class="intro-result-line">${esc(fill(c.results.factualLine,{N:results.registered,R:results.ran,K:results.underCurrentRules,committeeSuffix:results.preCommittee?c.results.noCommitteeSuffix:''}))}</p>`:'';
+ const factualLine=results.isIgnobel&&results.studies?`<p class="intro-result-line">${esc(fill(c.results.factualLine,{N:results.registered,R:results.ran,C:results.confirmed,K:results.underCurrentRules,committeeSuffix:results.preCommittee?c.results.noCommitteeSuffix:''}))}</p>`:'';
  const noPrizeDisclaimer=results.isIgnobel&&!results.awards.length?`<p class="intro-prize-disclaimer">${esc(c.results.noPrizeDisclaimer)}</p>`:'';
  const awardSection=results.isIgnobel?(results.awards.length?`<p>${esc(fill(c.results.awardCount,{N:results.awards.length}))}</p><ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}${manifest&&hasCreditError(manifest,recording)?esc(c.results.creditErrorSuffix):''}</p>`):'';
  const memoryComparison=`<p class="track3-note"><a href="${esc(c.results.memoryComparisonUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.results.memoryComparisonLine)}</a></p>`;

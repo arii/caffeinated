@@ -5,7 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.export_pages import PRE_COMMITTEE_NOTE, export
+from scripts.export_pages import (
+    PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION,
+    PRE_COMMITTEE_IGNOBEL_METRIC_LABEL,
+    PRE_COMMITTEE_NOTE,
+    export,
+)
 
 
 def write_recording(viewer, *, title="Test recording", task=None, events=None):
@@ -112,6 +117,7 @@ class ExportPagesTests(unittest.TestCase):
                 reference_note="committee-scored in-run",
                 metric={
                     "name": "replicated_findings",
+                    "label": "replication loss",
                     "direction": "minimize",
                     "description": "committee-scored in-run",
                 },
@@ -135,7 +141,16 @@ class ExportPagesTests(unittest.TestCase):
             self.assertIn(expected.encode(), index_bytes)
             self.assertEqual(shipped["manifest"]["reference_note"], expected)
             self.assertEqual(shipped["manifest"]["held_out_test"]["reference_note"], expected)
-            self.assertEqual(shipped["manifest"]["metric"]["description"], expected)
+            metric = shipped["manifest"]["metric"]
+            self.assertEqual(metric["label"], PRE_COMMITTEE_IGNOBEL_METRIC_LABEL)
+            self.assertEqual(metric["description"], PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION)
+            metric_text = " ".join((metric["label"], metric["description"])).casefold()
+            self.assertNotIn("replication loss", metric_text)
+            self.assertNotIn("replicated", metric_text)
+            self.assertEqual(items[0]["metric"]["label"], PRE_COMMITTEE_IGNOBEL_METRIC_LABEL)
+            self.assertEqual(
+                items[0]["metric"]["description"], PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION
+            )
             self.assertEqual(
                 (gzip.decompress(archive.read_bytes()) + index_bytes).count(
                     b"committee-scored in-run"
