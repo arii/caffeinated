@@ -1,0 +1,38 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+da15a7c1dc17d4225e77f214531c3bad406c9929		crash	[EXPLOIT] Replace the three-answer stub with dtype-safe, per-capsule statistical pipelines
+7876018a04c25f8d523331d48988e1cda61022fd	0.851852	keep	[EXPLOIT] Complete the bix-18 group summaries and compute circularity SEM rather than stan
+868300dc00a9f2e1684d9ea6dd616ef814a3a096	0.851852	discard	[EXPLOIT] Add the complete bix-19 NeuN analysis: pooled Cohen's d, two-sample power, Shapi
+d03c092a2db37929e1b2a4dac90a17f76370d9e4	0.851852	discard	[EXPLOIT] Add the four bix-8 MeRIP-seq answers using a contingency chi-square test and cat
+7876018a04c25f8d523331d48988e1cda61022fd	0.851852	keep	critic second-evaluation confirmation for Complete the bix-18 group summaries and compute circularity SEM rather than stan
+cb23f7882258b3da0d73ea633f4b70e42d562b5d	0.851852	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by directly extracting ENO1's norma
+e83965ae37e66d33e80a36811cab93ebf6492144		crash	[EXPLOIT] Fit all requested bix-51 logistic regressions using model-specific complete case
+1e428afa561ca5c8fed688c8cc2851050d4214b7	0.777778	keep	[EXPLOIT] Compute all four bix-19 answers from NeuN counts using pooled Cohen's d, standar
+3609ebc4b5975561a998a0c441a6180862d3a841	0.777778	discard	[EXPLOIT] Answer all seven bix-10 questions using COVID-19 adverse events merged to demogr
+1e428afa561ca5c8fed688c8cc2851050d4214b7	0.777778	keep	critic second-evaluation confirmation for Compute all four bix-19 answers from NeuN counts using pooled Cohen's d, standar
+f4ba594c2c1e1eddeee2fc0f160f0c2bfc113063	0.777778	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by directly extracting ENO1's repor
+83ae3de82cc0d14f4cd8405e007c1556c09ddd6c		crash	[EXPLOIT] Parse efficacy PR as a binary outcome and answer all seven bix-51 questions with
+9ad231a7ceaf2f824d7c6d52f63fada7aef5aeb4	0.777778	discard	[EXPLOIT] Answer the four bix-52 questions by filtering extreme-methylation sites, dedupli
+625ecf145a264827c7ae9e3fd1798c30a9797a67	0.777778	discard	[EXPLOIT] Fit the COVID-19 severity ordered-logit model and subgroup chi-square tests to a
+de081133a8fa92efce3eca856aac9e2f20437ccf	0.777778	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by extracting ENO1's reported norma
+24707043f3574ac92ee7f8b47b51a7e2ef92c2c3	0.777778	discard	[EXPLOIT] Answer the bix-52 questions by counting distinct filtered CpG positions per chro
+c3e2974c80fde359e68e9ca6c57c8aacb9189d0a	0.777778	discard	[EXPLOIT] Fit cubic and natural-spline swarming-area models and derive all seven bix-54 an
+b3c32f5446232359061bf788b76ac96d622072d2		crash	[EXPLOIT] Fit robust PR-indicator logistic regressions to answer all seven bix-51 question
+8dcea4dcfc09164fe241aa78ae96cb7b9422abb1	0.777778	duplicate	[SNAP] Extract ENO1's proteomics values and apply the requested significant-figure and 
+ec9a2db89a4c80ad145b847a2d705787d676be2e	0.740741	keep	[SNAP] Answer the bix-41 questions with Dunnett post-hoc comparisons against Strain 1 f
+		reject	[SNAP] proposal rejected after repair
+8298b389bf07217214a5a36822fb318fe06c430f	0.777778	discard	[SNAP] Extract ENO1's proteomic measurements and apply the requested significant-figure
+ec9a2db89a4c80ad145b847a2d705787d676be2e	0.740741	keep	critic second-evaluation confirmation for Answer the bix-41 questions with Dunnett post-hoc comparisons against Strain 1 f
+f878a4241dfa6c0f6a5bc48a862b0a6bb2da67b1		crash	[EXPLOIT] Fit PR-indicator logistic regressions to answer all seven bix-51 questions from 
+aae5a79a917c1be39f0e8b2ec0b64742650cdb71	0.740741	discard	[EXPLOIT] Filter extreme-methylation CpGs, deduplicate sites across samples, and compute c
+0402edb591cf2b56a18f34ae1b93519ab7589cea	0.666667	keep	[EXPLOIT] Answer the four bix-8 questions using the dataset's methylation and expression s
+62d2778f371456fa1f09b704ad4b15b2560171ad	0.740741	discard	[EXPLOIT] Compute bix-27-q5 with PCA on the sample-by-gene log10(expression + 1) matrix.
+0402edb591cf2b56a18f34ae1b93519ab7589cea	0.666667	keep	critic second-evaluation confirmation for Answer the four bix-8 questions using the dataset's methylation and expression s
+cac13938aa9f818ab624de61ee145a6d17a9ea47	0.666667	discard	[EXPLOIT] Extract ENO1's normal abundance, adjusted p-value, and log2 fold change directly
+4dd6abb80d0b20f666db886053bcc54b2cc715b3	0.666667	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by direct, units-aware column extract
+		reject	[EXPLOIT] proposal rejected after repair
+8193e96a2b3906d558f0cd94b287ce8776c37145	0.666667	discard	[EXPLOIT] Compute bix-27-q5 by log10-transforming the expression matrix with pseudocount 1
+e448d7011f0d0bdbff0d6bd86b532720e61b730c	0.666667	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by selecting its unique gene row and 
+		crash	[EXPLOIT] LLM call failed
+		crash	[EXPLOIT] LLM call failed
+		crash	[EXPLOIT] LLM call failed

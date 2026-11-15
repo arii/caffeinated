@@ -1,0 +1,42 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+1a8f4d86e1fd52aef312768ebe93f737d926e61b		crash	[EXPLOIT] Replace the three-answer baseline with deterministic, question-specific analyses
+f0858a828c21fc69c67bad9e2f169521dcd1ec21	0.888889	keep	[EXPLOIT] Compute the rhlR- circularity standard error as the sample standard deviation di
+13dd658bf0a895832379a2328610f587f06575f2	0.888889	discard	[EXPLOIT] Add the two remaining descriptive swarming summaries: circularity for the larges
+19802280f59466001b72b231dfa8f4f2fc8e77a3	0.925926	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by directly extracting its normal abu
+f0858a828c21fc69c67bad9e2f169521dcd1ec21	0.888889	keep	critic second-evaluation confirmation for Compute the rhlR- circularity standard error as the sample standard deviation di
+e38db8daf2ce5e8505525a7c87e3c0952f3ea0d7	0.814815	keep	[EXPLOIT] Implement the complete bix-8 MeRIP-seq pipeline, including its contingency-table
+4c7f3bf21797a9ac7fad730369109f8091b634f9		crash	[EXPLOIT] Implement all seven bix-51 treatment-response answers with statsmodels logistic 
+4149ab28da8e8b356ef2b48f3ea9496992e27da7	0.814815	discard	[EXPLOIT] Implement the complete bix-19 NeuN pipeline for pooled Cohen's d, two-sample pow
+0b48d395e72f564d5a73f67395689ecdffec4989	0.888889	discard	[EXPLOIT] Implement the complete bix-10 COVID-19 severity pipeline with an adjusted ordere
+e38db8daf2ce5e8505525a7c87e3c0952f3ea0d7	0.814815	keep	critic second-evaluation confirmation for Implement the complete bix-8 MeRIP-seq pipeline, including its contingency-table
+9281e0b0576c8708d063b7a2779f5e6fbde4d4b5	0.814815	discard	[EXPLOIT] Implement the complete bix-37 proteomics pipeline by extracting ENO1's normal ab
+93273c1836f90a6f63e6e7512d563ec50f02c3ca	0.740741	keep	[EXPLOIT] Implement the complete bix-19 NeuN pipeline for pooled Cohen's d, two-sample pow
+0f24e1cbc925296e84c4e7359408aabdbda534aa		crash	[EXPLOIT] Implement the complete bix-51 treatment-response pipeline using deterministic lo
+1c87f43c0262e148443101f03e27bd0f4bfc6d4b		crash	[EXPLOIT] Implement the complete bix-54 swarming pipeline with quadratic, cubic, and natur
+93273c1836f90a6f63e6e7512d563ec50f02c3ca	0.740741	keep	critic second-evaluation confirmation for Implement the complete bix-19 NeuN pipeline for pooled Cohen's d, two-sample pow
+c0b4c8e26725a25752c838269f057d0c2a68eb61		crash	[EXPLOIT] Implement the complete bix-51 logistic-regression pipeline for age, BMI, and gen
+2d4545a4e364be59df8f5601f0f5aeeee3667d9c	0.740741	discard	[EXPLOIT] Implement the bix-37 proteomics lookup pipeline for ENO1's normal abundance, adj
+3a131880ca6e1ee19bf9faf2525767ad28d956dd	0.703704	keep	[EXPLOIT] Complete the bix-18 descriptive pipeline by adding the circularity of the larges
+39e4ddb765a9660788e961ec4f253247accc65d4	0.740741	discard	[EXPLOIT] Implement the bix-52 filtered unique-CpG density and uniformity pipeline for bot
+3a131880ca6e1ee19bf9faf2525767ad28d956dd	0.703704	keep	critic second-evaluation confirmation for Complete the bix-18 descriptive pipeline by adding the circularity of the larges
+9c7dcdd709676d4a2bcc9eecbea07da0a027a65b	0.703704	discard	[EXPLOIT] Add the complete bix-37 ENO1 proteomics lookup pipeline for normal abundance, ad
+6f7d48fe9c318663d11693406e9289ebd14959ea	0.703704	discard	[EXPLOIT] Implement the bix-41 Dunnett co-culture comparisons and the Strain 98 versus Str
+1e0f47aa94e297a0cd172e2145aaec092879aeed	0.703704	discard	[EXPLOIT] Compute bix-27-q5 by PCA on the sample-by-gene log10(expression + 1) matrix and 
+2d08d2c046dcd1a35a41e97a5c54e7dc187b38cc		crash	[EXPLOIT] Implement the complete bix-54 polynomial and natural-spline swarming-area analys
+1d288156786efb9175237a1d7374e803565936be		crash	[EXPLOIT] Implement all seven bix-51 treatment-response questions with conventional binary
+a72625eb42ca6320bfb81388895035d142d0501f	0.703704	discard	[EXPLOIT] Answer all three bix-37 questions by extracting ENO1's normal abundance, adjuste
+1f408b3d92515cca6e537cc0a12768667187bd6c		crash	[EXPLOIT] Implement all three bix-41 questions using grouped two-sided Dunnett tests again
+9559c76beec1d1e7c280b2190dbefe6cc2b68321	0.703704	discard	[EXPLOIT] Implement all four bix-52 answers using distinct filtered CpG sites, chromosome-
+e7e998ad36eeb9d460f699dc9db3f33d969e91af		crash	[EXPLOIT] Implement all seven bix-51 treatment-response questions with conventional binary
+e984672c0548f12597b83e9d812238941a86b87e	0.703704	discard	[EXPLOIT] Answer all three bix-37 questions by extracting ENO1's normal abundance, adjuste
+0b345bdc1f7cef0df7eba1f12500084704194855		crash	[EXPLOIT] Implement all three bix-41 answers with grouped two-sided Dunnett tests against 
+e0f13e1d7fb4cc1392e903f2f06424766bc1f61a	0.703704	discard	[EXPLOIT] Implement all four bix-52 answers by filtering extreme methylation, deduplicatin
+2995efa554786f9bff3fc272e9b34c6f5d8fb970		crash	[EXPLOIT] Implement all seven bix-51 treatment-response questions using conventional binar
+32a3e48378b039e9c72fb7028b93353a8c50c486	0.703704	discard	[EXPLOIT] Answer all three bix-37 questions by extracting ENO1's normal abundance, adjuste
+6615425f7b3a77ecfafa420422ceadfb13733ab5		crash	[EXPLOIT] Implement all three bix-41 answers with grouped two-sided Dunnett tests against 
+51df9e052bd704a6483f3f60b0956bc0b06f852e	0.703704	discard	[EXPLOIT] Implement all seven bix-54 answers with explicit polynomial and natural-cubic-sp
+4837f06ee13664a621a99f4574f98d252b294051		crash	[EXPLOIT] Implement all seven bix-51 treatment-response answers using conventional maximum
+f4b4324769b27852d4df039d41c13183eb80a1cf		crash	[EXPLOIT] Implement all three bix-41 answers using grouped two-sided Dunnett tests against
+7270aba6b240312d77e4346b243349c65605cb64	0.703704	discard	[EXPLOIT] Implement all seven bix-54 answers with polynomial and df=4 natural-cubic-spline
+		crash	[EXPLOIT] LLM call failed

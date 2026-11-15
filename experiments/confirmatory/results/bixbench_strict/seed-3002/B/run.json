@@ -1,0 +1,63 @@
+{
+  "arm": "B",
+  "branch": "swarm-B-20261115",
+  "command": [
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/repo/swarm.py",
+    "--repo",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/repo",
+    "--task",
+    "bixbench_numeric",
+    "--arm",
+    "B",
+    "--rounds",
+    "12",
+    "--seed",
+    "3002",
+    "--llm",
+    "tinker",
+    "--model",
+    "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "--exa",
+    "off",
+    "--memory-backend",
+    "local",
+    "--out",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/run",
+    "--no-push",
+    "--no-viewer",
+    "--literature",
+    "off"
+  ],
+  "exa": "off",
+  "literature": "off",
+  "llm": "tinker",
+  "memory_backend": "local",
+  "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+  "no_push": true,
+  "profile_path": "boredom_profile.json",
+  "profile_sha256": "bc7e08749e37c185f7faa11bebc9b384cd197911c2575b501853d637c9432ca0",
+  "repo": "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/repo",
+  "research": "off",
+  "resumes": [
+    {
+      "after_round": 4,
+      "checkpoint_ts": "2026-11-15T08:52:56.649315Z",
+      "command": [
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/repo/swarm.py",
+        "--resume",
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard/bixbench_numeric/seed-3002/B/run"
+      ],
+      "ts": "2026-11-15T09:02:26.698071Z"
+    }
+  ],
+  "rounds": 12,
+  "run_id": "2451beec66be46c99eac61ec5e11e658",
+  "seed": 3002,
+  "status": "finished",
+  "swarm_commit": "744225543f79f0fba97f34194a7b0b4e075ccbbb",
+  "task": "bixbench_numeric",
+  "viewer": false,
+  "viewer_dest": null,
+  "viewer_run_id": "de25e214-d9c9-5104-b1ee-91fe731684d4",
+  "workers": 4
+}

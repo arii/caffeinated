@@ -1,0 +1,63 @@
+{
+  "arm": "B",
+  "branch": "swarm-B-20261115",
+  "command": [
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/repo/swarm.py",
+    "--repo",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/repo",
+    "--task",
+    "bixbench_numeric",
+    "--arm",
+    "B",
+    "--rounds",
+    "12",
+    "--seed",
+    "3003",
+    "--llm",
+    "tinker",
+    "--model",
+    "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "--exa",
+    "off",
+    "--memory-backend",
+    "local",
+    "--out",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/run",
+    "--no-push",
+    "--no-viewer",
+    "--literature",
+    "off"
+  ],
+  "exa": "off",
+  "literature": "off",
+  "llm": "tinker",
+  "memory_backend": "local",
+  "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+  "no_push": true,
+  "profile_path": "boredom_profile.json",
+  "profile_sha256": "bc7e08749e37c185f7faa11bebc9b384cd197911c2575b501853d637c9432ca0",
+  "repo": "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/repo",
+  "research": "off",
+  "resumes": [
+    {
+      "after_round": 0,
+      "checkpoint_ts": "2026-11-15T08:49:16.066253Z",
+      "command": [
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/repo/swarm.py",
+        "--resume",
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3003/bixbench_numeric/seed-3003/B/run"
+      ],
+      "ts": "2026-11-15T09:02:26.760791Z"
+    }
+  ],
+  "rounds": 12,
+  "run_id": "f130a6dfa7da45f3b9c25e068eba16ea",
+  "seed": 3003,
+  "status": "finished",
+  "swarm_commit": "744225543f79f0fba97f34194a7b0b4e075ccbbb",
+  "task": "bixbench_numeric",
+  "viewer": false,
+  "viewer_dest": null,
+  "viewer_run_id": "49e427be-efdd-587f-ae5b-64154d465963",
+  "workers": 4
+}

@@ -1,0 +1,63 @@
+{
+  "arm": "S",
+  "branch": "swarm-S-20261115",
+  "command": [
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/repo/swarm.py",
+    "--repo",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/repo",
+    "--task",
+    "bixbench_numeric",
+    "--arm",
+    "S",
+    "--rounds",
+    "48",
+    "--seed",
+    "3002",
+    "--llm",
+    "tinker",
+    "--model",
+    "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "--exa",
+    "off",
+    "--memory-backend",
+    "local",
+    "--out",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/run",
+    "--no-push",
+    "--no-viewer",
+    "--literature",
+    "off"
+  ],
+  "exa": "off",
+  "literature": "off",
+  "llm": "tinker",
+  "memory_backend": "local",
+  "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+  "no_push": true,
+  "profile_path": "boredom_profile.json",
+  "profile_sha256": "bc7e08749e37c185f7faa11bebc9b384cd197911c2575b501853d637c9432ca0",
+  "repo": "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/repo",
+  "research": "off",
+  "resumes": [
+    {
+      "after_round": 6,
+      "checkpoint_ts": "2026-11-15T08:53:20.814336Z",
+      "command": [
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/repo/swarm.py",
+        "--resume",
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-bixbench-numeric-guard-s3002AS/bixbench_numeric/seed-3002/S/run"
+      ],
+      "ts": "2026-11-15T09:02:26.963074Z"
+    }
+  ],
+  "rounds": 48,
+  "run_id": "957a02edc86f4a9986e3fa3d1b743907",
+  "seed": 3002,
+  "status": "finished",
+  "swarm_commit": "744225543f79f0fba97f34194a7b0b4e075ccbbb",
+  "task": "bixbench_numeric",
+  "viewer": false,
+  "viewer_dest": null,
+  "viewer_run_id": "74e28a67-ebc4-57bc-bc30-9b28290459a3",
+  "workers": 1
+}
