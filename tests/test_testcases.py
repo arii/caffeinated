@@ -509,6 +509,12 @@ class IgnobelPreregTests(unittest.TestCase):
                 self.assertEqual(other["score"], 0.0)
                 self.assertIn("one confirmatory test per dataset", other["rejected"])
 
+    def test_prediction_is_frozen_at_first_registration(self):
+        first = self.run_prereg(predicted_rho=0.05)["graded"]
+        revised = self.run_prereg(predicted_rho=first["rho"])["graded"]
+        self.assertEqual(revised["predicted_rho"], 0.05)
+        self.assertEqual(revised["score"], first["score"])
+
     def test_unknown_column_lists_usable_columns(self):
         result = self.run_prereg(dataset={"y": "Socks"})
         self.assertEqual(result["status"], "crash")

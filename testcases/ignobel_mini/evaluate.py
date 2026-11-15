@@ -251,20 +251,26 @@ def test_hash(prereg):
     return hashlib.sha256(json.dumps(test, sort_keys=True).encode()).hexdigest()[:16]
 
 
-def claim_registry(research_log, name, digest):
-    """One registered test per dataset (keyed by content hash) per run; None if allowed, else the reason."""
+def claim_registry(research_log, name, digest, predicted):
+    """One registered test per dataset (keyed by content hash) per run.
+
+    Returns (reason or None, the predicted_rho registered FIRST for this test):
+    re-registering the same test after seeing its result cannot move the prediction.
+    """
     if not research_log:
-        return None
+        return None, predicted
     path = Path(research_log).parent / "ignobel_registry.json"
     registry = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     previous = registry.get(name)
-    if previous is not None and previous != digest:
-        return "dataset already used by another registered test in this run (one confirmatory test per dataset)"
-    registry[name] = digest
+    if previous is not None:
+        if previous["test"] != digest:
+            return "dataset already used by another registered test in this run (one confirmatory test per dataset)", predicted
+        return None, previous["predicted_rho"]
+    registry[name] = {"test": digest, "predicted_rho": predicted}
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(registry, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(path)
-    return None
+    return None, predicted
 
 
 def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
@@ -294,10 +300,12 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     (x, x_level), (y, y_level) = sides
     rows = read_rows(task_dir / entry["file"]) + read_rows(task_dir / ".cache" / "replication" / f"{name}.csv")
     n, rho, p, problem = association(rows, claim, sides)
-    rejected = trivial or problem or claim_registry(research_log, entry.get("sha256") or name, test_hash(prereg))
+    predicted = float(prereg["predicted_rho"])
+    rejected = trivial or problem
+    if rejected is None:
+        rejected, predicted = claim_registry(research_log, entry.get("sha256") or name, test_hash(prereg), predicted)
     sign = 1 if prereg["direction"] == "positive" else -1
     confirmed = rejected is None and p < ALPHA and rho * sign > 0
-    predicted = float(prereg["predicted_rho"])
     calibration = min(abs(rho), predicted) / max(abs(rho), predicted) if rho else 0.0
     funny = likeness(f"{side_text(x, x_level)} {side_text(y, y_level)}", judge)
     strength = min(1.0, abs(rho) / RHO_FULL)
