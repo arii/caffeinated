@@ -799,7 +799,7 @@ def scope_decision(metadata, scope):
     if metadata["run_id"] == scope["run_id"]:
         return "same_run"
     if not task or metadata.get("task") != task:
-        return "foreign_task"
+        return "untagged_task"
     mem_type = metadata.get("type")
     if mem_type in CROSS_RUN_TYPES or (
         mem_type == "result" and metadata.get("status") in CROSS_RUN_FAILED_STATUSES

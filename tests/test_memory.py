@@ -665,7 +665,8 @@ class MemoryCliTests(unittest.TestCase):
                 self.assertEqual(record["dropped_count"], 7)
                 self.assertEqual(
                     record["dropped_reasons"],
-                    {"run_only": 2, "foreign_task": 2, "foreign_arm": 2, "unscoped": 1},
+                    {"run_only": 2, "foreign_task": 1, "untagged_task": 1,
+                     "foreign_arm": 2, "unscoped": 1},
                 )
                 self.assertEqual(
                     record["dropped_source_ids"],
@@ -696,6 +697,14 @@ class MemoryCliTests(unittest.TestCase):
                 {"arm": "A", "run_id": "old", "task": "hadamard19", "type": "lesson"}, scope
             ),
             "foreign_task",
+        )
+        self.assertEqual(
+            memory.scope_decision({"arm": "A", "run_id": "old", "type": "lesson"}, scope),
+            "untagged_task",
+        )
+        self.assertEqual(
+            memory.scope_decision({"arm": "A", "run_id": "pair-1", "type": "claim"}, scope),
+            "same_run",
         )
 
     def test_pastdev_arm_recall_with_empty_mirror_drops_all_results(self):
