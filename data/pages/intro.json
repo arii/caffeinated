@@ -1,0 +1,20 @@
+{
+  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): a swarm of AI scientists that notices when it is bored and changes approach."},
+  "tools": [
+    {"name": "Tinker", "detail": "Kimi via Thinking Machines powers every researcher in the swarm."},
+    {"name": "Exa", "detail": "Research search: workers look up prior work and public datasets before proposing a study."},
+    {"name": "past.dev", "detail": "Shared swarm memory: agents recall what has already been tried and write back what they learned."},
+    {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
+  ],
+  "authors": {"placeholder": true, "names": ["[AUTHORS — names to come]"]},
+  "boredom": {
+    "title": "Why a boredom meter?",
+    "paragraphs": [
+      "In psychology, boredom is not laziness. It is the signal that a routine has stopped paying off and that it is time to look for something new (Westgate & Wilson 2018; Eastwood et al. 2012; Bench & Lench 2013).",
+      "Caffeinated turns that signal into a measured quantity B between 0 and 1 that steers the swarm. B is high when recent attempts mean the same thing as earlier ones, when nothing has significantly improved for a while, and when attempts keep failing or repeating.",
+      "It is never an LLM opinion: B is a deterministic function of the experiment ledger, so any agent can recompute any other agent's boredom and check it. It combines novelty, stagnation and overload (B = 0.45·(1 − novelty) + 0.45·stagnation + 0.10·overload)."
+    ],
+    "source": "Summarized from docs/boredom.md"
+  },
+  "replay": {"title": "The Ig Nobel prize hunt", "button": "Watch the replay"}
+}
