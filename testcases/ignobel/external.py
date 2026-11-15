@@ -71,21 +71,31 @@ def doi_title(citation, task_dir=HERE):
     )
     if cache.is_file():
         return json.loads(cache.read_text(encoding="utf-8")).get("title")
-    request = urllib.request.Request(
-        "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="/"),
-        headers={"User-Agent": "caffeinated-ignobel/1 (mailto:swarm@localhost)"},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            message = json.loads(response.read(2_000_000))["message"]
-    except urllib.error.HTTPError as error:
-        if error.code != 404:
-            raise
+    title = registered_title(doi)
+    if title is None:
         return None
-    title = " ".join((message.get("title") or [""])[0].split()) or doi
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps({"doi": doi, "title": title}) + "\n", encoding="utf-8")
     return title
+
+
+def registered_title(doi):
+    """Title from Crossref (papers) or DataCite (datasets, e.g. Zenodo), or None if neither knows the DOI."""
+    quoted = urllib.parse.quote(doi, safe="/")
+    for url, title_of in (
+        ("https://api.crossref.org/works/", lambda d: (d["message"].get("title") or [""])[0]),
+        ("https://api.datacite.org/dois/", lambda d: (d["data"]["attributes"].get("titles") or [{}])[0].get("title", "")),
+    ):
+        request = urllib.request.Request(
+            url + quoted, headers={"User-Agent": "caffeinated-ignobel/1 (mailto:swarm@localhost)"}
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10) as response:
+                return " ".join(str(title_of(json.loads(response.read(2_000_000)))).split()) or doi
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+    return None
 
 
 def cited(url, research_log=None):
@@ -152,7 +162,7 @@ def _build(url, name, entry_path):
         "files": [url],
         "license": "see source",
         "drop": r"(?i)^(rownames|x|id|index|row|obs|unnamed.*|.*[ _]id)$",
-        "delimiter": "\t" if first_line.count("\t") > first_line.count(",") else ",",
+        "delimiter": prepare.delimiter(first_line),
     }
     entry = prepare.build(name, spec)
     with (prepare.HERE / ".cache" / "replication" / f"{name}.csv").open(

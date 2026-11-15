@@ -61,6 +61,11 @@ def atomic_write(path, data):
     Path(stream.name).replace(path)
 
 
+def delimiter(first_line):
+    """Tab or comma, whichever splits the header row (quotes respected) into more fields."""
+    return max(",\t", key=lambda d: len(next(csv.reader([first_line], delimiter=d), [])))
+
+
 def source_url(path):
     return path if path.startswith("https://") else f"{BASE}/{path}"
 

@@ -111,8 +111,7 @@ def huggingface(query, n):
 def columns(url):
     head = _get(url, max_bytes=20_000).decode("utf-8-sig", errors="replace")
     first = head.replace("\r", "\n").split("\n", 1)[0]
-    delimiter = max(",;\t", key=first.count)
-    return [prepare.clean(c) for c in next(csv.reader(io.StringIO(first), delimiter=delimiter))][:30]
+    return [prepare.clean(c) for c in next(csv.reader(io.StringIO(first), delimiter=prepare.delimiter(first)))][:30]
 
 
 def find(query, n=3, skip=()):
