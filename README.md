@@ -1,16 +1,37 @@
 # Lab Environment — research replay
 
-A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
+A first-person lab for walking through recorded research. The Pages site replays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. Experiments are launched from this repository's research tools, and their recordings can be supplied through the same data boundary.
 
 Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
-- **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
+- **Experiment producer:** the Ig Nobel task (`swarm.py --task ignobel`) checks known relationships in public teaching datasets; it has not produced discoveries ([`testcases/README.md`](testcases/README.md), task files in `testcases/ignobel/`).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
+- **Backend architecture and results:** [how Exa and past.dev are used](docs/architecture.md#how-we-use-exa-and-pastdev) and [results so far (honest)](docs/results.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
+
+## Results (with caveats)
+
+Track 3 has two orderings: preregistered primary (guard2, stopped early, guarded), B 0.26 > S
+0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06.
+The smallest observed sign-flip p (with 3 paired runs the smallest attainable is 0.25) is 0.25
+(complete strict-guard set) and 0.5 (guard2 primary); 3 runs (orchestration seeds; Kimi sampling
+is not seeded), neither ordering is significant.
+B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate
+for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two
+runs. Under the earlier grader the means were A 0.093, B 0.056, S 0.074.
+See [full results](docs/results.md) and
+[judge Q&A](docs/judge-qa.md).
+
+The Ig Nobel run tested gate-passing correlations on public teaching datasets (Cars93, cats,
+sleepstudy, and others): known relationships, not discoveries. It had 21 registered studies,
+13 run, 11 passed the preregistered gates, and 10 also pass the |ρ| ≥ 0.1 floor added after the
+run. The ρ = 0.07 x/y coordinate study is the failure case; it also appears as a second confirmed
+row because the critic re-ran it (a `study.replicated` event), not as a separate test. No committee
+score was run on the published recording.
 
 ## Run
 
@@ -29,7 +50,7 @@ Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so n
 From the repo root, in two terminals:
 
 ```sh
-# one-time: make setup && docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+# one-time: make setup && docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 # put TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY in .env (see .env.example)
 npm run dev                                                          # terminal 1: lab
 python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker  # terminal 2: research
@@ -41,7 +62,7 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 ## Explore a recording
 
-- Use **Archive** in the sidebar to choose any of the four supplied recordings. These are temporary replay inputs, not the selected future research problems.
+- Use **Archive** in the sidebar to choose a bundled local replay; the Pages site contains one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory.
 - Press **Play**, drag the timeline, or change the playback pace. Drag to change the camera angle from your current viewpoint, use WASD to glide around, and Q/E to change height—even while playback runs. These controls adapt the camera rig from History in 3D. Research unfolds from an elevated camera inside the room.
 - Pause and choose **Walk inside**. Use WASD, Shift, mouse/drag or arrow keys to explore the paused world. Approach a researcher and press E, or select them from **Team**.
 - Agent conversations appear as speech popups above the selected character and quote recorded statements and results available at the current tick. Boredom appears only when interacting with that agent.
@@ -50,13 +71,13 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.
 
-The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample includes mock prior-art URLs and is labeled accordingly; its supplied provenance is not proof of live scientific validation.
+The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Pages recording’s supplied provenance is not proof of live scientific validation.
 
 ## Data and future integration
 
-The source bundle is `data/replays/swarm-viewer-sample-runs.zip`. It contains three autoresearch histories and one Ig Nobel sample, with manifests, ordered events, entities, and sparse keyframes. No candidate executables or plot images are included.
+The source bundle is `data/replays/swarm-viewer-sample-runs.zip` for local replay; Pages exports one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory. The bundle contains three provenance-backed Kimi/Exa/past.dev autoresearch histories, with manifests, ordered events, entities, and sparse keyframes. The fake Ig Nobel sample was removed from the default bundle. No candidate executables or plot images are included.
 
-`backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts replicated findings. Agent details use the event prefix, rather than reading later fields from final entities.
+`backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts confirmed studies. Agent details use the event prefix, rather than reading later fields from final entities.
 
 | Read-only endpoint | Response |
 | --- | --- |

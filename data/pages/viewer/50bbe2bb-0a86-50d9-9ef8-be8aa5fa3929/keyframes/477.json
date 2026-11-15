@@ -1,0 +1,884 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 375,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 362,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.263333,
+    "components": {
+     "diversity": 0.444444,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.888889,
+     "overload": 0.333333,
+     "stagnation": 0.4,
+     "trivial_rate": 0.333333
+    },
+    "measured_tick": 367,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 1,
+    "memory_writes": 12,
+    "observations": 64,
+    "questions": 36,
+    "tokens": 66242
+   },
+   "diary_head": {
+    "diary_id": "diary:36",
+    "excerpt": "This is a materially different, kitchen-lab-adjacent everyday-physics test on an unused 93-row public CSV with exact numeric headers. The earlier heavy-car attempts failed at citation or dataset validation, not because the association was t"
+   },
+   "focus": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "hypothesis_id": "hypothesis:36",
+    "question_id": "question:Q29"
+   },
+   "last_observation_id": "observation:S75",
+   "last_question_id": "question:Q29",
+   "last_reward": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "metric_value": 0.0,
+    "reward_id": "reward:15",
+    "status": "discard",
+    "tick": 466,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 473,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.353333,
+    "components": {
+     "diversity": 0.444444,
+     "fail_rate": 0.333333,
+     "frustration": 0.0,
+     "novelty": 0.888889,
+     "overload": 0.333333,
+     "stagnation": 0.6,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 368,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 8,
+    "observations": 24,
+    "questions": 16,
+    "tokens": 26565
+   },
+   "diary_head": {
+    "diary_id": "diary:37",
+    "excerpt": "This exploits the successful monotonic-association design on an unused animal-behaviour dataset with exact numeric headers. Large mammals generally have lower mass-specific metabolic rates and, especially among large herbivores, substantial"
+   },
+   "focus": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "hypothesis_id": "hypothesis:37",
+    "question_id": "question:Q30"
+   },
+   "last_observation_id": "observation:S78",
+   "last_question_id": "question:Q30",
+   "last_reward": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "metric_value": 0.0,
+    "reward_id": "reward:16",
+    "status": "discard",
+    "tick": 468,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 474,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.353333,
+    "components": {
+     "diversity": 0.444444,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.888889,
+     "overload": 0.333333,
+     "stagnation": 0.6,
+     "trivial_rate": 0.333333
+    },
+    "measured_tick": 369,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 8,
+    "observations": 24,
+    "questions": 16,
+    "tokens": 26549
+   },
+   "diary_head": {
+    "diary_id": "diary:38",
+    "excerpt": "This exploits the reliable strong-monotonic-association design on an unused 332-row medical CSV with exact numeric headers. BMI and triceps skinfold thickness are complementary measures of general and subcutaneous adiposity, so their positi"
+   },
+   "focus": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "hypothesis_id": "hypothesis:38",
+    "question_id": "question:Q31"
+   },
+   "last_observation_id": "observation:S81",
+   "last_question_id": "question:Q31",
+   "last_reward": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "metric_value": 0.0,
+    "reward_id": "reward:17",
+    "status": "discard",
+    "tick": 470,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 475,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.27,
+    "components": {
+     "diversity": 0.666667,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.6,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 370,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 8,
+    "observations": 24,
+    "questions": 16,
+    "tokens": 28916
+   },
+   "diary_head": {
+    "diary_id": "diary:39",
+    "excerpt": "This exploits the successful strong-monotonic-association design on an unused 2,287-row public CSV with exact numeric headers. Spearman's general-intelligence account predicts substantial positive manifold across cognitive tests, while verb"
+   },
+   "focus": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "hypothesis_id": "hypothesis:39",
+    "question_id": "question:Q32"
+   },
+   "last_observation_id": "observation:S84",
+   "last_question_id": "question:Q32",
+   "last_reward": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "metric_value": 0.0,
+    "reward_id": "reward:18",
+    "status": "discard",
+    "tick": 472,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 476,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 15943
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 362,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "ad675dac-d9a4-5974-b06a-ab26b40f679e",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the Cars93 data (vincentarelbundock.github.io), higher \"Weight\" goes with lower \"MPG.city\"",
+    "n": 93,
+    "p": 2.821585067710141e-33,
+    "predicted_rho": 0.8,
+    "rejected": null,
+    "replicated": true,
+    "rho": -0.8928053096246876,
+    "text": "rho -0.893 (predicted 0.8), p 2.8e-33, n 93: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "study_id": "study:14"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 14,
+    "native_type": "study"
+   },
+   "tick": 458,
+   "ts": "2026-11-15T08:23:38.797059Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "f3e8b3af-8641-5c67-9ce1-4db3ed26ebd8",
+   "payload": {
+    "field": "animal_behavior",
+    "predicted_rho": 0.35,
+    "question": "Do bigger-bodied mammals tend to get less total sleep each day?",
+    "text": "Preregistered: Do bigger-bodied mammals tend to get less total sleep each day? (bodywt vs sleep_total)",
+    "x": "bodywt",
+    "y": "sleep_total"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "study_id": "study:15"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 15,
+    "native_type": "study"
+   },
+   "tick": 459,
+   "ts": "2026-11-15T08:23:39.168409Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "4a5acfaf-1237-506a-9f0e-3a650f8e79e4",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the msleep data (vincentarelbundock.github.io), higher \"bodywt\" goes with lower \"sleep_total\"",
+    "n": 83,
+    "p": 1.9311868312044616e-07,
+    "predicted_rho": 0.35,
+    "rejected": null,
+    "replicated": true,
+    "rho": -0.5346016634215018,
+    "text": "rho -0.535 (predicted 0.35), p 1.9e-07, n 83: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "study_id": "study:15"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 15,
+    "native_type": "study"
+   },
+   "tick": 460,
+   "ts": "2026-11-15T08:23:39.168409Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "a56a4abd-639f-55fc-9e39-f4c2ba496f73",
+   "payload": {
+    "field": "medicine",
+    "predicted_rho": 0.65,
+    "question": "Among Pima women in the independent test cohort, does a higher BMI come with a thicker triceps skinfold pinch?",
+    "text": "Preregistered: Among Pima women in the independent test cohort, does a higher BMI come with a thicker triceps skinfold pinch? (bmi vs skin)",
+    "x": "bmi",
+    "y": "skin"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "study_id": "study:16"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 16,
+    "native_type": "study"
+   },
+   "tick": 461,
+   "ts": "2026-11-15T08:23:39.292007Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "a4dc1265-82a4-579c-a0a4-e868b747db94",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the Pima.te data (vincentarelbundock.github.io), higher \"bmi\" goes with higher \"skin\"",
+    "n": 332,
+    "p": 2.0036445579082516e-43,
+    "predicted_rho": 0.65,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.6631381736284426,
+    "text": "rho 0.663 (predicted 0.65), p 2e-43, n 332: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "study_id": "study:16"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 16,
+    "native_type": "study"
+   },
+   "tick": 462,
+   "ts": "2026-11-15T08:23:39.292007Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "b650b469-f381-5b82-ae8c-cd6550581c15",
+   "payload": {
+    "field": "psychology",
+    "predicted_rho": 0.5,
+    "question": "Do classroom whizz-kids also have a way with words?",
+    "text": "Preregistered: Do classroom whizz-kids also have a way with words? (IQ vs lang)",
+    "x": "IQ",
+    "y": "lang"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "study_id": "study:17"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 17,
+    "native_type": "study"
+   },
+   "tick": 463,
+   "ts": "2026-11-15T08:23:39.613533Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "7d63226b-f3ce-52d7-a21c-aa27c347f173",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the nlschools data (vincentarelbundock.github.io), higher \"IQ\" goes with higher \"lang\"",
+    "n": 2287,
+    "p": 8.4317708221259e-242,
+    "predicted_rho": 0.5,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.618774974261462,
+    "text": "rho 0.619 (predicted 0.5), p 8.4e-242, n 2287: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "study_id": "study:17"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 17,
+    "native_type": "study"
+   },
+   "tick": 464,
+   "ts": "2026-11-15T08:23:39.613533Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "cb4dcfb0-0ec3-5367-8b3b-8b429214b303",
+   "payload": {
+    "description": "Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f",
+    "role": "divergent",
+    "text": "Testing: Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "hypothesis_id": "hypothesis:36"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 15,
+    "native_type": "candidate"
+   },
+   "tick": 465,
+   "ts": "2026-11-15T08:23:39.613766Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "15c13906-0955-55d7-a935-198237ce809a",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "reward_id": "reward:15"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 15,
+    "native_type": "candidate"
+   },
+   "tick": 466,
+   "ts": "2026-11-15T08:23:39.613766Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "fa42124d-a972-54f1-ac76-1036ad7b51fd",
+   "payload": {
+    "description": "Do bigger mammals sleep less? Test body weight against total daily sleep across",
+    "role": "exploit",
+    "text": "Testing: Do bigger mammals sleep less? Test body weight against total daily sleep across"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "hypothesis_id": "hypothesis:37"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 16,
+    "native_type": "candidate"
+   },
+   "tick": 467,
+   "ts": "2026-11-15T08:23:39.904923Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "00c55f08-d420-509c-a56a-f739e4acb1ad",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "reward_id": "reward:16"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 16,
+    "native_type": "candidate"
+   },
+   "tick": 468,
+   "ts": "2026-11-15T08:23:39.904923Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "4ee83744-6064-5912-bf4d-35e019af7a8f",
+   "payload": {
+    "description": "Among Pima women in the independent test cohort, does a higher BMI come with a t",
+    "role": "exploit",
+    "text": "Testing: Among Pima women in the independent test cohort, does a higher BMI come with a t"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "hypothesis_id": "hypothesis:38"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 17,
+    "native_type": "candidate"
+   },
+   "tick": 469,
+   "ts": "2026-11-15T08:23:40.217231Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "40bec66f-86b9-5070-b9cf-5fbcddd68a14",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "reward_id": "reward:17"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 17,
+    "native_type": "candidate"
+   },
+   "tick": 470,
+   "ts": "2026-11-15T08:23:40.217231Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "5820ae6a-d041-5395-b602-01ecf037d15d",
+   "payload": {
+    "description": "Do classroom whizz-kids also have a way with words? Test IQ against language-tes",
+    "role": "exploit",
+    "text": "Testing: Do classroom whizz-kids also have a way with words? Test IQ against language-tes"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "hypothesis_id": "hypothesis:39"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 18,
+    "native_type": "candidate"
+   },
+   "tick": 471,
+   "ts": "2026-11-15T08:23:40.551400Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "06c1ada3-f35c-5c4a-a237-ee946d368d29",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "reward_id": "reward:18"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 18,
+    "native_type": "candidate"
+   },
+   "tick": 472,
+   "ts": "2026-11-15T08:23:40.551400Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "8ba29a98-d203-5837-90ee-9cebe2e36bda",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-1\nIdea: [EXPLOIT] Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "text": "autoresearch B round 4 by worker-1\nIdea: [EXPLOIT] Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 40,
+    "native_type": "result"
+   },
+   "tick": 473,
+   "ts": "2026-11-15T08:23:39.904668Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "13bde5b7-60e3-5b2b-a240-4533a54164a2",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-2\nIdea: [EXPLOIT] Do bigger mammals sleep less? Test body weight against total daily sleep across \nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 4 by worker-2\nIdea: [EXPLOIT] Do bigger mammals sleep less? Test body weight against total daily sleep across \nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:7aca64ad62e385c81ff77909737809776146f834"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 41,
+    "native_type": "result"
+   },
+   "tick": 474,
+   "ts": "2026-11-15T08:23:40.216921Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "7e1a4033-cb34-5b86-a2d1-d679bcb77003",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-3\nIdea: [EXPLOIT] Among Pima women in the independent test cohort, does a higher BMI come with a t\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 4 by worker-3\nIdea: [EXPLOIT] Among Pima women in the independent test cohort, does a higher BMI come with a t\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:9cda8753f42b91c8cc1b41ce29b638812fab201f"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 42,
+    "native_type": "result"
+   },
+   "tick": 475,
+   "ts": "2026-11-15T08:23:40.551081Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "cb642aa5-afa9-534b-8811-58e0ee5c2ebf",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-4\nIdea: [EXPLOIT] Do classroom whizz-kids also have a way with words? Test IQ against language-tes\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 4 by worker-4\nIdea: [EXPLOIT] Do classroom whizz-kids also have a way with words? Test IQ against language-tes\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:f3e73afc6c8813690a680e780b2b4ff80a6b6318"
+   },
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 43,
+    "native_type": "result"
+   },
+   "tick": 476,
+   "ts": "2026-11-15T08:23:40.864553Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "15bd2f3b-988e-5f54-a70b-1e76d3c4577a",
+   "payload": {
+    "B": 0.675,
+    "best_metric": 0.0,
+    "directive": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "frontier_stall": 15,
+    "frustration": 0.0,
+    "regime": "BOREDOM_SNAP",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.68 (BOREDOM_SNAP)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 4,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 20,
+    "native_type": "status"
+   },
+   "tick": 477,
+   "ts": "2026-11-15T08:23:40.865673Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 4,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.675,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 15,
+  "regime": "BOREDOM_SNAP"
+ },
+ "tick": 477,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 17,
+  "memory_items": 43,
+  "questions": 84,
+  "sources": 89,
+  "tokens": 164215
+ },
+ "ts": "2026-11-15T08:23:40.865673Z"
+}

@@ -155,35 +155,24 @@ def fake_response(role, values):
             agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
             target_index = (int(agent_match.group(1)) - 1) % len(fake_edits) if agent_match else 0
             target_index = (target_index + values.get("fake_offset", 0)) % len(fake_edits)
-            # A previous kept edit may have consumed this exact old text.
-            # Select the next applicable canned edit rather than aborting a run.
+            # Kept edits consume their old text and unlock follow-ups, so pick the
+            # next canned edit that still applies to the current source.
             for offset in range(len(fake_edits)):
                 index = (target_index + offset) % len(fake_edits)
-                target = fake_edits[index]
-                if (
-                    isinstance(target.get("old"), str)
-                    and target["old"]
-                    and candidate_source.count(target["old"]) == 1
-                    and target["old"] != target.get("new")
-                ):
-                    target_index = index
+                edits = fake_edit_pairs(fake_edits[index], candidate_source)
+                if edits:
                     break
             else:
-                raise ValueError("fake worker could not find a unique task edit")
-            old = target["old"]
-            new = target["new"]
-            if not isinstance(old, str) or not isinstance(new, str):
-                raise ValueError("fake task edits must contain string old/new values")
-            if not old or candidate_source.count(old) != 1 or old == new:
-                raise ValueError("fake worker could not find a unique task edit")
+                return {"status": "reject", "reason": "no canned fake edit applies to this source"}
             return {
-                "descriptor": target["descriptor"],
-                "idea": f"Test deterministic task edit {target_index + 1}",
+                "descriptor": fake_edits[index]["descriptor"],
+                "idea": fake_edits[index].get("idea")
+                or f"Test deterministic task edit {index + 1}",
                 "rationale": "Apply a distinct task-specific edit for offline runs.",
                 "lead_id": None,
                 "source_ids": [],
                 "predicted_delta": -0.001,
-                "edits": [{"old": old, "new": new}],
+                "edits": edits,
             }
         fake_targets = values.get("fake_targets") or []
         if fake_targets:
@@ -219,17 +208,48 @@ def fake_response(role, values):
     raise ValueError(f"no fake response for role {role}")
 
 
+def fake_edit_pairs(target, candidate_source):
+    """The edits a canned fake edit makes to candidate_source, or None if it does not apply.
+
+    A target is {"old", "new"}, {"edits": [{"old", "new"}, ...]} or {"replace_with": text
+    or JSON object} (the whole file); every old text must occur exactly once, and an
+    insertion whose new text is already present counts as applied.
+    """
+    if "replace_with" in target:
+        new = target["replace_with"]
+        if not isinstance(new, str):
+            new = json.dumps(new, indent=1, ensure_ascii=False) + "\n"
+        return (
+            [{"old": candidate_source, "new": new}]
+            if candidate_source.strip() and candidate_source != new
+            else None
+        )
+    pairs = target.get("edits") or [{"old": target.get("old"), "new": target.get("new")}]
+    edits = []
+    for pair in pairs:
+        old, new = pair.get("old"), pair.get("new")
+        if not isinstance(old, str) or not isinstance(new, str):
+            raise ValueError("fake task edits must contain string old/new values")
+        if not old or old == new or candidate_source.count(old) != 1:
+            return None
+        if old in new and new in candidate_source:
+            return None
+        edits.append({"old": old, "new": new})
+    return edits
+
+
 def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(), fake_targets=()):
     mechanism, method = cell.split("/")
     value = (descriptor or {}).get("params", {}).get("value")
+    matching = [
+        item
+        for item in fake_edits
+        if item.get("descriptor", {}).get("mechanism") == mechanism
+        and item.get("descriptor", {}).get("method") == method
+    ]
     target = next(
-        (
-            item
-            for item in fake_edits
-            if item.get("descriptor", {}).get("mechanism") == mechanism
-            and item.get("descriptor", {}).get("method") == method
-        ),
-        None,
+        (item for item in matching if fake_edit_pairs(item, candidate_source)),
+        matching[0] if matching else None,
     )
     if target is None and fake_targets:
         target = next(
@@ -250,9 +270,10 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
         number = int(value) if value.is_integer() else value
         old = match.group(0)
         new = f"{match.group('prefix')}{number:g}"
+        edits = [{"old": old, "new": new}]
     elif target is not None:
-        old, new = target["old"], target["new"]
-        if not old or candidate_source.count(old) != 1 or old == new:
+        edits = fake_edit_pairs(target, candidate_source)
+        if not edits:
             return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
     else:
         return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
@@ -263,13 +284,18 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
             "method": method,
             **({"params": {"value": assigned_value}} if assigned_value is not None else {}),
         },
-        "idea": f"Test assigned {cell}",
+        "idea": (target.get("idea") if isinstance(target, dict) else None)
+        or f"Test assigned {cell}",
         "rationale": "Implement the conductor-assigned descriptor cell.",
         "lead_id": None,
         "source_ids": [],
         "predicted_delta": -0.001,
-        "edits": [{"old": old, "new": new}],
+        "edits": edits,
     }
+
+
+class LLMError(RuntimeError):
+    """A model request failed after its retries; the caller may record it and go on."""
 
 
 class LLMClient:
@@ -278,12 +304,15 @@ class LLMClient:
         *,
         mode="openai",
         model=None,
+        role_models=None,
         log_path="llm_log.jsonl",
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
         seed=None,
+        fake_delay=0.0,
     ):
         self.mode = mode.casefold()
+        self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
         self.replay = replay
@@ -293,6 +322,11 @@ class LLMClient:
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
+        self.role_models = {
+            str(role).upper(): value
+            for role, value in (role_models or {}).items()
+            if value is not None
+        }
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
@@ -324,11 +358,16 @@ class LLMClient:
         digest = prompt_sha(prompt)
         started = time.monotonic()
         usage = None
-        model = self.model
+        model = self.role_models.get(role.upper(), self.model)
         self.request_attempts = []
         if self.replay:
             previous = next(
-                (record for record in self.records if record.get("prompt_sha") == digest),
+                (
+                    record
+                    for record in self.records
+                    if record.get("prompt_sha") == digest
+                    and record.get("role", role.upper()) == role.upper()
+                ),
                 None,
             )
             if previous is None:
@@ -337,13 +376,19 @@ class LLMClient:
             model = previous.get("model", model)
             usage = previous.get("usage")
         elif self.mode == "fake":
+            if self.fake_delay:
+                time.sleep(self.fake_delay)
             response = fake_response(role, prompt_values)
-        elif self.mode == "tinker":
-            response, usage = self._request_tinker(prompt)
         else:
-            response, usage = self._request(prompt)
+            try:
+                if self.mode == "tinker":
+                    response, usage = self._request_tinker(prompt, model=model)
+                else:
+                    response, usage = self._request(prompt, model=model)
+            except RuntimeError as error:
+                raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
-            raise RuntimeError(f"LLM role {role} response must be a JSON object")
+            raise LLMError(f"LLM role {role} response must be a JSON object")
         record = {
             "ts": timestamp(),
             "role": role.upper(),
@@ -363,11 +408,11 @@ class LLMClient:
         self.records.append(record)
         return response
 
-    def _tinker_completion(self, prompt):
+    def _tinker_completion(self, prompt, model=None):
         """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
         base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 8192,
             "temperature": 0.3,
@@ -418,12 +463,12 @@ class LLMClient:
             usage["reasoning"] = reasoning
         return content, usage
 
-    def _request_tinker(self, prompt):
+    def _request_tinker(self, prompt, model=None):
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         request_prompt = prompt
         for attempt in range(2):
             started = time.monotonic()
-            content, attempt_usage = self._tinker_completion(request_prompt)
+            content, attempt_usage = self._tinker_completion(request_prompt, model=model)
             reasoning = attempt_usage.pop("reasoning", "")
             record = {
                 "response": content,
@@ -450,11 +495,11 @@ class LLMClient:
                     + "\nReturn a single valid JSON object only."
                 )
 
-    def _request(self, prompt):
+    def _request(self, prompt, model=None):
         api_key = os.environ.get("OPENAI_API_KEY")
         base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
         }

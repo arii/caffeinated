@@ -1,0 +1,901 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 7,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 763,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 750,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.49,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.8,
+     "overload": 0.4,
+     "stagnation": 0.8,
+     "trivial_rate": 0.4
+    },
+    "measured_tick": 755,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 7,
+    "keeps": 1,
+    "memory_writes": 20,
+    "observations": 101,
+    "questions": 56,
+    "tokens": 116436
+   },
+   "diary_head": {
+    "diary_id": "diary:68",
+    "excerpt": "The acoustic lead remains unusable because it lacks a verified CSV and exact headers, so this diverges to an unused public provisioning dataset with confirmed numeric count columns. Begging is a repeatable offspring signal that informs pare"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-27",
+    "hypothesis_id": "hypothesis:68",
+    "question_id": "question:Q61"
+   },
+   "last_observation_id": "observation:S162",
+   "last_question_id": "question:Q61",
+   "last_reward": {
+    "experiment_id": "experiment:seq-27",
+    "metric_value": null,
+    "reward_id": "reward:27",
+    "status": "reject",
+    "tick": 865,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 872,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.56,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.2,
+     "frustration": 0.0,
+     "novelty": 0.8,
+     "overload": 0.2,
+     "stagnation": 1.0,
+     "trivial_rate": 0.2
+    },
+    "measured_tick": 756,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 7,
+    "keeps": 0,
+    "memory_writes": 15,
+    "observations": 54,
+    "questions": 32,
+    "tokens": 63589
+   },
+   "diary_head": {
+    "diary_id": "diary:69",
+    "excerpt": "This uses the unused fish-aggression CSV and its confirmed numeric headers to test a spatial-conflict prediction distinct from the claimed fledgling-provisioning study. A nearby joiner shell should create greater shelter and space competiti"
+   },
+   "focus": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "hypothesis_id": "hypothesis:69",
+    "question_id": "question:Q63"
+   },
+   "last_observation_id": "observation:S168",
+   "last_question_id": "question:Q63",
+   "last_reward": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "metric_value": 0.0,
+    "reward_id": "reward:28",
+    "status": "discard",
+    "tick": 867,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 873,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.645,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.7,
+     "overload": 0.6,
+     "stagnation": 1.0,
+     "trivial_rate": 0.6
+    },
+    "measured_tick": 757,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 7,
+    "keeps": 0,
+    "memory_writes": 14,
+    "observations": 51,
+    "questions": 31,
+    "tokens": 64919
+   },
+   "diary_head": {
+    "diary_id": "diary:70",
+    "excerpt": "This uses an unused, directly downloadable 200-row morphology dataset with exact numeric headers. Carapace width and length are both linear dimensions governed by overall body size and tightly coordinated growth, so their association should"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-29",
+    "hypothesis_id": "hypothesis:70",
+    "question_id": "question:Q65"
+   },
+   "last_observation_id": "observation:S174",
+   "last_question_id": "question:Q65",
+   "last_reward": {
+    "experiment_id": "experiment:seq-29",
+    "metric_value": null,
+    "reward_id": "reward:29",
+    "status": "reject",
+    "tick": 869,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 874,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.495,
+    "components": {
+     "diversity": 0.8,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.9,
+     "overload": 0.0,
+     "stagnation": 1.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 758,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 7,
+    "keeps": 0,
+    "memory_writes": 16,
+    "observations": 65,
+    "questions": 39,
+    "tokens": 84589
+   },
+   "diary_head": {
+    "diary_id": "diary:71",
+    "excerpt": "The acoustic leads still lack a usable multi-column CSV, so this diverges to an unused 2,800-row personality dataset with exact numeric item headers. Thoroughness and checking on others' well-being belong to different Big Five domains, avoi"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-30",
+    "hypothesis_id": "hypothesis:71",
+    "question_id": "question:Q67"
+   },
+   "last_observation_id": "observation:S180",
+   "last_question_id": "question:Q67",
+   "last_reward": {
+    "experiment_id": "experiment:seq-30",
+    "metric_value": null,
+    "reward_id": "reward:30",
+    "status": "reject",
+    "tick": 871,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 875,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 22736
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 750,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "ec6ecea2-8f67-5ca9-8626-84b370aaf0bd",
+   "payload": {
+    "latency_ms": 2484,
+    "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "prompt_sha": "9f605dc3542b64a7701692620e1a761f0757094dc62f4dc81cecf0e0e7682d26",
+    "role": "CRITIC_NOVELTY",
+    "text": "Asked the CRITIC_NOVELTY model (moonshotai/Kimi-K3.1-Pro:peft:262144, 1950 tokens)",
+    "tokens": 1950
+   },
+   "phase": "propose",
+   "refs": {
+    "llm_call_id": "llm_call:67"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "llm_log.jsonl",
+    "line": 67,
+    "native_type": "CRITIC_NOVELTY"
+   },
+   "tick": 857,
+   "ts": "2026-11-15T08:36:08.176969Z",
+   "type": "llm.called"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "7b90cd06-3724-572d-a1fe-bac4f5d47929",
+   "payload": {
+    "candidate_commit": "df65ff0131bac624c626e6e4c65dee697c3f28b0",
+    "descriptor": {
+     "mechanism": "animal_behavior",
+     "method": "untested_prediction"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 1.0,
+    "pass": false,
+    "prior_art": [
+     "S160",
+     "S161",
+     "S162"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 33,
+    "native_type": "gate"
+   },
+   "tick": 858,
+   "ts": "2026-11-15T08:33:49.205668+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "08d0a777-3fad-5760-a84c-3ddc59755fc1",
+   "payload": {
+    "candidate_commit": "9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "descriptor": {
+     "mechanism": "animal_behavior",
+     "method": "resolve_conflict"
+    },
+    "grounded": true,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 1.0,
+    "pass": true,
+    "prior_art": [
+     "S166",
+     "S167",
+     "S168"
+    ],
+    "text": "Novelty gate passed"
+   },
+   "phase": "gate",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 34,
+    "native_type": "gate"
+   },
+   "tick": 859,
+   "ts": "2026-11-15T08:34:27.010524+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "1f354424-1379-5ab6-9b59-af3803122dcc",
+   "payload": {
+    "candidate_commit": "a546ff1b7ef1d38766421caba147a5cfb28ff3f7",
+    "descriptor": {
+     "mechanism": "animal_behavior",
+     "method": "untested_prediction"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 1.0,
+    "pass": false,
+    "prior_art": [
+     "S172",
+     "S173",
+     "S174"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 35,
+    "native_type": "gate"
+   },
+   "tick": 860,
+   "ts": "2026-11-15T08:34:55.738452+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "61131f39-e7eb-57da-94a6-15963db00aa4",
+   "payload": {
+    "candidate_commit": "b5bf89ae935823a9f91f7bc2b818afafe4cde11c",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "S178",
+     "S179",
+     "S180"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 36,
+    "native_type": "gate"
+   },
+   "tick": 861,
+   "ts": "2026-11-15T08:35:47.272710+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "0d79f287-8ac1-5a3d-9a02-a3a971b6bc51",
+   "payload": {
+    "field": "animal_behavior",
+    "predicted_rho": 0.45,
+    "question": "Do shell-dwelling fish become more aggressive when an outsider's shell is closer to their own?",
+    "text": "Preregistered: Do shell-dwelling fish become more aggressive when an outsider's shell is closer to their own? (Distance between resident shell and joiner shell (cm) vs Aggression count)",
+    "x": "Distance between resident shell and joiner shell (cm)",
+    "y": "Aggression count"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "study_id": "study:22"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 22,
+    "native_type": "study"
+   },
+   "tick": 862,
+   "ts": "2026-11-15T08:36:08.863286Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "e9a0a279-c07b-580c-b1c9-c0226311b8c2",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the content data (zenodo.org), higher \"Distance between resident shell and joiner shell (cm)\" goes with lower \"Aggression count\" per \"Model offset term (sec)\"",
+    "n": 161,
+    "p": 3.3935038282691516e-07,
+    "predicted_rho": 0.45,
+    "rejected": null,
+    "replicated": true,
+    "rho": -0.38903236473543396,
+    "text": "rho -0.389 (predicted 0.45), p 3.4e-07, n 161: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "study_id": "study:22"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 22,
+    "native_type": "study"
+   },
+   "tick": 863,
+   "ts": "2026-11-15T08:36:08.863286Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "6ca26d66-749b-5de2-8a75-09a7768dfcab",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "divergent",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-27",
+    "hypothesis_id": "hypothesis:68"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 27,
+    "native_type": "candidate"
+   },
+   "tick": 864,
+   "ts": "2026-11-15T08:36:08.863514Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "0b582394-1b21-5d6a-9c2a-b3a98864d60c",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-27",
+    "reward_id": "reward:27"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 27,
+    "native_type": "candidate"
+   },
+   "tick": 865,
+   "ts": "2026-11-15T08:36:08.863514Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "7c887856-6ba9-5e03-8035-33aa691012cf",
+   "payload": {
+    "description": "Do shell-dwelling fish become more aggressive when an outsider’s shell is closer",
+    "role": "divergent",
+    "text": "Testing: Do shell-dwelling fish become more aggressive when an outsider’s shell is closer"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "hypothesis_id": "hypothesis:69"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 28,
+    "native_type": "candidate"
+   },
+   "tick": 866,
+   "ts": "2026-11-15T08:36:09.177351Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "d2b68f78-cfbf-59ea-a9a5-f278f5b39c90",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "reward_id": "reward:28"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 28,
+    "native_type": "candidate"
+   },
+   "tick": 867,
+   "ts": "2026-11-15T08:36:09.177351Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "7a2a4711-82a7-587c-a106-429281cca1e2",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "exploit",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-29",
+    "hypothesis_id": "hypothesis:70"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 29,
+    "native_type": "candidate"
+   },
+   "tick": 868,
+   "ts": "2026-11-15T08:36:09.512864Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "ad097814-7d77-5861-8033-5b46a30698a8",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-29",
+    "reward_id": "reward:29"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 29,
+    "native_type": "candidate"
+   },
+   "tick": 869,
+   "ts": "2026-11-15T08:36:09.512864Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "0f6a4682-40ed-5542-9df4-2eebeb6e17b9",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "divergent",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-30",
+    "hypothesis_id": "hypothesis:71"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 30,
+    "native_type": "candidate"
+   },
+   "tick": 870,
+   "ts": "2026-11-15T08:36:09.861623Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "14ef774d-884a-5087-8cdc-786ceadf0d4c",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-30",
+    "reward_id": "reward:30"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 30,
+    "native_type": "candidate"
+   },
+   "tick": 871,
+   "ts": "2026-11-15T08:36:09.861623Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "171512e4-1702-5134-91e8-68f31cd2f7f1",
+   "payload": {
+    "excerpt": "autoresearch B round 7 by worker-1\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 7 by worker-1\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r7-worker-1@065dd413fd17"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 72,
+    "native_type": "result"
+   },
+   "tick": 872,
+   "ts": "2026-11-15T08:36:09.177073Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "14139cf0-2b47-566a-9736-434232ec11a0",
+   "payload": {
+    "excerpt": "autoresearch B round 7 by worker-2\nIdea: [SNAP] Do shell-dwelling fish become more aggressive when an outsider’s shell is closer\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"resolve_conflict\"}",
+    "text": "autoresearch B round 7 by worker-2\nIdea: [SNAP] Do shell-dwelling fish become more aggressive when an outsider’s shell is closer\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"resolve_conflict\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:9d5f54e72a290894c3bd0ca242205759662ae47e"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 73,
+    "native_type": "result"
+   },
+   "tick": 873,
+   "ts": "2026-11-15T08:36:09.512515Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "8fa66277-cdc0-5057-8e50-5ab6cb9bcbb5",
+   "payload": {
+    "excerpt": "autoresearch B round 7 by worker-3\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 7 by worker-3\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r7-worker-3@065dd413fd17"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 74,
+    "native_type": "result"
+   },
+   "tick": 874,
+   "ts": "2026-11-15T08:36:09.861120Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "7965d993-ecae-5554-a062-9279b999dee9",
+   "payload": {
+    "excerpt": "autoresearch B round 7 by worker-4\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 7 by worker-4\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r7-worker-4@065dd413fd17"
+   },
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 75,
+    "native_type": "result"
+   },
+   "tick": 875,
+   "ts": "2026-11-15T08:36:10.182636Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "7ad8d5c9-1ab4-5995-9f14-ef30fd60b894",
+   "payload": {
+    "B": 0.62,
+    "best_metric": 0.0,
+    "directive": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "frontier_stall": 20,
+    "frustration": 0.0,
+    "regime": "BOREDOM_SNAP",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.62 (BOREDOM_SNAP)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 7,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 37,
+    "native_type": "status"
+   },
+   "tick": 876,
+   "ts": "2026-11-15T08:36:10.184866Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 7,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.62,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 20,
+  "regime": "BOREDOM_SNAP"
+ },
+ "tick": 876,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 29,
+  "memory_items": 75,
+  "questions": 158,
+  "sources": 192,
+  "tokens": 352269
+ },
+ "ts": "2026-11-15T08:36:10.184866Z"
+}

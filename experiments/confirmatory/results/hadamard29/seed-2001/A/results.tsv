@@ -1,0 +1,65 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+ec1699bae628c8139d5bb653531be1102101b297	0.877937	discard	[EXPLOIT] Replace random entry-flip search with a Paley conference-core construction and e
+ea77f0a4874f210fe3f94b2a7570f9dbd64b9805	0.377180	discard	[EXPLOIT] After each single-entry local optimum, sample improving two-entry flips and resu
+cade0b22fc7ceb03cd1660bd2e8013300ed84fbb	0.348944	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 24 while retaining the same gre
+cf8c4af068eec27b5af9cc7cc013bf0935e19920	0.377180	discard	[EXPLOIT] Add deterministic simulated-annealing escapes after greedy convergence, then ret
+46f63e63c54383660879d7c7f6f0307def271799	12.709310	discard	[EXPLOIT] Replace random initializations with the existing deterministic circulant seed wh
+22b66bc5496e0f6e10039da2291286afd8b96e83	0.348944	duplicate	[EXPLOIT] Increase deterministic random restarts from 4 to 24 while retaining the same gre
+ef5d3a45d98b119b71de82d09d2cca2ab825b4d6	0.382778	discard	[EXPLOIT] Change each local-search step from first-improvement entry flips to deterministi
+d7717a7a1be8fd0c67e0d99f2a3111982699a60a	0.334731	keep	[EXPLOIT] Add deterministic three-entry basin-hopping kicks after each single-flip local o
+d7717a7a1be8fd0c67e0d99f2a3111982699a60a	0.334731	keep	critic second-evaluation confirmation for Add deterministic three-entry basin-hopping kicks after each single-flip local o
+50f4773314bca0f054dd7b344f4153452440593b	0.275877	keep	[EXPLOIT] Add a normalized order-28 Paley Hadamard core with deterministic alternating opt
+fa8852559dfb95b1bd9862cb582474c3d6efa96a	0.334731	discard	[EXPLOIT] Increase deterministic three-entry basin-hopping kicks per restart from 12 to 48
+1ea00657cc6ae2e6d24ecbdfb75ed5cbfe8b2d22	0.332371	discard	[EXPLOIT] Make each improving kicked local optimum the base for subsequent three-entry kic
+4f2273fd48306b112c7c41e459f4f7ee4dd04482	0.332371	discard	[EXPLOIT] Change each basin-hopping perturbation from three distinct entry flips to four w
+50f4773314bca0f054dd7b344f4153452440593b	0.275877	keep	critic second-evaluation confirmation for Add a normalized order-28 Paley Hadamard core with deterministic alternating opt
+36fd9280510d731de945e2de35cf17364da49c94	0.275877	discard	[EXPLOIT] Add deterministic best-improvement pair-flip polishing to the bordered-Paley bor
+d05bfae04907ef4cc4746392da5c86e624c3aa9f	0.275877	discard	[EXPLOIT] Seed the bordered-Paley search with both signs of every length-28 row and column
+310d00f2e286eff1f182525b13f79da816422010	0.275877	discard	[EXPLOIT] Increase independent bordered-Paley random restarts from 4096 to 16384 while ret
+674126025cfe88b992b5417a2f43bffe191d0ade	0.275877	discard	[EXPLOIT] Widen bordered-Paley basin-hopping perturbations from 1–4 coordinate flips to 2–
+07e1a31716c8da5c6e2e6b6cc057ee85664d8a30	0.275877	discard	[EXPLOIT] Refine the incumbent with a deterministic sampled search over determinant-improv
+b735d3dbec7c6434e867650afe5e3b650f4e95bc	0.275877	discard	[EXPLOIT] Increase deterministic bordered-Paley basin-hopping kicks from 2048 to 8192 whil
+ebf8f9f9850ed052db00b526ffc831ac5bb93556	0.275877	discard	[EXPLOIT] Allow the bordered-Paley basin-hopping chain to accept equal-objective stabilize
+1864133c7a9c368fbebecd3d0dd375a5f7886ff5	0.275877	discard	[EXPLOIT] Add 4096 independent bordered-Paley restarts after the existing search, bringing
+6b6cef91ac0078973d0dd8f7d4bc9d00ccc5efd4	0.099786	keep	[EXPLOIT] Add a deterministic two-entry determinant-lemma refinement pass to the incumbent
+710c5fa3b363765e392f3c16d0ad827382271278	0.275877	discard	[EXPLOIT] Let bordered-Paley basin hopping walk equal-objective plateaus by kicking the cu
+d79f67e2ff386559a926a9b881c1664237163980	0.275877	discard	[EXPLOIT] Double the bordered-Paley basin-hopping kick budget from 2048 to 4096 while pres
+fdb8fc851609e4e30598104b958a81fdea9a597d	0.275877	discard	[EXPLOIT] Exhaustively test every two-coordinate kick of the best stabilized Paley border,
+6b6cef91ac0078973d0dd8f7d4bc9d00ccc5efd4	0.099786	keep	critic second-evaluation confirmation for Add a deterministic two-entry determinant-lemma refinement pass to the incumbent
+c7d083ac051e3bc863eb9498bf5eacda7d925d93	0.099786	discard	[EXPLOIT] Add deterministic best-improvement four-entry rectangle flips after the existing
+d3d3148801254cfb384069d764fbc76834293a46	0.099786	discard	[EXPLOIT] Raise the coordinated pair-flip refinement limit from 8 accepted moves to 32 whi
+89498ff8444109776e4fd3bae4987fc3235e9459	0.099786	discard	[EXPLOIT] Make bordered-Paley basin hopping walk from each newly stabilized border instead
+457a719a0c39061d77bc7c2b2c25bd2c5e755f45	0.099786	discard	[EXPLOIT] Add a deterministic coordinated three-entry-flip refinement after the existing p
+c698f06c5a028eac2041d56f87ee857c0b9f5f2d	0.099786	discard	[EXPLOIT] Add deterministic symmetric Paley conference-core seeds with diagonal signings a
+ab67066bc5d000ee6584da09e0a4d93ab2790b10	0.099786	duplicate	[EXPLOIT] Raise the coordinated pair-flip acceptance cap from 8 to 32 while retaining the 
+cac7b045b6d3136a40ebd697ce6d3e17bca718c5	0.099786	discard	[EXPLOIT] After the existing pair-flip phase, add deterministic rank-3 coordinated triple-
+277860ce6a4b57ad8576a1789d899676563e2189	0.099786	discard	[EXPLOIT] Accept coordinated pair flips whenever they increase the absolute determinant, i
+97249939333a5d0867700d526fe1fad6778ea921	0.099786	discard	[EXPLOIT] Add a capped supplementary-difference-set search over circulant 14x14 blocks, re
+4ec631c8039d3cd0c007a67a2d6aaca7f9084f9b	0.099786	discard	[EXPLOIT] After the existing sampled pair search, add deterministic exhaustive best-improv
+dcbf50c8c35b2169c9377c8b456602d7089d1ae1	0.099786	duplicate	[EXPLOIT] Raise the sampled pair-flip search's accepted-improvement cap from 8 to 32 while
+c5692cc55799214605877fe5702626a6a67283c3	0.099786	discard	[EXPLOIT] Add a sampled triple-entry-flip polishing stage after the existing pair search, 
+e79a7ea982cd111abc9880c2f5c71d6652d3c2a0	0.099786	discard	[EXPLOIT] Add deterministic-seed rectangle-flip polishing after pair flips, using rank-fou
+bd3c14205a637379882afc315233b208b91f38f8	0.099786	discard	[EXPLOIT] Raise the cap on accepted improving coordinated pair flips from 8 to 16 while re
+b02fd35e0dc507d4444ed2c59f186bbbde0862a9	0.099786	discard	[EXPLOIT] Add a capped deterministic rank-three triple-flip polishing phase after the exis
+4a57f76f80ac854287ba73012ceb0a529d9d2b73	0.099786	discard	[EXPLOIT] Replace random pair proposals with deterministic exhaustive best-improvement pai
+e34d31b86b37b10073f1427576a317c20a4df859	0.099786	discard	[EXPLOIT] Add a deterministic annealed search over bordered 14+14 two-circulant matrices, 
+00951f674bf570125b2b19b65c08b6299df5cf89	0.099786	discard	[EXPLOIT] Replace random pair proposals with deterministic best-improvement exhaustive pai
+fc383f0f41e9ad31ed3efe74e04c294336a59291	0.099786	discard	[EXPLOIT] Raise the cap on accepted improving random pair flips from 8 to 24 while keeping
+7b83b16bd98c7de0a2e061ce57d733d7d12ff75a	0.099786	discard	[EXPLOIT] Add deterministic random triple-flip polishing after the existing pair-flip phas
+0a2f0eb62eb40ad216102d99972728579dc9ad71	0.099786	discard	[EXPLOIT] Add a deterministic 50,000-pair bordered two-circulant search with spectrum-base
+0d70becfb49494cb833e6b063a19c1fff48fc3d5	0.099786	duplicate	[EXPLOIT] Raise the coordinated pair-flip acceptance cap from 8 to 32 while retaining the 
+7c7869536f28e223c6feb06dbfded946daa9c595	0.099786	discard	[EXPLOIT] Accept single-entry flips whenever they increase absolute determinant, including
+062ffc7bddbd2a303258777ca8c986f6601f7ebd	0.099786	discard	[EXPLOIT] Add deterministic-seed rank-3 triple-flip polishing after the existing pair-flip
+74bfcb6dcf56f02a86890924c03636ccb140fa6a	0.099786	discard	[EXPLOIT] Replace random Paley-border kicks with deterministic steepest-ascent search over
+bedb09455710c6e9a7e477369a9f72c184f33ee9	0.099786	duplicate	[EXPLOIT] Raise the coordinated pair-flip refinement cap from 8 accepted moves to 32 while
+1df1f9cee0db5e2a0568e76e2653c51c2e989758	0.099786	discard	[EXPLOIT] Extend the deterministic coordinated pair-flip proposal budget from 200,000 to 6
+0163a0e2b6a68aedfff3f6655ed1eb4a093ab083	0.099786	discard	[EXPLOIT] Replace random pair sampling with a deterministic exhaustive scan of all 352,860
+a5be1fdf10e854c65e9fd73d02d2d2f7e12967ab		crash	[EXPLOIT] Add a supplementary-difference-set Hadamard core with deterministic single/pair-
+13605fab8d38e631f7638512f6fee569003faaa5	0.099786	discard	[EXPLOIT] Replace sampled first-improvement pair flips with exhaustive deterministic best-
+0e2c3ce0f1b9c511c7b0bd0d958edbe864d37cf1	0.099786	discard	[EXPLOIT] Add a deterministic sampled triple-entry-flip refinement after the existing pair
+f2716f7832f666a9803199c2f8bced7cf7ad8c0b	0.099786	discard	[EXPLOIT] Add a deterministic sampled four-corner rectangle-flip refinement after the exis
+61a5525813b91838c59e7cca49ee5af0906e2467	0.099786	discard	[EXPLOIT] Add deterministic best-ascent refinement over all four-entry rectangle flips aft
+a77cb3259f0df04aaa3911dae6a034adb4e9492e	0.099786	discard	[EXPLOIT] Replace random pair proposals with deterministic exhaustive pair-flip scans, res
+715ef25ee13f5d7e997860b7bc5120e9fd1d2315	0.099786	discard	[EXPLOIT] Run a second independent deterministic pair-flip refinement from the same incumb
+4032199be466a3142547d829ab887b51075b0fb5	0.099786	discard	[EXPLOIT] Add a deterministic simulated-annealing pair-flip phase after strict pair descen

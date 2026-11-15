@@ -2,7 +2,12 @@
 
 `swarm.py` is the conductor of an Artificial Scientist Swarm. The conductor
 is plain, deterministic code; only scouts, workers and the critic call an LLM.
-One run = one arm on one task for up to 10 rounds.
+One run = one arm on one task; the round count is set per run with `--rounds`
+(the Ig Nobel run requested 15, and arm S ran 48 in the confirmatory runs).
+
+Rounds are synchronous: scouts finish first, then workers take turns. Candidate
+evaluations and any critic decision are recorded in the ledger and
+`results.tsv`, and round artifacts are written before the next round begins.
 
 ```sh
 python3 swarm.py --task bixbench_mini --arm B --rounds 4 --llm tinker --out out/bix
@@ -15,7 +20,7 @@ python3 swarm.py --task bixbench_mini --arm B --rounds 4 --llm tinker --out out/
 | conductor | code (`orchestrate`) | measures boredom, assigns roles, runs evaluations, keeps or discards |
 | `worker-1`…`worker-4` | LLM | one role each: `exploit` (refine the best) or `divergent` (structurally different idea); some also scout |
 | scout | a worker with the scout flag | Exa query → pick a source → write a lead to memory |
-| critic | LLM + evaluator | re-scores the provisional best on a second seed, writes a verdict and a lesson |
+| critic | LLM + evaluator (arms A–D) | reviews the provisional best; arm S has no critic |
 
 The viewer keeps identity (`type`: worker, critic, …) separate from the
 round's assignment (`role`: exploit, divergent, scout).
@@ -26,20 +31,54 @@ round's assignment (`role`: exploit, divergent, scout).
 1. measure   meter.status(ledger) → swarm B, regime; per-agent B and components
 2. assign    allocate_roles() → roles + scouts            → assignments.jsonl
 3. scout     for each scout: recall lessons → query Exa → pick source → lead   → research_log, memory
-4. propose   each worker: recall results/leads/claims → LLM JSON proposal
+4. propose   each worker in turn: recall results/leads/claims → LLM JSON proposal
              {descriptor, idea, rationale, source_ids, predicted_delta, edits}
              invalid JSON or edit → one repair attempt
 5. gate      boredom gate (regime rules) + prior-art check (Exa) → rejected proposals are logged
 6. commit    one git commit per candidate with Descriptor/Source/Prior-art trailers
-7. evaluate  task evaluator in a network-less Docker sandbox → loss
-8. critic    if a candidate beats best − accept_margin: second-seed run;
-             accept iff mean(run1, run2) < best − accept_margin → verdict + lesson
-9. record    ledger.jsonl, results.tsv, critic.tsv, memory writes, round tags
+7. evaluate  task evaluator in a network-less Docker sandbox → dev loss
+8. critic    arms A–D: evaluator confirmation and LLM review of the provisional
+             best; deterministic tasks reuse the first score, not an independent
+             replicate; "contradicted" vetoes acceptance → verdict + lesson
+             arm S skips the critic and accepts a numeric provisional best
+9. record    round results → ledger.jsonl, results.tsv, critic.tsv, memory,
+             round tags and checkpoint before the next round
 ```
 
 Rejected, crashed and discarded attempts stay in the ledger; they are what
 drives `fail_rate`, `trivial_rate` and the gate's "too close to a failure"
 rule.
+
+## Evaluation splits and research policy
+
+For BixBench and Playworld, every round and critic evaluation uses the `dev`
+split. BixBench still exposes all question text and public data, but grades 10
+of 17 questions during the run; Playworld uses development seeds
+100,000–100,199 and test seeds 300,000–300,199. At completion, `held_out.py`
+grades the baseline and best accepted commit once on the separate test split and writes
+`held_out_test.json`. The artifact compares baseline and best on test, includes
+a task-specific `reference_note`, and sets `reference_test_loss` to null.
+`export_viewer.py` adds this object to the viewer manifest as `held_out_test`,
+without changing published events.
+
+BixBench's `task.json` sets `"research": "off"`, which overrides `--exa` and
+`--literature` and disables both Exa and keyless search. Its host evaluator
+also rejects source code containing numeric literals matching gold answers
+(for the current split, except small integers and numbers stated in public
+questions); it reports the question ID, not the answer value.
+
+For Ig Nobel, the host evaluates confirmed studies with the two-judge
+committee in-loop. Its score is `0.25 + 0.75 * committee_score` (the lower
+judge's min(LAUGH, THINK)/10), and loss is `1 - score`; unconfirmed or
+targets-group studies score 0. Without `TINKER_API_KEY` the evaluator raises;
+only the explicit `IGNOBEL_COMMITTEE=off` opt-out keeps confirmed studies at
+1.0 (gate-only scoring, recorded as `metric_variant: gate-only`). One Exa search on the host-written headline provides
+prior-work data to the judges, who see only the host-written abstract and
+search results, not the preregistration's question, hypothesis or mechanism;
+established or textbook relationships are capped at THINK 3. The judges use
+gpt-oss-120b and Qwen3.5, neither the Kimi generator model.
+The complete committee result is stored with `ignobel_studies.jsonl`, and the
+post-run `score_run.py` report reuses the in-run cached verdicts.
 
 ## Role allocation
 
@@ -59,12 +98,23 @@ reproducible.
 
 | Arm | Boredom Meter | Exa | Memory |
 |---|---|---|---|
-| A | off (fixed 3 exploit / 1 divergent, critic without LLM) | on | past.dev |
+| A | off (fixed 3 exploit / 1 divergent) | on | past.dev |
 | B | on | on | past.dev |
 | C | on | off | past.dev |
 | D | on | on | local file |
+| S | off (1 worker; no scouts or critic) | on | past.dev |
+
+This table is the arm design. The confirmatory runs did not use it as written:
+every arm ran with Exa off and local memory (no past.dev). See the "Arms as
+actually run" table in
+[`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md).
 
 All arms share the task evaluator and budget, so A vs B isolates the meter.
+Arms A-D call the LLM critic for provisional improvements. Deterministic tasks
+reuse the first evaluation score, making the second run a confirmation rather
+than an independent replicate. A `contradicted` verdict vetoes numeric
+acceptance. `--critic-model` selects the critic (including novelty) model;
+omitting it uses `--model`.
 
 ## Shared memory
 
@@ -78,7 +128,7 @@ lead.
 
 `--llm tinker` (base-model sampling only, no training), `--llm openai`, or
 `--llm fake` (offline, deterministic plumbing checks). Every call is logged
-in `llm_log.jsonl` with prompt hash, prompt, response and any returned
+in `llm_log.jsonl` with prompt hash, actual role model, prompt, response and any returned
 reasoning.
 
 ## Outputs of a run (`--out`)

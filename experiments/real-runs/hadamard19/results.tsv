@@ -1,0 +1,20 @@
+commit	loss	status	description
+47be227	0.058514	keep	baseline
+57130daed992ae7e1679d5c29f7c784d02a6ca45	0.058514	discard	[EXPLOIT] Add a deterministic bordered two-circulant search over supplementary length-9 se
+f8a31a2553fc67c59d723b4ac1dfe873255ca31b	0.058514	discard	[EXPLOIT] After each single-flip local optimum, exhaustively search improving two-entry fl
+b921673034af28660863d9a15d6dc1e6ed14245b	0.058514	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 64 while retaining the same see
+f679aa9bb371804038621e068bf83d7160b3adb2	0.081226	discard	[EXPLOIT] Add deterministic simulated annealing between single-flip descent and a final gr
+ebf775bc8b765b0e7b9961ef39f6763139d4dc17	0.115555	discard	[EXPLOIT] Seed one restart with the diagonal-filled 19x19 core of the deterministic Paley 
+e685df56ebe72fd8f91f82c18fdeb64687713266	0.045828	keep	[EXPLOIT] Add a deterministic short tabu walk after each single-flip local optimum, then r
+5bbc3fd6da655497e331c5f457305f321e8ff82c	0.058514	discard	[EXPLOIT] Add a deterministic bordered two-circulant search over supplementary length-9 se
+4281e6822ba9c310905c9dc81052b60c0854ca84	0.058514	discard	[EXPLOIT] Polish each of the same four seeded starts with both the incumbent first-improve
+e685df56ebe72fd8f91f82c18fdeb64687713266	0.045828	keep	critic second-evaluation confirmation for Add a deterministic short tabu walk after each single-flip local optimum, then r
+7d06529f04579f3467051618cf801419ecf2692c	0.242275	discard	[EXPLOIT] Replace stochastic local search with an exhaustive deterministic bordered two-ci
+6f1770485f5975b02723f4201f2aa4b0a8b6d40c	0.045828	discard	[EXPLOIT] Add deterministic two-entry-flip polishing after each tabu-guided single-flip de
+dcd54856165a2d860fe128e88ea43a2eeed6acc6	0.045828	discard	[EXPLOIT] Extend each deterministic tabu walk from 160 to 400 steps while preserving the b
+2777bb1ca56295c1ec29fa2884d2be79e3577522	0.054801	discard	[EXPLOIT] Increase the deterministic tabu tenure from 7 to 11 steps while preserving the 1
+9ca9fdc6b1842464e937d0c16c75fd501d77c3e7	0.045828	discard	[EXPLOIT] Exhaustively filter the bordered three-circulant 1+9+9 family by periodic autoco
+4a6d951775f91a660db76d9187eb9c20fd029067	0.045828	discard	[EXPLOIT] Add deterministic two-entry-flip polishing, followed by single-flip descent, to 
+43d638531fbae192bac718255a0d8b29c34e33b5	0.000000	keep	[EXPLOIT] Cycle the deterministic tabu tenure through 5, 7, 9, and 11 steps while preservi
+da658700eca44c48a8d4f7961f3997c097478115	0.045828	duplicate	[EXPLOIT] Extend each deterministic tabu walk from 160 to 400 steps while preserving the b
+43d638531fbae192bac718255a0d8b29c34e33b5	0.000000	keep	critic second-evaluation confirmation for Cycle the deterministic tabu tenure through 5, 7, 9, and 11 steps while preservi

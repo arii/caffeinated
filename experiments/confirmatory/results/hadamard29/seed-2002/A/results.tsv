@@ -1,0 +1,57 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+164d9dbc3a08a4a089041deb721bcca71178c78a	0.275877	keep	[EXPLOIT] Replace random flipping with a verified Paley order-28 Hadamard matrix and optim
+d29c6d124c0cfa21c8d3ce8cdfdacdd722204262	0.342880	discard	[EXPLOIT] After each single-flip local optimum, search two-entry flips for an improving mo
+c9700389ba7a6b57f09cbfcc8126d2b3aa594f67	0.348944	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 32 while retaining the same gre
+52c92e54c6fbadcf06554ec20c87e1093efb3bf6	0.382778	discard	[EXPLOIT] Use steepest-ascent single-entry flips with determinant-lemma scoring and Sherma
+164d9dbc3a08a4a089041deb721bcca71178c78a	0.275877	keep	critic second-evaluation confirmation for Replace random flipping with a verified Paley order-28 Hadamard matrix and optim
+564d5aa933e01b02bb1f578da373b23df6bc3cb8	0.275877	discard	[EXPLOIT] Escape single-flip border optima by exhaustively testing improving two-coordinat
+1c8d07e4f37fe204dabef4db425f6e37cedbb6f3	0.275877	discard	[EXPLOIT] Increase deterministic random restarts from 256 to 4096 while preserving the ver
+ed3a4440dcaee785ebc6ade46b7378be1bbfb705	0.275877	discard	[EXPLOIT] Add a short deterministic tabu walk after each border coordinate-ascent run, ret
+769083504aa5b66f55a608a19d574998f0696d78	0.275877	discard	[EXPLOIT] Add deterministic simulated-annealing trajectories from the best border optimum,
+9ed6f935ac05c8a0caa129f156c8f55b1b192c87	0.275877	discard	[EXPLOIT] Add deterministic simulated-annealing border trajectories with final coordinate-
+aa8f2dd5ad1fd2a96ae96d0455edbc6521f404a3	0.275877	discard	[EXPLOIT] Add a deterministic tabu walk from the best border optimum, then polish its best
+6de6381278aafde4d08a1348995366beaaa2c0ba	0.275877	duplicate	[EXPLOIT] Increase deterministic random border restarts from 256 to 4096 while preserving 
+ffdabb5a667910760e5acc15dbbe2fa01f81c11e	0.275877	discard	[EXPLOIT] Seed border coordinate ascent with every cyclic shift and complement of the veri
+18d233e3e53987695e7ff4f383a40f15b3bf023e	21.138150	discard	[EXPLOIT] Maximize the Hadamard core's excess by deterministic best-improvement row/column
+6d6646da91475d54f4785a0354edebfff56f8c99	0.275877	discard	[EXPLOIT] Escape border coordinate-ascent optima with deterministic kicked tabu trajectori
+5fcced68c0393b0efe62260bd58f0dd77e35a1fd	0.275877	duplicate	[EXPLOIT] Increase deterministic random border restarts from 256 to 4096 while retaining t
+e76ef96349672e0a7eb8012ccd2b905903c3065e	0.275877	discard	[EXPLOIT] Escape border coordinate-ascent optima by exhaustively testing improving three-c
+c799b16c86a10661ad55f343063a81cce9213d8d	0.099786	keep	[EXPLOIT] Release the fixed Hadamard core and run full-matrix best-improvement single-entr
+f54f17c9bf50be58c4fd97c6e3c5e263be9a87dc	0.275877	discard	[EXPLOIT] Add deterministic simulated annealing over the 28 border signs, followed by exac
+c5beea6973212f8a600c1a856c083a89a5cda9fa	0.275877	discard	[EXPLOIT] Add a deterministic tabu walk over the 28 border signs, allowing non-improving f
+22378d23dbb9f600b047486e851f5bcf2e785864	0.099786	discard	[EXPLOIT] Extend pair-flip ascent from the 28 border signs to all 841 matrix entries using
+c799b16c86a10661ad55f343063a81cce9213d8d	0.099786	keep	critic second-evaluation confirmation for Release the fixed Hadamard core and run full-matrix best-improvement single-entr
+8d6a4c9bd359254224cd0039766032ee48704886	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with exhaustive rank-two pair flips, 
+387610980804d097c6eda47d691c3477d9e5c104	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with deterministic simulated annealin
+5216a3b47fb29d5d695dac52b7dc6c5629cf2aa3	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with deterministic tabu walks using e
+dc001b20351c1f65ba387387f196b171434ef3b4	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with exhaustive rank-three flips amon
+ccfd32382ca86d98c75f9a5a5869bcbb9f4a52ec	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with exhaustive best-improvement pair
+17cbdb40b5da4593f24b0ccac807af71dc852700	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with deterministic best-improvement t
+043e45887907ba826e045b9de4fa60eeb4cad4c4	0.099786	discard	[EXPLOIT] Escape the full-matrix local optimum with a deterministic tabu walk that permits
+14d2b785e9e0c0829b3051543cc5d90ecac3a2f3	0.099786	discard	[EXPLOIT] Use deterministic full-matrix basin hopping: perturb the incumbent with small ra
+6ffa92ca228b058689ce95c1b1ede21065f23ba6	0.099786	discard	[EXPLOIT] Enumerate Williamson order-28 Hadamard cores and retain one only when its exactl
+238eedeea6cbfb0773c8acd0b9c3002ffbd74f19	0.099786	discard	[EXPLOIT] Exhaustively test improving two-entry flips over the full 29x29 matrix using exa
+f205bd502475a58ab304e25a17401b0d6ca55083	0.099786	discard	[EXPLOIT] Escape the full-matrix single-flip optimum with deterministic tabu search, follo
+201417dfcd38d588d58598b93c11b5b7f5020e0f		crash	[EXPLOIT] Escape the full-matrix single-flip optimum by exhaustively testing all three-ent
+7fa54d7952ae107a0d030d9e4fcd2ad279521a0e	0.099786	discard	[EXPLOIT] Escape the full-matrix local optimum with deterministic simulated annealing over
+2db9aca1351a55490d7bfa464870ae0b7ca5916e	0.099786	discard	[EXPLOIT] Exhaustively polish the incumbent with exactly verified two-entry flips over the
+cf38723ac5dd65db00a645eb047bcd765a73134d	0.099786	discard	[EXPLOIT] Add a bounded deterministic full-matrix tabu walk that permits non-improving fli
+205ea8212307c95c6d3754b48e0cc747a6ef47ff	0.099786	discard	[EXPLOIT] Increase deterministic random border restarts from 256 to 4096 while preserving 
+14f5a10b011df08444a379b2439b610a726bde91	0.069823	keep	[EXPLOIT] Escape the full-matrix local optimum with deterministic tabu search over rank-on
+97bd762bd42fca76fca5709edaed585c6ae36381	0.099786	discard	[EXPLOIT] Exhaustively evaluate all 900 order-29 minors of the explicit cyclic-SDS order-3
+fed46ffe9e85c3cb3779cb17188f46bfcc6ac719	0.099786	discard	[EXPLOIT] Exhaustively test improving two-entry flips over the full 29x29 matrix using exa
+3ee5762a603b2ac862e812c9d72c27439f131fbd	0.099786	duplicate	[EXPLOIT] Increase deterministic random border restarts from 256 to 4096 while preserving 
+14f5a10b011df08444a379b2439b610a726bde91	0.069823	keep	critic second-evaluation confirmation for Escape the full-matrix local optimum with deterministic tabu search over rank-on
+d7988bacaa1e7a81003ef9f9eee9e8845e135b57	0.069823	discard	[EXPLOIT] Add deterministic cyclic Paley restarts and exact-verified pair-flip polishing w
+61624328092bc209436d23b2cc75769b3bba6362	0.069823	discard	[EXPLOIT] Extend the deterministic full-matrix tabu walk from 1024 to 4096 steps while ret
+4b55fdedc4b8fec1b8bc7da73ca9dddddbaee46c	0.069823	discard	[EXPLOIT] Diversify the deterministic full-matrix tabu search into four independent 1024-s
+94537fda56e8e7b0c99d4a6efbba4e511dd82f1b	0.069823	discard	[EXPLOIT] Polish the best matrix found by tabu search with full-matrix best-improvement si
+1c7a368f67018ddb21cca1f2cc741786e0c9c81c		crash	[EXPLOIT] Add a deterministic destroy-and-repair beam search that deletes three columns an
+788b52ab80deeae0b63787787f58cab5b1c6a7cb	0.069823	discard	[EXPLOIT] Polish the best matrix found by tabu search with full-matrix best-improvement si
+9dc80cf08a2341fa654866f889d37050c725fe29	0.069823	discard	[EXPLOIT] Exhaustively polish the tabu-search incumbent with best-improvement full-matrix 
+7c6180f25d347e0d09c2f7ce4457b699578de771	0.069823	duplicate	[EXPLOIT] Extend the deterministic tabu trajectory from 1024 to 4096 steps while retaining
+f8369e2aedbea7eee8d81d16a10923b29f68effe	0.069823	discard	[EXPLOIT] Apply deterministic best-improvement two-entry flips to the tabu-search incumben
+fa9308f3d859a0a839579fcd9121413f41927159	0.069823	duplicate	[EXPLOIT] Extend the incumbent deterministic tabu walk from 1024 to 4096 steps while retai
+d773890f6f9fb4aaa0dbbc97f0cfae58561a9925	0.099786	discard	[EXPLOIT] Shorten the deterministic tabu tenure from 23 to 7 steps to intensify exploratio
+2c32bdf79325f8f8ccdfcb67d71bbc1034831543	0.099786	discard	[EXPLOIT] Increase the deterministic tabu tenure from 23 to 47 steps to diversify the walk

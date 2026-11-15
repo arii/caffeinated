@@ -1,0 +1,1818 @@
+[
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {
+   "diff": "runs/023d5cd52105e9d8e4da1fd9da885942a5ccd7e5.diff",
+   "log": "runs/023d5cd52105e9d8e4da1fd9da885942a5ccd7e5.log"
+  },
+  "commit": "023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+  "description": "Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "end_tick": 466,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:36",
+  "id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: everyday_physics / untested_prediction\nquestion: Do heavier cars get fewer city miles per gallon?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/Cars93.csv -> xf22600af0b\nregistered test: In the Cars93 data (vincentarelbundock.github.io), higher \"Weight\" goes with lower \"MPG.city\"\nrho: -0.8928 (p=2.8e-33, n=93); predicted 0.800\nhalves: rho -0.8743 (p=1.1e-16), rho -0.8775 (p=1.1e-14)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:15",
+  "role": "divergent",
+  "round": 4,
+  "seq": 15,
+  "source_ids": [],
+  "start_tick": 465,
+  "status": "discard",
+  "tick": 453,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {
+   "diff": "runs/0e2d9dc6302963e2e9d674400725bad0fcc7cc9f.diff",
+   "log": "runs/0e2d9dc6302963e2e9d674400725bad0fcc7cc9f.log"
+  },
+  "commit": "0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+  "description": "Test whether street sound sources line up along a diagonal corridor, so x and y",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "new_population"
+  },
+  "end_tick": 109,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:3",
+  "id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: acoustics / new_population\nquestion: Do street sound sources farther along one horizontal axis also tend to be farther along the other?\ncitations: 2 verified\ndataset: https://zenodo.org/api/records/8239067/files/4_MatrixLabelsStreet.csv/content -> x8e6c94a357\nregistered test: In the content data (zenodo.org), higher \"x (m)\" goes with higher \"y (m)\"\nrho: 0.0698 (p=2.5e-85, n=78559); predicted 0.450\nhalves: rho 0.0784 (p=1.2e-54), rho 0.0611 (p=9.2e-34)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 10.9\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": -0.75,
+  "regime_label": "EXPLOIT",
+  "replicate_score": 0.0,
+  "reward_id": "reward:2",
+  "role": "divergent",
+  "round": 1,
+  "seq": 2,
+  "source_ids": [
+   "source:S9"
+  ],
+  "start_tick": 108,
+  "status": "keep",
+  "tick": 98,
+  "verdict": {
+   "accepted": true,
+   "replicate_score": null,
+   "text": "Critic verdict replicated: The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
+   "verdict": "replicated",
+   "vetoed": false,
+   "why": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently."
+  }
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/0fb8dd87982dac5998e382bdf18ec80e49a92ed3.diff",
+   "log": "runs/0fb8dd87982dac5998e382bdf18ec80e49a92ed3.log"
+  },
+  "commit": "0fb8dd87982dac5998e382bdf18ec80e49a92ed3",
+  "description": "Do students who visited the gym more often before the experiment also visit more",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "replicate_published"
+  },
+  "end_tick": 1243,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:80",
+  "id": "experiment:0fb8dd87982dac5998e382bdf18ec80e49a92ed3",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: behavioral_economics / replicate_published\nquestion: Do students who visited the gym more often before the experiment also visit more often during it?\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.9\nerror: invalid_output: ValueError: x_level must be one of the codebook levels of v17\n",
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:41",
+  "role": "exploit",
+  "round": 10,
+  "seq": 41,
+  "source_ids": [
+   "source:S259"
+  ],
+  "start_tick": 1242,
+  "status": "crash",
+  "tick": 1236,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {
+   "diff": "runs/209ed740e3e2815ed255558bab2d643b691af5bd.diff",
+   "log": "runs/209ed740e3e2815ed255558bab2d643b691af5bd.log"
+  },
+  "commit": "209ed740e3e2815ed255558bab2d643b691af5bd",
+  "description": "Do heavier cabbages shortchange you on vitamin C?",
+  "descriptor": {
+   "mechanism": "food_science",
+   "method": "untested_prediction"
+  },
+  "end_tick": 611,
+  "gate": {
+   "attempts": 2,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:47",
+  "id": "experiment:209ed740e3e2815ed255558bab2d643b691af5bd",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: food_science / untested_prediction\nquestion: Do heavier cabbages shortchange you on vitamin C?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/cabbages.csv -> x25b34b3260\nregistered test: In the cabbages data (vincentarelbundock.github.io), higher \"HeadWt\" goes with lower \"VitC\"\nrho: -0.6976 (p=5.9e-10, n=60); predicted 0.400\nhalves: rho 0.0000 (p=1), rho -0.7117 (p=7.2e-06)\nsignificant: true\nreplicated: false\nconfirmed: false\nrejected: no\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:19",
+  "role": "divergent",
+  "round": 5,
+  "seq": 19,
+  "source_ids": [
+   "source:S91",
+   "source:S92"
+  ],
+  "start_tick": 610,
+  "status": "discard",
+  "tick": 599,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {
+   "diff": "runs/26dd0135177b71ccdc1cf7e906a63b8c6471d3c5.diff",
+   "log": "runs/26dd0135177b71ccdc1cf7e906a63b8c6471d3c5.log"
+  },
+  "commit": "26dd0135177b71ccdc1cf7e906a63b8c6471d3c5",
+  "description": "Do vowel recordings with more energy in the first spectral feature also have mor",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "replicate_published"
+  },
+  "end_tick": 744,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:61",
+  "id": "experiment:26dd0135177b71ccdc1cf7e906a63b8c6471d3c5",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: acoustics / replicate_published\nquestion: Do vowel recordings with more energy in the first spectral feature also have more energy in the second?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/ElemStatLearn/vowel.train.csv -> x2b0b3ce90a\nrejected: dataset unavailable: HTTPError: HTTP Error 404: Not Found\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:26",
+  "role": "divergent",
+  "round": 6,
+  "seq": 26,
+  "source_ids": [
+   "source:S145",
+   "source:S147"
+  ],
+  "start_tick": 743,
+  "status": "discard",
+  "tick": 734,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/329d2b2ea8f815d8e9afd1eec0ac9626ed28107c.diff",
+   "log": "runs/329d2b2ea8f815d8e9afd1eec0ac9626ed28107c.log"
+  },
+  "commit": "329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+  "description": "Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a",
+  "descriptor": {
+   "mechanism": "other",
+   "method": "comparative_physiology"
+  },
+  "end_tick": 352,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:27",
+  "id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: comparative_physiology / new_population\nquestion: Do heavier cats carry heavier hearts?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/cats.csv -> xaa61f904a5\nregistered test: In the cats data (vincentarelbundock.github.io), higher \"Bwt\" goes with higher \"Hwt\"\nrho: 0.7908 (p=4.4e-32, n=144); predicted 0.800\nhalves: rho 0.7877 (p=9.9e-16), rho 0.8009 (p=6.4e-18)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.4\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:12",
+  "role": "exploit",
+  "round": 3,
+  "seq": 12,
+  "source_ids": [],
+  "start_tick": 351,
+  "status": "discard",
+  "tick": 338,
+  "verdict": null
+ },
+ {
+  "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+  "artifacts": {
+   "diff": "runs/47be227.diff",
+   "log": "runs/47be227.log"
+  },
+  "commit": "47be227",
+  "description": "baseline",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 4,
+  "gate": {
+   "attempts": 0,
+   "reasons": []
+  },
+  "hypothesis_id": null,
+  "id": "experiment:47be227",
+  "kind": "baseline",
+  "lead": null,
+  "log_tail": "field: behavioral_economics / untested_prediction\nquestion: Do people who like their steak rare take more everyday risks?\ncitations: 2 verified\ndataset: https://raw.githubusercontent.com/fivethirtyeight/data/4c1ff5e3aef1816ae04af63218015066e186c147/steak-survey/steak-risk-survey.csv -> xe669a5bd78\nregistered test: In the steak-risk-survey data (raw.githubusercontent.com), answering \"Rare\" to \"How do you like your steak prepared?\" goes with answering \"Yes\" to \"Do you ever smoke cigarettes?\"\nrho: 0.0650 (p=0.18, n=428); predicted 0.150\nhalves: rho 0.0181 (p=0.8), rho 0.1069 (p=0.11)\nsignificant: false\nreplicated: false\nconfirmed: false\nrejected: no\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.0\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": null,
+  "replicate_score": null,
+  "reward_id": "reward:1",
+  "role": null,
+  "round": 0,
+  "seq": 1,
+  "source_ids": [],
+  "start_tick": 3,
+  "status": "keep",
+  "tick": 1,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {
+   "diff": "runs/4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5.diff",
+   "log": "runs/4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5.log"
+  },
+  "commit": "4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+  "description": "Do countries that serve more beer also serve more wine? Test whether national dr",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "new_population"
+  },
+  "end_tick": 356,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:29",
+  "id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: behavioral_economics / new_population\nquestion: Do countries that serve more beer also serve more wine?\ncitations: 2 verified\ndataset: https://raw.githubusercontent.com/fivethirtyeight/data/master/alcohol-consumption/drinks.csv -> xe78b478873\nregistered test: In the drinks data (raw.githubusercontent.com), higher \"beer_servings\" goes with higher \"wine_servings\"\nrho: 0.7163 (p=1.1e-31, n=193); predicted 0.500\nhalves: rho 0.7382 (p=1.3e-18), rho 0.6956 (p=1.4e-14)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:14",
+  "role": "exploit",
+  "round": 3,
+  "seq": 14,
+  "source_ids": [],
+  "start_tick": 355,
+  "status": "discard",
+  "tick": 340,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {
+   "diff": "runs/4bfdcd16d518aa9451a1b38290ba9480bb247ab4.diff",
+   "log": "runs/4bfdcd16d518aa9451a1b38290ba9480bb247ab4.log"
+  },
+  "commit": "4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+  "description": "Do heavier cars get fewer miles per gallon because more mass requires more energ",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "end_tick": 234,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:16",
+  "id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: everyday_physics / untested_prediction\nquestion: Do heavier cars get fewer miles per gallon?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/datasets/mtcars.csv -> xa77533d9ee\nrejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:7",
+  "role": "divergent",
+  "round": 2,
+  "seq": 7,
+  "source_ids": [],
+  "start_tick": 233,
+  "status": "discard",
+  "tick": 221,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/4c481e7b69eca62ff7ff6d48b3d71a783170363b.diff",
+   "log": "runs/4c481e7b69eca62ff7ff6d48b3d71a783170363b.log"
+  },
+  "commit": "4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+  "description": "Test whether penguins with longer flippers are heavier, a strong body-size allom",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "replicate_published"
+  },
+  "end_tick": 111,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:4",
+  "id": "experiment:4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: animal_behavior / replicate_published\nquestion: Do penguins with longer flippers weigh more?\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.2\nerror: invalid_output: ValueError: column 'flipper_length_mm' not found; usable columns: species; island; sex; year\n",
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": -1.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:3",
+  "role": "exploit",
+  "round": 1,
+  "seq": 3,
+  "source_ids": [],
+  "start_tick": 110,
+  "status": "crash",
+  "tick": 99,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {
+   "diff": "runs/4ed976c653f61b9d297879a6d8e081027d220e30.diff",
+   "log": "runs/4ed976c653f61b9d297879a6d8e081027d220e30.log"
+  },
+  "commit": "4ed976c653f61b9d297879a6d8e081027d220e30",
+  "description": "Do students with wider writing hands also tend to be taller?",
+  "descriptor": {
+   "mechanism": "other",
+   "method": "anthropometry"
+  },
+  "end_tick": 240,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:19",
+  "id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: anthropometry / new_population\nquestion: Do students with wider writing hands also tend to be taller?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/survey.csv -> x9d53df059a\nregistered test: In the survey data (vincentarelbundock.github.io), higher \"Wr.Hnd\" goes with higher \"Height\"\nrho: 0.6454 (p=6.7e-26, n=208); predicted 0.600\nhalves: rho 0.7039 (p=1.4e-17), rho 0.5769 (p=4.1e-10)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.5\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:10",
+  "role": "exploit",
+  "round": 2,
+  "seq": 10,
+  "source_ids": [],
+  "start_tick": 239,
+  "status": "discard",
+  "tick": 224,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/5c74d830818e38f80372de5f74970b2d7dee3a52.diff",
+   "log": "runs/5c74d830818e38f80372de5f74970b2d7dee3a52.log"
+  },
+  "commit": "5c74d830818e38f80372de5f74970b2d7dee3a52",
+  "description": "Test whether bigger-bodied animals have bigger brains in an unused comparative-a",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "end_tick": 236,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:17",
+  "id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: animal_behavior / new_population\nquestion: Do bigger-bodied animals also tend to have bigger brains?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/Animals.csv -> x7bba81b4a9\nrejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:8",
+  "role": "exploit",
+  "round": 2,
+  "seq": 8,
+  "source_ids": [],
+  "start_tick": 235,
+  "status": "discard",
+  "tick": 222,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {
+   "diff": "runs/5d7a7536b9179dff75fa4e41fade219c473aa5e4.diff",
+   "log": "runs/5d7a7536b9179dff75fa4e41fade219c473aa5e4.log"
+  },
+  "commit": "5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+  "description": "Do chocolate cakes baked at higher oven temperatures tend to break at a larger a",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "end_tick": 350,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:26",
+  "id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: food_science / untested_prediction\nquestion: Do chocolate cakes baked at higher oven temperatures tend to break at a larger angle?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/lme4/cake.csv -> x72bb90f290\nregistered test: In the cake data (vincentarelbundock.github.io), higher \"temperature\" goes with higher \"angle\"\nrho: 0.3628 (p=8.1e-10, n=270); predicted 0.650\nhalves: rho 0.3454 (p=3.8e-05), rho 0.4026 (p=1.4e-06)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:11",
+  "role": "divergent",
+  "round": 3,
+  "seq": 11,
+  "source_ids": [
+   "source:S49",
+   "source:S50"
+  ],
+  "start_tick": 349,
+  "status": "discard",
+  "tick": 337,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/7aca64ad62e385c81ff77909737809776146f834.diff",
+   "log": "runs/7aca64ad62e385c81ff77909737809776146f834.log"
+  },
+  "commit": "7aca64ad62e385c81ff77909737809776146f834",
+  "description": "Do bigger mammals sleep less? Test body weight against total daily sleep across",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "end_tick": 468,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:37",
+  "id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: animal_behavior / new_population\nquestion: Do bigger-bodied mammals tend to get less total sleep each day?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/ggplot2/msleep.csv -> x4974e3094b\nregistered test: In the msleep data (vincentarelbundock.github.io), higher \"bodywt\" goes with lower \"sleep_total\"\nrho: -0.5346 (p=1.9e-07, n=83); predicted 0.350\nhalves: rho -0.6485 (p=8e-06), rho -0.4686 (p=0.0013)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.4\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:16",
+  "role": "exploit",
+  "round": 4,
+  "seq": 16,
+  "source_ids": [],
+  "start_tick": 467,
+  "status": "discard",
+  "tick": 454,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/7b66c07bf68c50101453237ae91cd21865f3d5ba.diff",
+   "log": "runs/7b66c07bf68c50101453237ae91cd21865f3d5ba.log"
+  },
+  "commit": "7b66c07bf68c50101453237ae91cd21865f3d5ba",
+  "description": "Do doctors and patients independently rate patients' get-up-and-go similarly, so",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "end_tick": 238,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:18",
+  "id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: medicine / new_population\nquestion: Do doctors and patients independently rate patients' get-up-and-go similarly?\ncitations: 1 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/survival/lung.csv -> xdf7cc18ce5\nrejected: citations: https://doi.org/10.1002/1097-0142(19840515)53:10%3C2002::AID-CNCR2820531004%3E3.0.CO;2-Y is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.9\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:9",
+  "role": "exploit",
+  "round": 2,
+  "seq": 9,
+  "source_ids": [],
+  "start_tick": 237,
+  "status": "discard",
+  "tick": 223,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/987dd39bb75970247d4a2fff44f4daf49124ce7b.diff",
+   "log": "runs/987dd39bb75970247d4a2fff44f4daf49124ce7b.log"
+  },
+  "commit": "987dd39bb75970247d4a2fff44f4daf49124ce7b",
+  "description": "Do speech sounds that are intense in the first frequency bin also tend to be int",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "untested_prediction"
+  },
+  "end_tick": 613,
+  "gate": {
+   "attempts": 2,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:49",
+  "id": "experiment:987dd39bb75970247d4a2fff44f4daf49124ce7b",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: acoustics / untested_prediction\nquestion: Do speech sounds that are intense in the first frequency bin also tend to be intense in the very next bin?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/ElemStatLearn/phoneme.csv -> x31657a78a5\nrejected: dataset unavailable: HTTPError: HTTP Error 404: Not Found\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:20",
+  "role": "divergent",
+  "round": 5,
+  "seq": 20,
+  "source_ids": [
+   "source:S100",
+   "source:S102"
+  ],
+  "start_tick": 612,
+  "status": "discard",
+  "tick": 601,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/9cda8753f42b91c8cc1b41ce29b638812fab201f.diff",
+   "log": "runs/9cda8753f42b91c8cc1b41ce29b638812fab201f.log"
+  },
+  "commit": "9cda8753f42b91c8cc1b41ce29b638812fab201f",
+  "description": "Among Pima women in the independent test cohort, does a higher BMI come with a t",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "end_tick": 470,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:38",
+  "id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: medicine / new_population\nquestion: Among Pima women in the independent test cohort, does a higher BMI come with a thicker triceps skinfold pinch?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/Pima.te.csv -> x2ceb2a29d1\nregistered test: In the Pima.te data (vincentarelbundock.github.io), higher \"bmi\" goes with higher \"skin\"\nrho: 0.6631 (p=2e-43, n=332); predicted 0.650\nhalves: rho 0.7315 (p=2.1e-27), rho 0.5889 (p=8.2e-18)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.1\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:17",
+  "role": "exploit",
+  "round": 4,
+  "seq": 17,
+  "source_ids": [],
+  "start_tick": 469,
+  "status": "discard",
+  "tick": 455,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {
+   "diff": "runs/9d5f54e72a290894c3bd0ca242205759662ae47e.diff",
+   "log": "runs/9d5f54e72a290894c3bd0ca242205759662ae47e.log"
+  },
+  "commit": "9d5f54e72a290894c3bd0ca242205759662ae47e",
+  "description": "Do shell-dwelling fish become more aggressive when an outsider’s shell is closer",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "resolve_conflict"
+  },
+  "end_tick": 867,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:69",
+  "id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: animal_behavior / resolve_conflict\nquestion: Do shell-dwelling fish become more aggressive when an outsider's shell is closer to their own?\ncitations: 3 verified\ndataset: https://zenodo.org/api/records/4708261/files/Guebel_data_aggression_of_residents_towards_joiners-2.csv/content -> x3ff07d2494\nregistered test: In the content data (zenodo.org), higher \"Distance between resident shell and joiner shell (cm)\" goes with lower \"Aggression count\" per \"Model offset term (sec)\"\nrho: -0.3890 (p=3.4e-07, n=161); predicted 0.450\nhalves: rho -0.4203 (p=0.00036), rho -0.3734 (p=0.00023)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.7\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:28",
+  "role": "divergent",
+  "round": 7,
+  "seq": 28,
+  "source_ids": [
+   "source:S163",
+   "source:S164"
+  ],
+  "start_tick": 866,
+  "status": "discard",
+  "tick": 859,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/a9b4d50122d86dbbab8b28c55d0ce5d2102bcfdb.diff",
+   "log": "runs/a9b4d50122d86dbbab8b28c55d0ce5d2102bcfdb.log"
+  },
+  "commit": "a9b4d50122d86dbbab8b28c55d0ce5d2102bcfdb",
+  "description": "Do voices with a higher average pitch also have a higher pitch ceiling?",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "untested_prediction"
+  },
+  "end_tick": 615,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:50",
+  "id": "experiment:a9b4d50122d86dbbab8b28c55d0ce5d2102bcfdb",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: acoustics / untested_prediction\nquestion: Do voices with a higher average pitch also have a higher pitch ceiling?\ncitations: 2 verified\ndataset: https://archive.ics.uci.edu/ml/machine-learning-databases/parkinsons/parkinsons.data -> x1da1559519\nrejected: dataset unavailable: ValueError: host is not an open-data host and the URL is not cited in the research log\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.0\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:21",
+  "role": "exploit",
+  "round": 5,
+  "seq": 21,
+  "source_ids": [
+   "source:S109",
+   "source:S110"
+  ],
+  "start_tick": 614,
+  "status": "discard",
+  "tick": 602,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {
+   "diff": "runs/b48150f25f92a4e3aea63160ac173e9f47d4feb7.diff",
+   "log": "runs/b48150f25f92a4e3aea63160ac173e9f47d4feb7.log"
+  },
+  "commit": "b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+  "description": "Test whether heavier cars are thirstier: vehicle weight should strongly reduce m",
+  "descriptor": {
+   "mechanism": "transport",
+   "method": "replicate_published"
+  },
+  "end_tick": 115,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:6",
+  "id": "experiment:b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: transport / replicate_published\nquestion: Are heavier cars thirstier at the pump?\ncitations: 0 verified\ndataset: https://raw.githubusercontent.com/vincentarelbundock/Rdatasets/master/csv/datasets/mtcars.csv -> x02df6c1fa7\nrejected: citations: https://www.fueleconomy.gov/feg/atv.shtml is neither a registered DOI nor found by this run's research or in sources.json; https://www.fueleconomy.gov/feg/why.shtml is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 0\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.0\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": -1.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:5",
+  "role": "exploit",
+  "round": 1,
+  "seq": 5,
+  "source_ids": [],
+  "start_tick": 114,
+  "status": "discard",
+  "tick": 101,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/b59e8e386e737aaa1501eeef428d6a41aa9558f4.diff",
+   "log": "runs/b59e8e386e737aaa1501eeef428d6a41aa9558f4.log"
+  },
+  "commit": "b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+  "description": "Test whether reaction times steadily lengthen as days of sleep restriction accum",
+  "descriptor": {
+   "mechanism": "sleep_science",
+   "method": "replicate_published"
+  },
+  "end_tick": 113,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:5",
+  "id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: sleep_science / replicate_published\nquestion: Do people's reaction times crawl upward as days of sleep restriction accumulate?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/lme4/sleepstudy.csv -> x06941e5ae9\nregistered test: In the sleepstudy data (vincentarelbundock.github.io), higher \"Days\" goes with higher \"Reaction\"\nrho: 0.5228 (p=5.1e-14, n=180); predicted 0.500\nhalves: rho 0.4451 (p=1.2e-05), rho 0.5737 (p=2.8e-09)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.5\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": -1.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:4",
+  "role": "exploit",
+  "round": 1,
+  "seq": 4,
+  "source_ids": [],
+  "start_tick": 112,
+  "status": "discard",
+  "tick": 100,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {
+   "diff": "runs/cdc6fe46bb05d4ea7270f7473a2f758a64a8c401.diff",
+   "log": "runs/cdc6fe46bb05d4ea7270f7473a2f758a64a8c401.log"
+  },
+  "commit": "cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+  "description": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "end_tick": 354,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:28",
+  "id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: medicine / new_population\nquestion: Does a higher BMI come with a thicker triceps pinch among Pima women?\ncitations: 1 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/Pima.tr.csv -> x5b7ffb9f90\nrejected: citations: https://doi.org/10.1109/SCAMC.1988.117514 is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1\nscore: 0.000000\nloss: 1.000000\ncandidate_executed: false\nseconds: 0.9\n",
+  "metric_value": 1.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:13",
+  "role": "exploit",
+  "round": 3,
+  "seq": 13,
+  "source_ids": [],
+  "start_tick": 353,
+  "status": "discard",
+  "tick": 339,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {
+   "diff": "runs/f3e73afc6c8813690a680e780b2b4ff80a6b6318.diff",
+   "log": "runs/f3e73afc6c8813690a680e780b2b4ff80a6b6318.log"
+  },
+  "commit": "f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+  "description": "Do classroom whizz-kids also have a way with words? Test IQ against language-tes",
+  "descriptor": {
+   "mechanism": "psychology",
+   "method": "new_population"
+  },
+  "end_tick": 472,
+  "gate": {
+   "attempts": 1,
+   "reasons": []
+  },
+  "hypothesis_id": "hypothesis:39",
+  "id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": "field: psychology / new_population\nquestion: Do classroom whizz-kids also have a way with words?\ncitations: 2 verified\ndataset: https://vincentarelbundock.github.io/Rdatasets/csv/MASS/nlschools.csv -> xbf33e44684\nregistered test: In the nlschools data (vincentarelbundock.github.io), higher \"IQ\" goes with higher \"lang\"\nrho: 0.6188 (p=8.4e-242, n=2287); predicted 0.500\nhalves: rho 0.6233 (p=1.1e-120), rho 0.6144 (p=7e-123)\nsignificant: true\nreplicated: true\nconfirmed: true\nrejected: no\nscore: 1.000000\nloss: 0.000000\ncandidate_executed: false\nseconds: 0.3\n",
+  "metric_value": 0.0,
+  "parent_commit": null,
+  "predicted_delta": 0.0,
+  "regime_label": "EXPLOIT",
+  "replicate_score": null,
+  "reward_id": "reward:18",
+  "role": "exploit",
+  "round": 4,
+  "seq": 18,
+  "source_ids": [],
+  "start_tick": 471,
+  "status": "discard",
+  "tick": 456,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 617,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:51",
+  "id": "experiment:seq-22",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:22",
+  "role": "divergent",
+  "round": 5,
+  "seq": 22,
+  "source_ids": [],
+  "start_tick": 616,
+  "status": "reject",
+  "tick": 616,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 738,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:58",
+  "id": "experiment:seq-23",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:23",
+  "role": "divergent",
+  "round": 6,
+  "seq": 23,
+  "source_ids": [],
+  "start_tick": 737,
+  "status": "reject",
+  "tick": 737,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 740,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:59",
+  "id": "experiment:seq-24",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:24",
+  "role": "divergent",
+  "round": 6,
+  "seq": 24,
+  "source_ids": [],
+  "start_tick": 739,
+  "status": "reject",
+  "tick": 739,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 742,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:60",
+  "id": "experiment:seq-25",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:25",
+  "role": "exploit",
+  "round": 6,
+  "seq": 25,
+  "source_ids": [],
+  "start_tick": 741,
+  "status": "reject",
+  "tick": 741,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 865,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:68",
+  "id": "experiment:seq-27",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:27",
+  "role": "divergent",
+  "round": 7,
+  "seq": 27,
+  "source_ids": [],
+  "start_tick": 864,
+  "status": "reject",
+  "tick": 864,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 869,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:70",
+  "id": "experiment:seq-29",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:29",
+  "role": "exploit",
+  "round": 7,
+  "seq": 29,
+  "source_ids": [],
+  "start_tick": 868,
+  "status": "reject",
+  "tick": 868,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 871,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:71",
+  "id": "experiment:seq-30",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:30",
+  "role": "divergent",
+  "round": 7,
+  "seq": 30,
+  "source_ids": [],
+  "start_tick": 870,
+  "status": "reject",
+  "tick": 870,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 991,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:78",
+  "id": "experiment:seq-31",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:31",
+  "role": "divergent",
+  "round": 8,
+  "seq": 31,
+  "source_ids": [],
+  "start_tick": 990,
+  "status": "reject",
+  "tick": 990,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 993,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:79",
+  "id": "experiment:seq-32",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:32",
+  "role": "divergent",
+  "round": 8,
+  "seq": 32,
+  "source_ids": [],
+  "start_tick": 992,
+  "status": "reject",
+  "tick": 992,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 995,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:80",
+  "id": "experiment:seq-33",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:33",
+  "role": "exploit",
+  "round": 8,
+  "seq": 33,
+  "source_ids": [],
+  "start_tick": 994,
+  "status": "reject",
+  "tick": 994,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 997,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:81",
+  "id": "experiment:seq-34",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:34",
+  "role": "divergent",
+  "round": 8,
+  "seq": 34,
+  "source_ids": [],
+  "start_tick": 996,
+  "status": "reject",
+  "tick": 996,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1115,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:88",
+  "id": "experiment:seq-35",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:35",
+  "role": "divergent",
+  "round": 9,
+  "seq": 35,
+  "source_ids": [],
+  "start_tick": 1114,
+  "status": "reject",
+  "tick": 1114,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1117,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:89",
+  "id": "experiment:seq-36",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:36",
+  "role": "divergent",
+  "round": 9,
+  "seq": 36,
+  "source_ids": [],
+  "start_tick": 1116,
+  "status": "reject",
+  "tick": 1116,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1119,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:80",
+  "id": "experiment:seq-37",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:37",
+  "role": "exploit",
+  "round": 9,
+  "seq": 37,
+  "source_ids": [],
+  "start_tick": 1118,
+  "status": "reject",
+  "tick": 1118,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1121,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:91",
+  "id": "experiment:seq-38",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:38",
+  "role": "divergent",
+  "round": 9,
+  "seq": 38,
+  "source_ids": [],
+  "start_tick": 1120,
+  "status": "reject",
+  "tick": 1120,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1239,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:98",
+  "id": "experiment:seq-39",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:39",
+  "role": "divergent",
+  "round": 10,
+  "seq": 39,
+  "source_ids": [],
+  "start_tick": 1238,
+  "status": "reject",
+  "tick": 1238,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1241,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:99",
+  "id": "experiment:seq-40",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:40",
+  "role": "divergent",
+  "round": 10,
+  "seq": 40,
+  "source_ids": [],
+  "start_tick": 1240,
+  "status": "reject",
+  "tick": 1240,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1245,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:101",
+  "id": "experiment:seq-42",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:42",
+  "role": "divergent",
+  "round": 10,
+  "seq": 42,
+  "source_ids": [],
+  "start_tick": 1244,
+  "status": "reject",
+  "tick": 1244,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1363,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:108",
+  "id": "experiment:seq-43",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:43",
+  "role": "divergent",
+  "round": 11,
+  "seq": 43,
+  "source_ids": [],
+  "start_tick": 1362,
+  "status": "reject",
+  "tick": 1362,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1365,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:109",
+  "id": "experiment:seq-44",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:44",
+  "role": "divergent",
+  "round": 11,
+  "seq": 44,
+  "source_ids": [],
+  "start_tick": 1364,
+  "status": "reject",
+  "tick": 1364,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1367,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: lead_id must reference a lead offered this round"
+   ]
+  },
+  "hypothesis_id": "hypothesis:80",
+  "id": "experiment:seq-45",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:45",
+  "role": "exploit",
+  "round": 11,
+  "seq": 45,
+  "source_ids": [],
+  "start_tick": 1366,
+  "status": "reject",
+  "tick": 1366,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1369,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:111",
+  "id": "experiment:seq-46",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:46",
+  "role": "divergent",
+  "round": 11,
+  "seq": 46,
+  "source_ids": [],
+  "start_tick": 1368,
+  "status": "reject",
+  "tick": 1368,
+  "verdict": null
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "artifacts": {},
+  "commit": null,
+  "description": "proposal rejected after repair",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1459,
+  "gate": {
+   "attempts": 1,
+   "reasons": [
+    "invalid proposal after repair: source_ids must use the S<number> format"
+   ]
+  },
+  "hypothesis_id": "hypothesis:118",
+  "id": "experiment:seq-47",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:47",
+  "role": "divergent",
+  "round": 12,
+  "seq": 47,
+  "source_ids": [],
+  "start_tick": 1458,
+  "status": "reject",
+  "tick": 1458,
+  "verdict": null
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "artifacts": {},
+  "commit": null,
+  "description": "LLM call failed",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1461,
+  "gate": {
+   "attempts": 0,
+   "reasons": [
+    "llm_error: WORKER_PROPOSE call for worker-2 failed: Tinker returned HTTP 402: {\"detail\":\"Access is blocked due to billing status. Please add payment at https://tinker.thinkingmachines.ai/billing/balance (organization: \\\"baidachnasm@gmail.com - default org\\\" tml:organization:cbb25972-75ec-4bf3-9e54-1831c4d40fba)\"}"
+   ]
+  },
+  "hypothesis_id": null,
+  "id": "experiment:seq-48",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:48",
+  "role": "divergent",
+  "round": 12,
+  "seq": 48,
+  "source_ids": [],
+  "start_tick": 1460,
+  "status": "crash",
+  "tick": 1460,
+  "verdict": null
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "artifacts": {},
+  "commit": null,
+  "description": "LLM call failed",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1463,
+  "gate": {
+   "attempts": 0,
+   "reasons": [
+    "llm_error: WORKER_PROPOSE call for worker-3 failed: Tinker returned HTTP 402: {\"detail\":\"Access is blocked due to billing status. Please add payment at https://tinker.thinkingmachines.ai/billing/balance (organization: \\\"baidachnasm@gmail.com - default org\\\" tml:organization:cbb25972-75ec-4bf3-9e54-1831c4d40fba)\"}"
+   ]
+  },
+  "hypothesis_id": null,
+  "id": "experiment:seq-49",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:49",
+  "role": "exploit",
+  "round": 12,
+  "seq": 49,
+  "source_ids": [],
+  "start_tick": 1462,
+  "status": "crash",
+  "tick": 1462,
+  "verdict": null
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "artifacts": {},
+  "commit": null,
+  "description": "LLM call failed",
+  "descriptor": {
+   "mechanism": "baseline",
+   "method": "none"
+  },
+  "end_tick": 1465,
+  "gate": {
+   "attempts": 0,
+   "reasons": [
+    "llm_error: WORKER_PROPOSE call for worker-4 failed: Tinker returned HTTP 402: {\"detail\":\"Access is blocked due to billing status. Please add payment at https://tinker.thinkingmachines.ai/billing/balance (organization: \\\"baidachnasm@gmail.com - default org\\\" tml:organization:cbb25972-75ec-4bf3-9e54-1831c4d40fba)\"}"
+   ]
+  },
+  "hypothesis_id": null,
+  "id": "experiment:seq-50",
+  "kind": "candidate",
+  "lead": null,
+  "log_tail": null,
+  "metric_value": null,
+  "parent_commit": null,
+  "predicted_delta": null,
+  "regime_label": "SNAP",
+  "replicate_score": null,
+  "reward_id": "reward:50",
+  "role": "divergent",
+  "round": 12,
+  "seq": 50,
+  "source_ids": [],
+  "start_tick": 1464,
+  "status": "crash",
+  "tick": 1464,
+  "verdict": null
+ }
+]

@@ -4,14 +4,17 @@
 import argparse
 import csv
 import fcntl
+import gzip
 import io
 import json
 import math
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
+import tarfile
 import uuid
 from contextlib import ExitStack, contextmanager, redirect_stdout, suppress
 from datetime import datetime, timezone
@@ -19,6 +22,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
+import literature
 import live_publish
 import llm
 import memory
@@ -28,6 +32,8 @@ from testcases import sandbox
 
 ROOT = Path(__file__).resolve().parent
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
+# Arm S is the single-agent baseline: one worker, no meter, no scouts, no critic.
+METER_OFF_ARMS = ("A", "S")
 BOREDOM_COMPONENTS = (
     "B",
     "regime",
@@ -106,16 +112,6 @@ def safe_slug(value):
     return slug or "unknown"
 
 
-def unique_branch(repo, base):
-    existing = set(git_text(repo, "branch", "--list", "--format=%(refname:short)").splitlines())
-    if base not in existing:
-        return base
-    index = 2
-    while f"{base}-{index}" in existing:
-        index += 1
-    return f"{base}-{index}"
-
-
 def unique_tag(repo, base):
     existing = set(git_text(repo, "tag", "--list", base + "*").splitlines())
     if base not in existing:
@@ -127,6 +123,37 @@ def unique_tag(repo, base):
 
 
 SANDBOX_BUILD = f"docker build -t {sandbox.SANDBOX_IMAGE} -f testcases/Dockerfile testcases"
+
+
+def task_research_off(task_name):
+    if not task_name:
+        return False
+    config_path = TESTCASES / task_name / "task.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return config.get("research") == "off"
+
+
+def resolve_research_source(args):
+    """exa, keyless (OpenAlex/arXiv/PubMed via literature.py) or off. Arm C never researches.
+
+    With Exa requested but EXA_API_KEY unset, only an explicit --literature keyless|auto falls
+    back to keyless; by default the run stays on Exa and preflight reports the missing key.
+    """
+    if args.arm == "C":
+        return "off"
+    if task_research_off(getattr(args, "task", None)) or (TASK or {}).get("research") == "off":
+        return "off"
+    mode = getattr(args, "literature", None)
+    keyless = mode == "keyless" or (mode in (None, "auto") and args.llm != "fake")
+    exa_requested = os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
+    if exa_requested and (
+        args.replay or os.environ.get("EXA_API_KEY") or not keyless or mode is None
+    ):
+        return "exa"
+    return "keyless" if keyless else "off"
 
 
 def preflight(args, memory_backend, exa_enabled):
@@ -151,7 +178,7 @@ def preflight(args, memory_backend, exa_enabled):
         if exa_enabled and not os.environ.get("EXA_API_KEY"):
             problems.append(
                 f"EXA_API_KEY is required for Exa search (arm {args.arm}); set it in the "
-                "environment or .env, or pass --exa off"
+                "environment or .env, or pass --literature keyless (or --exa off)"
             )
     if not sandbox.docker_available():
         problems.append("Docker is not running; candidate code is scored in a Docker sandbox")
@@ -197,11 +224,11 @@ def is_worktree_root(path):
     return result.returncode == 0 and Path(result.stdout.strip()).resolve() == path.resolve()
 
 
-def reset_owned_worktree(repo, path, commit, keep=None):
+def reset_owned_worktree(repo, path, commit, preserve=()):
     """Check out commit detached in a swarm-owned worktree, discarding leftovers of old runs.
 
-    keep, a path relative to the worktree, is moved aside to <worktree>.stale-<time>/ instead
-    of being deleted when it holds uncommitted files.
+    preserve holds gitignore-style patterns for untracked paths that must survive the clean,
+    such as archived recordings and the output directory of a run being resumed.
     """
     if path.exists() and not is_worktree_root(path):
         shutil.rmtree(path)
@@ -211,14 +238,9 @@ def reset_owned_worktree(repo, path, commit, keep=None):
     status = git_text(path, "status", "--porcelain", "--untracked-files=all", "--ignored")
     if status:
         print(f"swarm.py: discarding leftovers of an earlier run in {path}", file=sys.stderr)
-        kept = path / keep if keep else None
-        if kept and kept.exists() and git_text(path, "status", "--porcelain", "--", keep):
-            archive = path.parent / f"{path.name}.stale-{datetime.now():%Y%m%d-%H%M%S}" / keep
-            archive.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(kept), str(archive))
-            print(f"swarm.py: moved uncommitted {keep} to {archive}", file=sys.stderr)
         git(path, "reset", "--hard", "--quiet")
-        git(path, "clean", "-ffdx", "--quiet")
+        excludes = [arg for pattern in preserve for arg in ("-e", pattern)]
+        git(path, "clean", "-ffdx", "--quiet", *excludes)
     git(path, "switch", "--quiet", "--detach", commit)
 
 
@@ -236,24 +258,98 @@ def arm_branch(repo, arm, start_commit):
     return branch
 
 
+ARCHIVED_OUT_PATTERN = "/experiments/swarm_*.prev-*/"
+
+
+def mark_abandoned_run(out_dir):
+    """Give a recording whose writer died a terminal "stopped" status."""
+    out_dir = Path(out_dir)
+    try:
+        run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if run_artifact.get("status") != "running":
+        return
+    run_artifact["status"] = "stopped"
+    _write_run_artifact(out_dir, run_artifact)
+    if run_artifact.get("viewer") is False or not run_artifact.get("viewer_run_id"):
+        return
+    dest = Path(run_artifact.get("viewer_dest") or out_dir / "viewer")
+    if dest.is_dir():
+        publish_viewer_state(out_dir, dest, final=True, status="stopped")
+
+
+def archive_previous_out(conductor, arm, keep=None):
+    """Move an earlier run's uncommitted output aside inside experiments/ so the Lab still
+    discovers its recording at .swarm_worktrees/*/conductor/experiments/*/viewer."""
+    current = conductor / "experiments" / f"swarm_{arm}"
+    if not current.is_dir() or (keep is not None and current.resolve() == Path(keep).resolve()):
+        return None
+    relative = f"experiments/swarm_{arm}"
+    if not git_text(conductor, "status", "--porcelain", "--untracked-files=all", "--", relative):
+        return None
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    archive = current.with_name(f"swarm_{arm}.prev-{stamp}")
+    index = 1
+    while archive.exists():
+        index += 1
+        archive = current.with_name(f"swarm_{arm}.prev-{stamp}-{index}")
+    shutil.copytree(current, archive, symlinks=True)
+    shutil.rmtree(current)
+    print(f"swarm.py: kept the earlier run's output in {archive}", file=sys.stderr)
+    mark_abandoned_run(archive)
+    return archive
+
+
+def _preserve_patterns(conductor, out_dir):
+    patterns = [ARCHIVED_OUT_PATTERN]
+    if out_dir is not None:
+        with suppress(ValueError):
+            patterns.append(f"/{Path(out_dir).resolve().relative_to(conductor.resolve())}/")
+    return tuple(patterns)
+
+
 def create_arm_worktrees(repo, arm, start_commit):
     worktree_root = repo / ".swarm_worktrees" / arm
     conductor = worktree_root / "conductor"
     agents_root = worktree_root
     git(repo, "worktree", "prune")
-    reset_owned_worktree(repo, conductor, start_commit, keep=f"experiments/swarm_{arm}")
+    if conductor.exists() and is_worktree_root(conductor):
+        archive_previous_out(conductor, arm)
+    reset_owned_worktree(repo, conductor, start_commit, preserve=(ARCHIVED_OUT_PATTERN,))
     branch = arm_branch(repo, arm, start_commit)
     git(conductor, "switch", "--quiet", branch)
     return branch, conductor, agents_root
 
 
+def resume_arm_worktrees(repo, arm, branch, commit, out_dir):
+    """Put the conductor back on branch at commit, the last completed round."""
+    worktree_root = repo / ".swarm_worktrees" / arm
+    conductor = worktree_root / "conductor"
+    git(repo, "worktree", "prune")
+    if git(
+        repo, "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}", check=False
+    ).returncode:
+        raise ValueError(f"cannot resume: arm branch {branch} no longer exists in {repo}")
+    if git(repo, "merge-base", "--is-ancestor", commit, branch, check=False).returncode:
+        raise ValueError(f"cannot resume: checkpoint commit {commit[:12]} is not on {branch}")
+    in_conductor = Path(out_dir).resolve().is_relative_to(conductor.resolve())
+    if conductor.exists() and not is_worktree_root(conductor) and in_conductor:
+        raise ValueError(f"cannot resume: {conductor} is no longer a git worktree")
+    if conductor.exists() and is_worktree_root(conductor):
+        archive_previous_out(conductor, arm, keep=out_dir)
+    reset_owned_worktree(repo, conductor, commit, preserve=_preserve_patterns(conductor, out_dir))
+    git(conductor, "switch", "--quiet", "-C", branch, commit)
+    return branch, conductor, worktree_root
+
+
 def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num, attempt):
+    """Reset the agent's worktree to base_commit, detached: attempts get no branch of their
+    own; their commits stay reachable through the run's tags and the arm branch."""
     path = agents_root / agent
     path.parent.mkdir(parents=True, exist_ok=True)
     reset_owned_worktree(repo, path, base_commit)
-    branch = unique_branch(repo, f"swarm-{arm}-r{round_num}-{agent}-a{attempt}")
-    git(path, "switch", "-c", branch)
-    return path, branch
+    return path, None
 
 
 def open_ended():
@@ -272,7 +368,7 @@ def known_result(candidate):
 
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
-    regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
+    regime = "EXPLOIT" if arm in METER_OFF_ARMS else swarm_status["regime"]
     agent_status = {agent: meter.status(profile, events, agent=agent) for agent in agents}
     per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
@@ -285,7 +381,10 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     def divergent_worker():
         return bored[0] if bored else min(agents, key=lambda agent: (per_agent[agent], agent))
 
-    if arm == "A":
+    if arm == "S":
+        roles = dict.fromkeys(agents, "exploit")
+        rationale = "Arm S runs one worker with no meter, scouts or critic."
+    elif arm == "A":
         roles = dict.fromkeys(agents, "exploit")
         scout = agents[0]
         roles[scout] = "divergent"
@@ -383,7 +482,7 @@ def write_results(ledger_path, results_path):
 
 def append_status(out_dir, profile, events, arm):
     status = meter.status(profile, events)
-    disabled = arm == "A"
+    disabled = arm in METER_OFF_ARMS
     record = {
         "type": "status",
         "ts": timestamp(),
@@ -515,7 +614,7 @@ def append_assignment(
     }
     append_jsonl(Path(out_dir) / "assignments.jsonl", record)
     recalled_record = dict(record)
-    if arm == "A":
+    if arm in METER_OFF_ARMS:
         for key in ("swarm_B", "per_agent_B", "per_agent_boredom", "frustration", "stuck_cells"):
             recalled_record.pop(key, None)
     write_memory_item(
@@ -578,7 +677,10 @@ def research_call(
         domains=domains,
     )
     if os.environ.get("EXA", "").casefold() == "off":
-        research.run_disabled(args)
+        if os.environ.get("LITERATURE", "").casefold() == "keyless":
+            literature.RUNNERS[command](args)
+        else:
+            research.run_disabled(args)
     else:
         runner = {
             "prior-art": research.run_prior_art,
@@ -858,7 +960,7 @@ def run_scouts(
 ):
     leads = {}
     scout = (TASK or {}).get("scout", {})
-    cells = [] if arm == "A" else suggest_cells(profile, events)
+    cells = [] if arm in METER_OFF_ARMS else suggest_cells(profile, events)
     targets = direction_cells(cells) or ["none"]
     for scout_number, agent in enumerate(scouts):
         target_cell = targets[scout_number % len(targets)]
@@ -1405,7 +1507,9 @@ def worker_attempts(
                         "status": "reject",
                         "score": None,
                         "commit": "",
-                        "descriptor": common["assigned_descriptor"],
+                        "descriptor": common.get(
+                            "assigned_descriptor", {"mechanism": "baseline", "method": "none"}
+                        ),
                         "sources": [],
                         "lead": None,
                         "idea": "assigned cell has no buildable fake target",
@@ -1479,6 +1583,10 @@ def worker_attempts(
                 {
                     "arm": arm,
                     "round": round_num,
+                    "idea": value["idea"],
+                    "rationale": value.get("rationale", ""),
+                    "predicted_delta": value["predicted_delta"],
+                    "lead_id": value.get("lead_id"),
                     "descriptor": value["descriptor"],
                     "source_ids": value.get("source_ids", []),
                 },
@@ -1617,7 +1725,7 @@ def worker_attempts(
         if gate_pass:
             return candidate
         common["reasons"] = "; ".join(gate_record.get("reasons", []))
-        if attempt == 2 and arm != "A":
+        if attempt == 2 and arm not in METER_OFF_ARMS:
             events = meter.read_ledger(Path(out_dir) / "ledger.jsonl")
             reserved = assigned_cells if assigned_cells is not None else []
             cells = meter.suggest(profile, events, n=len(meter.all_cells(profile, 2)))
@@ -1736,6 +1844,14 @@ def critic_accepts(profile, first_score, second_score, previous_best, status):
     )
 
 
+def apply_critic_verdict(accepted, verdict):
+    vetoed = (
+        isinstance(verdict, dict)
+        and str(verdict.get("verdict") or "").strip().casefold() == "contradicted"
+    )
+    return (False if vetoed else accepted), vetoed
+
+
 def prepare_task(task_dir, context_files):
     sandbox.prepare_task(task_dir, context_files)
 
@@ -1767,6 +1883,37 @@ def set_task_context(task_context):
     TASK["prompt_values"]["task_inputs_brief"] = (
         task_context if len(task_context) <= 1500 else task_context[:1500] + "\n...(truncated)"
     )
+
+
+def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
+    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
+
+    on_start is called just before the scorer starts. Returns True when the scorer ran
+    successfully (its output should be recorded).
+    """
+    hook = (TASK or {}).get("post_run")
+    if not hook:
+        return False
+    if replay or llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
+        print(
+            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
+            "not --replay)",
+            flush=True,
+        )
+        return False
+    if on_start:
+        on_start()
+    command = [sys.executable, str(TASK["dir"] / hook), "--run", str(out_dir)]
+    try:
+        proc = subprocess.run(
+            command, cwd=TASK["dir"], capture_output=True, text=True, timeout=1800, check=False
+        )
+    except subprocess.TimeoutExpired:
+        print(f"[post_run] {hook} timed out", flush=True)
+        return False
+    output = (proc.stdout if proc.returncode == 0 else proc.stderr).strip()
+    print(f"[post_run] {hook} exit {proc.returncode}: {output[-2000:]}", flush=True)
+    return proc.returncode == 0
 
 
 def refresh_round_context(out_dir, round_num, cells):
@@ -1849,7 +1996,21 @@ def load_task(name):
     }
 
 
-def local_task_result(repo, commit, out_dir):
+CANDIDATE_DIFF_MAX_CHARS = 20000
+
+
+def write_candidate_diff(repo, commit, out_dir):
+    """Save the candidate's diff (capped) next to its log for the viewer."""
+    diff = git(repo, "show", "--format=%s%n", "--stat", "--patch", commit, check=False)
+    if diff.returncode != 0:
+        return
+    text = diff.stdout
+    if len(text) > CANDIDATE_DIFF_MAX_CHARS:
+        text = text[:CANDIDATE_DIFF_MAX_CHARS] + "\n... [diff truncated]\n"
+    (Path(out_dir) / f"{commit}.diff").write_text(text, encoding="utf-8")
+
+
+def local_task_result(repo, commit, out_dir, role="candidate"):
     """Score a commit's version of the task's editable file with the frozen evaluator."""
     log_path = Path(out_dir) / f"{commit}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1857,8 +2018,46 @@ def local_task_result(repo, commit, out_dir):
     result = None
     log = source.stderr
     if source.returncode == 0:
-        result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        if role == "candidate":
+            write_candidate_diff(repo, commit, out_dir)
+        # Evaluators that log their own records (ignobel studies) tag them with this.
+        # Candidate logs live in <out>/runs, critic logs in <out>/runs/critic_confirmation.
+        run_settings = {}
+        for parent in list(Path(out_dir).parents)[:2]:
+            try:
+                run_settings = json.loads((parent / "run.json").read_text(encoding="utf-8"))
+                break
+            except (OSError, json.JSONDecodeError):
+                continue
+        eval_context = {"commit": commit, "role": role}
+        eval_context["exa_enabled"] = (
+            run_settings["exa"] == "on" and bool(os.environ.get("EXA_API_KEY"))
+            if "exa" in run_settings
+            else os.environ.get("EXA", "").casefold() != "off"
+            and bool(os.environ.get("EXA_API_KEY"))
+        )
+        # Fake runs are gate-only; otherwise IGNOBEL_COMMITTEE (default on) is inherited.
+        committee_flag = "off" if run_settings.get("llm") == "fake" else None
+        previous = os.environ.get("TASK_EVAL_CONTEXT")
+        previous_committee_flag = os.environ.get("IGNOBEL_COMMITTEE")
+        if committee_flag is not None:
+            os.environ["IGNOBEL_COMMITTEE"] = committee_flag
+        os.environ["TASK_EVAL_CONTEXT"] = json.dumps(eval_context)
+        try:
+            result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        finally:
+            if previous is None:
+                os.environ.pop("TASK_EVAL_CONTEXT", None)
+            else:
+                os.environ["TASK_EVAL_CONTEXT"] = previous
+            if committee_flag is not None:
+                if previous_committee_flag is None:
+                    os.environ.pop("IGNOBEL_COMMITTEE", None)
+                else:
+                    os.environ["IGNOBEL_COMMITTEE"] = previous_committee_flag
         log = result.get("stdout", "") + result.get("stderr", "")
+        if role == "critic" and log_path.exists():
+            log_path = Path(out_dir) / f"{commit}.critic.log"
     log_path.write_text(log, encoding="utf-8")
     loss = result.get("loss") if result and result.get("status") == "ok" else None
     return {
@@ -1869,10 +2068,10 @@ def local_task_result(repo, commit, out_dir):
     }
 
 
-def run_evaluations(repo, commits, out_dir):
+def run_evaluations(repo, commits, out_dir, role="candidate"):
     if not commits:
         return {}, ""
-    results = {commit: local_task_result(repo, commit, out_dir) for commit in commits}
+    results = {commit: local_task_result(repo, commit, out_dir, role) for commit in commits}
     for commit, result in results.items():
         score = result["loss"]
         print(f"{commit}\t{score if score is None else f'{score:.6f}'}\t{result['status']}")
@@ -1886,7 +2085,7 @@ def critic_confirmation_result(repo, commit, first_score, out_dir):
             "status": "ok",
             "critic_rerun": "skipped (deterministic)",
         }
-    results, _ = run_evaluations(repo, [commit], out_dir)
+    results, _ = run_evaluations(repo, [commit], out_dir, role="critic")
     return results[commit]
 
 
@@ -1976,31 +2175,69 @@ def write_result_memory(
 def update_critic_tsv(path, record):
     path = Path(path)
     is_new = not path.exists() or path.stat().st_size == 0
+    columns = (
+        "round",
+        "commit",
+        "run1_loss",
+        "run2_loss",
+        "accepted",
+        "verdict",
+        "why",
+        "vetoed",
+    )
+    if not is_new:
+        with path.open(newline="", encoding="utf-8") as stream:
+            reader = csv.DictReader(stream, delimiter="\t")
+            existing_columns = list(reader.fieldnames or ())
+            existing_rows = list(reader)
+        if "vetoed" not in existing_columns:
+            existing_columns.append("vetoed")
+            for row in existing_rows:
+                row["vetoed"] = ""
+            with path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=existing_columns, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(existing_rows)
+        columns = tuple(existing_columns)
     with path.open("a", newline="", encoding="utf-8") as stream:
-        writer = csv.writer(stream, delimiter="\t")
         if is_new:
-            writer.writerow(
-                (
-                    "round",
-                    "commit",
-                    "run1_loss",
-                    "run2_loss",
-                    "accepted",
-                    "verdict",
-                    "why",
-                )
-            )
+            writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t")
+            writer.writeheader()
+        else:
+            writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t")
         writer.writerow(
-            (
-                record["round"],
-                record["commit"],
-                "" if record["v1"] is None else f"{record['v1']:.6f}",
-                "" if record["v2"] is None else f"{record['v2']:.6f}",
-                str(record["accepted"]).lower(),
-                record["verdict"],
-                record["why"],
-            )
+            {
+                "round": record["round"],
+                "commit": record["commit"],
+                "run1_loss": "" if record["v1"] is None else f"{record['v1']:.6f}",
+                "run2_loss": "" if record["v2"] is None else f"{record['v2']:.6f}",
+                "accepted": str(record["accepted"]).lower(),
+                "verdict": record["verdict"],
+                "why": record["why"],
+                "vetoed": str(record.get("vetoed", False)).lower(),
+            }
         )
+
+
+# Bulky or re-derivable outputs stay out of the per-round arm commits: the viewer export is
+# rebuilt by export_viewer.py, and the logs are committed once, compressed, when the run ends.
+ROUND_UNTRACKED = (
+    "viewer",
+    "runs",
+    "exa_cache",
+    "literature_cache",
+    "llm_log.jsonl",
+    "research_log.jsonl",
+    "viewer_publish_log.jsonl",
+    "resume_checkpoint.json",
+)
+FINAL_ARCHIVES = {
+    "llm_log.jsonl": "llm_log.jsonl.gz",
+    "research_log.jsonl": "research_log.jsonl.gz",
+    "runs": "runs.tar.gz",
+    "exa_cache": "exa_cache.tar.gz",
+    "literature_cache": "literature_cache.tar.gz",
+}
 
 
 def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
@@ -2009,35 +2246,163 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
     target = target.resolve()
     if out_dir != target:
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(out_dir, target, dirs_exist_ok=True)
+
+        def ignore(directory, names):
+            return [
+                name for name in names if Path(directory) == out_dir and name in ROUND_UNTRACKED
+            ]
+
+        shutil.copytree(out_dir, target, dirs_exist_ok=True, ignore=ignore)
     return target
 
 
-def record_round_artifacts(publisher, out_dir, conductor, arm, round_num):
+def record_round_artifacts(publisher, out_dir, conductor, arm, round_num, checkpoint=None):
+    """Commit the round's small artifacts and, under the same lock, mark the round complete."""
     with publisher.publish_lock:
         target = copy_artifacts_to_arm_branch(out_dir, conductor, arm)
-        return commit_arm_artifacts(conductor, target, round_num)
+        commit = commit_arm_artifacts(conductor, target, round_num)
+        if checkpoint is not None:
+            write_checkpoint(out_dir, round_num=round_num, arm_commit=commit, **checkpoint)
+        return commit
 
 
-def commit_arm_artifacts(conductor, target, round_num):
+def record_final_artifacts(publisher, out_dir, conductor, arm):
+    """Commit the bulky logs once, compressed, when the run ends."""
+    with publisher.publish_lock:
+        target = copy_artifacts_to_arm_branch(out_dir, conductor, arm)
+        out_dir = Path(out_dir)
+        for name, archive in FINAL_ARCHIVES.items():
+            source = out_dir / name
+            if source.is_file():
+                with source.open("rb") as raw, gzip.GzipFile(target / archive, "wb", mtime=0) as gz:
+                    shutil.copyfileobj(raw, gz)
+            elif source.is_dir() and any(source.iterdir()):
+                with tarfile.open(target / archive, "w:gz") as tar:
+                    tar.add(source, arcname=name)
+        return commit_arm_artifacts(conductor, target, None, message="Record final swarm logs")
+
+
+def commit_arm_artifacts(conductor, target, round_num, message=None):
     relative = target.relative_to(conductor)
-    git(conductor, "add", "-f", "--", str(relative))
+    excluded = [f":(exclude){relative / name}" for name in ROUND_UNTRACKED]
+    git(conductor, "add", "-f", "--", str(relative), *excluded)
     cached = git(conductor, "diff", "--cached", "--quiet", check=False)
-    if cached.returncode == 0:
-        return None
-    if cached.returncode != 1:
+    if cached.returncode not in {0, 1}:
         raise RuntimeError("unable to inspect staged arm artifacts")
-    git(
-        conductor,
-        "-c",
-        "user.name=Autoresearch Swarm",
-        "-c",
-        "user.email=swarm@localhost",
-        "commit",
-        "-m",
-        f"Record swarm artifacts for round {round_num}",
-    )
+    if cached.returncode == 1:
+        git(
+            conductor,
+            "-c",
+            "user.name=Autoresearch Swarm",
+            "-c",
+            "user.email=swarm@localhost",
+            "commit",
+            "-m",
+            message or f"Record swarm artifacts for round {round_num}",
+        )
     return git_text(conductor, "rev-parse", "HEAD")
+
+
+CHECKPOINT_NAME = "resume_checkpoint.json"
+CHECKPOINT_SKIP = {
+    CHECKPOINT_NAME,
+    "run.json",
+    "viewer_frontier.json",
+    "viewer_publish_log.jsonl",
+    "held_out_test.json",
+}
+
+
+def _checkpoint_files(out_dir):
+    for path in sorted(Path(out_dir).iterdir()):
+        if path.is_file() and path.name not in CHECKPOINT_SKIP and not path.name.startswith("."):
+            yield path
+
+
+def write_checkpoint(out_dir, *, round_num, arm_commit, best_val, best_commit, viewer_dir):
+    """Record the state at a round boundary so --resume can drop a half-written round.
+
+    Append-only logs are kept as byte lengths; small rewritten files as their content.
+    """
+    sizes, contents = {}, {}
+    for path in _checkpoint_files(out_dir):
+        if path.suffix == ".jsonl":
+            sizes[path.name] = path.stat().st_size
+        else:
+            contents[path.name] = path.read_text(encoding="utf-8")
+    viewer = None
+    if viewer_dir is not None and (Path(viewer_dir) / "events.ndjson").exists():
+        viewer_dir = Path(viewer_dir)
+        viewer = {
+            "events_bytes": (viewer_dir / "events.ndjson").stat().st_size,
+            "keyframes": sorted(path.name for path in (viewer_dir / "keyframes").glob("*")),
+        }
+    data = {
+        "round": round_num,
+        "arm_commit": arm_commit,
+        "best_val": best_val,
+        "best_commit": best_commit,
+        "jsonl_bytes": sizes,
+        "files": contents,
+        "viewer": viewer,
+        "ts": timestamp(),
+    }
+    path = Path(out_dir) / CHECKPOINT_NAME
+    temp = path.with_name(f".{path.name}.tmp")
+    temp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temp, path)
+
+
+def read_checkpoint(out_dir):
+    path = Path(out_dir) / CHECKPOINT_NAME
+    if not path.exists():
+        raise ValueError(f"cannot resume: {path} is missing (the run predates --resume)")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def restore_checkpoint(out_dir, checkpoint):
+    """Truncate the out dir back to the checkpointed round boundary."""
+    sizes, contents = checkpoint["jsonl_bytes"], checkpoint["files"]
+    for path in _checkpoint_files(out_dir):
+        if path.name in sizes:
+            size = sizes[path.name]
+            if path.stat().st_size < size:
+                raise ValueError(f"cannot resume: {path} is shorter than its checkpoint")
+            with path.open("r+b") as handle:
+                handle.truncate(size)
+        elif path.name not in contents:
+            path.unlink()
+    for name, size in sizes.items():
+        if not (Path(out_dir) / name).exists():
+            if size:
+                raise ValueError(f"cannot resume: {Path(out_dir) / name} is missing")
+            (Path(out_dir) / name).touch()
+    for name, text in contents.items():
+        (Path(out_dir) / name).write_text(text, encoding="utf-8")
+
+
+def restore_viewer(viewer_dir, state):
+    """Cut a published recording back to its checkpointed prefix; later publishes append."""
+    viewer_dir = Path(viewer_dir)
+    events = viewer_dir / "events.ndjson"
+    if state is None or not events.exists() or events.stat().st_size < state["events_bytes"]:
+        if viewer_dir.exists():
+            shutil.rmtree(viewer_dir)
+        return
+    with events.open("r+b") as handle:
+        handle.truncate(state["events_bytes"])
+    keep = set(state["keyframes"])
+    for path in (viewer_dir / "keyframes").glob("*"):
+        if path.name not in keep:
+            path.unlink()
+
+
+def delete_tags_after(repo, prefix, round_num):
+    """Drop tags a half-written round left behind so the retried round can reuse the names."""
+    for tag in git_text(repo, "tag", "--list", f"{prefix}/*").splitlines():
+        head = tag[len(prefix) + 1 :].split("-", 1)[0]
+        if head.isdigit() and int(head) > round_num:
+            git(repo, "tag", "-d", tag)
 
 
 def write_round_summary(events, candidate_count):
@@ -2095,11 +2460,15 @@ def critic_lesson_memory(
 
 
 @contextmanager
-def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
+def arm_environment(
+    arm, exa_enabled, memory_backend=None, run_id=None, rollbacks=None, keyless=False
+):
     names = (
         "AUTORESEARCH_ARM",
         "AUTORESEARCH_RUN_ID",
+        "AUTORESEARCH_RUN_ROLLBACKS",
         "EXA",
+        "LITERATURE",
         "BOREDOM",
         "PRIOR_ART",
         "GROUNDING",
@@ -2109,14 +2478,22 @@ def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
     os.environ["AUTORESEARCH_ARM"] = arm
     if run_id is not None:
         os.environ["AUTORESEARCH_RUN_ID"] = run_id
+    if rollbacks:
+        os.environ["AUTORESEARCH_RUN_ROLLBACKS"] = json.dumps(rollbacks)
+    else:
+        os.environ.pop("AUTORESEARCH_RUN_ROLLBACKS", None)
     os.environ["EXA"] = "on" if exa_enabled else "off"
+    if keyless and not exa_enabled:
+        os.environ["LITERATURE"] = "keyless"
+    else:
+        os.environ.pop("LITERATURE", None)
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
     elif arm == "D":
         os.environ["MEMORY_BACKEND"] = "local"
     else:
         os.environ["MEMORY_BACKEND"] = "pastdev"
-    if arm == "A":
+    if arm in METER_OFF_ARMS:
         os.environ["BOREDOM"] = "off"
     else:
         os.environ.pop("BOREDOM", None)
@@ -2177,41 +2554,166 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
     if not dest:
         return
     out_dir = Path(out_dir)
-    try:
-        import export_viewer
+    import export_viewer
 
+    try:
         export_viewer.publish(out_dir, dest, final=final, status=status)
     except Exception as error:
+        print(
+            f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True
+        )
         try:
-            append_jsonl(
-                out_dir / "viewer_publish_log.jsonl",
-                {
-                    "ts": timestamp(),
-                    "status": status,
-                    "final": final,
-                    "error": type(error).__name__,
-                    "message": str(error),
-                },
+            export_viewer.log_publish_issue(
+                out_dir,
+                kind=type(error).__name__,
+                message=str(error),
+                final=final,
+                status=status,
             )
         except Exception as log_error:
             print(f"viewer publish log failed: {type(log_error).__name__}", file=sys.stderr)
-        print(f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr)
+        if final:
+            # The final publish must not fail silently: retry once so the manifest
+            # carries publish_errors, then re-raise for the caller to report.
+            try:
+                export_viewer.publish(out_dir, dest, final=final, status=status)
+                return
+            except Exception:
+                pass
+            raise
+
+
+RESUMED_SETTINGS = (
+    "task",
+    "arm",
+    "seed",
+    "llm",
+    "model",
+    "critic_model",
+    "exa",
+    "literature",
+    "memory_backend",
+)
+RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
+
+
+def resolve_run_args(args):
+    """Fill unset options from defaults, or from run.json when resuming; None when fresh."""
+    if not getattr(args, "resume", None):
+        for key, value in RUN_DEFAULTS.items():
+            if getattr(args, key, None) is None:
+                setattr(args, key, value)
+        if not args.task:
+            raise ValueError("--task is required unless --resume is given")
+        if task_research_off(args.task):
+            args.exa = "off"
+            args.literature = "off"
+            print(
+                f"swarm.py: task {args.task} sets research=off; forcing Exa and keyless "
+                "literature off",
+                file=sys.stderr,
+            )
+        return None
+    out_dir = Path(args.resume).resolve()
+    if args.out and Path(args.out).resolve() != out_dir:
+        raise ValueError("--out must match --resume (or be omitted)")
+    try:
+        run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ValueError(f"cannot resume {out_dir}: unreadable run.json ({error})") from None
+    if not run_artifact.get("branch") or not run_artifact.get("repo"):
+        raise ValueError(f"cannot resume {out_dir}: the run predates --resume support")
+    if run_artifact.get("status") == "finished":
+        raise ValueError(f"cannot resume {out_dir}: the run already finished")
+    research_task = run_artifact.get("task") or args.task
+    research_off = task_research_off(research_task)
+    if research_off:
+        args.exa = "off"
+        args.literature = "off"
+        print(
+            f"swarm.py: task {research_task} sets research=off; forcing Exa and "
+            "keyless literature off",
+            file=sys.stderr,
+        )
+    for key in RESUMED_SETTINGS:
+        if research_off and key in {"exa", "literature"}:
+            setattr(args, key, "off")
+            continue
+        stored, given = run_artifact.get(key), getattr(args, key, None)
+        if given is not None and key in run_artifact and given != stored:
+            raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
+        if given is None:
+            setattr(args, key, stored)
+    if "literature" not in run_artifact and args.literature is None:
+        args.literature = "off"  # runs from before --literature never researched keylessly
+    if args.rounds is None:
+        args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
+    if (out_dir / "held_out_test.json").exists() and args.rounds > run_artifact.get(
+        "rounds", RUN_DEFAULTS["rounds"]
+    ):
+        raise ValueError("cannot extend a run after its held-out test has been graded")
+    if args.viewer_dest is None and run_artifact.get("viewer_dest"):
+        args.viewer_dest = run_artifact["viewer_dest"]
+    if run_artifact.get("viewer") is False:
+        args.no_viewer = True
+    if run_artifact.get("no_push"):
+        args.no_push = True
+    args.out = str(out_dir)
+    args.repo = run_artifact["repo"]
+    return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
+
+
+def llm_failure_candidate(agent, role, error):
+    return {
+        "agent": agent,
+        "status": "crash",
+        "score": None,
+        "commit": "",
+        "descriptor": {"mechanism": "baseline", "method": "none"},
+        "sources": [],
+        "lead": None,
+        "idea": "LLM call failed",
+        "predicted_delta": None,
+        "role": role,
+        "reasons": [f"llm_error: {str(error)[:500]}"],
+        "attempts": [],
+        "llm_error": True,
+    }
 
 
 def _orchestrate(args, publish_state, cleanup):
+    resume = resolve_run_args(args)
     if args.rounds < 1 or args.rounds > 50:
         raise ValueError("--rounds must be between 1 and 50")
     prompt_dir = configure_task(args)
-    if args.arm not in {"A", "B", "C", "D"}:
-        raise ValueError("--arm must be A, B, C, or D")
+    if args.arm not in {"A", "B", "C", "D", "S"}:
+        raise ValueError("--arm must be A, B, C, D, or S")
+    agents = AGENTS[:1] if args.arm == "S" else AGENTS
     repo = Path(args.repo).resolve()
     git_text(repo, "rev-parse", "--show-toplevel")
     profile_path = TASK["profile"].resolve()
     profile = meter.load_profile(profile_path)
-    start_commit = git_text(repo, "rev-parse", "HEAD")
-    exa_enabled = (
-        args.arm != "C" and os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
-    )
+    if resume is not None:
+        if resume["run"].get("profile_sha256") != profile["_hash"]:
+            raise ValueError(
+                "cannot resume: the task's boredom profile changed since the run began"
+            )
+        start_commit = resume["run"]["swarm_commit"]
+        if resume["checkpoint"]["round"] > args.rounds:
+            raise ValueError(
+                f"cannot resume: round {resume['checkpoint']['round']} is already complete, "
+                f"past --rounds {args.rounds}; pass a larger --rounds to extend the run"
+            )
+    else:
+        start_commit = git_text(repo, "rev-parse", "HEAD")
+    research_source = resolve_research_source(args)
+    exa_enabled = research_source == "exa"
+    if research_source == "keyless" and args.exa == "on" and args.arm != "C":
+        print(
+            "swarm.py: EXA_API_KEY is not set; researching with keyless OpenAlex, arXiv "
+            "and PubMed search instead of Exa",
+            file=sys.stderr,
+        )
     effective_no_push = args.no_push or args.llm == "fake"
     memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
     if memory_override:
@@ -2220,7 +2722,16 @@ def _orchestrate(args, publish_state, cleanup):
         memory_backend = "local" if args.arm == "D" else "pastdev"
     preflight(args, memory_backend, exa_enabled)
     cleanup.enter_context(arm_lock(repo / ".swarm_worktrees" / args.arm))
-    branch, conductor, agents_root = create_arm_worktrees(repo, args.arm, start_commit)
+    if resume is not None:
+        branch, conductor, agents_root = resume_arm_worktrees(
+            repo,
+            args.arm,
+            resume["run"]["branch"],
+            resume["checkpoint"]["arm_commit"],
+            resume["out_dir"],
+        )
+    else:
+        branch, conductor, agents_root = create_arm_worktrees(repo, args.arm, start_commit)
     if args.out:
         out_dir = Path(args.out).resolve()
     else:
@@ -2233,39 +2744,88 @@ def _orchestrate(args, publish_state, cleanup):
         if args.no_viewer
         else (Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer")
     )
-    publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
-    publisher = live_publish.Publisher(
-        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs), settle=2.0
-    )
-    publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"
+    if resume is None and run_id_path.exists():
+        raise ValueError(f"{out_dir} already holds a run; resume it with --resume {out_dir}")
     if not run_id_path.exists():
         run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
     run_id = run_id_path.read_text(encoding="utf-8").strip()
     if not run_id:
         raise ValueError("swarm run_id must not be empty")
+    import export_viewer
+
+    viewer_run_id = (resume["run"].get("viewer_run_id") if resume else None) or (
+        export_viewer.autoresearch_run_id(args.arm, run_id)
+    )
+    viewer_run_dir = None if viewer_dest is None else viewer_dest / viewer_run_id
+    if resume is not None:
+        restore_checkpoint(out_dir, resume["checkpoint"])
+        if viewer_run_dir is not None:
+            restore_viewer(viewer_run_dir, resume["checkpoint"]["viewer"])
+        viewer_frontier(out_dir, resume["checkpoint"]["round"], "finish")
+    tag_prefix = f"run/swarm_{args.arm}/{run_id[:8]}"
+    delete_tags_after(repo, tag_prefix, resume["checkpoint"]["round"] if resume else 0)
+    publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
+    publisher = live_publish.Publisher(
+        lambda **kwargs: publish_viewer_state(
+            out_dir,
+            viewer_dest,
+            **{"status": publish_state.get("live_status", "running"), **kwargs},
+        ),
+        settle=2.0,
+        heartbeat=None if viewer_dest is None else HEARTBEAT_SECONDS,
+        on_heartbeat=lambda: viewer_heartbeat(viewer_dest, viewer_run_id),
+    )
+    publish_state["publisher"] = publisher
     provenance = {"swarm_commit": start_commit, "command": redact_command(sys.argv)}
     profile_artifact = {key: value for key, value in profile.items() if not key.startswith("_")}
     (out_dir / "boredom_profile.json").write_text(
         json.dumps(profile_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    _write_run_artifact(
-        out_dir,
-        {
-            "run_id": run_id,
-            "task": args.task,
-            "arm": args.arm,
-            "status": "running",
-            "seed": args.seed,
-            "rounds": args.rounds,
-            "workers": len(AGENTS),
-            "llm": args.llm,
-            "exa": "on" if exa_enabled else "off",
-            "profile_path": "boredom_profile.json",
-            "profile_sha256": profile["_hash"],
-            **provenance,
-        },
-    )
+    if resume is not None:
+        resumed = resume["run"]
+        resumed["status"] = "running"
+        resumed["rounds"] = args.rounds
+        resumed.setdefault("resumes", []).append(
+            {
+                "ts": timestamp(),
+                "after_round": resume["checkpoint"]["round"],
+                "checkpoint_ts": resume["checkpoint"].get("ts"),
+                "command": redact_command(sys.argv),
+            }
+        )
+        _write_run_artifact(out_dir, resumed)
+        memory_rollbacks = [
+            {"epoch": epoch, "after": entry.get("checkpoint_ts")}
+            for epoch, entry in enumerate(resumed["resumes"], 1)
+        ]
+    else:
+        _write_run_artifact(
+            out_dir,
+            {
+                "run_id": run_id,
+                "viewer_run_id": viewer_run_id,
+                "task": args.task,
+                "arm": args.arm,
+                "status": "running",
+                "seed": args.seed,
+                "rounds": args.rounds,
+                "workers": len(agents),
+                "llm": args.llm,
+                "critic_model": args.critic_model,
+                "exa": "on" if exa_enabled else "off",
+                "literature": args.literature,
+                "research": research_source,
+                "profile_path": "boredom_profile.json",
+                "profile_sha256": profile["_hash"],
+                "repo": str(repo),
+                "branch": branch,
+                "viewer": not args.no_viewer,
+                "no_push": bool(args.no_push),
+                "viewer_dest": str(Path(args.viewer_dest).resolve()) if args.viewer_dest else None,
+                **provenance,
+            },
+        )
     os.environ["TASK_RESEARCH_LOG"] = str(out_dir / "research_log.jsonl")
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
@@ -2275,32 +2835,59 @@ def _orchestrate(args, publish_state, cleanup):
     llm_client = llm.LLMClient(
         mode=args.llm,
         model=args.model,
+        role_models={
+            "CRITIC": args.critic_model,
+            "CRITIC_NOVELTY": args.critic_model,
+        },
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
         seed=args.seed,
+        fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
     )
-    provenance.update({"seed": args.seed, "model": llm_client.model})
+    critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
+    provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
     run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
-    run_artifact.update({"model": llm_client.model, "memory_backend": memory_backend})
+    run_artifact.update(
+        {
+            "model": llm_client.model,
+            "critic_model": critic_model,
+            "memory_backend": memory_backend,
+        }
+    )
     _write_run_artifact(out_dir, run_artifact)
     if not critic_path.exists():
         critic_path.write_text(
-            "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\n",
+            "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\tvetoed\n",
             encoding="utf-8",
         )
 
-    baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
+    ledger_baseline = next(
+        (event for event in meter.read_ledger(ledger_path) if event.get("kind") == "baseline"), None
+    )
+    if resume is not None and ledger_baseline is not None:
+        baseline = {"loss": ledger_baseline["score"], "status": "ok"}
+    else:
+        baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
     if baseline["loss"] is None:
         raise RuntimeError(
             f"task {TASK['name']} baseline failed to score: "
             f"{baseline['status']} ({baseline['reason']}); see {out_dir / 'runs'}"
         )
     baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
-    record_score_cache(repo, out_dir, {baseline_commit: baseline})
+    if resume is None:
+        record_score_cache(repo, out_dir, {baseline_commit: baseline})
+        memory_rollbacks = []
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
-    with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
+    with arm_environment(
+        args.arm,
+        exa_enabled,
+        memory_backend,
+        run_id=run_id,
+        rollbacks=memory_rollbacks,
+        keyless=research_source == "keyless",
+    ):
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,
@@ -2324,10 +2911,38 @@ def _orchestrate(args, publish_state, cleanup):
         best_metric_commit = baseline_commit
         latest_candidate = None
         tags_this_run = []
+        if resume is not None and not effective_no_push:
+            tags_this_run = git_text(repo, "tag", "--list", f"{tag_prefix}/*").split()
+        if resume is not None:
+            first_round = resume["checkpoint"]["round"] + 1
+            best_val = resume["checkpoint"]["best_val"]
+            best_metric_commit = resume["checkpoint"]["best_commit"]
+            if first_round > args.rounds:
+                print(
+                    f"swarm.py: resuming run {run_id}: all {args.rounds} rounds are complete; "
+                    "rerunning post-run scoring and finalization",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"swarm.py: resuming run {run_id} at round {first_round}", file=sys.stderr)
+        else:
+            first_round = 1
+            record_round_artifacts(
+                publisher,
+                out_dir,
+                conductor,
+                args.arm,
+                0,
+                checkpoint={
+                    "best_val": best_val,
+                    "best_commit": best_metric_commit,
+                    "viewer_dir": viewer_run_dir,
+                },
+            )
 
-        for round_num in range(1, args.rounds + 1):
+        for round_num in range(first_round, args.rounds + 1):
             events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(profile, events, AGENTS, args.arm, exa_enabled)
+            allocation = allocate_roles(profile, events, agents, args.arm, research_source != "off")
             status = {
                 **allocation,
                 "ledger_sha256": allocation["ledger_sha256"],
@@ -2346,7 +2961,9 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
             events_for_scouts = list(events)
-            cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
+            cell_suggestions = (
+                [] if args.arm in METER_OFF_ARMS else suggest_cells(profile, events_for_scouts)
+            )
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
             append_assignment(
@@ -2359,6 +2976,7 @@ def _orchestrate(args, publish_state, cleanup):
                 round_num=round_num,
                 provenance=provenance,
             )
+            # After the assignment so sources it logs fall in this round of the viewer timeline.
             refresh_round_context(out_dir, round_num, cell_suggestions)
             status["per_agent_B"] = allocation["per_agent_B"]
             viewer_frontier(out_dir, round_num, "assign")
@@ -2386,40 +3004,49 @@ def _orchestrate(args, publish_state, cleanup):
             claims = []
             assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
-            for agent in AGENTS:
+            for agent in agents:
                 role = allocation["roles"][agent]
                 lead = lead_for_agent(agent, leads, all_leads)
-                candidate = worker_attempts(
-                    assigned_cells=assigned_cells,
-                    agent=agent,
-                    round_num=round_num,
-                    arm=args.arm,
-                    role=role,
-                    agent_b=allocation["per_agent_B"][agent],
-                    status=status,
-                    best_commit=best_metric_commit,
-                    best_val=best_val,
-                    profile=profile,
-                    profile_path=profile_path,
-                    out_dir=out_dir,
-                    repo=repo,
-                    agents_root=agents_root,
-                    base_commit=base_commit,
-                    llm_client=llm_client,
-                    backend=memory_backend,
-                    mirror=memory_mirror,
-                    memory_log=memory_log,
-                    lead=lead,
-                    all_leads=all_leads,
-                    claims=claims,
-                    replay=args.replay,
-                )
+                try:
+                    candidate = worker_attempts(
+                        assigned_cells=assigned_cells,
+                        agent=agent,
+                        round_num=round_num,
+                        arm=args.arm,
+                        role=role,
+                        agent_b=allocation["per_agent_B"][agent],
+                        status=status,
+                        best_commit=best_metric_commit,
+                        best_val=best_val,
+                        profile=profile,
+                        profile_path=profile_path,
+                        out_dir=out_dir,
+                        repo=repo,
+                        agents_root=agents_root,
+                        base_commit=base_commit,
+                        llm_client=llm_client,
+                        backend=memory_backend,
+                        mirror=memory_mirror,
+                        memory_log=memory_log,
+                        lead=lead,
+                        all_leads=all_leads,
+                        claims=claims,
+                        replay=args.replay,
+                    )
+                except llm.LLMError as error:
+                    print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
+                    candidate = llm_failure_candidate(agent, role, error)
                 candidate["regime_label"] = {
                     "EXPLOIT": "EXPLOIT",
                     "BOREDOM_SNAP": "SNAP",
                     "PARADIGM_BREAKOUT": "BREAKOUT",
                 }.get(allocation["regime"], "EXPLOIT")
                 candidate_records.append(candidate)
+            if all(candidate.get("llm_error") for candidate in candidate_records):
+                raise RuntimeError(
+                    f"every worker's LLM call failed in round {round_num}; fix the provider and "
+                    f"continue with --resume {out_dir}"
+                )
 
             viewer_frontier(out_dir, round_num, "research")
             publisher.request()
@@ -2466,7 +3093,13 @@ def _orchestrate(args, publish_state, cleanup):
             )
             critic_event = None
             accepted = False
-            if provisional_best is not None:
+            if provisional_best is not None and args.arm == "S":
+                accepted = True
+                provisional_best["status"] = "keep"
+                best_val = float(provisional_best["score"])
+                best_metric_commit = provisional_best["commit"]
+                latest_candidate = provisional_best
+            elif provisional_best is not None:
                 previous_best_val = best_val
                 previous_best_commit = best_metric_commit
                 critic_dir = out_dir / "runs" / "critic_confirmation"
@@ -2497,6 +3130,7 @@ def _orchestrate(args, publish_state, cleanup):
                     "accepted": accepted,
                     "verdict": "",
                     "why": "",
+                    "vetoed": False,
                     "novelty": provisional_best.get("novelty"),
                 }
                 verdict = critic_review(
@@ -2513,6 +3147,8 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 critic_record["verdict"] = str(verdict.get("verdict") or "untested-in-source")
                 critic_record["why"] = str(verdict.get("why") or "")
+                accepted, critic_record["vetoed"] = apply_critic_verdict(accepted, verdict)
+                critic_record["accepted"] = accepted
                 write_memory_item(
                     "verdict",
                     f"verdict-{args.arm}-{round_num}-{provisional_best['agent']}",
@@ -2523,6 +3159,7 @@ def _orchestrate(args, publish_state, cleanup):
                         "round": round_num,
                         "commit": provisional_best["commit"],
                         "accepted": accepted,
+                        "vetoed": critic_record["vetoed"],
                     },
                     backend=memory_backend,
                     mirror=memory_mirror,
@@ -2555,6 +3192,7 @@ def _orchestrate(args, publish_state, cleanup):
                     "predicted_delta": provisional_best.get("predicted_delta"),
                     "verdict": critic_record["verdict"],
                     "accepted": accepted,
+                    "vetoed": critic_record["vetoed"],
                     "novelty": provisional_best.get("novelty"),
                 }
                 if accepted:
@@ -2623,19 +3261,27 @@ def _orchestrate(args, publish_state, cleanup):
 
             events = write_results(ledger_path, results_path)
             _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
-            record_round_artifacts(publisher, out_dir, conductor, args.arm, round_num)
             for candidate in candidate_records:
                 if candidate.get("commit"):
-                    tag = unique_tag(
-                        repo,
-                        f"run/swarm_{args.arm}/{round_num}-{candidate['agent']}",
-                    )
+                    tag = unique_tag(repo, f"{tag_prefix}/{round_num}-{candidate['agent']}")
                     git(conductor, "tag", tag, candidate["commit"])
                     tags_this_run.append(tag)
             if critic_event is not None:
-                tag = unique_tag(repo, f"run/swarm_{args.arm}/{round_num}-critic")
+                tag = unique_tag(repo, f"{tag_prefix}/{round_num}-critic")
                 git(conductor, "tag", tag, critic_event["commit"])
                 tags_this_run.append(tag)
+            record_round_artifacts(
+                publisher,
+                out_dir,
+                conductor,
+                args.arm,
+                round_num,
+                checkpoint={
+                    "best_val": best_val,
+                    "best_commit": best_metric_commit,
+                    "viewer_dir": viewer_run_dir,
+                },
+            )
             if not effective_no_push:
                 git(conductor, "push", "origin", branch, *tags_this_run)
                 tags_this_run.clear()
@@ -2667,6 +3313,41 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
 
+    # The rounds are done: an interrupted or failed committee must not mark the run stopped.
+    publish_state["completed"] = True
+
+    def start_scoring():
+        publish_state["live_status"] = "scoring"
+        publisher.flush(final=False, status="scoring")
+
+    if not args.replay and TASK.get("held_out_test"):
+        try:
+            from held_out import held_out_test
+
+            test_result = held_out_test(TASK["name"], out_dir)
+            print(
+                f"[held_out_test] {TASK['name']} baseline loss={test_result['baseline']['loss']} "
+                f"best loss={test_result['best']['loss']} "
+                f"reference_test_loss={test_result['reference_test_loss']}",
+                flush=True,
+            )
+        except Exception as error:
+            print(
+                f"[held_out_test] failed: {type(error).__name__}: {error}",
+                file=sys.stderr,
+                flush=True,
+            )
+
+    try:
+        if run_post_run_hook(out_dir, args.llm, replay=args.replay, on_start=start_scoring):
+            record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
+            if not effective_no_push:
+                git(conductor, "push", "origin", branch)
+    except Exception as error:
+        print(f"[post_run] failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+    record_final_artifacts(publisher, out_dir, conductor, args.arm)
+    if not effective_no_push:
+        git(conductor, "push", "origin", branch, *tags_this_run)
     return {
         "arm": args.arm,
         "branch": branch,
@@ -2684,7 +3365,8 @@ def orchestrate(args):
         try:
             return _orchestrate(args, publish_state, cleanup)
         except BaseException:
-            terminal_status = "stopped"
+            if not publish_state.get("completed"):
+                terminal_status = "stopped"
             raise
         finally:
             _finish_publish(publish_state, terminal_status)
@@ -2705,7 +3387,26 @@ def _finish_publish(publish_state, terminal_status):
                 _write_run_artifact(out_dir, run_artifact)
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
-        publish_viewer_state(out_dir, publish_state.get("dest"), final=True, status=terminal_status)
+        try:
+            publish_viewer_state(
+                out_dir, publish_state.get("dest"), final=True, status=terminal_status
+            )
+        except Exception as error:
+            print(
+                f"FINAL viewer publish failed (see {out_dir}/viewer_publish_log.jsonl): "
+                f"{type(error).__name__}: {error}",
+                file=sys.stderr,
+                flush=True,
+            )
+
+
+HEARTBEAT_SECONDS = 30
+
+
+def viewer_heartbeat(dest, run_id):
+    import export_viewer
+
+    export_viewer.heartbeat(dest, run_id)
 
 
 def viewer_frontier(out_dir, round_num, phase):
@@ -2726,23 +3427,42 @@ def viewer_frontier(out_dir, round_num, phase):
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arm", choices=("A", "B", "C", "D"), default="B")
-    parser.add_argument("--rounds", type=int, default=10)
+    parser.add_argument(
+        "--arm", choices=("A", "B", "C", "D", "S"), help="experiment arm (default B)"
+    )
+    parser.add_argument("--rounds", type=int, help="total rounds, 1-50 (default 10)")
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
-    parser.add_argument("--llm", choices=("openai", "tinker", "fake"), default="openai")
+    parser.add_argument("--llm", choices=("openai", "tinker", "fake"), help="default openai")
+    parser.add_argument(
+        "--resume",
+        metavar="OUT",
+        help="continue a crashed or killed run from its last completed round",
+    )
     parser.add_argument(
         "--task",
-        required=True,
         choices=sorted(path.parent.name for path in TESTCASES.glob("*/task.json")),
         help="CPU benchmark to run with its sandboxed evaluator",
     )
     parser.add_argument("--model")
+    parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
-    parser.add_argument("--exa", choices=("on", "off"), default="on")
+    parser.add_argument("--exa", choices=("on", "off"), help="default on")
+    parser.add_argument(
+        "--literature",
+        choices=("auto", "keyless", "off"),
+        help="keyless OpenAlex/arXiv/PubMed research: by default only under --exa off (and not "
+        "with --llm fake); keyless or auto also stand in for Exa when EXA_API_KEY is unset",
+    )
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
+    parser.add_argument(
+        "--fake-delay",
+        type=float,
+        default=0.0,
+        help="seconds each --llm fake call sleeps, so offline runs can be watched live",
+    )
     parser.add_argument(
         "--viewer-dest", help="directory for live viewer exports (default: <out>/viewer)"
     )
@@ -2750,9 +3470,14 @@ def build_parser():
     return parser
 
 
+def _terminate(signum, _frame):
+    raise SystemExit(128 + signum)
+
+
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
+    signal.signal(signal.SIGTERM, _terminate)
     try:
         result = orchestrate(args)
     except (OSError, ValueError, RuntimeError, research.BudgetExceeded) as error:

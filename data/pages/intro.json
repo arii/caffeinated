@@ -1,0 +1,114 @@
+{
+  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): an artificial scientist swarm that notices when it is bored and changes approach."},
+  "tools": [
+    {"kind": "llm", "name": "Language model", "tinkerName": "Tinker", "detail": "{model} powers the researchers' language-model calls.", "tinkerDetail": "{model} runs through Tinker, the researchers' language-model provider.", "fakeName": "LLM", "fakeDetail": "A simulated model drives the researchers for this plumbing demo.", "fakeSuffix": "(fake LLM in this recording)", "unverifiedDetail": "A language model helps researchers plan and evaluate ideas.", "unknownSuffix": "(model not verified in this recording)"},
+    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; each source card links to the Exa result it came from.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
+    {"kind": "memory", "name": "past.dev", "detail": "Shared memory helps agents recall earlier attempts and share what they learn.", "localSuffix": "(local memory in this recording)", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
+    {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
+  ],
+  "authors": {"placeholder": true, "names": ["[AUTHORS — names to come]"]},
+  "boredom": {
+    "title": "Why a boredom meter?",
+    "paragraphs": [
+      "In psychology, boredom is not laziness. It is the signal that a routine has stopped paying off and that it is time to look for something new (Westgate & Wilson 2018; Eastwood et al. 2012; Bench & Lench 2013).",
+      "Caffeinated turns that signal into a measured quantity B between 0 and 1 that steers the swarm. B is high when recent attempts mean the same thing as earlier ones, when nothing has significantly improved for a while, and when attempts keep failing or repeating.",
+      "It is never an LLM opinion: B is a deterministic function of the experiment ledger, so any agent can recompute any other agent's boredom and check it. It combines novelty, stagnation and overload (B = 0.45·(1 − novelty) + 0.45·stagnation + 0.10·overload)."
+    ],
+    "source": "Summarized from docs/boredom.md"
+  },
+  "sections": {
+    "about": "About this project ▾",
+    "event": "Hack",
+    "tools": "Tools",
+    "authors": "Authors",
+    "boredom": "Boredom",
+    "trail": "Exa"
+  },
+  "labels": {
+    "source": "Exa result:",
+    "missingExa": "results not kept as source cards",
+    "recording": "This recording",
+    "searches": "literature searches",
+    "sources": "Exa source cards",
+    "recalls": "shared-memory recalls via",
+    "pastdev": "past.dev",
+    "localMemory": "local memory",
+    "noCitations": "No study citations in this recording yet."
+  },
+  "results": {
+    "proxyNote": "Metric / proxy",
+    "noProxy": "No proxy note is present in this recording.",
+    "studyCount": "Ig Nobel studies",
+    "passedCount": "passed",
+    "awardCount": "Prizes awarded: {N}",
+    "awardFallback": "Award issued",
+    "creditErrorSuffix": " (Tinker credit ran out)",
+    "noAwards": "No prizes awarded yet — this run stopped before committee judging.",
+    "factualLine": "Real result so far: {C} of {R} tests that ran passed their preregistered gates; {K} also pass the |ρ| ≥ 0.1 floor added after the run ({N} registered){committeeSuffix}",
+    "noCommitteeSuffix": "; no committee score yet",
+    "countLine": "{N} registered · {M} confirmed ({K} under the post-hoc |ρ| ≥ 0.1 floor)",
+    "track3Line": "Track 3 check (exploratory, 3 runs each): preregistered primary (guard2, stopped early, guarded) B 0.26 > S 0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06. B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two runs.",
+    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/memory-comparison/README.md",
+    "track3Url": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/confirmatory/RESULTS.md",
+    "bixbenchUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/real-runs/bixbench_mini-v2/held_out_test.json",
+    "charts": {
+      "toolsCaption": "Live calls recorded in this run (Kimi + Exa + past.dev)",
+      "sourceCaption": "Source cards; some papers repeat.",
+      "funnelCaption": "Known relationships in teaching datasets, not discoveries.",
+      "bixbench": {
+        "baseline": {
+          "correct": 1,
+          "total": 7,
+          "ci": [0.03, 0.51]
+        },
+        "best": {
+          "correct": 6,
+          "total": 7,
+          "ci": [0.49, 0.97]
+        },
+        "caption": "7 held-out questions, one run."
+      },
+      "track3": {
+        "groups": [
+          {
+            "label": "Preregistered (stopped early)",
+            "values": [
+              {"arm": "B", "value": 0.259},
+              {"arm": "S", "value": 0.241},
+              {"arm": "A", "value": 0.111}
+            ]
+          },
+          {
+            "label": "Complete set (picked after)",
+            "values": [
+              {"arm": "S", "value": 0.296},
+              {"arm": "A", "value": 0.093},
+              {"arm": "B", "value": 0.056}
+            ]
+          }
+        ],
+        "legend": [
+          {"arm": "B", "label": "boredom swarm"},
+          {"arm": "S", "label": "single agent"},
+          {"arm": "A", "label": "meter off"}
+        ],
+        "caption": "3 runs each — neither ordering is significant."
+      },
+      "memory": {
+        "pastdev": {
+          "hitAt1": 0.65,
+          "hitAt8": 0.95,
+          "medianLatencyMs": 562
+        },
+        "local": {
+          "hitAt1": 0.3,
+          "hitAt8": 0.825,
+          "medianLatencyMs": 15
+        },
+        "memories": 419,
+        "probes": 40,
+        "caption": "419 real memories, 40 hand-written probes."
+      }
+    }
+  }
+}

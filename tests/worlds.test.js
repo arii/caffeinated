@@ -1,8 +1,9 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {Box3,Vector3} from 'three';
+import {ROBOT_APPEARANCES,robotAppearance} from '../src/engine/robots.ts';
 import {createWorld} from '../src/variants/lab.ts';
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
-globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},strokeRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},ellipse(){},closePath(){},fill(){}})})};
+globalThis.document={createElement:()=>{const text=[];return {width:0,height:0,text,getContext:()=>({fillRect(){},strokeRect(){},fillText(value){text.push(value);},measureText(value){return {width:value.length*18};},roundRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},ellipse(){},closePath(){},fill(){}})};}};
 test('Lab Environment: all stations are reachable and backend roster can change',()=>{
   const create=createWorld;
   const w=create(),r=.34,spacing=.4;
@@ -36,19 +37,44 @@ test('paused replay freezes avatar and field poses at the same replay time',()=>
 });
 
 
-test('animated status lights remain tiny and stationary robots face the entrance',()=>{
+test('animated status lights remain tiny and stationary robots face their bench',()=>{
  const world=createWorld();
  world.update(7,{progress:.5,boredom:0,running:true,replay:true,agents:[{id:'robot-b1',name:'B1',role:'researcher',state:'working',stationId:'analyzer',boredom:null,position:{x:4,z:-1.4}}]});
  const light=world.scene.getObjectByName('agent-status-led');assert.ok(light);
  const size=new Box3().setFromObject(light).getSize(new Vector3());
  assert.ok(Math.max(size.x,size.y,size.z)<.06,'a pulsing indicator must never grow into an opaque body-sized box');
- assert.equal(light.parent.rotation.y,0,'stationary happy faces should face the entry camera');
+ assert.equal(light.parent.rotation.y,Math.PI,'stationary researchers should face their experiment bench');
 });
 
 
-test('first replay frame starts at supplied pose facing the camera, never a spawn-to-pose turn',()=>{
+test('first replay frame preserves its supplied position and heading',()=>{
  const world=createWorld();
  world.update(0,{progress:0,boredom:0,running:false,replay:true,agents:[{id:'initial-robot',name:'C1',role:'researcher',state:'thinking',stationId:'explorer',boredom:null,position:{x:-1.5,z:4.8,heading:Math.PI,moving:true}}]});
  const robot=world.scene.getObjectByName('agent-status-led').parent;
- assert.equal(robot.position.x,-1.5);assert.equal(robot.position.z,4.8);assert.equal(robot.rotation.y,0);
+ assert.equal(robot.position.x,-1.5);assert.equal(robot.position.z,4.8);assert.equal(robot.rotation.y,Math.PI);
+});
+
+
+test('roundtable speech bubbles show recorded text and named discussion peers',()=>{
+ const world=createWorld();
+ world.update(2,{progress:.1,boredom:0,running:false,replay:true,agents:[{id:'speaker',name:'Ada',role:'researcher',state:'thinking',stationId:'culture',boredom:null,discussionBrief:'Measure the timing of each falling droplet.',discussionPeers:['Lin'],position:{x:-7.8,z:-2.45}}]});
+ const bubble=world.scene.getObjectByName('recorded-discussion-bubble');
+ assert.ok(bubble?.visible);
+ assert.ok(bubble.material.map.image.text.includes('Measure the timing of each falling droplet.'));
+ assert.ok(bubble.material.map.image.text.includes('WITH Lin'));
+ const robot=world.scene.getObjectByName('agent-status-led').parent;
+ assert.equal(Math.abs(robot.rotation.y),Math.PI,'discussion participants face the center');
+});
+
+test('stable robot archetypes include distinct pink researcher palettes',()=>{
+ assert.ok(ROBOT_APPEARANCES.some(a=>a.shell==='#fce3ef'&&a.accent==='#d45e9b'));
+ assert.ok(new Set(ROBOT_APPEARANCES.map(a=>a.shell)).size>=6);
+ assert.deepEqual(robotAppearance('researcher-pink'),robotAppearance('researcher-pink'));
+});
+test('each avatar carries a boredom badge, and drowsy robots doze, droop and slow down',()=>{
+ const world=createWorld(),base={id:'w1',name:'Worker 1',role:'worker',state:'working',stationId:'analyzer',position:{x:0,z:0,heading:0}};
+ world.update(1,{progress:0,boredom:0,running:true,replay:true,agents:[{...base,boredom:92,regime:'BOREDOM_SNAP'},{...base,id:'w2',name:'Worker 2',boredom:5,position:{x:1,z:0,heading:0}}]});
+ const meters=[],zzz=[];world.scene.traverse(o=>{if(o.name==='boredom-meter')meters.push(o);if(o.name==='boredom-zzz')zzz.push(o);});
+ assert.equal(meters.length,2);
+ assert.deepEqual(zzz.map(z=>z.visible),[true,false]);
 });

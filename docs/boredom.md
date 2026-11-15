@@ -81,10 +81,9 @@ Exa and past.dev sit *around* the score, never inside it: they are ranked,
 time-varying retrieval, used **in response** to boredom (find a grounded new
 direction, recall failed basins) rather than as inputs to B.
 
-Ignobel uses the same meter with its own profile (`ignobel.json`, see
-[PR #7](https://github.com/arii/caffeinated/pull/7)) and adds a `FRUSTRATED`
-regime: repeated failures trigger a statistician design review instead of
-raising B.
+The Ig Nobel task (`swarm.py --task ignobel`) uses the same meter and regimes
+with its own profile, `testcases/ignobel/boredom_profile.json` (field ×
+study-type cells).
 
 ## 4. Representation
 

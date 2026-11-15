@@ -1,0 +1,44 @@
+{
+ "editable": "world_model.py",
+ "deterministic": true,
+ "search_topic": "predicting future egocentric gridworld frames from actions (learned world model, next-frame prediction)",
+ "brief": "a world model (`world_model.py`, function predict) that rolls out 24 future 5x5 egocentric frames of an 11x11 gridworld with two switches and two lamps (hidden switch-to-lamp wiring) from 16 context frames and the future actions; the horizon revisits 8 context moves, then takes 16 fresh actions into possibly unseen cells. loss = 1 - fraction of exactly correct frames on 200 dev episodes; a further 200 fresh-seed episodes are graded once after the run, so generalize rather than fit the dev seeds. Public examples are in data/train.jsonl and env.py must not be imported",
+ "context_files": [
+  "data/train.jsonl"
+ ],
+ "proxy_note": "synthetic proxy, not PlayWorld; harder variant with held-out fresh seeds and no published reference",
+ "fake_edits": [
+  {
+   "old": "last = context_frames[-1]",
+   "new": "last = context_frames[-8]",
+   "descriptor": {
+    "mechanism": "memory",
+    "method": "window"
+   }
+  },
+  {
+   "old": "return [[row[:] for row in last] for _ in future_actions]",
+   "new": "return [[list(row) for row in last] for _ in future_actions]",
+   "descriptor": {
+    "mechanism": "dynamics",
+    "method": "movement"
+   }
+  },
+  {
+   "old": "return [[row[:] for row in last] for _ in future_actions]",
+   "new": "return [last for _ in future_actions]",
+   "descriptor": {
+    "mechanism": "rendering",
+    "method": "unknown_fill"
+   }
+  },
+  {
+   "old": "return [[row[:] for row in last] for _ in future_actions]",
+   "new": "return [[row.copy() for row in last] for _ in future_actions]",
+   "descriptor": {
+    "mechanism": "memory",
+    "method": "window"
+   }
+  }
+ ]
+}

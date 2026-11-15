@@ -1,0 +1,13 @@
+{
+  "title": "How it's judged",
+  "committeePending": "Committee data exists, but no prizes were issued in this recording.",
+  "steps": [
+    "Preregister the study before looking at the data.",
+    "Use a real, public dataset.",
+    "Pass the gates: |ρ| ≥ 0.1 and p < 0.005.",
+    "Pass split-half consistency: both halves p < 0.05 and in the same direction.",
+    "Check prior work with Exa.",
+    "Two independent non-Kimi judges (gpt-oss-120b and Qwen3.5-397B) score each study; the final score is the lower judge.",
+    "Reject any study that targets a group of people."
+  ]
+}

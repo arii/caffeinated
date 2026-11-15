@@ -1,0 +1,884 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 143,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 130,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.2,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 135,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 1,
+    "memory_writes": 6,
+    "observations": 32,
+    "questions": 18,
+    "tokens": 35021
+   },
+   "diary_head": {
+    "diary_id": "diary:16",
+    "excerpt": "A structurally different, mechanically grounded test on an unused dataset with exact numeric headers. Vehicle mass increases inertial and rolling-resistance energy demands, so fuel economy should decline monotonically. The expected associat"
+   },
+   "focus": {
+    "experiment_id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+    "hypothesis_id": "hypothesis:16",
+    "question_id": "question:Q13"
+   },
+   "last_observation_id": "observation:S33",
+   "last_question_id": "question:Q13",
+   "last_reward": {
+    "experiment_id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+    "metric_value": 1.0,
+    "reward_id": "reward:7",
+    "status": "discard",
+    "tick": 234,
+    "value": -100.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 241,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.19,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 1.0,
+     "frustration": 0.2,
+     "novelty": 1.0,
+     "overload": 1.0,
+     "stagnation": 0.2,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 136,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 12,
+    "questions": 8,
+    "tokens": 12303
+   },
+   "diary_head": {
+    "diary_id": "diary:17",
+    "excerpt": "The current best is already loss 0, so this preserves its successful pattern of a strong mechanism-backed monotonic association while moving to an unused dataset. Body and brain mass follow a well-established positive interspecific allometr"
+   },
+   "focus": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "hypothesis_id": "hypothesis:17",
+    "question_id": "question:Q14"
+   },
+   "last_observation_id": "observation:S36",
+   "last_question_id": "question:Q14",
+   "last_reward": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "metric_value": 1.0,
+    "reward_id": "reward:8",
+    "status": "discard",
+    "tick": 236,
+    "value": -100.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 242,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.09,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.2,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.2,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 137,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 12,
+    "questions": 8,
+    "tokens": 12298
+   },
+   "diary_head": {
+    "diary_id": "diary:18",
+    "excerpt": "The current best already has zero loss, so this preserves its strong mechanism-backed monotonic design on an unused medical dataset. Both Karnofsky ratings measure the same underlying functional capacity despite coming from different observ"
+   },
+   "focus": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "hypothesis_id": "hypothesis:18",
+    "question_id": "question:Q15"
+   },
+   "last_observation_id": "observation:S39",
+   "last_question_id": "question:Q15",
+   "last_reward": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "metric_value": 1.0,
+    "reward_id": "reward:9",
+    "status": "discard",
+    "tick": 238,
+    "value": -100.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 243,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.09,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.2,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.2,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 138,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 12,
+    "questions": 8,
+    "tokens": 13710
+   },
+   "diary_head": {
+    "diary_id": "diary:19",
+    "excerpt": "This preserves the current best's robust monotonic-association design on an unused, directly downloadable dataset with confirmed headers. Hand span and stature share general skeletal growth and body-size scaling, so the association should b"
+   },
+   "focus": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "hypothesis_id": "hypothesis:19",
+    "question_id": "question:Q16"
+   },
+   "last_observation_id": "observation:S42",
+   "last_question_id": "question:Q16",
+   "last_reward": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "metric_value": 0.0,
+    "reward_id": "reward:10",
+    "status": "discard",
+    "tick": 240,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 244,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 9176
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 130,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "3e1cc87d-566d-53b9-8980-8d875f3fa6b7",
+   "payload": {
+    "committee": null,
+    "confirmed": false,
+    "headline": null,
+    "n": null,
+    "p": null,
+    "predicted_rho": null,
+    "rejected": "dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns",
+    "replicated": null,
+    "rho": null,
+    "text": "Rejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+    "study_id": "study:6"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 6,
+    "native_type": "study"
+   },
+   "tick": 226,
+   "ts": "2026-11-15T08:17:03.102317Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "6a7a2caf-9e68-5ee0-ad8a-30520f9fc476",
+   "payload": {
+    "field": "animal_behavior",
+    "predicted_rho": 0.85,
+    "question": "Do bigger-bodied animals also tend to have bigger brains?",
+    "text": "Preregistered: Do bigger-bodied animals also tend to have bigger brains? (body vs brain)",
+    "x": "body",
+    "y": "brain"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "study_id": "study:7"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 7,
+    "native_type": "study"
+   },
+   "tick": 227,
+   "ts": "2026-11-15T08:17:03.229470Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "69a34e6e-4953-5195-a69d-dbff10b4c685",
+   "payload": {
+    "committee": null,
+    "confirmed": false,
+    "headline": null,
+    "n": null,
+    "p": null,
+    "predicted_rho": null,
+    "rejected": "dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns",
+    "replicated": null,
+    "rho": null,
+    "text": "Rejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "study_id": "study:7"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 7,
+    "native_type": "study"
+   },
+   "tick": 228,
+   "ts": "2026-11-15T08:17:03.229470Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "a000bce4-e43a-5ca7-a562-3fd6b87bd300",
+   "payload": {
+    "field": "medicine",
+    "predicted_rho": 0.65,
+    "question": "Do doctors and patients independently rate patients' get-up-and-go similarly?",
+    "text": "Preregistered: Do doctors and patients independently rate patients' get-up-and-go similarly? (ph.karno vs pat.karno)",
+    "x": "ph.karno",
+    "y": "pat.karno"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "study_id": "study:8"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 8,
+    "native_type": "study"
+   },
+   "tick": 229,
+   "ts": "2026-11-15T08:17:04.103404Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "8fda7800-7651-5767-8c74-59f6fbbcd291",
+   "payload": {
+    "committee": null,
+    "confirmed": false,
+    "headline": null,
+    "n": null,
+    "p": null,
+    "predicted_rho": null,
+    "rejected": "citations: https://doi.org/10.1002/1097-0142(19840515)53:10%3C2002::AID-CNCR2820531004%3E3.0.CO;2-Y is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1",
+    "replicated": null,
+    "rho": null,
+    "text": "Rejected: citations: https://doi.org/10.1002/1097-0142(19840515)53:10%3C2002::AID-CNCR2820531004%3E3.0.CO;2-Y is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "study_id": "study:8"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 8,
+    "native_type": "study"
+   },
+   "tick": 230,
+   "ts": "2026-11-15T08:17:04.103404Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "a2a19a97-fa22-5ddb-add0-f478294a0bba",
+   "payload": {
+    "field": "anthropometry",
+    "predicted_rho": 0.6,
+    "question": "Do students with wider writing hands also tend to be taller?",
+    "text": "Preregistered: Do students with wider writing hands also tend to be taller? (Wr.Hnd vs Height)",
+    "x": "Wr.Hnd",
+    "y": "Height"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "study_id": "study:9"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 9,
+    "native_type": "study"
+   },
+   "tick": 231,
+   "ts": "2026-11-15T08:17:04.641027Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "9e2ce805-54a5-58a6-a9aa-5f7995b7237d",
+   "payload": {
+    "committee": null,
+    "confirmed": true,
+    "headline": "In the survey data (vincentarelbundock.github.io), higher \"Wr.Hnd\" goes with higher \"Height\"",
+    "n": 208,
+    "p": 6.699760080426412e-26,
+    "predicted_rho": 0.6,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.645447845403051,
+    "text": "rho 0.645 (predicted 0.6), p 6.7e-26, n 208: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "study_id": "study:9"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 9,
+    "native_type": "study"
+   },
+   "tick": 232,
+   "ts": "2026-11-15T08:17:04.641027Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "5ed50fb2-75bc-57a3-b677-4aa05a9e48b2",
+   "payload": {
+    "description": "Do heavier cars get fewer miles per gallon because more mass requires more energ",
+    "role": "divergent",
+    "text": "Testing: Do heavier cars get fewer miles per gallon because more mass requires more energ"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+    "hypothesis_id": "hypothesis:16"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 7,
+    "native_type": "candidate"
+   },
+   "tick": 233,
+   "ts": "2026-11-15T08:17:04.641220Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "3dfc3e0b-2038-5a61-bf71-f8b00d798588",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": -100.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4bfdcd16d518aa9451a1b38290ba9480bb247ab4",
+    "reward_id": "reward:7"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 7,
+    "native_type": "candidate"
+   },
+   "tick": 234,
+   "ts": "2026-11-15T08:17:04.641220Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "f83261f2-7cc9-5d58-9506-ab415473ebb6",
+   "payload": {
+    "description": "Test whether bigger-bodied animals have bigger brains in an unused comparative-a",
+    "role": "exploit",
+    "text": "Testing: Test whether bigger-bodied animals have bigger brains in an unused comparative-a"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "hypothesis_id": "hypothesis:17"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 8,
+    "native_type": "candidate"
+   },
+   "tick": 235,
+   "ts": "2026-11-15T08:17:04.978225Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "9cbff24a-246a-51d0-9ee2-032f9420beda",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": -100.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5c74d830818e38f80372de5f74970b2d7dee3a52",
+    "reward_id": "reward:8"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 8,
+    "native_type": "candidate"
+   },
+   "tick": 236,
+   "ts": "2026-11-15T08:17:04.978225Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "b90ff317-62e1-56d1-a7e2-43a4c2dbae13",
+   "payload": {
+    "description": "Do doctors and patients independently rate patients' get-up-and-go similarly, so",
+    "role": "exploit",
+    "text": "Testing: Do doctors and patients independently rate patients' get-up-and-go similarly, so"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "hypothesis_id": "hypothesis:18"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 9,
+    "native_type": "candidate"
+   },
+   "tick": 237,
+   "ts": "2026-11-15T08:17:05.284237Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "86f00052-ed6f-53e4-938a-7d37e6ebd8e4",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": -100.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+    "reward_id": "reward:9"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 9,
+    "native_type": "candidate"
+   },
+   "tick": 238,
+   "ts": "2026-11-15T08:17:05.284237Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "8bed17ec-a4e7-5901-a121-56cff1a493fb",
+   "payload": {
+    "description": "Do students with wider writing hands also tend to be taller?",
+    "role": "exploit",
+    "text": "Testing: Do students with wider writing hands also tend to be taller?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "hypothesis_id": "hypothesis:19"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 10,
+    "native_type": "candidate"
+   },
+   "tick": 239,
+   "ts": "2026-11-15T08:17:05.615947Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "0b4f6650-2f22-52c3-9b88-9faf4db9c0b8",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "reward_id": "reward:10"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 10,
+    "native_type": "candidate"
+   },
+   "tick": 240,
+   "ts": "2026-11-15T08:17:05.615947Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "41712313-e634-5ed1-a909-ba3019947b6b",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Do heavier cars get fewer miles per gallon because more mass requires more energ\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "text": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Do heavier cars get fewer miles per gallon because more mass requires more energ\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:4bfdcd16d518aa9451a1b38290ba9480bb247ab4"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 20,
+    "native_type": "result"
+   },
+   "tick": 241,
+   "ts": "2026-11-15T08:17:04.977963Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "57eea95a-70f4-59f9-b243-376055699f57",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Test whether bigger-bodied animals have bigger brains in an unused comparative-a\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Test whether bigger-bodied animals have bigger brains in an unused comparative-a\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:5c74d830818e38f80372de5f74970b2d7dee3a52"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 21,
+    "native_type": "result"
+   },
+   "tick": 242,
+   "ts": "2026-11-15T08:17:05.284000Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "63057309-d13d-5d68-bd7f-d459bb9df10a",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Do doctors and patients independently rate patients' get-up-and-go similarly, so\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Do doctors and patients independently rate patients' get-up-and-go similarly, so\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:7b66c07bf68c50101453237ae91cd21865f3d5ba"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 22,
+    "native_type": "result"
+   },
+   "tick": 243,
+   "ts": "2026-11-15T08:17:05.615575Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "36c16d13-6034-5ce9-bed4-9ea8892a9e62",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Do students with wider writing hands also tend to be taller?\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"other\", \"method\": \"anthropometry\"}",
+    "text": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Do students with wider writing hands also tend to be taller?\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"other\", \"method\": \"anthropometry\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:4ed976c653f61b9d297879a6d8e081027d220e30"
+   },
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 23,
+    "native_type": "result"
+   },
+   "tick": 244,
+   "ts": "2026-11-15T08:17:05.920875Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "dd03d58b-7873-5455-b479-1bb6d02d77d7",
+   "payload": {
+    "B": 0.465,
+    "best_metric": 0.0,
+    "directive": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "frontier_stall": 7,
+    "frustration": 0.0,
+    "regime": "EXPLOIT",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.47 (EXPLOIT)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 2,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 10,
+    "native_type": "status"
+   },
+   "tick": 245,
+   "ts": "2026-11-15T08:17:05.932614Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 2,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.465,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 7,
+  "regime": "EXPLOIT"
+ },
+ "tick": 245,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 9,
+  "memory_items": 23,
+  "questions": 42,
+  "sources": 45,
+  "tokens": 82508
+ },
+ "ts": "2026-11-15T08:17:05.932614Z"
+}

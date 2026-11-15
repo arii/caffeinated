@@ -1,35 +1,105 @@
 {
  "editable": "analysis.py",
  "deterministic": true,
+ "held_out_test": true,
+ "score_type": "proportion",
+ "research": "off",
  "search_topic": "answering bioinformatics data analysis questions (BixBench) with pandas and scipy statistics",
- "brief": "an analysis script (`analysis.py`) that answers 17 BixBench questions (question text and dataset previews are under Task inputs) from 3 raw datasets in data/ and prints {question_id: number}; loss = 1 - accuracy, and the record to beat is BixBench's best published accuracy 0.523 (loss 0.477)",
+ "brief": "an analysis script (`analysis.py`) that answers 17 BixBench questions (question text and dataset previews are under Task inputs) from 3 raw datasets in data/ and prints {question_id: number}; loss = 1 - accuracy. Round-by-round feedback grades 10 development questions; the remaining 7 are reserved for one final held-out test. BixBench's published full-benchmark accuracy of 0.523 is reference context, not directly comparable to this split. The sandbox has numpy, pandas, scipy, statsmodels, openpyxl (no network)",
  "fake_edits": [
   {
-   "old": "answers = {}",
-   "new": "answers = dict()",
-    "descriptor": {"mechanism": "statistics", "method": "test_choice"}
-  },
-  {
-   "old": "answers[\"bix-18-q2\"] = round(area[\"Wildtype\"], -3)",
-   "new": "answers[\"bix-18-q2\"] = round(area[\"Wildtype\"], -2)",
-    "descriptor": {"mechanism": "data", "method": "filter"}
-  },
-  {
-   "old": "answers[\"bix-18-q3\"] = (1 - area[\"ΔlasR\"] / area[\"Wildtype\"]) * 100",
-   "new": "answers[\"bix-18-q3\"] = (1 - area[\"ΔlasR\"] / area[\"Wildtype\"]) * 99",
+   "idea": "Report the standard error, not the SD, for bix-18-q4",
    "descriptor": {
-      "mechanism": "interpretation",
-      "method": "rounding",
-    "params": {"value": 0.02}
-   }
+    "mechanism": "statistics",
+    "method": "descriptive"
+   },
+   "old": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.std()",
+   "new": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.sem()"
   },
   {
-   "old": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.std()",
-   "new": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.mean()",
-    "descriptor": {"mechanism": "statistics", "method": "test_choice"}
+   "idea": "Answer bix-18-q1: circularity of the genotype with the largest area",
+   "descriptor": {
+    "mechanism": "data",
+    "method": "filter"
+   },
+   "old": "# TODO bix-18-q1\n",
+   "new": "answers[\"bix-18-q1\"] = sw.groupby(\"Genotype\").Circularity.mean()[area.idxmax()]\n"
+  },
+  {
+   "idea": "Answer bix-18-q5: ΔlasR area as a percent of wildtype",
+   "descriptor": {
+    "mechanism": "interpretation",
+    "method": "units"
+   },
+   "old": "# TODO bix-18-q5\n",
+   "new": "answers[\"bix-18-q5\"] = area[\"ΔlasR\"] / area[\"Wildtype\"] * 100\n"
+  },
+  {
+   "idea": "Answer bix-19-q2 with Cohen's d (pooled SD) for KD vs CTRL",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "effect_size"
+   },
+   "old": "# TODO bix-19 (NeuN: effect size, normality, power, interaction)\n",
+   "new": "neun = pd.read_csv(\"data/NeuN_quantification.csv\")\nkd, ctrl = neun[neun.Hemispere == \"KD\"].NeuN, neun[neun.Hemispere == \"CTRL\"].NeuN\npooled_var = ((len(kd) - 1) * kd.var() + (len(ctrl) - 1) * ctrl.var()) / (len(kd) + len(ctrl) - 2)\ncohen_d = abs(kd.mean() - ctrl.mean()) / pooled_var**0.5\nanswers[\"bix-19-q2\"] = cohen_d\n# TODO bix-19-q3 (Shapiro-Wilk W of the KD group)\n# TODO bix-19-q1 bix-19-q5 (n per group for 80% power at alpha 0.05)\n# TODO bix-19-q4 (Hemispere x Sex interaction F)\n"
+  },
+  {
+   "idea": "Answer bix-19-q3 with the Shapiro-Wilk W of the KD group",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "test_choice"
+   },
+   "old": "# TODO bix-19-q3 (Shapiro-Wilk W of the KD group)\n",
+   "new": "from scipy import stats\n\nanswers[\"bix-19-q3\"] = stats.shapiro(kd).statistic\n"
+  },
+  {
+   "idea": "Answer bix-19-q1/q5 with a noncentral-t power analysis",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "power"
+   },
+   "old": "# TODO bix-19-q1 bix-19-q5 (n per group for 80% power at alpha 0.05)\n",
+   "new": "from scipy import stats\n\n\ndef two_sample_power(n, d, alpha=0.05):\n    df, shift = 2 * n - 2, d * (n / 2) ** 0.5\n    crit = stats.t.ppf(1 - alpha / 2, df)\n    return stats.nct.sf(crit, df, shift) + stats.nct.cdf(-crit, df, shift)\n\n\nn_per_group = next(n for n in range(2, 100_000) if two_sample_power(n, cohen_d) >= 0.8)\nanswers[\"bix-19-q1\"] = n_per_group\nanswers[\"bix-19-q5\"] = n_per_group\n"
+  },
+  {
+   "idea": "Answer bix-19-q4 with the two-way ANOVA interaction F",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "anova"
+   },
+   "old": "# TODO bix-19-q4 (Hemispere x Sex interaction F)\n",
+   "new": "import numpy as np\n\n\ndef ols_rss(columns, y):\n    design = np.column_stack([np.ones(len(y)), *columns])\n    beta = np.linalg.lstsq(design, y, rcond=None)[0]\n    return float(((y - design @ beta) ** 2).sum()), design.shape[1]\n\n\nhemi = (neun.Hemispere == \"KD\").to_numpy(float)\nsex = (neun.Sex == neun.Sex.unique()[0]).to_numpy(float)\ny_neun = neun.NeuN.to_numpy(float)\nrss_full, k_full = ols_rss([hemi, sex, hemi * sex], y_neun)\nrss_main = ols_rss([hemi, sex], y_neun)[0]\nanswers[\"bix-19-q4\"] = (rss_main - rss_full) / (rss_full / (len(y_neun) - k_full))\n"
+  },
+  {
+   "idea": "Fit the Age logistic model for bix-51-q1/q6/q8",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "regression"
+   },
+   "old": "# TODO bix-51 (logistic regressions on data.xlsx)\n",
+   "new": "import numpy as np\nfrom scipy import stats\n\nx51 = pd.read_excel(\"data/data.xlsx\")\nx51 = x51[pd.to_numeric(x51[\"Age\"], errors=\"coerce\").notna() & x51[\"Efficacy\"].notna()].copy()\nx51[\"Age\"] = x51[\"Age\"].astype(float)\npr = (x51[\"Efficacy\"].astype(str).str.strip() == \"PR\").to_numpy(float)\n\n\ndef logit(columns):\n    \"\"\"Newton-Raphson logistic regression of PR: (coefficients, Wald p-values, AIC).\"\"\"\n    design = np.column_stack([np.ones(len(pr)), *columns]).astype(float)\n    beta = np.zeros(design.shape[1])\n    for _ in range(50):\n        p = 1 / (1 + np.exp(-design @ beta))\n        hessian = design.T @ (design * (p * (1 - p))[:, None])\n        beta += np.linalg.solve(hessian, design.T @ (pr - p))\n    p = 1 / (1 + np.exp(-design @ beta))\n    loglik = float((pr * np.log(p) + (1 - pr) * np.log(1 - p)).sum())\n    pvalues = 2 * stats.norm.sf(np.abs(beta / np.sqrt(np.diag(np.linalg.inv(hessian)))))\n    return beta, pvalues, 2 * design.shape[1] - 2 * loglik\n\n\nage_beta, _, age_aic = logit([x51[\"Age\"]])\nanswers[\"bix-51-q1\"] = 1 / (1 + np.exp(-(age_beta[0] + age_beta[1] * 65)))\nanswers[\"bix-51-q6\"] = age_aic\nanswers[\"bix-51-q8\"] = age_beta[1]\n# TODO bix-51-q2 bix-51-q5 (BMI-only model)\n# TODO bix-51-q3 bix-51-q4 (BMI + Age + Gender model)\n"
+  },
+  {
+   "idea": "Fit the BMI-only logistic model for bix-51-q2/q5",
+   "descriptor": {
+    "mechanism": "interpretation",
+    "method": "question_parse"
+   },
+   "old": "# TODO bix-51-q2 bix-51-q5 (BMI-only model)\n",
+   "new": "bmi_p, bmi_aic = logit([x51[\"BMI\"]])[1:]\nanswers[\"bix-51-q2\"] = bmi_aic\nanswers[\"bix-51-q5\"] = bmi_p[1]\n"
+  },
+  {
+   "idea": "Fit BMI + Age + Gender (Gender as a 0/1 dummy) for bix-51-q3/q4",
+   "descriptor": {
+    "mechanism": "data",
+    "method": "dtype"
+   },
+   "old": "# TODO bix-51-q3 bix-51-q4 (BMI + Age + Gender model)\n",
+   "new": "male = (x51[\"Gender\"] == sorted(x51[\"Gender\"].unique())[1]).astype(float)\nfull_beta, full_p, _ = logit([x51[\"BMI\"], x51[\"Age\"], male])\nanswers[\"bix-51-q3\"] = full_p[2]\nanswers[\"bix-51-q4\"] = full_beta[2]\n"
   }
  ],
  "proxy_note": "17-question subset, not full BixBench",
+ "reference_note": "full-BixBench accuracy; not comparable to the 7-question split",
  "context_files": [
   "questions.json",
   "data/Swarm_1.csv",

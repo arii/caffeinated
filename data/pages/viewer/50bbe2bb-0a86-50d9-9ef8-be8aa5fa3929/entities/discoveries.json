@@ -1,0 +1,20 @@
+[
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+  "id": "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+  "improvement": 1.0,
+  "lineage": {
+   "hypothesis_id": "hypothesis:3",
+   "lead": null,
+   "source_ids": [
+    "source:S9"
+   ]
+  },
+  "metric_value": 0.0,
+  "previous_best": 1.0,
+  "round": 1,
+  "tick": 126,
+  "title": "Test whether street sound sources line up along a diagonal corridor, so x and y"
+ }
+]

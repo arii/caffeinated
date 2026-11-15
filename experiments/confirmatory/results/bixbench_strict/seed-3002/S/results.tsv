@@ -1,0 +1,50 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+b5a601f8a24865963d676bc302d2bfe2d6ee91ab		crash	[EXPLOIT] Implement general statistical procedures for all 45 questions and correct the ci
+f2b6a1164b961563808c0ed87e4eb72b3b5cb9d9	0.777778	keep	[EXPLOIT] Add deterministic descriptive, contingency-table, and direct-lookup answers for 
+cac862343e5992154480a402e03b33819684ea23		crash	[EXPLOIT] Add all seven bix-51 answers using binary logistic regressions of PR response on
+cce28f092b2a60b9726dd6f459f320e5d830473a		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, two-sample power analys
+3be3965ac3dd0efb9abce203c0638acab466a5e8	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by filtering extreme methylation sites, deduplicatin
+f78dda2c900b550768554290008c21093a7af623		crash	[EXPLOIT] Add all seven bix-51 answers with intercept-containing logistic regressions impl
+0f73ea94caa0c00fbb25624481c5ed29b8be6cc8		crash	[EXPLOIT] Add all seven bix-51 answers using a self-contained intercept-containing logisti
+14a822a4d1ec9636352021832c1179e029b6783b		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+a6c965f508e2c236a0322aac51b336afddfbce34	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by filtering extreme methylation sites, deduplicatin
+60338c6656703219915b2e7143260235ba85f3da	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values by merging COVID-19 adverse ev
+c083be1fc789fc1d46c79c924ca5a70fc93d3a2b		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained binomial logistic regressions 
+f90695436672658d2f649a6a8c0dca2e35ef9539		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+ad2e267c7d2aaaecdbe64120afb7bf055df86535	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by filtering extreme methylation sites, deduplicatin
+cb9b7a6a32b82b75917e4a6ee77defb27145eb38		crash	[EXPLOIT] Add the four bix-19 NeuN answers with pooled Cohen's d, exact noncentral-t power
+4a544fbc72396bbf5a3eaf94345dab84ca550136		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained binomial logistic regressions 
+bec350335236a9a4096fa9f08a482bac5703cf0b	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square answers using COVID-19 adverse events m
+5680dcb17ada3f37587420f5acc70b0392b87cb5	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by deduplicating extreme-methylation CpG sites and c
+f7587d6657a2c72fadc6de3a89c1a593cde4d552		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+93afe9190fefff4d3e7a709fcafc1125fece2ef7		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained binomial logistic regression w
+34a005402abed1c27d7fd37fd91a63637aca85a2	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using COVID-19 adverse events 
+3103c73a6b64addae4829de1ff5398287ec3f605		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+a1600b661f24bc7fb87b7144f354078e2516c253		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing binomial 
+8744d27c4d3dbbb31a18737a1623d0369cdeeea0	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using COVID-19 adverse events 
+7cac7174b0d24d6c2c9562af986bf8cba14d7ccc		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+68dd700d5f674fc5fdb023a74ec44ef9b97260fb		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing binomial 
+07f3866e86f60d5e8612584740e3cdedc45b7c8a	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using COVID-19 adverse events 
+6a0eb7c0726406e13f2dadd9f4cc4be385130826		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+776533c55eb5e1c007ce650e3c088266685136fc		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing binomial 
+33ca86785cfd3f686b5bf00f50e503a61dd9c2ba		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+a5c642df9307509cd63d264e1cad98a60b29dbf8		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, noncentral-t power, Sha
+90df02d795a0266d6fec1c733e97680e2c2e838d		crash	[EXPLOIT] Add the four bix-19 NeuN answers with direct SciPy calculations for pooled Cohen
+46bde9d9a956451f9058220628cc22c9a9a0b5c5		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+ad190428862bca302fe5eb3d2302b47d5faaefb2	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using COVID-19 adverse events 
+5121ef14e09fdd70d8d566d820562731c7570f09		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+90fcd555aa017dff7659aea40b843904046ff4e6		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+9bcc8c0401c7a8605e74f1b50be077bfaff97aa4	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values from COVID-19 adverse-event se
+3f62a185411c81d465c2ec07eea7deabcc61bcef		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+13abb8eaa6aa6572f3b97f7f5c4a82a21a25e818		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+7d2aef8ac0ea8690175d91f5b73e6fa68d1b0dd6	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using subject-level COVID-19 s
+9d6426aebf950ba8373bd5fbd513932417e769bd		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+fb3f1055ad7e6de1a1a658302f86ff702807757e		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+2bbf9dadb25425307e8f8e1349251b414feb8b8f		crash	[EXPLOIT] Add all seven bix-51 answers with a self-contained intercept-containing logistic
+d43d0465ca9ea72602646aca37c8e8c7738c7b68		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+946919b641b6a1c649a565f29d1cad6039875efb	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values from COVID-19 severity conting
+8d158e3001814385b5580d67817f437d7e3c4902		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 
+88da01f35778af9b94613c1f1f0c8f0ee397fb46		crash	[EXPLOIT] Add the four bix-19 NeuN answers using pooled Cohen's d, exact noncentral-t powe
+90290edc361b4e928cb89c28e99ed2a488062812	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square p-values using COVID-19 adverse events 
+0b5942e7f3d407ddc8eac788faaf952d0cd0fb19		crash	[EXPLOIT] Add all seven bix-51 answers using self-contained intercept-containing logistic 

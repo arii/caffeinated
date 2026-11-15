@@ -11,16 +11,22 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
    Exa research cites), freezes it, and allows ONE registered test per dataset
    per run (later registrations on the same dataset score 0);
 4. runs the registered Spearman test once: significant = p < ALPHA on all rows
-   with the registered sign; replicated = the same sign with p <
-   REPLICATION_ALPHA in each of the two fixed hash halves; trivial pairs fail.
+   with |rho| >= 0.1 in the registered direction; split-half consistency means
+   the same sign, |rho| >= 0.1, and p < REPLICATION_ALPHA in each fixed hash
+   half; trivial pairs fail.
 
-loss = 1 - (replicated and significant)
+Unconfirmed studies score 0. Confirmed studies score 0.25 + 0.75 times the
+committee score (the lower judge's minimum of LAUGH and THINK, divided by 10);
+targeting a group scores 0. IGNOBEL_COMMITTEE=off explicitly selects gate-only
+scoring (confirmed studies score 1, recorded as metric_variant "gate-only");
+otherwise a missing TINKER_API_KEY raises instead of changing the objective.
 
 Every graded study is appended to <run>/ignobel_studies.jsonl; the Ig Nobel
-committee (committee.py, from ignobel/committee.py) scores the replicated
-ones after the run with score_run.py.
+committee judges confirmed studies during evaluation; score_run.py reports
+the cached verdicts after the run.
 """
 
+import contextlib
 import csv
 import hashlib
 import json
@@ -36,6 +42,7 @@ for path in (ROOT, HERE):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+import committee
 import external
 from judge_text import tokens
 from stats import spearman
@@ -43,6 +50,7 @@ from stats import spearman
 FIELD = re.compile(r"[a-z][a-z0-9_]{2,40}")
 ALPHA = 0.005
 REPLICATION_ALPHA = 0.05
+MIN_EFFECT_RHO = 0.1
 MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
@@ -160,7 +168,9 @@ def rate(value, row, per):
     if value is None or per is None:
         return value
     denominator = row[per]
-    return value / float(denominator) if denominator not in ("", "0") and float(denominator) else None
+    return (
+        value / float(denominator) if denominator not in ("", "0") and float(denominator) else None
+    )
 
 
 def association(rows, claim, sides):
@@ -232,26 +242,30 @@ def parse_prereg(source, fields):
 
 
 def research_sources(research_log):
-    """(Exa source id -> url, full log text) for this run, or ({}, "") without a log."""
+    """(source id -> url, canonical url/doi of every logged source) for this run."""
     path = Path(research_log) if research_log else None
     if not path or not path.is_file():
-        return {}, ""
-    text = path.read_text(encoding="utf-8", errors="replace")
-    ids = {}
-    for line in text.splitlines():
+        return {}, set()
+    ids, logged = {}, set()
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
             record = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if isinstance(record, dict) and record.get("type") == "source" and record.get("id"):
+        if not isinstance(record, dict) or record.get("type") != "source":
+            continue
+        if record.get("id"):
             ids[str(record["id"])] = str(record.get("url") or "")
-    return ids, text
+        for key in ("url", "doi"):
+            if record.get(key):
+                logged.add(external.canonical_citation(str(record[key])))
+    return ids, logged
 
 
 def check_citations(citations, dataset_url, task_dir, research_log):
     vetted = json.loads((Path(task_dir) / "sources.json").read_text(encoding="utf-8"))
     vetted_urls = {source["url"] for source in vetted}
-    ids, text = research_sources(research_log)
+    ids, logged = research_sources(research_log)
     resolved, problems = [], []
     for citation in dict.fromkeys(c.strip() for c in citations):
         if re.fullmatch(r"S\d+", citation):
@@ -261,7 +275,7 @@ def check_citations(citations, dataset_url, task_dir, research_log):
                 continue
         else:
             url = citation
-            if url not in vetted_urls and not (url.startswith("https://") and url in text):
+            if url not in vetted_urls and external.canonical_citation(url) not in logged:
                 try:
                     real = external.doi_title(url, task_dir)
                 except Exception as error:
@@ -295,7 +309,10 @@ def column(entry, name):
 
 
 def test_hash(prereg):
-    test = {key: prereg["dataset"].get(key) for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")}
+    test = {
+        key: prereg["dataset"].get(key)
+        for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")
+    }
     test["direction"] = prereg["direction"]
     return hashlib.sha256(json.dumps(test, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -398,13 +415,14 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
             research_log, entry.get("sha256") or name, test_hash(prereg), predicted
         )
     sign = 1 if prereg["direction"] == "positive" else -1
-    significant = rejected is None and p < ALPHA and rho * sign > 0
+    significant = rejected is None and p < ALPHA and rho * sign >= MIN_EFFECT_RHO
     halves = []
     for part in (entry["file"], f".cache/replication/{name}.csv"):
         h_n, h_rho, h_p, h_problem = association(read_rows(task_dir / part), claim, sides)
         halves.append({"n": h_n, "rho": h_rho, "p": h_p, "problem": h_problem})
     replicated = all(
-        h["problem"] is None and h["p"] < REPLICATION_ALPHA and h["rho"] * sign > 0 for h in halves
+        h["problem"] is None and h["p"] < REPLICATION_ALPHA and h["rho"] * sign >= MIN_EFFECT_RHO
+        for h in halves
     )
     confirmed = significant and replicated
     graded = {
@@ -419,6 +437,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "replicated": replicated,
         "confirmed": confirmed,
         "predicted_rho": predicted,
+        "committee": None,
         "columns": sorted(
             "/".join(filter(None, (claim[axis], claim[f"{axis}_per"]))) for axis in ("x", "y")
         ),
@@ -429,20 +448,21 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
 
 
 def record_study(research_log, prereg, graded):
-    """Append the full study record for post-run analysis (score_run.py runs the committee)."""
+    """Append the graded study, including the in-run committee result."""
     if not research_log:
         return
     path = Path(research_log).parent / "ignobel_studies.jsonl"
-    same = json.dumps({"prereg": prereg, "result": graded}, sort_keys=True)
+    record = {"prereg": prereg, "result": graded}
+    with contextlib.suppress(ValueError):
+        record.update(json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}"))
+    same = json.dumps(record, sort_keys=True)
     if path.is_file():
         for previous in path.read_text(encoding="utf-8").splitlines():
-            record = json.loads(previous)
-            record.pop("ts", None)
-            if json.dumps(record, sort_keys=True) == same:
+            old = json.loads(previous)
+            old.pop("ts", None)
+            if json.dumps(old, sort_keys=True) == same:
                 return
-    line = (
-        json.dumps({"ts": time.time(), "prereg": prereg, "result": graded}, sort_keys=True) + "\n"
-    )
+    line = json.dumps({"ts": time.time(), **record}, sort_keys=True) + "\n"
     with path.open("a", encoding="utf-8") as stream:
         stream.write(line)
 
@@ -451,10 +471,35 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     task_dir = Path(task_dir).resolve()
     research_log = research_log or os.environ.get("TASK_RESEARCH_LOG")
     started = time.time()
+    committee_on = committee.enabled()
+    if committee_on:
+        committee.require_key()
     status, reason, diagnostics, graded, prereg = "crash", None, "", None, None
     try:
         prereg = parse_prereg(source, load_fields(task_dir))
         graded = grade_prereg(prereg, task_dir, research_log)
+        if graded["confirmed"]:
+            if committee_on:
+                context = {}
+                with contextlib.suppress(TypeError, json.JSONDecodeError):
+                    context = json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}")
+                graded["score"] = 0.0
+                try:
+                    verdict = committee.score_study(
+                        committee.abstract(prereg, graded),
+                        graded["headline"],
+                        task_dir,
+                        exa_enabled=context.get("exa_enabled"),
+                    )
+                except Exception as error:
+                    message = f"Ig Nobel committee failed: {type(error).__name__}: {error}"
+                    graded["committee"] = {"status": "error", "error": message}
+                    raise RuntimeError(message) from error
+                graded["committee"] = {"available": True, **verdict}
+                graded["score"] = 0.0 if verdict["rejected"] else 0.25 + 0.75 * verdict["score"]
+            else:
+                graded["committee"] = {"status": "off"}
+                graded["metric_variant"] = "gate-only"
         record_study(research_log, prereg, graded)
         status = "ok"
     except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
@@ -491,9 +536,34 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
                 f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}",
                 f"halves: rho {first['rho']:.4f} (p={first['p']:.2g}), rho {second['rho']:.4f} (p={second['p']:.2g})",
                 f"significant: {str(graded['significant']).lower()}",
-                f"replicated: {str(graded['replicated']).lower()}",
+                f"split-half consistency: {str(graded['replicated']).lower()}",
                 f"confirmed: {str(graded['confirmed']).lower()}",
             ]
+            if graded["confirmed"]:
+                verdict = graded["committee"]
+                if verdict.get("status") == "off":
+                    out += ["committee: off (gate-only scoring, IGNOBEL_COMMITTEE=off)"]
+                elif verdict.get("status") == "error":
+                    out += [f"committee: error ({verdict['error']})"]
+                elif verdict.get("available"):
+                    judges = verdict["judges"]
+                    out += [
+                        f"committee: {verdict['score']:.3f} "
+                        f"(judge a laugh/think {judges['a']['laugh']}/{judges['a']['think']}, "
+                        f"judge b {judges['b']['laugh']}/{judges['b']['think']})",
+                        "judge reason: "
+                        + "; ".join(
+                            f"{judge}: {judges[judge]['reason'].replace(chr(10), ' ').replace(chr(13), ' ')}"
+                            for judge in ("a", "b")
+                        ),
+                        (
+                            f"prior_work: {len(verdict['prior_work'])} results"
+                            if verdict["prior_work_available"]
+                            else "prior_work: unavailable"
+                        ),
+                    ]
+                else:
+                    out += ["committee: unavailable", "prior_work: unavailable"]
         out.append(f"rejected: {graded['rejected'] or 'no'}")
     out += [
         f"score: {score:.6f}",

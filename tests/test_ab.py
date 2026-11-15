@@ -190,6 +190,7 @@ class CollectionTests(unittest.TestCase):
         parser = ab.build_parser()
         for extra, message in (
             (["--llm", "tinker"], "--live"),
+            (["--llm", "openai"], "--live"),
             (["--seeds", "1", "1"], "distinct"),
             (["--jobs", "0"], "jobs"),
             (["--jobs", "-1"], "jobs"),

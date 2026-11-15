@@ -1,32 +1,50 @@
 {
  "editable": "world_model.py",
  "deterministic": true,
+ "held_out_test": true,
  "search_topic": "predicting future egocentric gridworld frames from actions (learned world model, next-frame prediction)",
- "brief": "a world model (`world_model.py`, function predict) that rolls out 20 future 5x5 egocentric frames of a gridworld from 10 context frames and the future actions; loss = 1 - fraction of exactly correct frames on 200 held-out episodes. The record to beat (a stand-in for closed Genie 3) is loss 0.6402; public examples are in data/train.jsonl and env.py must not be imported",
+ "brief": "a world model (`world_model.py`, function predict) that rolls out 20 future 5x5 egocentric frames of a gridworld from 10 context frames and the future actions; round-by-round loss = 1 - fraction of exactly correct frames on 200 development episodes, with a separate 200-episode held-out test at the end. RECORD = 0.3598 is a dev-only constant from the original commit, not a measured reference; the reference model source is not in this repo and cannot be graded on test. Public examples use separate seeds in data/train.jsonl and env.py must not be imported",
  "context_files": [
   "data/train.jsonl"
  ],
- "proxy_note": "synthetic proxy, not PlayWorld; reference = 8-frame-memory model",
+ "proxy_note": "synthetic proxy, not PlayWorld; RECORD = 0.3598 is dev-only",
+ "reference_note": "dev-only constant; reference model source not in repo, so it cannot be graded on test",
  "fake_edits": [
   {
-    "old": "last = context_frames[-1]",
-    "new": "last = context_frames[-8]",
-    "descriptor": {"mechanism": "memory", "method": "window"}
+   "idea": "Replace frame copying with a dead-reckoned map of seen cells (8-frame memory)",
+   "descriptor": {
+    "mechanism": "memory",
+    "method": "map"
+   },
+   "old": "def predict(context_frames, context_actions, future_actions):\n    last = context_frames[-1]\n    return [[row[:] for row in last] for _ in future_actions]\n",
+   "new": "FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)\nMOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}\nBLOCKING = (WALL, LAMP_OFF, LAMP_ON, OOB)\nMEMORY = 8\n\n\ndef predict(context_frames, context_actions, future_actions):\n    \"\"\"Dead-reckon the agent, keep a map of every cell seen, render futures from the map.\"\"\"\n    cells, pos = {}, (0, 0)\n\n    def see(frame, t):\n        for i, row in enumerate(frame):\n            for j, value in enumerate(row):\n                if (i, j) != (2, 2):\n                    cells[(pos[0] + i - 2, pos[1] + j - 2)] = (value, t)\n\n    def lookup(cell, t):\n        value = cells.get(cell)\n        return value[0] if value and (MEMORY is None or t - value[1] <= MEMORY) else FLOOR\n\n    def move(action, t):\n        nonlocal pos\n        pos = (pos[0] + MOVES[action][0], pos[1] + MOVES[action][1])\n\n    see(context_frames[0], 0)\n    for t, action in enumerate(context_actions, 1):\n        move(action, t)\n        see(context_frames[t], t)\n    frames, t = [], len(context_actions)\n    for action in future_actions:\n        t += 1\n        move(action, t)\n        frame = [\n            [AGENT if (i, j) == (2, 2) else lookup((pos[0] + i - 2, pos[1] + j - 2), t) for j in range(5)]\n            for i in range(5)\n        ]\n        see(frame, t)\n        frames.append(frame)\n    return frames\n"
   },
   {
-   "old": "return [[row[:] for row in last] for _ in future_actions]",
-   "new": "return [[list(row) for row in last] for _ in future_actions]",
-    "descriptor": {"mechanism": "dynamics", "method": "movement"}
+   "idea": "Remember every seen cell for the whole episode",
+   "descriptor": {
+    "mechanism": "memory",
+    "method": "episodic"
+   },
+   "old": "MEMORY = 8\n",
+   "new": "MEMORY = None\n"
   },
   {
-   "old": "return [[row[:] for row in last] for _ in future_actions]",
-   "new": "return [last for _ in future_actions]",
-    "descriptor": {"mechanism": "rendering", "method": "unknown_fill"}
+   "idea": "Walls, lamps and the boundary block movement",
+   "descriptor": {
+    "mechanism": "dynamics",
+    "method": "blocking"
+   },
+   "old": "        pos = (pos[0] + MOVES[action][0], pos[1] + MOVES[action][1])\n",
+   "new": "        target = (pos[0] + MOVES[action][0], pos[1] + MOVES[action][1])\n        if lookup(target, t) in BLOCKING:\n            return\n        pos = target\n"
   },
   {
-   "old": "return [[row[:] for row in last] for _ in future_actions]",
-   "new": "return [[row.copy() for row in last] for _ in future_actions]",
-    "descriptor": {"mechanism": "memory", "method": "window"}
+   "idea": "Stepping on the switch toggles every remembered lamp",
+   "descriptor": {
+    "mechanism": "dynamics",
+    "method": "state_toggle"
+   },
+   "old": "        if lookup(target, t) in BLOCKING:\n            return\n        pos = target\n",
+   "new": "        value = lookup(target, t)\n        if value in BLOCKING:\n            return\n        pos = target\n        if value == SWITCH:\n            for cell, (seen, when) in list(cells.items()):\n                if seen in (LAMP_OFF, LAMP_ON):\n                    cells[cell] = (LAMP_OFF + LAMP_ON - seen, when)\n"
   }
  ]
 }

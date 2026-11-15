@@ -1,0 +1,26 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+33a7f78faad350d8e40e0795b9e003b818dfd72f		crash	[EXPLOIT] Replace the three-answer stub with deterministic, question-specific statistical 
+b453c257f987e0abbc619e7bb23ec54537557689	0.629630	keep	[EXPLOIT] Implement deterministic procedures for every question, with per-question excepti
+79a0a0c245de6d5753a0196250c6bb5cafc41de9	0.555556	keep	[EXPLOIT] Replace the generic cubic regression spline with an R-style natural cubic spline
+a07f415b4008833bf56134f43b49d3cd8babaa20	0.555556	discard	[EXPLOIT] Perform Dunnett tests over the full comparison family and evaluate two-strain co
+b832d3911a59ae2539d7bc87460ff101064716d7	0.555556	discard	[EXPLOIT] Compute the Jackdaw genome-wide average as the unweighted mean of per-chromosome
+46206af68def4bdc50568e624c14dd3ec9bfe283	0.555556	discard	[EXPLOIT] Correct the natural-spline design to include all three internal-knot basis terms
+69ebd8ea90f20285620c614ceda616d0c8a5d0fc	0.629630	discard	[EXPLOIT] Collapse transcript-level MeRIP rows to unique gene/status records before all me
+f685e4f1fcc08f907b6ec149b88c2a619298a590	0.555556	duplicate	[EXPLOIT] Compute the Jackdaw genome-wide average chromosomal CpG density as the unweighte
+0bdb2e91145d6d529e3558cde1b821520a8de777	0.555556	duplicate	[EXPLOIT] Include all three internal-knot basis terms so the natural-spline design has the
+fc4cbf77488127982f02dd961f7c6945b05fe414	0.555556	discard	[EXPLOIT] Use chromosome-length-proportional expected counts in the Zebra Finch genome-wid
+7549d120f144af6a3f569cb58656b9b2044a8a5d	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+67c0993b31f5e07b0cfc0f9104982babbc6f64fb	0.555556	discard	[EXPLOIT] Resolve wildtype genotype synonyms before computing wildtype-relative swarming s
+689cdcceaa26b33a81d135b53ecf6918a372e8b3	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+6bc6eb88524f86d37d974626f7abb31b086e1f82	0.555556	discard	[EXPLOIT] Resolve the wildtype genotype by its actual dataset label (including WT) instead
+cc1a7a23b23ffbd6200ccabcf3a145d777ebcbae	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+5583c42cacb9b7ccf970fbc8ac5ab35390ddbc1c	0.555556	discard	[EXPLOIT] Resolve the wildtype swarming control by accepted genotype aliases, including WT
+721dbfd08c115e3e073af95a08c14aa82104076c	0.555556	discard	[EXPLOIT] Resolve the wildtype swarming control through common genotype aliases instead of
+5600c413d4d1208a380e82fa485ba77b0fc9b9a1	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+3249dc7b5d61575dbc72f55f3c91dadb431600e3	0.629630	discard	[EXPLOIT] Count distinct genes rather than transcript rows for the methylation gene-count 
+f74c7ce77b0c56d800c63553e7fa5f2e5c2826f9	0.555556	discard	[EXPLOIT] Resolve the wildtype swarming control through common genotype aliases before com
+b06d3d8c3f3eb31c44d2cfdcf3bb32ea89c0775f	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+0579cf8d62e6c6eeddb67e8ffcc06f36a1be6b0d	0.555556	discard	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o
+a2fec840c5d1c0eb4ed13984eb4b37ce7b6e9ab8	0.629630	discard	[EXPLOIT] Collapse transcript-level m6A/DEG annotations to unique genes before answering g
+d366a1cdb71eacbc07cc5d6731b5b78bd882c82b	0.555556	duplicate	[EXPLOIT] Compute Jackdaw genome-wide average chromosomal density as the unweighted mean o

@@ -1,0 +1,61 @@
+{
+  "arm": "B",
+  "branch": "swarm-B-20261115",
+  "command": [
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/repo/swarm.py",
+    "--repo",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/repo",
+    "--task",
+    "hadamard29",
+    "--arm",
+    "B",
+    "--rounds",
+    "16",
+    "--seed",
+    "2002",
+    "--llm",
+    "tinker",
+    "--model",
+    "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "--exa",
+    "on",
+    "--memory-backend",
+    "local",
+    "--out",
+    "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/run",
+    "--no-push",
+    "--no-viewer"
+  ],
+  "exa": "on",
+  "literature": null,
+  "llm": "tinker",
+  "memory_backend": "local",
+  "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+  "no_push": true,
+  "profile_path": "boredom_profile.json",
+  "profile_sha256": "abea7da9e606765ca70a660d01b5717b222bf69dabe39fbf4860346f6b091104",
+  "repo": "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/repo",
+  "research": "exa",
+  "resumes": [
+    {
+      "after_round": 1,
+      "checkpoint_ts": "2026-11-15T08:53:01.522224Z",
+      "command": [
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/repo/swarm.py",
+        "--resume",
+        "/home/ubuntu/eval/caffeinated-dev/results/conf-hadamard29-r2-s2002B/hadamard29/seed-2002/B/run"
+      ],
+      "ts": "2026-11-15T09:02:24.327937Z"
+    }
+  ],
+  "rounds": 16,
+  "run_id": "27d4714aa0d54320b3b732df2e75794f",
+  "seed": 2002,
+  "status": "stopped",
+  "swarm_commit": "a6b2a67e9e9e1fed4fb84f6b364a90e615d8e753",
+  "task": "hadamard29",
+  "viewer": false,
+  "viewer_dest": null,
+  "viewer_run_id": "553a23ad-7001-596b-aaf2-9789a3c2de50",
+  "workers": 4
+}

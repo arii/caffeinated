@@ -15,15 +15,20 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = Path(__file__).resolve().parent
-SANDBOX_IMAGE = "caffeinated-testcases:py311-v1"
+SANDBOX_IMAGE = "caffeinated-testcases:py311-v2"
 CONTAINER_PATH = "/usr/local/bin:/usr/bin:/bin"
 MAX_STDOUT_BYTES = 1_000_000
 MAX_STDERR_BYTES = 64_000
 MAX_OUTPUT_BYTES = 8_000_000
 TASK_TIMEOUTS = {
     "bixbench_mini": 120,
+    "bixbench_numeric": 120,
     "hadamard19": 60,
+    "hadamard21": 60,
+    "hadamard22": 60,
+    "hadamard29": 60,
     "ignobel": 120,
+    "playworld_hard": 120,
     "playworld_mini": 120,
 }
 SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")

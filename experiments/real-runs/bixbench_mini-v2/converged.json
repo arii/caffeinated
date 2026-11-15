@@ -1,0 +1,48 @@
+{
+  "attempt_count": 35,
+  "best_commit": "1b6468d1d5fa6e5d3f9834f4123d82cc4f3de985",
+  "best_loss": 0.09999999999999998,
+  "cells_covered": [
+    "baseline/none",
+    "data/dtype",
+    "data/filter",
+    "data/missing",
+    "interpretation/question_parse",
+    "interpretation/rounding",
+    "interpretation/units",
+    "other/sem_estimation",
+    "other/sem_estimator",
+    "other/standard_error",
+    "statistics/anova",
+    "statistics/descriptive",
+    "statistics/effect_size",
+    "statistics/power",
+    "statistics/regression",
+    "statistics/test_choice"
+  ],
+  "reason": "meter",
+  "round": 13,
+  "status_record": {
+    "B": 0.845,
+    "best_loss": 0.1,
+    "best_seq": 14,
+    "descriptor": {
+      "mechanism": "baseline",
+      "method": "none"
+    },
+    "directive": "Re-run the analysis to confirm answers are stable.",
+    "disabled": false,
+    "frontier_stall": 9,
+    "frustration": 0.0,
+    "ledger_sha256": "93c4204e73d26756ceceef34252ffccd2f6ba1a396da9bc13e8df02208686a1c",
+    "n_rows": 52,
+    "profile_sha256": "c1c88d301c6e15d4ea1f9ab067e8196b4be662a9acd38fb50693fa90190a487e",
+    "profile_version": 3,
+    "regime": "CONVERGED",
+    "stuck_cells": [
+      "statistics/regression"
+    ],
+    "ts": "2026-11-15T09:11:19.783065Z",
+    "type": "status"
+  }
+}

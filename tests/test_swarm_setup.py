@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import tempfile
@@ -81,10 +82,59 @@ class WorktreeRecoveryTests(unittest.TestCase):
         (conductor / "task.py").write_text("x = 2\n", encoding="utf-8")
         second, conductor, _ = self.create()
         self.assertEqual(second, branch)
-        self.assertEqual(git(conductor, "status", "--porcelain"), "")
+        self.assertEqual(git(conductor, "status", "--porcelain", "--untracked-files=no"), "")
         self.assertEqual(git(conductor, "branch", "--show-current"), branch)
-        stale = list(conductor.parent.glob("conductor.stale-*/experiments/swarm_B/run_id"))
-        self.assertEqual(len(stale), 1)
+        self.assertFalse((conductor / "task.py").read_text().startswith("x = 2"))
+        archived = list(conductor.glob("experiments/swarm_B.prev-*/run_id"))
+        self.assertEqual(len(archived), 1)
+
+    def test_killed_run_recording_stays_discoverable_and_is_marked_stopped(self):
+        _, conductor, _ = self.create()
+        artifacts = conductor / "experiments/swarm_B"
+        (artifacts / "viewer").mkdir(parents=True)
+        run = {"run_id": "old", "viewer_run_id": "v", "status": "running"}
+        (artifacts / "run.json").write_text(json.dumps(run), encoding="utf-8")
+        with patch("swarm.publish_viewer_state") as publish:
+            _, conductor, _ = self.create()
+        archive = next(conductor.glob("experiments/swarm_B.prev-*"))
+        self.assertEqual(json.loads((archive / "run.json").read_text())["status"], "stopped")
+        publish.assert_called_once_with(archive, archive / "viewer", final=True, status="stopped")
+        self.assertTrue(archive.match(".swarm_worktrees/*/conductor/experiments/*"))
+        self.create()
+        self.assertTrue((archive / "viewer").is_dir())
+
+    def test_agent_worktrees_are_detached_without_branches(self):
+        _, _, agents_root = self.create()
+        before = git(self.repo, "branch", "--list")
+        for attempt in (1, 2):
+            path, branch = swarm.prepare_agent_worktree(
+                self.repo, agents_root, "B", "worker-1", self.start, 1, attempt
+            )
+            self.assertIsNone(branch)
+            self.assertEqual(git(path, "rev-parse", "--abbrev-ref", "HEAD"), "HEAD")
+        self.assertEqual(git(self.repo, "branch", "--list"), before)
+
+    def test_round_commit_leaves_out_viewer_and_bulky_logs(self):
+        _, conductor, _ = self.create()
+        target = conductor / "experiments/swarm_B"
+        for name in (
+            "viewer/run/events.ndjson",
+            "runs/a.log",
+            "exa_cache/q.json",
+            "literature_cache/q.bin",
+        ):
+            self.assertIn(Path(name).parts[0], swarm.ROUND_UNTRACKED)
+            (target / name).parent.mkdir(parents=True, exist_ok=True)
+            (target / name).write_text("x\n", encoding="utf-8")
+        for name in ("ledger.jsonl", "llm_log.jsonl", "research_log.jsonl", "results.tsv"):
+            (target / name).write_text("x\n", encoding="utf-8")
+        with patch("sys.stderr"):
+            commit = swarm.commit_arm_artifacts(conductor, target, 3)
+        self.assertEqual(commit, git(conductor, "rev-parse", "HEAD"))
+        tree = git(conductor, "ls-tree", "-r", "--name-only", "HEAD", "experiments").splitlines()
+        self.assertEqual(
+            tree, ["experiments/swarm_B/ledger.jsonl", "experiments/swarm_B/results.tsv"]
+        )
 
     def test_deleted_worktrees_are_pruned_and_recreated(self):
         self.create()
@@ -129,6 +179,144 @@ class WorktreeRecoveryTests(unittest.TestCase):
         (root / ".lock").write_text("999999999\n", encoding="utf-8")
         with swarm.arm_lock(root):
             self.assertEqual((root / ".lock").read_text().strip(), str(os.getpid()))
+
+
+class ResumeStateTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.out = Path(directory.name) / "out"
+        self.out.mkdir()
+
+    def test_restore_drops_a_half_written_round(self):
+        (self.out / "ledger.jsonl").write_text('{"round": 1}\n', encoding="utf-8")
+        (self.out / "score_cache.json").write_text("{}\n", encoding="utf-8")
+        (self.out / "run_id").write_text("abc\n", encoding="utf-8")
+        swarm.write_checkpoint(
+            self.out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+        )
+        with (self.out / "ledger.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write('{"round": 2}\n{"rou')
+        (self.out / "score_cache.json").write_text('{"x": 1}\n', encoding="utf-8")
+        (self.out / "vocab_extensions.jsonl").write_text("{}\n", encoding="utf-8")
+        checkpoint = swarm.read_checkpoint(self.out)
+        self.assertEqual((checkpoint["round"], checkpoint["arm_commit"]), (1, "c"))
+        swarm.restore_checkpoint(self.out, checkpoint)
+        self.assertEqual((self.out / "ledger.jsonl").read_text(), '{"round": 1}\n')
+        self.assertEqual((self.out / "score_cache.json").read_text(), "{}\n")
+        self.assertEqual((self.out / "run_id").read_text(), "abc\n")
+        self.assertFalse((self.out / "vocab_extensions.jsonl").exists())
+
+    def test_restore_refuses_a_log_shorter_than_its_checkpoint(self):
+        (self.out / "ledger.jsonl").write_text('{"round": 1}\n', encoding="utf-8")
+        swarm.write_checkpoint(
+            self.out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+        )
+        (self.out / "ledger.jsonl").write_text("", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "shorter"):
+            swarm.restore_checkpoint(self.out, swarm.read_checkpoint(self.out))
+
+    def test_viewer_is_cut_back_to_its_checkpointed_prefix(self):
+        viewer = self.out / "viewer" / "run"
+        (viewer / "keyframes").mkdir(parents=True)
+        (viewer / "events.ndjson").write_bytes(b"a\nb\n")
+        (viewer / "keyframes" / "0.json").write_text("{}")
+        swarm.write_checkpoint(
+            self.out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=viewer
+        )
+        with (viewer / "events.ndjson").open("ab") as handle:
+            handle.write(b"c\nhalf")
+        (viewer / "keyframes" / "4.json").write_text("{}")
+        swarm.restore_viewer(viewer, swarm.read_checkpoint(self.out)["viewer"])
+        self.assertEqual((viewer / "events.ndjson").read_bytes(), b"a\nb\n")
+        self.assertEqual([path.name for path in (viewer / "keyframes").glob("*")], ["0.json"])
+        swarm.restore_viewer(viewer, None)
+        self.assertFalse(viewer.exists())
+
+    def test_resume_reads_settings_from_run_json(self):
+        run = {
+            "task": "hadamard19",
+            "arm": "C",
+            "seed": 7,
+            "llm": "fake",
+            "model": "fake",
+            "exa": "off",
+            "memory_backend": "local",
+            "rounds": 20,
+            "repo": "/repo",
+            "branch": "swarm-C-1",
+            "viewer": True,
+            "viewer_dest": None,
+            "status": "running",
+        }
+        (self.out / "run.json").write_text(json.dumps(run), encoding="utf-8")
+        swarm.write_checkpoint(
+            self.out, round_num=4, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+        )
+        args = swarm.build_parser().parse_args(["--resume", str(self.out), "--rounds", "30"])
+        resume = swarm.resolve_run_args(args)
+        self.assertEqual(resume["checkpoint"]["round"], 4)
+        self.assertEqual((args.task, args.arm, args.seed, args.llm), ("hadamard19", "C", 7, "fake"))
+        self.assertEqual((args.rounds, args.repo, args.out), (30, "/repo", str(self.out)))
+        conflicting = swarm.build_parser().parse_args(["--resume", str(self.out), "--arm", "B"])
+        with self.assertRaisesRegex(ValueError, "--arm B conflicts"):
+            swarm.resolve_run_args(conflicting)
+        self.assertFalse(args.no_push)
+        unseeded = {**run, "seed": None, "no_push": True}
+        (self.out / "run.json").write_text(json.dumps(unseeded), encoding="utf-8")
+        reseeded = swarm.build_parser().parse_args(["--resume", str(self.out), "--seed", "3"])
+        with self.assertRaisesRegex(ValueError, "--seed 3 conflicts"):
+            swarm.resolve_run_args(reseeded)
+        local = swarm.build_parser().parse_args(["--resume", str(self.out)])
+        swarm.resolve_run_args(local)
+        self.assertTrue(local.no_push)
+        run["status"] = "finished"
+        (self.out / "run.json").write_text(json.dumps(run), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "already finished"):
+            swarm.resolve_run_args(swarm.build_parser().parse_args(["--resume", str(self.out)]))
+
+    def test_fresh_run_requires_task_and_fills_defaults(self):
+        with self.assertRaisesRegex(ValueError, "--task is required"):
+            swarm.resolve_run_args(swarm.build_parser().parse_args([]))
+        args = swarm.build_parser().parse_args(["--task", "hadamard19"])
+        self.assertIsNone(swarm.resolve_run_args(args))
+        self.assertEqual((args.arm, args.rounds, args.llm, args.exa), ("B", 10, "openai", "on"))
+
+    def test_arm_environment_exports_resume_rollbacks_for_memory(self):
+        rollbacks = [{"epoch": 1, "after": "2026-01-01T00:10:00Z"}]
+        with patch.dict(os.environ, {"AUTORESEARCH_RUN_ROLLBACKS": "stale"}):
+            with swarm.arm_environment("A", False, "pastdev", run_id="r1", rollbacks=rollbacks):
+                self.assertEqual(json.loads(os.environ["AUTORESEARCH_RUN_ROLLBACKS"]), rollbacks)
+            with swarm.arm_environment("A", False, "pastdev", run_id="r1"):
+                self.assertNotIn("AUTORESEARCH_RUN_ROLLBACKS", os.environ)
+            self.assertEqual(os.environ["AUTORESEARCH_RUN_ROLLBACKS"], "stale")
+
+    def test_only_tags_from_after_the_checkpoint_are_deleted(self):
+        repo = self.out / "repo"
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        git(
+            repo,
+            "-c",
+            "user.name=T",
+            "-c",
+            "user.email=t@e",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "x",
+        )
+        for tag in (
+            "run/swarm_B/abc/2-worker-1",
+            "run/swarm_B/abc/3-critic",
+            "run/swarm_B/def/3-critic",
+        ):
+            git(repo, "tag", tag)
+        swarm.delete_tags_after(repo, "run/swarm_B/abc", 2)
+        self.assertEqual(
+            git(repo, "tag", "--list").splitlines(),
+            ["run/swarm_B/abc/2-worker-1", "run/swarm_B/def/3-critic"],
+        )
 
 
 if __name__ == "__main__":

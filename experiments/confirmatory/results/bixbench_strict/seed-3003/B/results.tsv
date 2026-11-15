@@ -1,0 +1,52 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+81f3a5fcf9d5e29a84cad0616da0e45c9650aa15		crash	[EXPLOIT] Replace the three-answer stub with a typed, end-to-end statistical pipeline cove
+ef99ab1eda003228c69412e6af245cb3565af478	0.888889	discard	[EXPLOIT] Compute the rhlR- circularity standard error as the sample standard deviation di
+cd989e0eed464abbbc9a8d7349b7458faa0f5cf1		crash	[EXPLOIT] Add a complete logistic-regression analysis for all seven bix-51 treatment-respo
+584838dd0f30a9dfef280d1cd912763313949868	0.851852	keep	[EXPLOIT] Add the four bix-8 MeRIP-seq answers using a chi-square contingency test and con
+584838dd0f30a9dfef280d1cd912763313949868	0.851852	keep	critic second-evaluation confirmation for Add the four bix-8 MeRIP-seq answers using a chi-square contingency test and con
+70c0a92be565001a4f2b5d93c4bbad2983bb1b05	0.777778	keep	[EXPLOIT] Complete the bix-18 group summaries and correct the rhlR- circularity statistic 
+4b2de35e9d7e55b13545179fa47e92307871034c		crash	[EXPLOIT] Fill the four missing bix-19 answers with pooled Cohen's d, two-sample power ana
+		reject	[EXPLOIT] proposal rejected after repair
+e99f13dec60909d9a9694a08ebbda7d587cf63e1		crash	[EXPLOIT] Add all seven bix-51 treatment-response answers using PR-versus-non-PR logistic 
+70c0a92be565001a4f2b5d93c4bbad2983bb1b05	0.777778	keep	critic second-evaluation confirmation for Complete the bix-18 group summaries and correct the rhlR- circularity statistic 
+		reject	[EXPLOIT] proposal rejected after repair
+8695afca67199782cafe77dd27c52d555abd5d5d	0.777778	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by mapping “base,” adjusted significa
+ae479362365cdb861eb22e8cc7a91f2c3b10c0fe	0.777778	discard	[EXPLOIT] Answer the four CpG questions by filtering methylation extremes, deduplicating g
+7fcefe2707e33546ab561b980f1f86fa1e27e7b7		crash	[EXPLOIT] Implement all four NeuN questions using pooled-SD Cohen's d, two-sample power an
+1bcd885e2ee7fa272ed98e08ecc68c3d5c66ae62	0.777778	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by direct row extraction with questio
+b64aaa97709ef91653d2d0eacff2972470ef3be5		crash	[EXPLOIT] Implement all four NeuN questions using pooled-SD Cohen's d, two-sample power an
+c681d8c428cd46853044a7003b379c775004e174	0.777778	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by direct row lookup and requested ro
+49e1e4955cb4ad00d5fa47cb26fa7aad2ae2fbe3	0.777778	discard	[EXPLOIT] Answer the four bix-52 CpG questions using strict methylation-extreme filtering,
+cc0c99ed85ea1d20aff00bea78d983f2a2603c2d		crash	[EXPLOIT] Implement the complete bix-19 NeuN analysis with pooled Cohen's d, two-sample po
+30f82f828a095d0a52ef2e4893372b8e714708b6		crash	[EXPLOIT] Answer the four NeuN questions with pooled-SD effect size, two-sample power anal
+6fbf2959672ae009d28805c371e501c491613f97	0.777778	discard	[EXPLOIT] Answer the four CpG questions by filtering methylation extremes, deduplicating s
+2aa7c9e29f0b0c1666c52dcfb7ee8c53b49bc859		crash	[EXPLOIT] Add the four NeuN answers using pooled-SD Cohen's d, two-sample power analysis, 
+72add1b13c17b259600d612a2dfffd596206ab18	0.777778	discard	[SNAP] Answer the three ENO1 proteomics questions by direct row extraction with the req
+500c1d86350b118dddfe09a9b826a7685dd7c1ca		crash	[SNAP] Implement the four NeuN analyses with pooled Cohen's d, two-sample power, Shapir
+2e0516a7fcb5681aa3d7d388d58f31402b439650	0.777778	discard	[SNAP] Implement all four bix-52 CpG-density questions using distinct filtered sites, p
+911d45c92a707ca6f1b772e4f3c120010d2501d5		crash	[SNAP] Answer all three bix-41 questions with strain/ratio-grouped Dunnett comparisons 
+49873dd2582c2708d4a1bab941a654cf29f46386	0.777778	discard	[SNAP] Apply chi-square tests of independence to the three BCG vaccination-versus-COVID
+dd00276566ca861df9f1b0b44e375f4a3db945e9		crash	[SNAP] Implement the four bix-19 NeuN questions using pooled-SD Cohen's d, two-sample p
+		reject	[SNAP] proposal rejected after repair
+872d41511af0f8321e50cbccdea3f3c5affcdb19	0.777778	discard	[SNAP] Implement the three BCG ordinal-logit questions using COVID-19 events and catego
+		reject	[BREAKOUT] proposal rejected after repair
+3b3743edec7fd320fdfd2c14fcd158ab3d57c44e		reject	[BREAKOUT] Parse the proteomics questions as requests for the dataset's Normal, adj.Pval, a
+83285d469e1669f0b5a716b112349e2d4d20c895		reject	[BREAKOUT] Normalize chromosome identifiers and methylation measurements to explicit dtypes
+77666381fd48a38e5fe916231816d37e04241da1		reject	[BREAKOUT] Fit all seven clinical logistic-regression answers using explicit model-specific
+9a47d16207070e1cedf1df5e4399427c0be22a24		reject	[BREAKOUT] Parse the CpG questions as distinct-site counts after per-row methylation filter
+46bc6f3ec342459ba1d6295707cc5f229916be22		crash	[BREAKOUT] Add the four NeuN analyses using pooled-SD effect size, two-sided power, Shapiro
+		reject	[BREAKOUT] proposal rejected after repair
+71c5648184e0d6a5cdf7f04f3d16f0a12fee9d8d		reject	[BREAKOUT] Coerce NeuN counts to numeric and compute all four requested group statistics
+6b74a9f6d312400f08a03d8c6d3e0b1b118e2573		reject	[BREAKOUT] Parse the four NeuN questions as their explicitly named statistical procedures a
+		reject	[BREAKOUT] proposal rejected after repair
+38b58ecca7917893a7492b8aca501264ea6181d2		reject	[BREAKOUT] Normalize Excel numeric dtypes, then fit the requested bix-51 logistic models
+7f1c64e1d26b5314769df7925d51b82571fb4f61		reject	[BREAKOUT] Fit all seven treatment-response logistic regressions with explicit model-specif
+d2155271c21be212bcdebe62dc11edcbda1463f6		reject	[BREAKOUT] Parse the three ENO1 questions as direct requests for distinct proteomic columns
+		reject	[BREAKOUT] proposal rejected after repair
+0b2dd87c14597c8dd08bcacda804aa3ce8c07f5e		reject	[BREAKOUT] Add distinct-site CpG density calculations with explicit string chromosome dtype
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair
+1259af6a48107ed43dddc416984ad60d8823fcaa	0.777778	duplicate	[BREAKOUT] Extract ENO1's normal abundance, adjusted p-value, and rounded log2 fold change 
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair

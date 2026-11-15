@@ -17,6 +17,12 @@ LABELS = {
     "hadamard19": "exact objective with a known optimum",
     "bixbench_mini": "17-question subset, not full BixBench",
     "playworld_mini": "synthetic proxy, not PlayWorld",
+    "hadamard21": "exact objective with a proven optimum",
+    "hadamard22": "exact objective with a proven optimum",
+    "hadamard29": "exact objective against an unattainable upper bound",
+    "bixbench_numeric": "45-question BixBench subset; dev loss, held-out via final_eval.py",
+    "playworld_hard": "synthetic proxy; dev seeds, fresh seeds via final_eval.py",
+    "ignobel": "pre-registered tests on real public data; loss is 0/1 per run",
 }
 MATCHED = (
     "source_commit",

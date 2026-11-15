@@ -1,0 +1,50 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+297f0339032e6678bc6bbc1779a0a65eb660127d		crash	[EXPLOIT] Replace the three-answer stub with deterministic, question-specific statistical 
+3a760933be365ff4870f6816eacd48235e127ebd		crash	[EXPLOIT] Implement all 45 analyses with deterministic statistical procedures and per-ques
+950c13eaea17aa334bba363f0b697d21fee88d8a	0.777778	keep	[EXPLOIT] Add low-risk direct table lookups, contingency tests, and descriptive statistics
+05105888da83402cf2d8b645e3f5b40ba3336dea		crash	[EXPLOIT] Add the four NeuN analyses using pooled Cohen's d, two-sample power analysis, Sh
+77cd1934372bca3a2584fc283ddd6f19892a43fe		crash	[EXPLOIT] Add the seven camrelizumab logistic-regression answers using PR as the binary ou
+50e350837b730d7a374c16b04f682bf85996f762	0.777778	discard	[EXPLOIT] Add the four age-related CpG density and uniformity answers by filtering methyla
+3eaf63058381520be389b1606fb96f4c554f78c0		crash	[EXPLOIT] Add all seven camrelizumab logistic-regression answers using a self-contained Ne
+393615f0e12aa15a0024fb8e6c3be11bc028d1a8		crash	[EXPLOIT] Add the four NeuN analyses with pooled Cohen's d, noncentral-t power, Shapiro-Wi
+15726c9123fed545b3b50657ffe89196c91fcfb3		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, an integer noncentral-t power 
+0a1a87e2b11f206c8aa82514d572e3e4e4e8ab0d	0.777778	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+274885caef0d4d3791a6c21fe716d5287ae33927		crash	[EXPLOIT] Add all seven camrelizumab logistic-regression answers using a self-contained Ne
+9b32a91ee525cee302cabd389823b86f2630a4a4		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, noncentral-t power, Shapiro-Wi
+1c5e17d6fe5d9ae8fc0c3474748902ff9883f17a		crash	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+f0e1f1077f64a6f9877c7059ff66473643699c36		crash	[EXPLOIT] Add all seven camrelizumab logistic-regression answers using a self-contained, n
+f00fb215fcb05219e1fe0995f0873e12cc905bf5		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, a bounded noncentral-t power s
+c23bf7e33b92eef9eed591907cd19ed3248f7346	0.777778	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+e779450eacba71913cc94ac8c149841790d14145		crash	[EXPLOIT] Add all seven camrelizumab logistic-regression answers using a self-contained Ne
+9437636f2c8f90e5025d0e475ca8cd16f7e14e54		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, noncentral-t power, Shapiro-Wi
+b1a32a0ec71535fcf6428fcffa6633afc6a90701	0.777778	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+2bf9870dcb5e949e83a196aacef0b5f78c0c5a21		crash	[EXPLOIT] Add all seven camrelizumab logistic-regression answers using deterministic Newto
+0e4f76b43238ba9283ecbb93a7317d8874d2a827		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, noncentral-t power, Shapiro-Wi
+a37b3c9fde8822c4d2622baaee4857bc483a3ed0	0.777778	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+9957365e3410d364189014477d8562f47415af6f		crash	[EXPLOIT] Add all seven camrelizumab answers with deterministic logistic regressions for a
+2915e3d3491c8ab7498415ec5efb7725acaf4414		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap
+a9fc7fe1fae950bfe1facfbfca6801a8e7115b3f	0.777778	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+fcd481a449e7636ccb3fbc3a060e04e45c6d95d0	0.592593	keep	[EXPLOIT] Add all seven camrelizumab answers using deterministic logistic regressions with
+f596a0127e129dc4bcbe019d55c7fc7d3311477b		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, noncentral-t power, Shapiro-Wi
+c8401457bf0892795155d97e31a498fe00b445dc	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+f243db8ee4f3443967ac604c988a8b9988cfb0fd		crash	[EXPLOIT] Add the four NeuN answers with self-contained pooled effect size, exact noncentr
+490e588c50fd3e9b2e654bc6fdb1547ce4d006b7	0.592593	discard	[EXPLOIT] Add the ROSMAP PC1 variance percentage using log10(x+1), sample-by-gene orientat
+8bc76b911205453033eddeb73d889ab6d1265fcd	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+01e060a1aaf05696e83fc0dd0aa58e1d169c8fc5		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap
+7d4032fc0e405a133a70fa1246e390ac297abec2	0.592593	discard	[EXPLOIT] Add the ROSMAP PC1 variance percentage using log10(x+1), sample-by-gene orientat
+f17f1d94fbd4e0b78802dad14b046bf590a24e7e	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+df378072301c528eef8cba9e964b2290eaf15d91		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap
+43a32dfee758c29982e6db674272fa4335d8cc56		crash	[EXPLOIT] Add the four NeuN answers with pooled Cohen's d, exact noncentral-t power, Shapi
+6cc4a8193d95353216520c8db40673db3c6d3bc0	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+ac2741489de321b746b0eef9f8906505f65296c0	0.592593	discard	[EXPLOIT] Add the ROSMAP PC1 variance percentage using log10(x+1), sample-by-gene orientat
+074370f2c9b2c15584795b5094c0e37d982f5282		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap
+79b559352eb2a595f6a2e3d554ce8111533d89e1	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using COVID-19 adverse events joi
+b117d7980daf60df77ec2c39f885005dc8be55a1		crash	[EXPLOIT] Add the four NeuN answers with pooled Cohen's d, bounded exact noncentral-t powe
+dd129c56e2cd2de359fce6a0627a75f676e4ca81	0.592593	discard	[EXPLOIT] Add the ROSMAP PC1 variance percentage using log10(x+1), sample-by-gene orientat
+b27e7c9484ad45cf5c4bbb3c7741501a23d15438	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using participant-level COVID-19 
+47689c8a78b98404002a7c9d5a34fd75fb95ba96		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap
+bbe9a488977e9b8c41183bf5f7f1496a46265dd3		crash	[EXPLOIT] Add the four NeuN answers with self-contained pooled effect size, exact noncentr
+35dddb96ab5cf6d357e34d4329310c86295930ff	0.592593	discard	[EXPLOIT] Add the three BCG subgroup chi-square p-values using participant-level COVID-19 
+0f46edb81a5fa04c5355a833a4e89941d4b460c5	0.592593	discard	[EXPLOIT] Add the ROSMAP PC1 variance percentage using the requested log10(x+1) transforma
+edf45c402f2d4d6a293a50aae023191572eac49a		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, exact noncentral-t power, Shap

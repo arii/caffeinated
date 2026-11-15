@@ -1,0 +1,77 @@
+{
+  "domain": "testcase-hadamard21",
+  "version": 1,
+  "direction": "min",
+  "objective": "loss",
+  "eps": 0.005,
+  "eps_note": "evaluator is exact and deterministic; 0.005 in log10|det| is a ~1.2% determinant gain",
+  "k": 5,
+  "knn": 3,
+  "patience": 3,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "params_weight": 0.25,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "search": [
+      "restarts",
+      "seed",
+      "budget",
+      "flip_greedy",
+      "pair_flip",
+      "annealing",
+      "tabu"
+    ],
+    "construction": [
+      "circulant",
+      "bordered",
+      "block",
+      "from_literature"
+    ],
+    "objective": [
+      "log_det",
+      "surrogate"
+    ]
+  },
+  "params": {
+    "value": {
+      "scale": "ratio",
+      "ratio": 4
+    }
+  },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "fail_statuses": [
+    "crash"
+  ],
+  "directives": {
+    "EXPLOIT": "One focused change to the current best construction.",
+    "BOREDOM_SNAP": "Stop re-tuning restarts/seed/budget; try a different search or construction method, grounded in a source (Exa) and checked against past.dev.",
+    "PARADIGM_BREAKOUT": "Change the mechanism: structured constructions (circulant/bordered blocks from the max-det literature) instead of local search.",
+    "CONVERGED": "Re-run the best construction to confirm the determinant."
+  }
+}

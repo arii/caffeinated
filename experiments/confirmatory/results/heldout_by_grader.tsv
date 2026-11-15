@@ -1,0 +1,10 @@
+seed	arm	grader_7442255_original_guard	grader_c31ab55_pre_0205	grader_a0d4fcd_final
+3001	A	0.167	0.167	0.167
+3001	B	0.056	0.056	0.056
+3001	S	0.000 (crash: answer_literal)	0.000 (crash: answer_literal)	0.333
+3002	A	0.056	0.056	0.056
+3002	B	0.000 (crash: answer_literal)	0.056	0.056
+3002	S	0.222	0.222	0.222
+3003	A	0.000 (crash: answer_literal)	0.056	0.056
+3003	B	0.000 (crash: answer_literal)	0.056	0.056
+3003	S	0.000 (crash: answer_literal)	0.000 (crash: answer_literal)	0.333

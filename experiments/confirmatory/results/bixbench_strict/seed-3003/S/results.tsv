@@ -1,0 +1,50 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+e7e08509e622968eee0548bccda4b63537f0c267		crash	[EXPLOIT] Replace the three-answer stub with deterministic, question-specific analyses for
+4dc816fae452bc350b0829d2b4d6c838fba88b15		crash	[EXPLOIT] Implement every question with its stated statistical procedure, isolating capsul
+1b0d2c660445141d4c3ac5a8ed373e30d180707c		crash	[EXPLOIT] Implement all 45 analyses as independent deterministic functions with lazy stati
+a41d94106a39d4d7d6cd9555b97264e264be5d05	0.851852	keep	[EXPLOIT] Complete the deterministic descriptive answers for bix-18 and add direct ENO1 pr
+a82ab8a87570c678e4c44d660340b4568157e5d9	0.777778	keep	[EXPLOIT] Add the four bix-8 answers using direct category counts and a dependency-free ch
+561a172e7d3dc3bce191334062fdc2e4b92a0c4d	0.777778	discard	[EXPLOIT] Add the four bix-52 answers from distinct filtered CpG sites, chromosome lengths
+b31567839a100b7ec98af717df73c20074d39910		crash	[EXPLOIT] Add all seven bix-51 answers using a small dependency-free logistic-regression I
+2cfb26502389880b6af1292427bb122a927397ed		crash	[EXPLOIT] Add the four bix-19 answers using pooled Cohen's d, exact noncentral-t power, Sh
+768f35ebde226aec8f98284ed34ccffd55948ad0	0.777778	discard	[EXPLOIT] Add the three bix-10 subgroup chi-square answers using COVID-19 events and a dep
+c002d1c29b1d829c0ca8f4e92bb244817e58080b	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by deduplicating filtered CpG sites and computing ch
+d4e1cd0979585c2fdaa63ba47e717f38c0ac8cf0		crash	[EXPLOIT] Add all seven bix-51 answers with a dependency-free logistic-regression implemen
+faf3970c863883f687112e07556ce042c3addbfe		crash	[EXPLOIT] Add the four bix-19 answers using pooled Cohen's d, exact noncentral-t power, Sh
+992fcab5d64941ef88f3ff49f3235431e6a39da9		crash	[EXPLOIT] Add all seven bix-51 answers with a dependency-free logistic-regression solver f
+daf6c8551c1e371e4ec56f04cf72407295de030c		crash	[EXPLOIT] Add the four bix-19 answers using pooled Cohen's d, exact noncentral-t power, Sh
+90dd45907b44c4d02e1c07a2d6a8c278828fb0db	0.592593	keep	[EXPLOIT] Add all seven bix-51 answers using a dependency-free IRLS logistic-regression im
+7485bac6cf3da283b513c59d3470df0d79fc0656		crash	[EXPLOIT] Add the four bix-19 answers using pooled Cohen's d, exact noncentral-t power, Sh
+40182ddaa7a1b835e0f7f9f1ba45cc3e344f3201		crash	[EXPLOIT] Add the four bix-19 NeuN answers with dependency-free effect-size and ANOVA calc
+e2cb95508cd2215010cddf70320230a79f2e8480		crash	[EXPLOIT] Add guarded bix-19 NeuN calculations for pooled Cohen's d, exact t-test power, S
+45fff108dd67b3f5ed7e320771bebd5f75cadd1e		crash	[EXPLOIT] Add guarded bix-19 NeuN effect-size, exact t-test power, Shapiro-Wilk, and inter
+51fbe59cce8a8af3c549ea3072364ee35ae19990	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PCA on the log10(x+1) expression matrix with samples 
+04ff151fbff2c47925794819caaf52b7f5f08091	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PCA explained variance on the sample-by-gene log10(x+
+36ed43b6b908cc3b83e4b4fb844adc7e4e52a307	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered, sample-b
+076d1fd6632ecc8221efd8e407f4de8db20b8274	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered, sample-b
+958b1ca845cfb86766d69153835a4ec77690a86a		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered, sample-b
+663d1cfdd8683fcd6db43b13f153100520b469b2	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered, sample-b
+d7c9a6c24966c124cf8f1f991691a4ec93ce2789	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered, sample-b
+05ff8fbec073102c3d2dfc82e9b7dca4bca15755		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+4747ed9af6173aa58191041fe474672133c4eb81	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+dac2f4f000511d71556808b76bb235ea5081fc1f	0.592593	discard	[EXPLOIT] Add bix-27-q5 using PCA on the log10(x+1) sample-by-gene matrix via eigenvalues 
+4ce9d7427e02f7da15a047643c58ffe27b904387	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+dc01d80d75ba0e542f24c50bd31bc96b26281a53	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+b4038e736f9195cda9e4c2fd8f15933ff25eed3d		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+65ab746876e67e04932e43018cc439822907ef6a		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+d51792f4cf28b91c539d8f38efbab371570ff50f	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the log10(x+1), sample-by-g
+231117cb22b1ffeaca696e578d3ddb8c945f4301		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+71ce523622aed698182fe7f5b0b15a82721357e6		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance on the mean-centered log10(x+1
+446f6c4f31f79739878615f362e543717293b42f		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+65fcd25486600527645b5a97557cc0ea719e6c37	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+68407c8f8abc53e0fbad9d3cb3bef3872b33dfb6		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+220330afc48cea0dea1ae94aef8f9cdced419b81	0.592593	discard	[EXPLOIT] Add bix-27-q5 using PC1 explained variance from the mean-centered log10(x+1) sam
+9bbbece829f269d153c08cff13a5cfc392cec1ba	0.592593	discard	[EXPLOIT] Add bix-27-q5 using PC1 explained variance from the mean-centered log10(x+1) sam
+7cca64fcfe7a6bfb5a6056621a736776b75df459		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+b83c2e9a07356e0c11206299b64c837b4f3fe716		crash	[EXPLOIT] Add bix-27-q5 using PC1 explained variance from the mean-centered log10(x+1) sam
+11c046dec2fdf88c8fd067cb617fc46908349a46	0.592593	discard	[EXPLOIT] Add bix-27-q5 using PC1 explained variance from the mean-centered log10(x+1) sam
+cb70e8ef79c44e3f1c52ba6d1fca2feec03e477d		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+ee2ff677825cd6ab0f7cad260752408a0f73be41		crash	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+88c77a78b36754b4426a1cce45c92e85491fae93	0.592593	discard	[EXPLOIT] Add bix-27-q5 by computing PC1 explained variance from the mean-centered log10(x
+5fc6d7286a8507c3b444c852b3517e3ced831cd4	0.592593	discard	[EXPLOIT] Add bix-27-q5 using PC1 explained variance from the mean-centered log10(x+1) sam

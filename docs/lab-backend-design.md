@@ -36,7 +36,7 @@ A native event’s integer tick is the source clock. Render time interpolates co
 
 A snapshot at tick T includes only events through T. Source timestamps are preserved where present; missing timestamps, seeds, boredom, and source commits are not invented. Agent identities are stable and independent of avatar appearance. Baseline and World are pseudo-agents in the data and are not rendered as human researchers.
 
-The supplied keyframe zero contains later-run state. The adapter therefore reconstructs every frame from the event prefix instead of loading those keyframes. Native final entity records remain available for audit, but the visual state and interaction text use time-gated event data. Candidate results do not become the confirmed swarm best before acceptance. Metric direction remains domain-specific; the Ig Nobel replicated-findings metric counts replicated studies rather than treating a p-value or effect size as that aggregate.
+The supplied keyframe zero contains later-run state. The adapter therefore reconstructs every frame from the event prefix instead of loading those keyframes. Native final entity records remain available for audit, but the visual state and interaction text use time-gated event data. Candidate results do not become the confirmed swarm best before acceptance. Metric direction remains domain-specific; the Ig Nobel split-half-consistent-findings metric counts confirmed studies rather than treating a p-value or effect size as that aggregate.
 
 ## Interaction and cameras
 
@@ -50,7 +50,7 @@ Movement between stations is illustrative and deterministic under seeking. Camer
 
 The default service rejects live run creation. Playback and interaction require no API key and make no paid calls. The existing execution code remains in source for later integration but is not connected to the replay UI.
 
-All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample references mock prior-art sources and is labeled recorded sample. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
+All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample is an offline `swarm.py --task ignobel` run with a fake LLM; its sources are real keyless literature hits, but its studies are not model research. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
 
 Future Ig Nobel objectives should supply their own manifests, metric units/direction, identities, events, scientific artifacts, and provenance. The backend team can change experiment content while keeping replay controls and world interactions stable.
 
