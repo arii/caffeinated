@@ -34,14 +34,17 @@ export function committeeOf(study:Row,awards:readonly ReplayEvent[]=[]):Committe
  return {score,rejected:raw.rejected===true,judges,priorWork:prior.length||raw.prior_work_available===true?{count:prior.length,links}:null};
 }
 function visibleTick(study:Row,events:readonly ReplayEvent[]){
- const id=idOf(study),rows=events.filter(e=>studyId(e)===id),registered=rows.filter(e=>e.type==='study.registered').sort((a,b)=>a.tick-b.tick)[0],result=rows.filter(e=>['study.result','study.replicated'].includes(e.type)).sort((a,b)=>a.tick-b.tick)[0];
- return number(study.tick)??number(study.registered_tick)??registered?.tick??result?.tick??0;
+ const id=idOf(study),rows=events.filter(e=>studyId(e)===id),registered=rows.filter(e=>e.type==='study.registered').sort((a,b)=>a.tick-b.tick)[0],result=rows.filter(e=>['study.result','study.replicated','study.completed'].includes(e.type)).sort((a,b)=>a.tick-b.tick)[0];
+ return registered?.tick??number(study.registered_tick)??number(study.tick)??result?.tick??0;
+}
+function resultTick(study:Row,events:readonly ReplayEvent[]){
+ return events.filter(e=>studyId(e)===idOf(study)&&['study.result','study.replicated','study.completed'].includes(e.type)).sort((a,b)=>a.tick-b.tick)[0]?.tick??null;
 }
 const confirmed=(s:Row)=>{const result=row(s.result),status=text(s.status||result.status).toLowerCase();return s.confirmed===true||s.replicated===true||result.confirmed===true||result.replicated===true||status==='confirmed'||status==='replicated'||list(s.replications).some(r=>r.confirmed===true||r.replicated===true||['confirmed','replicated'].includes(text(r.status).toLowerCase()));};
 export function podium(studies:unknown,awardEvents:readonly ReplayEvent[],tick:number):PodiumResult{
  const events=awardEvents.filter(e=>e.type==='award.issued'&&e.tick<=tick);
  const visible=list(studies).filter(s=>visibleTick(s,awardEvents)<=tick);
- const confirmedRows=visible.filter(confirmed);
+ const confirmedRows=visible.filter(s=>{const resolved=resultTick(s,awardEvents);return resolved!=null&&resolved<=tick&&confirmed(s);});
  const eligible=confirmedRows.map(s=>{const id=idOf(s),hasFutureAward=awardEvents.some(e=>e.type==='award.issued'&&studyId(e)===id&&e.tick>tick);return {study:s,committee:hasFutureAward?null:committeeOf(s,events)};}).filter(x=>x.study.rejected!==true&&!x.committee?.rejected);
  const scored=eligible.filter(x=>x.committee?.score!=null);
  if(scored.length){
