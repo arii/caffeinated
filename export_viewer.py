@@ -11,6 +11,7 @@ import bisect
 import csv
 import json
 import os
+import re
 import shutil
 import tempfile
 import uuid
@@ -192,6 +193,38 @@ class Run:
                 if "tick" in entity and entity["tick"] is None:
                     entity["tick"] = tick_of.get(entity_id)
         return events
+
+
+STUDY_LINE = re.compile(r"^(field|question|registered test|rho|replicated|rejected|error): (.*)$")
+STUDY_RHO = re.compile(r"^(-?[\d.]+) \(p=([^,]+), n=(\d+)\)")
+
+
+def study_from_log(path):
+    """The ignobel evaluator's registered study, parsed from a candidate's run log."""
+    if not path.is_file():
+        return None
+    fields = {}
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = STUDY_LINE.match(line)
+        if match:
+            fields[match[1]] = match[2].strip()
+    if "question" not in fields:
+        return None
+    study = {
+        "field": fields.get("field"),
+        "question": fields["question"],
+        "test": fields.get("registered test"),
+        "rho": None,
+        "p": None,
+        "n": None,
+        "replicated": fields.get("replicated") == "true",
+        "rejected": None if fields.get("rejected") in (None, "no") else fields["rejected"],
+        "error": fields.get("error"),
+    }
+    match = STUDY_RHO.match(fields.get("rho", ""))
+    if match:
+        study.update(rho=number(match[1]), p=number(match[2]), n=int(match[3]))
+    return study
 
 
 def round_of_ts(starts, ts):
@@ -498,7 +531,10 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     # Exa research: queries are questions, sources/extracts are observations.
     query_agent = {}
     for line, record in research:
-        ts, round_ = record.get("ts"), round_of_ts(starts, record.get("ts"))
+        ts = record.get("ts")
+        round_ = (
+            record.get("round") if isinstance(record.get("round"), int) else round_of_ts(starts, ts)
+        )
         if record.get("type") == "query":
             qid = f"question:{record['id']}"
             agent = record.get("agent") if record.get("agent") in run.agents else None
@@ -892,6 +928,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "verdict": None,
                     "reward_id": rid,
                     "artifacts": {"log": f"runs/{commit}.log"} if commit else {},
+                    "study": study_from_log(out_dir / "runs" / f"{commit}.log") if commit else None,
                     "start_tick": None,
                     "end_tick": None,
                     "tick": None,

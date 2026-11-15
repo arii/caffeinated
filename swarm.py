@@ -256,9 +256,20 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
     return path, branch
 
 
+def open_ended():
+    return bool((TASK or {}).get("open_ended"))
+
+
+def acceptance_reference(best_val, baseline_val):
+    """Open-ended tasks accept every confirmed finding that beats the baseline, not only new bests."""
+    return baseline_val if open_ended() and baseline_val is not None else best_val
+
+
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
+    if regime == "CONVERGED" and open_ended():
+        regime = "PARADIGM_BREAKOUT"
     agent_status = {agent: meter.status(profile, events, agent=agent) for agent in agents}
     per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
@@ -2297,7 +2308,6 @@ def _orchestrate(args, publish_state, cleanup):
             cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
-            refresh_round_context(out_dir, round_num, cell_suggestions)
             append_assignment(
                 allocation,
                 out_dir=out_dir,
@@ -2308,6 +2318,7 @@ def _orchestrate(args, publish_state, cleanup):
                 round_num=round_num,
                 provenance=provenance,
             )
+            refresh_round_context(out_dir, round_num, cell_suggestions)
             status["per_agent_B"] = allocation["per_agent_B"]
             viewer_frontier(out_dir, round_num, "assign")
             if viewer_dest:
@@ -2403,7 +2414,9 @@ def _orchestrate(args, publish_state, cleanup):
                 if (
                     candidate["evaluation_status"] == "ok"
                     and candidate["score"] is not None
-                    and candidate_is_provisional(profile, candidate["score"], best_val)
+                    and candidate_is_provisional(
+                        profile, candidate["score"], acceptance_reference(best_val, baseline_val)
+                    )
                 ):
                     provisional.append(candidate)
             provisional_best = (
@@ -2431,7 +2444,7 @@ def _orchestrate(args, publish_state, cleanup):
                     profile,
                     first_score,
                     second_score,
-                    previous_best_val,
+                    acceptance_reference(previous_best_val, baseline_val),
                     critic_result.get("status"),
                 )
                 critic_record = {
@@ -2504,7 +2517,7 @@ def _orchestrate(args, publish_state, cleanup):
                 }
                 if accepted:
                     provisional_best["status"] = "keep"
-                    best_val = (first_score + float(second_score)) / 2
+                    best_val = min(best_val, (first_score + float(second_score)) / 2)
                     best_metric_commit = provisional_best["commit"]
                     latest_candidate = provisional_best
 

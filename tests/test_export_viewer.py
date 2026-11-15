@@ -206,6 +206,25 @@ def autoresearch_run(root):
 
 
 class TaskTitleTests(unittest.TestCase):
+    def test_ignobel_study_is_parsed_from_candidate_log(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "abc.log"
+            log.write_text(
+                "field: sleep_science / new_population\n"
+                "question: Does sleep loss slow reactions?\n"
+                'registered test: higher "Days" goes with higher "Reaction"\n'
+                "rho: 0.5228 (p=5.1e-14, n=180); predicted 0.400\n"
+                "replicated: true\nrejected: no\nloss: 0.000000\n"
+            )
+            study = export_viewer.study_from_log(log)
+            self.assertEqual((study["rho"], study["n"], study["replicated"]), (0.5228, 180, True))
+            self.assertIsNone(study["rejected"])
+            log.write_text(
+                "question: Q?\nerror: invalid_output: ValueError: column 'a' not found\n"
+            )
+            self.assertIn("not found", export_viewer.study_from_log(log)["error"])
+            self.assertIsNone(export_viewer.study_from_log(Path(tmp) / "missing.log"))
+
     def test_task_title_names_the_task(self):
         self.assertEqual(export_viewer.task_title("ignobel"), "Ig Nobel Prize hunt")
         self.assertEqual(export_viewer.task_title("hadamard19"), "autoresearch · hadamard19")

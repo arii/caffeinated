@@ -318,6 +318,14 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertNotIn("Task-specific search focus", plain)
             self.assertNotIn("{scout_", plain)
 
+    def test_open_ended_task_accepts_findings_after_a_zero_loss(self):
+        task = swarm.load_task("ignobel")
+        with patch.object(swarm, "TASK", task):
+            self.assertTrue(swarm.open_ended())
+            self.assertEqual(swarm.acceptance_reference(0.0, 1.0), 1.0)
+        with patch.object(swarm, "TASK", swarm.load_task("hadamard19")):
+            self.assertEqual(swarm.acceptance_reference(0.0, 1.0), 0.0)
+
     def test_task_context_previews_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
@@ -593,6 +601,33 @@ class IgnobelPreregTests(unittest.TestCase):
         prepare = sys.modules["prepare"]
         self.assertEqual(prepare.delimiter('"a,b,c"\t"d"'), "\t")
         self.assertEqual(prepare.delimiter("a,b,c"), ",")
+
+    def test_interval_endpoints_are_trivial(self):
+        endpoints = ignobel.interval_endpoints
+        self.assertTrue(endpoints("onset (s)", "offset (s)"))
+        self.assertTrue(endpoints("Start time", "End time"))
+        self.assertTrue(endpoints("Minimum price", "Maximum price"))
+        self.assertFalse(endpoints("Start time", "End temperature"))
+        self.assertFalse(endpoints("Dryer age (years)", "Socks lost per month"))
+
+    def test_missing_value_tokens_keep_columns_numeric(self):
+        rows = ["Socks lost per month,Dryer age (years)"]
+        rows += [f"{'NA' if i % 9 == 0 else i % 7 + i % 3},{i % 7}" for i in range(200)]
+        with patch.object(self.prepare, "fetch", return_value="\n".join(rows) + "\n"):
+            result = self.run_prereg()
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        self.assertEqual(result["graded"]["n"], 200 - 23)
+
+    def test_invalid_registrations_reach_the_notebook_once(self):
+        self.run_prereg(dataset={"y": "Socks"})
+        self.run_prereg()
+        self.run_prereg()
+        studies = (self.log.parent / "ignobel_studies.jsonl").read_text().splitlines()
+        self.assertEqual(len(studies), 2)
+        out = io.StringIO()
+        with patch.dict(os.environ, {"EXA": "off"}), redirect_stdout(out):
+            ignobel_round_context.main(["--out-dir", str(self.log.parent)])
+        self.assertIn("usable columns", out.getvalue())
 
     def test_trivial_pair_scores_zero(self):
         graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]

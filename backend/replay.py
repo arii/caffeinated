@@ -139,7 +139,7 @@ def build_recording(native_manifest, native_events, entities, sample=True):
             value=number(p.get('metric_value'))
             if value is None:value=number(entity.get('metric_value'))
             row={'id':eid,'agent':a['name'] if a else aid or 'Unknown','agentId':aid,'round':event.get('round',0),'tick':tick,'kind':entity.get('kind','candidate'),'status':p.get('status','unknown'),'value':value,'commit':entity.get('commit'),'description':entity.get('description') or p.get('title') or '',
-                 'sources':entity.get('source_ids',[]),'effectSize':number(p.get('effect_size')),'pValue':number(p.get('p')),'reward':number(p.get('reward'))}
+                 'sources':entity.get('source_ids',[]),'effectSize':number(p.get('effect_size')),'pValue':number(p.get('p')),'reward':number(p.get('reward')),'study':entity.get('study')}
             result_by_id[eid]=row;s['results'].append(row)
             if a:a['lastResult']=row;a['counters']['experiments']+=1;a['counters']['keeps']+=int(row['status'] in {'keep','replicated'})
             if row['kind']=='baseline':s['reference']=value;best(value)
