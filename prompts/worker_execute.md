@@ -7,6 +7,8 @@ Hard constraints: {hard_rules}
 Own recent rejection: {own_feedback}
 If repairing, error: {problem}
 Previous proposal: {proposal}
+Leads and sources you may cite (use their lead_id and source ids):
+{recalled_leads}
 Current source:
 {candidate_source}
 Make the smallest exact edit implementing the assignment. Do not modify the evaluator, data, dependencies, or interface. Cite only sources actually provided. Return a single JSON object:
