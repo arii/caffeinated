@@ -281,9 +281,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     watermark = live_publish.watermark()
     frontier_path = out_dir / "viewer_frontier.json"
     frontier = (
-        json.loads(frontier_path.read_text())
-        if not final and frontier_path.exists()
-        else {"round": 0, "phase": "finish"}
+        json.loads(frontier_path.read_text()) if not final and frontier_path.exists() else None
     )
     assignments = read_jsonl(out_dir / "assignments.jsonl")
     ledger = read_jsonl(out_dir / "ledger.jsonl")
@@ -1032,7 +1030,11 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "live": not final,
         "converged": bool(run_artifact.get("converged", False)),
     }
-    if not final and run_artifact.get("status") not in {"finished", "stopped"}:
+    if (
+        not final
+        and frontier is not None
+        and run_artifact.get("status") not in {"finished", "stopped"}
+    ):
         boundary = (frontier["round"], run.phase_rank[frontier["phase"]])
 
         # Worker logs are stamped at append, not before network calls. The shared

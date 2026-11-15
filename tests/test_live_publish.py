@@ -18,6 +18,22 @@ import swarm
 
 
 class LiveExportTests(unittest.TestCase):
+    def test_live_export_without_frontier_preserves_all_nonfinal_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            artifact = json.loads((out / "run.json").read_text())
+            artifact["status"] = "running"
+            (out / "run.json").write_text(json.dumps(artifact))
+            live = export_viewer.publish(out, root / "live", final=False)
+            final = export_viewer.export(out, root / "final", final=True)
+            live_events = (live / "events.ndjson").read_bytes()
+            final_events = (final / "events.ndjson").read_bytes().splitlines(keepends=True)
+            self.assertEqual(live_events, b"".join(final_events[:-1]))
+            self.assertTrue(
+                any(json.loads(line)["round"] == 2 for line in live_events.splitlines())
+            )
+
     def test_artifact_copy_excludes_publisher_owned_viewer(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
