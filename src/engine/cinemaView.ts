@@ -4,6 +4,7 @@ import {CAPTION_SECONDS,CINEMA_DURATION,CINEMA_PHASES,cinemaPhaseAt,cinemaPlan,c
 import type {Recording} from './replay';
 import type {LabWorld} from './types';
 import proof from '../../data/pages/cinema.json';
+import intro from '../../data/pages/intro.json';
 
 export interface CinemaHost{world:LabWorld;renderer:THREE.WebGLRenderer;recording:Recording;seek(tick:number):void;updateWorld(seconds:number):void}
 type Pose={pos:THREE.Vector3;look:THREE.Vector3};
@@ -26,12 +27,12 @@ export function createCinema(host:CinemaHost){
  const root=document.createElement('div');root.id='cinema';root.setAttribute('aria-hidden','true');
  const replicatedAfter=p.replicated.filter(t=>t>p.snapTick).length;
  root.innerHTML=`<div class="cin-glow"></div><div class="cin-crimson"></div><svg class="cin-links" viewBox="0 0 1920 1080" preserveAspectRatio="none"></svg><div class="cin-tags"></div>
- <div class="cin-brand"><b>Artificial Scientist Swarm</b><span>Real run · Ig Nobel task</span></div>
+ <div class="cin-brand"><b>${esc(intro.authors.project)}</b><span>Real run · Ig Nobel task</span></div>
  <div class="cin-telemetry"><div class="cin-meter"><div class="row"><span class="lbl">Boredom</span><b class="val">0.00</b><i class="chip">EXPLOIT</i></div><div class="bar"><span></span><em style="left:70%"></em></div></div>
  <div class="cin-score"><div class="row"><span class="lbl">Replicated findings</span><b class="val">0</b></div><div class="chart"></div></div></div>
  <div class="cin-papers"></div>
  <div class="cin-burst"><b>New best</b><span>Replicated on both halves</span></div>
- <div class="cin-proof"><div class="kicker">This run</div><div class="stats">
+ <div class="cin-proof"><div class="credit"><b>${esc(intro.authors.project)}</b><span>${intro.authors.names.map(esc).join(' · ')}</span></div><div class="kicker">This run</div><div class="stats">
   <div><b>${Math.max(...p.boredom.map(b=>b.value)).toFixed(2)}</b><span>boredom at snap</span></div>
   <div><b>${p.boredAgents.length}</b><span>labs founded by boredom</span></div>
   <div><b>${replicatedAfter}</b><span>replicated after the snap</span></div>

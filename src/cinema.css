@@ -48,9 +48,12 @@ body.cinema ::-webkit-scrollbar{display:none}
 #cinema .cin-burst span{display:inline-block;margin-top:16px;font:700 24px/1 'DM Sans',sans-serif;letter-spacing:2px;text-transform:uppercase;color:#fff4d4;padding:10px 18px;border-radius:999px;background:#2a1d05b3;border:1px solid #ffd16688}
 #cinema .cin-caption{position:absolute;left:0;right:0;bottom:84px;text-align:center;opacity:0}
 #cinema .cin-caption span{display:inline-block;font:800 68px/1.05 Manrope,sans-serif;letter-spacing:-2px;padding:18px 34px;border-radius:16px;background:#060b10b8;text-shadow:0 3px 24px #000b}
-#cinema .cin-proof{position:absolute;inset:0;padding:110px 160px 0;background:#070d13f2;display:flex;flex-direction:column;align-items:center;gap:26px;opacity:0}
+#cinema .cin-proof{position:absolute;inset:0;padding:64px 160px 0;background:#070d13f2;display:flex;flex-direction:column;align-items:center;gap:26px;opacity:0}
 #cinema[data-phase=proof] .cin-proof{opacity:1}
 #cinema[data-phase=proof] .cin-telemetry,#cinema[data-phase=proof] .cin-brand{opacity:0}
+#cinema .cin-proof .credit{display:grid;gap:12px;text-align:center;margin-bottom:6px}
+#cinema .cin-proof .credit b{font:800 44px/1.1 Manrope,sans-serif;letter-spacing:-.8px}
+#cinema .cin-proof .credit span{font:600 22px/1 'DM Sans',sans-serif;letter-spacing:1px;color:#c7d3d6}
 #cinema .cin-proof .kicker{font:700 17px/1 'DM Sans',sans-serif;letter-spacing:3px;text-transform:uppercase;color:#9fb0b6}
 #cinema .cin-proof .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;width:100%}
 #cinema .cin-proof .stats div,#cinema .cin-proof .pilot div{padding:24px;border-radius:16px;background:#ffffff0b;border:1px solid #ffffff1f;text-align:center;display:grid;gap:10px}
