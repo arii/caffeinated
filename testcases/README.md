@@ -11,7 +11,7 @@ on the host.
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
 | `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
-| `ignobel_mini` | Replicable, Ig Nobel-like association in 8 real FiveThirtyEight surveys | `study.py` | loss ≈ 0.509 (gravy ↔ bread stuffing) | discovery-half brute-force scan, loss 0.3721 |
+| `ignobel_mini` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | loss ≈ 0.628 (gamblers smoke more, steak-risk survey) | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
@@ -43,31 +43,27 @@ generates context frames/actions and future actions for evaluation; hidden
 future frames stay in the trusted grader, while `run_candidate.py` supplies
 only public inputs to `world_model.py`.
 
-For Ig Nobel, `prepare.py` downloads 8 FiveThirtyEight surveys (CC BY 4.0) at a
-pinned commit, drops respondent IDs and free text, and splits rows by a fixed
-hash into a public discovery half (`data/`, `codebook.*`) and a hidden
-replication half (`.cache/replication/`). `study.py` prints one claim
-`{dataset, x, x_level, y, y_level, direction}`. The host rejects trivial pairs
-(same question, near-identical wording, two demographics), re-tests the claim on
-the replication half (Spearman, p < 0.01, matching sign), and scores the
-codebook wording of x and y, not the candidate's text, with the frozen judge in
-`judge.json`. Loss = 1 − min(1, |ρ_rep|/0.2) × Ig-Nobel-likeness. The judge is a
-logistic regression trained on real Ig Nobel rationales and winning-paper titles
-(Wikipedia revision 1385733309) against OpenAlex article titles. Rebuild it with
-`python3 testcases/_reference/build_ignobel_judge.py`. Reproduce the record
-with `python3 testcases/_reference/ignobel_reference.py`. The judge is a proxy
-for the committee, not the committee.
-
-Studies can also bring in new real data: a top-level `EXTRA_DATA = [url, ...]`
-literal in `study.py` (read with `ast`, never executed on the host) names up to
-three CSV/TSV files. `external.py` fetches each https URL only if it is on an
-open-data host (GitHub raw, Zenodo, figshare, OSF, Dryad, data.gov, Rdatasets,
-...) or appears in the run's Exa research log (`TASK_RESEARCH_LOG`), caps it at
-5 MB, freezes it in `.cache/raw`, drops id/row-number columns, and splits it like
-the surveys into `data/<id>.csv` + `data/<id>.codebook.json` and a hidden
-`.cache/replication/<id>.csv` (id = `x` + sha256(url)[:10]). The candidate still
-runs offline. `task.json`'s `scout` block points the swarm's Exa scouts at odd
-everyday phenomena and downloadable datasets instead of small-GPT training.
+For Ig Nobel, the editable file is a pre-registration (`prereg.json`), not
+code; nothing the candidate writes is executed. An agent acting as an expert in
+one field (`boredom_profile.json` vocab: field → study type) registers, before
+seeing any data: question, hypothesis, mechanism, at least two citations (Exa
+source ids or URLs from the run's research log `TASK_RESEARCH_LOG`, or vetted
+entries in `sources.json`), a real public CSV/TSV URL with the two column
+headers and levels, the direction, and the predicted |ρ|. `external.py`
+downloads the dataset once (https, open-data hosts or URLs the run's Exa
+research cites, ≤ 5 MB, frozen in `.cache/raw` with its sha256), and
+`evaluate.py` runs the registered Spearman test once on all rows (p < 0.005,
+matching sign). Each dataset gets one registered test per run, so the swarm
+cannot fish through a dataset's columns. Trivial pairs score 0. Loss =
+1 − confirmed × min(1, |ρ|/0.2) × (0.5 + 0.5 × calibration) ×
+Ig-Nobel-likeness, where calibration rewards predicting the effect size and
+the frozen judge (`judge.json`, logistic regression on real Ig Nobel rationales
+and winning-paper titles from Wikipedia revision 1385733309 vs OpenAlex
+titles; rebuild with `python3 testcases/_reference/build_ignobel_judge.py`)
+scores the dataset's own column wording, never the candidate's prose. The
+judge is a proxy for the committee, not the committee. `task.json`'s `scout`
+block points the swarm's Exa scouts at odd everyday phenomena and downloadable
+datasets instead of small-GPT training.
 
 ## Run the swarm on a task
 

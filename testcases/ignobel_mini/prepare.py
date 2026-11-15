@@ -1,12 +1,11 @@
-"""Download real FiveThirtyEight survey microdata and split each dataset in two.
+"""Download a real public CSV/TSV once, clean it, and split its rows in two.
 
-Sources are pinned to one commit of https://github.com/fivethirtyeight/data
-(CC BY 4.0). Every row goes to the public discovery half (data/<dataset>.csv,
-mounted for candidates) or the hidden replication half
-(.cache/replication/<dataset>.csv, read only by the trusted grader) by a fixed
-hash of its row number. Columns get short ids (v01, v02, ...) described in
-codebook.json, plus a compact codebook.txt for agent prompts. Free-text columns
-and respondent ids are dropped. evaluate.py runs this automatically on first use.
+Used by external.py for the datasets that pre-registrations name. Every row goes
+to data/<id>.csv or .cache/replication/<id>.csv by a fixed hash of its row
+number (the grader reads both; nothing here is shown to candidates). Columns
+get short ids (v01, v02, ...) described by the returned codebook entry; free
+text (> MAX_LEVELS distinct values), respondent ids and row numbers are dropped.
+Relative paths resolve against FiveThirtyEight's data repo at a pinned commit.
 """
 
 import csv
@@ -29,55 +28,6 @@ DEMOGRAPHIC = re.compile(
     r"Which of the following best describes your current occupation\?|"
     r"Which of the following best describes your current relationship status\?)$"
 )
-DATASETS = {
-    "flying_etiquette": {
-        "title": "FiveThirtyEight flying etiquette survey (2014)",
-        "files": ["flying-etiquette-survey/flying-etiquette.csv"],
-    },
-    "thanksgiving": {
-        "title": "FiveThirtyEight Thanksgiving dinner survey (2015)",
-        "files": ["thanksgiving-2015/thanksgiving-2015-poll-data.csv"],
-    },
-    "steak_risk": {
-        "title": "FiveThirtyEight steak and risk-taking survey (2014)",
-        "files": ["steak-survey/steak-risk-survey.csv"],
-    },
-    "sleeping_alone": {
-        "title": "FiveThirtyEight couples sleeping in separate beds survey (2014)",
-        "files": ["sleeping-alone-data/sleeping-alone-data.csv"],
-    },
-    "star_wars": {
-        "title": "FiveThirtyEight Star Wars fan survey (2014)",
-        "files": ["star-wars-survey/StarWars.csv"],
-    },
-    "earthquake": {
-        "title": "FiveThirtyEight earthquake worry survey (2015)",
-        "files": ["san-andreas/earthquake_data.csv"],
-    },
-    "comic_characters": {
-        "title": "FiveThirtyEight Marvel and DC wikia comic characters (2014)",
-        "files": ["comic-characters/marvel-wikia-data.csv", "comic-characters/dc-wikia-data.csv"],
-        "rename": {"Year": "YEAR"},
-        "source_column": "publisher wiki",
-        "fill": {"GSM": "No sexual or gender minority listed"},
-        "labels": {
-            "ID": "Character identity status",
-            "ALIGN": "Character alignment",
-            "EYE": "Character eye colour",
-            "HAIR": "Character hair colour",
-            "SEX": "Character sex",
-            "GSM": "Character sexual or gender minority status",
-            "ALIVE": "Character alive or deceased",
-            "APPEARANCES": "Number of comic book appearances",
-            "YEAR": "Year of first appearance",
-        },
-    },
-    "bob_ross": {
-        "title": "FiveThirtyEight elements in Bob Ross paintings, The Joy of Painting (1983-1994)",
-        "files": ["bob-ross/elements-by-episode.csv"],
-        "label_prefix": "Painting features: ",
-    },
-}
 
 
 def clean(text):
@@ -224,31 +174,3 @@ def build(name, spec):
         "n_discovery": len(discovery),
         "variables": variables,
     }
-
-
-def codebook_text(codebook):
-    lines = [
-        "Codebook: real FiveThirtyEight survey data (CC BY 4.0). Each dataset's discovery half is data/<dataset>.csv;",
-        "header = variable ids. Blank cell = missing. [D] = demographic, g= shared question group.",
-    ]
-    for name, dataset in codebook.items():
-        lines.append(f"\n## {name}: {dataset['title']} ({dataset['n_discovery']} discovery rows)")
-        for vid, var in dataset["variables"].items():
-            levels = "numeric" if var["kind"] == "numeric" else " | ".join(var["levels"])
-            if len(levels) > 160:
-                levels = levels[:157] + "..."
-            flag = " [D]" if var["demographic"] else ""
-            group = f" g={var['group'][:40]}" if var["group"] != var["label"] and not var["label"].startswith("Painting") else ""
-            lines.append(f"{vid}{flag}: {var['label'][:150]}{group} :: {levels}")
-    return "\n".join(lines) + "\n"
-
-
-def main():
-    codebook = {name: build(name, spec) for name, spec in DATASETS.items()}
-    (HERE / "codebook.json").write_text(json.dumps(codebook, indent=1) + "\n", encoding="utf-8")
-    (HERE / "codebook.txt").write_text(codebook_text(codebook), encoding="utf-8")
-    print(f"prepared {len(codebook)} datasets, {sum(len(d['variables']) for d in codebook.values())} variables")
-
-
-if __name__ == "__main__":
-    main()

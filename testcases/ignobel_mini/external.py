@@ -1,14 +1,11 @@
-"""Trusted host-side intake of new public datasets that a study asks for.
+"""Trusted host-side intake of the real public dataset a pre-registration names.
 
-A study lists real data URLs in a top-level ``EXTRA_DATA = [...]`` literal
-(read with ``ast``; the candidate is never executed here). For each https URL
-on an open-data host, or one that the swarm's own Exa research log cites, the
-host downloads the file once, freezes it in .cache/raw, and splits it exactly
-like the FiveThirtyEight surveys: data/<id>.csv (discovery, visible) plus
-.cache/replication/<id>.csv (hidden). data/<id>.codebook.json describes it.
+The host fetches an https URL only if it is on an open-data host or appears in
+this run's Exa research log, caps it at prepare.MAX_BYTES, freezes it in
+.cache/raw (so a run always tests the same bytes), and stores the cleaned rows
+plus a codebook entry (data/<id>.codebook.json, with the content sha256).
 """
 
-import ast
 import hashlib
 import ipaddress
 import json
@@ -38,27 +35,6 @@ OPEN_DATA_HOSTS = (
     "data.cityofnewyork.us",
     "data.world",
 )
-
-
-def requested_urls(source):
-    """URLs from a top-level EXTRA_DATA list literal; [] if absent or malformed."""
-    try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return []
-    for node in tree.body:
-        if (
-            isinstance(node, ast.Assign)
-            and any(isinstance(t, ast.Name) and t.id == "EXTRA_DATA" for t in node.targets)
-        ):
-            try:
-                value = ast.literal_eval(node.value)
-            except ValueError:
-                return []
-            if isinstance(value, (list, tuple)):
-                urls = [v.strip() for v in value if isinstance(v, str) and v.strip()]
-                return list(dict.fromkeys(urls))[:MAX_DATASETS]
-    return []
 
 
 def dataset_id(url):
@@ -122,17 +98,3 @@ def _build(url, name, entry_path):
     temporary.write_text(json.dumps(entry, indent=1) + "\n", encoding="utf-8")
     temporary.replace(entry_path)
     return entry
-
-
-def intake(source, task_dir=HERE, research_log=None):
-    """Fetch every EXTRA_DATA URL; return ({id: entry}, [log lines])."""
-    datasets, notes = {}, []
-    for url in requested_urls(source):
-        try:
-            name, entry = ensure(url, task_dir, research_log)
-        except Exception as error:  # network, parse, policy: skip this URL only
-            notes.append(f"extra_data: {url} -> skipped ({type(error).__name__}: {error})")
-            continue
-        datasets[name] = entry
-        notes.append(f"extra_data: {url} -> {name} ({entry['n_discovery']} discovery rows, {len(entry['variables'])} variables)")
-    return datasets, notes

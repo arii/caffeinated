@@ -1,10 +1,10 @@
 {
   "domain": "testcase-ignobel-mini",
-  "version": 1,
+  "version": 2,
   "direction": "min",
   "objective": "loss",
   "eps": 0.02,
-  "eps_note": "loss is 1 - strength * likeness on [0, 1]; 0.02 is a visibly funnier or stronger claim",
+  "eps_note": "loss is 1 - confirmed * strength * calibration * likeness on [0, 1]; 0.02 is a visibly stronger, better-predicted or funnier confirmed finding",
   "k": 5,
   "knn": 3,
   "patience": 5,
@@ -21,29 +21,77 @@
     "baseline": [
       "none"
     ],
-    "data": [
-      "dataset",
-      "variable",
-      "level",
-      "missing"
+    "food_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
     ],
-    "statistics": [
-      "screen",
-      "effect_size",
-      "multiple_comparisons",
-      "split_half"
+    "sleep_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
     ],
-    "framing": [
-      "everyday_object",
-      "absurd_pairing",
-      "body",
-      "food",
-      "etiquette"
+    "animal_behavior": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
     ],
-    "search": [
-      "hypothesis",
-      "brute_force",
-      "literature"
+    "acoustics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "behavioral_economics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "transport": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "medicine": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "sports_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "psychology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "everyday_physics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "linguistics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "ecology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
     ]
   },
   "params": {
@@ -56,9 +104,9 @@
     "crash"
   ],
   "directives": {
-    "EXPLOIT": "Keep the dataset; try a funnier pairing of variables whose discovery-half effect is strong (|rho| >= 0.2, p far below 0.01).",
-    "BOREDOM_SNAP": "Switch dataset or question family; look up real Ig Nobel winners (Exa) for the kind of everyday absurdity that wins, and check past.dev for pairings that failed to replicate.",
-    "PARADIGM_BREAKOUT": "Re-read the codebook from scratch; screen every non-trivial pair on the discovery half and correct for multiple comparisons before choosing.",
-    "CONVERGED": "Re-check the claim on a random split of the discovery half to confirm it is stable."
+    "EXPLOIT": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "BOREDOM_SNAP": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "PARADIGM_BREAKOUT": "Pick a study type nobody has used (resolve two conflicting published findings, or test a published effect in a new population) and find a dataset that can answer it.",
+    "CONVERGED": "Re-register the best finding's mechanism on an independent real dataset to check that it holds elsewhere."
   }
 }

@@ -406,7 +406,7 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
 
 
-class IgnobelExternalDataTests(unittest.TestCase):
+class IgnobelPreregTests(unittest.TestCase):
     URL = "https://raw.githubusercontent.com/example/odd/main/socks.csv"
 
     def setUp(self):
@@ -417,19 +417,104 @@ class IgnobelExternalDataTests(unittest.TestCase):
         self.external, self.prepare = external, prepare
         self.tmp = tempfile.TemporaryDirectory()
         self.task_dir = Path(self.tmp.name)
-        rows = ["rownames,socks_lost,dryer_age,colour"]
+        for name in ("judge.json", "boredom_profile.json", "sources.json"):
+            shutil.copy(TESTCASES / "ignobel_mini" / name, self.task_dir / name)
+        rows = ["rownames,Socks lost per month,Dryer age (years),Favourite colour"]
         for i in range(200):
             rows.append(f"{i},{i % 7 + i % 3},{i % 7},{'red' if i % 2 else 'blue'}")
         self.csv = "\n".join(rows) + "\n"
+        self.log = self.task_dir / "run" / "research_log.jsonl"
+        self.log.parent.mkdir()
+        self.log.write_text(
+            "".join(
+                json.dumps({"type": "source", "id": f"S{k}", "url": f"https://doi.org/10.1/socks{k}"}) + "\n"
+                for k in (1, 2)
+            )
+        )
+        patcher = patch.object(prepare, "fetch", return_value=self.csv)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_requested_urls_reads_literal_only(self):
-        source = f"EXTRA_DATA = ['{self.URL}', '{self.URL}']\nEXTRA_DATA_2 = ['x']\n"
-        self.assertEqual(self.external.requested_urls(source), [self.URL])
-        self.assertEqual(self.external.requested_urls("EXTRA_DATA = make()\n"), [])
-        self.assertEqual(self.external.requested_urls("not python ("), [])
+    def prereg(self, **overrides):
+        dataset = {"url": self.URL, "x": "Dryer age (years)", "y": "Socks lost per month"}
+        dataset.update(overrides.pop("dataset", {}))
+        base = {
+            "field": "everyday_physics",
+            "study_type": "untested_prediction",
+            "question": "Do older dryers eat more socks?",
+            "hypothesis": "Sock loss rises with dryer age.",
+            "mechanism": "Worn drum seals open gaps that trap small garments.",
+            "citations": ["S1", "S2"],
+            "dataset": dataset,
+            "direction": "positive",
+            "predicted_rho": 0.6,
+        }
+        return {**base, **overrides}
+
+    def run_prereg(self, log=True, **overrides):
+        return ignobel.evaluate_source(
+            json.dumps(self.prereg(**overrides)),
+            task_dir=self.task_dir,
+            research_log=str(self.log) if log else None,
+        )
+
+    def test_confirmed_registration_scores(self):
+        result = self.run_prereg()
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        graded = result["graded"]
+        self.assertTrue(graded["confirmed"], graded)
+        self.assertGreater(graded["score"], 0)
+        self.assertEqual(graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"])
+        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', graded["headline"])
+        self.assertIn("candidate_executed: false", result["stdout"])
+
+    def test_wrong_direction_and_poor_calibration(self):
+        registry = self.log.parent / "ignobel_registry.json"
+        self.assertFalse(self.run_prereg(direction="negative")["graded"]["confirmed"])
+        registry.unlink()
+        sharp = self.run_prereg()["graded"]
+        vague = self.run_prereg(predicted_rho=0.05)["graded"]
+        self.assertLess(vague["calibration"], sharp["calibration"])
+        self.assertLess(vague["score"], sharp["score"])
+
+    def test_citations_must_come_from_research_or_vetted_sources(self):
+        for citations in (["S1"], ["S1", "S9"], ["S1", "https://doi.org/10.1/made-up"], ["S1", self.URL]):
+            with self.subTest(citations=citations):
+                graded = self.run_prereg(citations=citations)["graded"]
+                self.assertEqual(graded["score"], 0.0)
+                self.assertIn("citations", graded["rejected"])
+        vetted = ["https://doi.org/10.1002/bdm.414", "https://doi.org/10.1046/j.1360-0443.2002.00163.x"]
+        self.assertGreater(self.run_prereg(log=False, citations=vetted)["graded"]["score"], 0)
+
+    def test_one_registered_test_per_dataset_per_run(self):
+        self.assertGreater(self.run_prereg()["graded"]["score"], 0)
+        self.assertGreater(self.run_prereg()["graded"]["score"], 0)
+        other = self.run_prereg(dataset={"x": "Favourite colour", "x_level": "red"})["graded"]
+        self.assertEqual(other["score"], 0.0)
+        self.assertIn("one confirmatory test per dataset", other["rejected"])
+
+    def test_unknown_column_lists_usable_columns(self):
+        result = self.run_prereg(dataset={"y": "Socks"})
+        self.assertEqual(result["status"], "crash")
+        self.assertEqual(result["reason"], "invalid_output")
+        self.assertIn("Socks lost per month", result["stderr"])
+        self.assertNotIn("rownames", result["stderr"])
+
+    def test_invalid_registrations_fail_closed(self):
+        for overrides in ({"field": "astrology"}, {"study_type": "fishing"}, {"predicted_rho": 0}, {"hypothesis": ""}):
+            with self.subTest(overrides=overrides):
+                result = self.run_prereg(**overrides)
+                self.assertEqual((result["status"], result["reason"]), ("crash", "invalid_output"))
+        result = ignobel.evaluate_source("print('the gravy did it')", task_dir=self.task_dir)
+        self.assertEqual((result["status"], result["score"]), ("crash", 0.0))
+
+    def test_trivial_pair_scores_zero(self):
+        graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("same variable", graded["rejected"])
 
     def test_url_policy(self):
         check = self.external.check_url
@@ -442,134 +527,25 @@ class IgnobelExternalDataTests(unittest.TestCase):
         ):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 check(url, research_log=self.task_dir / "missing.jsonl")
-        log = self.task_dir / "research_log.jsonl"
+        log = self.task_dir / "cited.jsonl"
         log.write_text(json.dumps({"url": "https://lab.example.org/raw/odd.csv"}) + "\n")
         check("https://lab.example.org/raw/odd.csv", research_log=log)
 
-    def test_intake_splits_and_hides_replication(self):
-        with patch.object(self.prepare, "fetch", return_value=self.csv):
-            datasets, notes = self.external.intake(
-                f"EXTRA_DATA = ['{self.URL}']\n", self.task_dir
-            )
-        name = self.external.dataset_id(self.URL)
-        self.assertEqual(list(datasets), [name], notes)
-        entry = datasets[name]
-        labels = {v["label"] for v in entry["variables"].values()}
-        self.assertEqual(labels, {"socks_lost", "dryer_age", "colour"})
-        discovery = (self.task_dir / "data" / f"{name}.csv").read_text().count("\n") - 1
-        hidden = (self.task_dir / ".cache" / "replication" / f"{name}.csv").read_text().count("\n") - 1
-        self.assertEqual(discovery + hidden, 200)
-        self.assertEqual(entry["n_discovery"], discovery)
-        self.assertTrue((self.task_dir / "data" / f"{name}.codebook.json").is_file())
-        ids = {v["label"]: k for k, v in entry["variables"].items()}
-        graded = ignobel.score_claim(
-            {"dataset": name, "x": ids["dryer_age"], "y": ids["socks_lost"], "direction": "positive"},
-            self.task_dir,
-            codebook={name: entry},
-            judge=ignobel.load_judge(),
-        )
-        self.assertTrue(graded["replicated"])
-        self.assertIn('higher "dryer_age" goes with higher "socks_lost"', graded["headline"])
-
-    def test_intake_skips_rejected_urls(self):
-        datasets, notes = self.external.intake(
-            "EXTRA_DATA = ['https://evil.example.com/a.csv']\n", self.task_dir
-        )
-        self.assertEqual(datasets, {})
-        self.assertIn("skipped", notes[0])
+    def test_dataset_is_frozen_and_split_deterministically(self):
+        name, entry = self.external.ensure(self.URL, self.task_dir)
+        first = (self.task_dir / entry["file"]).read_text()
+        hidden = (self.task_dir / ".cache" / "replication" / f"{name}.csv").read_text()
+        self.assertEqual(first.count("\n") + hidden.count("\n") - 2, 200)
+        self.assertEqual(self.external.ensure(self.URL, self.task_dir)[1], entry)
+        self.assertEqual({v["label"] for v in entry["variables"].values()}, {"Socks lost per month", "Dryer age (years)", "Favourite colour"})
 
 
-class IgnobelTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        task_dir = TESTCASES / "ignobel_mini"
-        sandbox.prepare_task(
-            task_dir,
-            json.loads((task_dir / "task.json").read_text())["context_files"],
-            required_files=("codebook.json", ".cache/replication/thanksgiving.csv"),
-        )
-
-    def claim(self, **overrides):
-        base = {
-            "dataset": "thanksgiving",
-            "x": "v06",
-            "x_level": "Yes",
-            "y": "v04",
-            "y_level": "Bread-based",
-            "direction": "positive",
-        }
-        return {**base, **overrides}
-
-    def test_split_is_disjoint_and_deterministic(self):
-        task_dir = TESTCASES / "ignobel_mini"
-        codebook = ignobel.load_codebook(task_dir)
-        for name, dataset in codebook.items():
-            with self.subTest(dataset=name):
-                discovery = (task_dir / dataset["file"]).read_text(encoding="utf-8")
-                replication = (task_dir / ".cache" / "replication" / f"{name}.csv").read_text(
-                    encoding="utf-8"
-                )
-                self.assertEqual(dataset["n_discovery"], discovery.count("\n") - 1)
-                self.assertGreater(replication.count("\n"), 30)
-                self.assertNotEqual(discovery, replication)
-
-    def test_replicated_claim_scores_and_wrong_direction_does_not(self):
-        graded = ignobel.score_claim(self.claim())
-        self.assertTrue(graded["replicated"])
-        self.assertGreater(graded["score"], 0)
-        self.assertIn("gravy", graded["headline"])
-        self.assertEqual(ignobel.score_claim(self.claim(direction="negative"))["score"], 0.0)
-
-    def test_non_replicating_claim_scores_zero(self):
-        graded = ignobel.score_claim(self.claim(y="v05", y_level="Homemade"))
-        self.assertFalse(graded["replicated"])
-        self.assertEqual(graded["score"], 0.0)
-
-    def test_trivial_claims_are_rejected(self):
-        same_question = self.claim(x="v14", x_level="Macaroni and cheese", y="v15", y_level=None)
-        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
-        same_question["y_level"] = codebook["thanksgiving"]["variables"]["v15"]["levels"][-1]
-        graded = ignobel.score_claim(same_question)
-        self.assertIn("same survey question", graded["rejected"])
-        self.assertEqual(graded["score"], 0.0)
-        self.assertIn("same variable", ignobel.score_claim(self.claim(y="v06", y_level="No"))["rejected"])
-
-    def test_shared_label_prefix_is_not_overlap(self):
-        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
-        ids = {
-            v["label"].split(": ")[1].split()[0]: k
-            for k, v in codebook["bob_ross"]["variables"].items()
-        }
-        claim = {"dataset": "bob_ross", "x": ids["CONIFER"], "y": ids["MOUNTAIN"], "direction": "positive"}
-        graded = ignobel.score_claim(claim)
-        self.assertIsNone(graded["rejected"])
-        self.assertTrue(graded["replicated"])
-
-    def test_single_checkbox_question_has_unselected_level(self):
-        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
-        parade = [
-            v for v in codebook["thanksgiving"]["variables"].values() if "Macy" in v["label"]
-        ]
-        self.assertEqual(len(parade), 1)
-        self.assertIn("(not selected)", parade[0]["levels"])
-
-    def test_unnamed_survey_columns_keep_their_own_values(self):
-        variables = ignobel.load_codebook(TESTCASES / "ignobel_mini")["star_wars"]["variables"]
-        seen = [v for v in variables.values() if "films have you seen" in v["label"]]
-        self.assertEqual(len(seen), 6)
-        for variable in seen:
-            self.assertEqual(variable["levels"][0], "(not selected)")
-            self.assertIn(variable["levels"][1], variable["label"])
-
-    def test_malformed_claims_raise(self):
-        for claim in (
-            self.claim(dataset="nope"),
-            self.claim(x="v999"),
-            self.claim(x_level="Maybe"),
-            self.claim(direction="up"),
-        ):
-            with self.subTest(claim=claim), self.assertRaises(ValueError):
-                ignobel.score_claim(claim)
+class IgnobelTaskTests(unittest.TestCase):
+    def test_fields_match_profile(self):
+        fields = ignobel.load_fields()
+        self.assertIn("food_science", fields)
+        prereg = json.loads((TESTCASES / "ignobel_mini" / "prereg.json").read_text())
+        self.assertIn(prereg["study_type"], fields[prereg["field"]])
 
     def test_judge_rates_ignobel_rationales_above_ordinary_titles(self):
         judge = ignobel.load_judge(TESTCASES / "ignobel_mini")
@@ -577,46 +553,13 @@ class IgnobelTests(unittest.TestCase):
         dull = ignobel.likeness("a multicenter randomized trial of statin therapy outcomes", judge)
         self.assertGreater(funny, dull)
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
-    def test_ignobel_baseline_score_is_unchanged(self):
+    def test_ignobel_baseline_registration_confirms(self):
         result = evaluate("ignobel_mini")
-        values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
+        values = dict(re.findall(r"^([\w_ ]+): (.+)$", result.stdout, re.M))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertAlmostEqual(float(values["loss"]), 0.5089, places=3)
-        self.assertEqual(values["replicated"], "true")
-        self.assertEqual(values["beats_reference"], "false")
-        self.assertEqual(values["network_isolated"], "true")
-
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
-    def test_ignobel_candidate_cannot_read_replication_half_or_network(self):
-        task_dir = TESTCASES / "ignobel_mini"
-        hidden = task_dir / ".cache" / "replication" / "thanksgiving.csv"
-        source = f"""
-import json, os, socket, sys
-paths = [".cache/replication/thanksgiving.csv", {str(hidden)!r}, "evaluate.py", "judge.json"]
-try:
-    socket.create_connection(("1.1.1.1", 80), timeout=1)
-    blocked = False
-except OSError:
-    blocked = True
-probe = {{"existing": [p for p in paths if os.path.exists(p)], "network_blocked": blocked}}
-print("ISOLATION=" + json.dumps(probe), file=sys.stderr)
-print(json.dumps({{"dataset": "thanksgiving", "x": "v06", "x_level": "Yes", "y": "v04",
-                  "y_level": "Bread-based", "direction": "positive"}}))
-"""
-        result = task_evaluation("ignobel_mini", source)
-        probe = json.loads(result["stderr"].split("ISOLATION=", 1)[1])
-        self.assertEqual(result["status"], "ok")
-        self.assertEqual(probe["existing"], [])
-        self.assertTrue(probe["network_blocked"])
-        self.assertTrue(hidden.exists())
-
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
-    def test_ignobel_rejects_unparseable_claim(self):
-        result = task_evaluation("ignobel_mini", "print('the gravy did it')\n")
-        self.assertEqual(result["status"], "crash")
-        self.assertEqual(result["reason"], "invalid_output")
-        self.assertEqual(result["score"], 0.0)
+        self.assertAlmostEqual(float(values["loss"]), 0.6280, places=3)
+        self.assertEqual(values["confirmed"], "true")
+        self.assertEqual(values["citations"], "2 verified")
 
 
 if __name__ == "__main__":

@@ -1,23 +1,33 @@
-"""Trusted grader for the Ig Nobel discovery task on real FiveThirtyEight survey data.
+"""Trusted grader for the Ig Nobel pre-registered expert-study task.
 
-The candidate (study.py) sees only the discovery half of each dataset and prints
-one claim. The host then
-1. rejects trivial claims (same variable, same question group, near-identical
-   wording, or demographics-only pairs);
-2. re-tests the claimed association on the hidden replication half
-   (Spearman rho, two-sided p < ALPHA, sign must match the claimed direction);
-3. scores the codebook wording of the two variables (never the candidate's own
-   text) with a frozen Ig Nobel-likeness judge trained on real Ig Nobel prize
-   rationales and winning-paper titles vs. ordinary OpenAlex paper titles.
+The candidate file is prereg.json: a pre-registration written by a domain
+expert BEFORE any data is seen. Candidate code is never executed. The host
+1. checks the registration (field, question, hypothesis, mechanism, a real
+   public dataset URL, the two columns, direction, predicted effect size);
+2. verifies every citation: at least MIN_CITATIONS distinct sources, each an
+   Exa source id or URL from this run's research log (TASK_RESEARCH_LOG) or a
+   pre-vetted entry in sources.json;
+3. downloads the dataset once (external.py: open-data hosts or URLs the run's
+   Exa research cites), freezes it, and allows ONE registered test per dataset
+   per run (later registrations on the same dataset score 0);
+4. runs the registered test once on all rows (Spearman rho, two-sided
+   p < ALPHA, sign must match), rejecting trivial pairs;
+5. scores the dataset's own column wording, never the candidate's prose, with
+   a frozen Ig Nobel-likeness judge trained on real Ig Nobel prize rationales
+   and winning-paper titles vs. ordinary OpenAlex paper titles.
 
-score = replicated * min(1, |rho_replication| / RHO_FULL) * ignobel_likeness
+calibration = min(|rho|, predicted) / max(|rho|, predicted)
+score = confirmed * min(1, |rho| / RHO_FULL) * (0.5 + 0.5 * calibration) * ignobel_likeness
 loss  = 1 - score
 """
 
 import csv
+import hashlib
 import json
 import math
+import os
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -27,27 +37,28 @@ for path in (ROOT, HERE):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from testcases import sandbox
 from judge_text import likeness, tokens
 from stats import spearman
 import external
 
-TIMEOUT_S = 120
-ALPHA = 0.01
+ALPHA = 0.005
 RHO_FULL = 0.2
 MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
-RECORD_LOSS = 0.3721
-CANDIDATE_INPUTS = ("codebook.json", "codebook.txt", "data")
+MIN_CITATIONS = 2
+MAX_TEXT = 600
+RECORD_LOSS = None
+TEXT_FIELDS = ("question", "hypothesis", "mechanism")
 
 
 def load_judge(task_dir=HERE):
     return json.loads((Path(task_dir) / "judge.json").read_text(encoding="utf-8"))
 
 
-def load_codebook(task_dir=HERE):
-    return json.loads((Path(task_dir) / "codebook.json").read_text(encoding="utf-8"))
+def load_fields(task_dir=HERE):
+    profile = json.loads((Path(task_dir) / "boredom_profile.json").read_text(encoding="utf-8"))
+    return {field: methods for field, methods in profile["vocab"].items() if field != "baseline"}
 
 
 def read_rows(path):
@@ -140,123 +151,217 @@ def association(rows, claim, sides):
     return len(pairs), rho, p, None
 
 
-def score_claim(claim, task_dir=HERE, codebook=None, judge=None, replication=None):
-    """Grade a claim dict against the hidden replication half. Raises ValueError if malformed."""
+def parse_prereg(source, fields):
+    prereg = json.loads(source)
+    if not isinstance(prereg, dict):
+        raise ValueError("prereg.json must be a JSON object")
+    if prereg.get("field") not in fields:
+        raise ValueError(f"field must be one of {sorted(fields)}")
+    if prereg.get("study_type") not in fields[prereg["field"]]:
+        raise ValueError(f"study_type must be one of {fields[prereg['field']]}")
+    for key in TEXT_FIELDS:
+        value = prereg.get(key)
+        if not isinstance(value, str) or not value.strip() or len(value) > MAX_TEXT:
+            raise ValueError(f"{key} must be a non-empty string of at most {MAX_TEXT} characters")
+    citations = prereg.get("citations")
+    if not isinstance(citations, list) or any(not isinstance(c, str) or not c.strip() for c in citations):
+        raise ValueError("citations must be a list of Exa source ids (S<k>) or URLs")
+    dataset = prereg.get("dataset")
+    if not isinstance(dataset, dict) or not isinstance(dataset.get("url"), str):
+        raise ValueError("dataset must be an object with a url")
+    for axis in ("x", "y"):
+        if not isinstance(dataset.get(axis), str) or not dataset[axis].strip():
+            raise ValueError(f"dataset.{axis} must name a column")
+        level = dataset.get(f"{axis}_level")
+        if level is not None and not isinstance(level, str):
+            raise ValueError(f"dataset.{axis}_level must be a string or omitted")
+    if prereg.get("direction") not in ("positive", "negative"):
+        raise ValueError("direction must be 'positive' or 'negative'")
+    predicted = prereg.get("predicted_rho")
+    if isinstance(predicted, bool) or not isinstance(predicted, (int, float)) or not 0 < predicted <= 1:
+        raise ValueError("predicted_rho must be a number in (0, 1]")
+    return prereg
+
+
+def research_sources(research_log):
+    """(Exa source id -> url, full log text) for this run, or ({}, "") without a log."""
+    path = Path(research_log) if research_log else None
+    if not path or not path.is_file():
+        return {}, ""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    ids = {}
+    for line in text.splitlines():
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and record.get("type") == "source" and record.get("id"):
+            ids[str(record["id"])] = str(record.get("url") or "")
+    return ids, text
+
+
+def check_citations(citations, dataset_url, task_dir, research_log):
+    vetted = json.loads((Path(task_dir) / "sources.json").read_text(encoding="utf-8"))
+    vetted_urls = {source["url"] for source in vetted}
+    ids, text = research_sources(research_log)
+    resolved, problems = [], []
+    for citation in dict.fromkeys(c.strip() for c in citations):
+        if re.fullmatch(r"S\d+", citation):
+            url = ids.get(citation)
+            if not url:
+                problems.append(f"{citation} is not a source in this run's research log")
+                continue
+        else:
+            url = citation
+            if url not in vetted_urls and not (url.startswith("https://") and url in text):
+                problems.append(f"{url} was not found by this run's research or in sources.json")
+                continue
+        if url == dataset_url:
+            problems.append("the dataset itself is not a citation")
+            continue
+        resolved.append(url)
+    resolved = list(dict.fromkeys(resolved))
+    if len(resolved) < MIN_CITATIONS:
+        problems.append(f"needs at least {MIN_CITATIONS} distinct verified citations, got {len(resolved)}")
+    return resolved, problems
+
+
+def column(entry, name):
+    wanted = external.prepare.clean(name).casefold()
+    matches = [vid for vid, v in entry["variables"].items() if v["label"].casefold() == wanted]
+    if len(matches) != 1:
+        labels = "; ".join(v["label"][:60] for v in entry["variables"].values())
+        raise ValueError(f"column {name!r} not found; usable columns: {labels}")
+    return matches[0]
+
+
+def test_hash(prereg):
+    test = {key: prereg["dataset"].get(key) for key in ("url", "x", "x_level", "y", "y_level")}
+    test["direction"] = prereg["direction"]
+    return hashlib.sha256(json.dumps(test, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def claim_registry(research_log, name, digest):
+    """One registered test per dataset per run; None if allowed, else the reason."""
+    if not research_log:
+        return None
+    path = Path(research_log).parent / "ignobel_registry.json"
+    registry = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    previous = registry.get(name)
+    if previous is not None and previous != digest:
+        return "dataset already used by another registered test in this run (one confirmatory test per dataset)"
+    registry[name] = digest
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(registry, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
+    return None
+
+
+def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     task_dir = Path(task_dir)
-    codebook = codebook or load_codebook(task_dir)
     judge = judge or load_judge(task_dir)
-    sides, trivial = check_claim(claim, codebook)
-    dataset = codebook[claim["dataset"]]
+    url = prereg["dataset"]["url"].strip()
+    citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
+    result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
+    if problems:
+        result["rejected"] = "citations: " + "; ".join(problems)
+        return {**result, "score": 0.0}
+    try:
+        name, entry = external.ensure(url, task_dir, research_log)
+    except Exception as error:
+        result["rejected"] = f"dataset unavailable: {type(error).__name__}: {error}"
+        return {**result, "score": 0.0}
+    data = prereg["dataset"]
+    claim = {
+        "dataset": name,
+        "x": column(entry, data["x"]),
+        "x_level": data.get("x_level"),
+        "y": column(entry, data["y"]),
+        "y_level": data.get("y_level"),
+        "direction": prereg["direction"],
+    }
+    sides, trivial = check_claim(claim, {name: entry})
     (x, x_level), (y, y_level) = sides
+    rows = read_rows(task_dir / entry["file"]) + read_rows(task_dir / ".cache" / "replication" / f"{name}.csv")
+    n, rho, p, problem = association(rows, claim, sides)
+    rejected = trivial or problem or claim_registry(research_log, name, test_hash(prereg))
+    sign = 1 if prereg["direction"] == "positive" else -1
+    confirmed = rejected is None and p < ALPHA and rho * sign > 0
+    predicted = float(prereg["predicted_rho"])
+    calibration = min(abs(rho), predicted) / max(abs(rho), predicted) if rho else 0.0
     funny = likeness(f"{side_text(x, x_level)} {side_text(y, y_level)}", judge)
-    if replication is None:
-        replication = read_rows(task_dir / ".cache" / "replication" / f"{claim['dataset']}.csv")
-    discovery = read_rows(task_dir / dataset["file"])
-    _, rho_d, p_d, _ = association(discovery, claim, sides)
-    n, rho, p, problem = association(replication, claim, sides)
-    sign = 1 if claim["direction"] == "positive" else -1
-    replicated = trivial is None and problem is None and p < ALPHA and rho * sign > 0
     strength = min(1.0, abs(rho) / RHO_FULL)
-    score = strength * funny if replicated else 0.0
+    score = strength * (0.5 + 0.5 * calibration) * funny if confirmed else 0.0
     return {
-        "headline": headline(dataset, x, x_level, y, y_level, claim["direction"]),
-        "rejected": trivial or problem,
-        "n_replication": n,
-        "rho_discovery": rho_d,
-        "p_discovery": p_d,
-        "rho_replication": rho,
-        "p_replication": p,
-        "replicated": replicated,
+        **result,
+        "headline": headline(entry, x, x_level, y, y_level, prereg["direction"]),
+        "rejected": rejected,
+        "n": n,
+        "rho": rho,
+        "p": p,
+        "predicted_rho": predicted,
+        "calibration": calibration,
+        "confirmed": confirmed,
         "strength": strength,
         "ignobel_likeness": funny,
         "score": score,
+        "sha256": entry.get("sha256", ""),
     }
 
 
-def evaluate_source(source, task_dir=HERE, timeout_s=None):
+def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     task_dir = Path(task_dir).resolve()
+    research_log = research_log or os.environ.get("TASK_RESEARCH_LOG")
     started = time.time()
-    config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
-    status, reason, diagnostics, candidate_stderr = "crash", None, "", ""
-    network_isolated = False
-    graded = None
-    notes = []
+    status, reason, diagnostics, graded, prereg = "crash", None, "", None, None
     try:
-        sandbox.prepare_task(
-            task_dir,
-            config.get("context_files", []),
-            required_files=("codebook.json", ".cache/replication/thanksgiving.csv"),
-        )
-        extra, notes = external.intake(source, task_dir)
-        run = sandbox.run_candidate(
-            task_dir,
-            config["editable"],
-            source,
-            context_files=CANDIDATE_INPUTS,
-            timeout_s=TIMEOUT_S if timeout_s is None else timeout_s,
-        )
-        network_isolated = run.network_isolated
-        candidate_stderr = run.stderr
-        failure = sandbox.candidate_failure(run)
-        if failure:
-            reason, diagnostics = failure
-        else:
-            try:
-                lines = [line for line in run.stdout.splitlines() if line.strip()]
-                if not lines:
-                    raise ValueError("study.py printed nothing")
-                codebook = {**load_codebook(task_dir), **extra}
-                graded = score_claim(json.loads(lines[-1]), task_dir, codebook=codebook)
-            except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
-                reason, diagnostics = "invalid_output", f"{type(error).__name__}: {error}"
-            else:
-                status = "ok"
-    except sandbox.SandboxUnavailable as error:
-        reason, diagnostics = "sandbox_unavailable", str(error)
+        prereg = parse_prereg(source, load_fields(task_dir))
+        graded = grade_prereg(prereg, task_dir, research_log)
+        status = "ok"
+    except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
+        reason, diagnostics = "invalid_output", f"{type(error).__name__}: {error}"
     except Exception as error:
         reason, diagnostics = "grader_error", f"{type(error).__name__}: {error}"
-
     score = graded["score"] if graded else 0.0
     loss = 1.0 - score
-    out = list(notes)
+    out = []
+    if prereg:
+        out += [f"field: {prereg['field']} / {prereg['study_type']}", f"question: {prereg['question']}"]
     if graded:
-        out += [
-            f"claim: {graded['headline']}",
-            f"rejected: {graded['rejected'] or 'no'}",
-            f"rho_discovery: {graded['rho_discovery']:.4f} (p={graded['p_discovery']:.2g})",
-            f"rho_replication: {graded['rho_replication']:.4f} (p={graded['p_replication']:.2g}, n={graded['n_replication']})",
-            f"replicated: {str(graded['replicated']).lower()}",
-            f"ignobel_likeness: {graded['ignobel_likeness']:.4f}",
-        ]
+        out += [f"citations: {len(graded['citations'])} verified", f"dataset: {prereg['dataset']['url']} -> {graded['dataset_id']}"]
+        if "headline" in graded:
+            out += [
+                f"registered test: {graded['headline']}",
+                f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}, calibration {graded['calibration']:.3f}",
+                f"confirmed: {str(graded['confirmed']).lower()}",
+                f"ignobel_likeness: {graded['ignobel_likeness']:.4f}",
+            ]
+        out.append(f"rejected: {graded['rejected'] or 'no'}")
     out += [
         f"score: {score:.6f}",
         f"loss: {loss:.6f}",
-        f"record: {RECORD_LOSS:.6f}",
-        f"beats_reference: {str(loss < RECORD_LOSS).lower()}",
-        f"proxy_note: {config.get('proxy_note', '')}",
-        f"network_isolated: {str(network_isolated).lower()}",
+        "candidate_executed: false",
         f"seconds: {time.time() - started:.1f}",
     ]
-    stderr = "" if status == "ok" else f"error: {reason}: {diagnostics}\n"
-    if candidate_stderr:
-        stderr += candidate_stderr if candidate_stderr.endswith("\n") else candidate_stderr + "\n"
     return {
         "score": score,
         "loss": loss if status == "ok" else None,
         "status": status,
         "reason": reason,
         "stdout": "\n".join(out) + "\n",
-        "stderr": stderr,
-        "network_isolated": network_isolated,
+        "stderr": "" if status == "ok" else f"error: {reason}: {diagnostics}\n",
+        "network_isolated": True,
+        "graded": graded,
     }
 
 
 def main():
-    config = json.loads((HERE / "task.json").read_text(encoding="utf-8"))
-    result = evaluate_source((HERE / config["editable"]).read_text(encoding="utf-8"))
+    source = (HERE / "prereg.json").read_text(encoding="utf-8")
+    result = evaluate_source(source)
     sys.stdout.write(result["stdout"])
     sys.stderr.write(result["stderr"])
+    return 0 if result["status"] == "ok" else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,45 +1,43 @@
 {
- "editable": "study.py",
- "brief": "a study script (`study.py`) that explores the discovery half of 8 real FiveThirtyEight surveys (codebook under Task inputs; data/<dataset>.csv) or of NEW real public data it brings in: list CSV/TSV URLs in the top-level EXTRA_DATA literal (open-data hosts such as raw.githubusercontent.com, zenodo, figshare, OSF, Dryad, data.gov, or any URL cited in the swarm's Exa results). The host downloads each once, splits its rows the same way, and exposes data/<id>.csv plus data/<id>.codebook.json, where id = 'x' + sha256(url)[:10]; because the study runs on that data it can pick its claim programmatically in the same edit and prints one JSON claim {dataset, x, x_level, y, y_level, direction}. The host re-tests the claim on a hidden replication half (Spearman, p < 0.01, same sign) and scores the codebook wording of x and y with a frozen judge trained on real Ig Nobel winners vs ordinary paper titles; loss = 1 - min(1, |rho_rep|/0.2) * ignobel_likeness (0 if it fails to replicate or is trivial: same question, near-identical wording, or two demographics). The record to beat is a brute-force discovery-half scan (macaroni and cheese goes with cheesecake), loss 0.3721",
+ "editable": "prereg.json",
+ "brief": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one field (descriptor mechanism = field, method = study_type) and must do real research first: read papers via the swarm's Exa leads, then register BEFORE seeing data: {field, study_type, question, hypothesis, mechanism (why the effect should exist), citations (>= 2 Exa source ids S<k> or URLs from this run's research, or sources.json), dataset: {url of a real public CSV/TSV (open-data host such as raw.githubusercontent.com, zenodo, figshare, OSF, Dryad, data.gov, Rdatasets, or a URL in the Exa results), x, x_level, y, y_level (exact column header text; level = the answer compared vs everyone else, omit for numeric columns)}, direction (positive|negative), predicted_rho (expected |Spearman rho|)}. The host verifies citations, downloads the data once, and runs the registered test ONCE on all rows (Spearman, p < 0.005, matching sign; one test per dataset per run, so a second registration on a used dataset scores 0). Trivial pairs (same column, near-identical wording, two demographics) score 0. loss = 1 - confirmed * min(1, |rho|/0.2) * (0.5 + 0.5 * calibration) * ignobel_likeness, where calibration = min(|rho|, predicted)/max(|rho|, predicted) and a frozen judge (trained on real Ig Nobel winners vs ordinary paper titles) scores the dataset's own column wording. If a column name is wrong the run fails and lists the dataset's usable columns. The baseline replicates a dull, known effect (gamblers smoke more); aim for a real, odd, everyday effect that makes people laugh, then think",
  "fake_edits": [
   {
-   "old": "Y, Y_LEVEL = \"v04\", \"Bread-based\"",
-   "new": "Y, Y_LEVEL = \"v04\", \"Rice-based\"",
+   "old": "\"predicted_rho\": 0.15",
+   "new": "\"predicted_rho\": 0.25",
    "descriptor": {
-    "mechanism": "data",
-    "method": "level"
+    "mechanism": "behavioral_economics",
+    "method": "replicate_published"
    }
   },
   {
-   "old": "X, X_LEVEL = \"v06\", \"Yes\"",
-   "new": "X, X_LEVEL = \"v06\", \"No\"",
+   "old": "\"y\": \"Do you ever smoke cigarettes?\"",
+   "new": "\"y\": \"Do you ever drink alcohol?\"",
    "descriptor": {
-    "mechanism": "data",
-    "method": "variable"
+    "mechanism": "medicine",
+    "method": "untested_prediction"
    }
   },
   {
-   "old": "Y, Y_LEVEL = \"v04\", \"Bread-based\"",
-   "new": "Y, Y_LEVEL = \"v05\", \"Homemade\"",
+   "old": "\"y\": \"Do you ever smoke cigarettes?\"",
+   "new": "\"y\": \"Have you ever been skydiving?\"",
    "descriptor": {
-    "mechanism": "framing",
-    "method": "everyday_object"
+    "mechanism": "sports_science",
+    "method": "new_population"
    }
   },
   {
-   "old": "\"positive\" if rho >= 0 else \"negative\"",
-   "new": "\"positive\" if rho > 0 else \"negative\"",
+   "old": "\"direction\": \"positive\"",
+   "new": "\"direction\": \"negative\"",
    "descriptor": {
-    "mechanism": "statistics",
-    "method": "effect_size"
+    "mechanism": "psychology",
+    "method": "resolve_conflict"
    }
   }
  ],
- "proxy_note": "real FiveThirtyEight surveys; frozen text-classifier judge, not the Ig Nobel committee",
- "context_max_chars": 34000,
+ "proxy_note": "pre-registered confirmatory test on real public data; frozen text-classifier judge, not the Ig Nobel committee",
  "context_files": [
-  "codebook.txt",
-  "data/thanksgiving.csv"
+  "sources.json"
  ],
  "scout": {
   "goal": "a real, odd, everyday phenomenon (human, animal, food or object behaviour) that is documented in published research or open data the swarm has NOT used yet, ideally with a downloadable raw CSV/TSV",
