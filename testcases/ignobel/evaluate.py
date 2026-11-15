@@ -70,13 +70,16 @@ def encode(variable, level, value):
     return 1.0 if value == level else 0.0
 
 
-def headline(dataset, x, x_level, y, y_level, direction):
-    def phrase(variable, level, up=True):
+def headline(dataset, x, x_level, y, y_level, direction, pers=(None, None)):
+    def phrase(variable, level, up=True, per=None):
         if level is None:
-            return f'{"higher" if up else "lower"} "{variable["label"]}"'
+            suffix = f' per "{per["label"]}"' if per else ""
+            return f'{"higher" if up else "lower"} "{variable["label"]}"{suffix}'
         return f'{"" if up else "not "}answering "{level}" to "{variable["label"]}"'
 
-    return f"In the {dataset['title']}, {phrase(x, x_level)} goes with {phrase(y, y_level, direction == 'positive')}"
+    x_phrase = phrase(x, x_level, per=pers[0])
+    y_phrase = phrase(y, y_level, direction == "positive", pers[1])
+    return f"In the {dataset['title']}, {x_phrase} goes with {y_phrase}"
 
 
 def shared_words(dataset):
@@ -124,10 +127,22 @@ def check_claim(claim, codebook):
     return sides, None
 
 
+def rate(value, row, per):
+    """value divided by the row's denominator column, for a registered derived variable."""
+    if value is None or per is None:
+        return value
+    denominator = row[per]
+    return value / float(denominator) if denominator not in ("", "0") and float(denominator) else None
+
+
 def association(rows, claim, sides):
     (x, x_level), (y, y_level) = sides
     pairs = [
-        (encode(x, x_level, row[claim["x"]]), encode(y, y_level, row[claim["y"]])) for row in rows
+        (
+            rate(encode(x, x_level, row[claim["x"]]), row, claim.get("x_per")),
+            rate(encode(y, y_level, row[claim["y"]]), row, claim.get("y_per")),
+        )
+        for row in rows
     ]
     pairs = [(a, b) for a, b in pairs if a is not None and b is not None]
     xs, ys = [a for a, _ in pairs], [b for _, b in pairs]
@@ -172,9 +187,10 @@ def parse_prereg(source, fields):
     for axis in ("x", "y"):
         if not isinstance(dataset.get(axis), str) or not dataset[axis].strip():
             raise ValueError(f"dataset.{axis} must name a column")
-        level = dataset.get(f"{axis}_level")
-        if level is not None and not isinstance(level, str):
-            raise ValueError(f"dataset.{axis}_level must be a string or omitted")
+        for extra in ("level", "per"):
+            value = dataset.get(f"{axis}_{extra}")
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"dataset.{axis}_{extra} must be a string or omitted")
     if prereg.get("direction") not in ("positive", "negative"):
         raise ValueError("direction must be 'positive' or 'negative'")
     predicted = prereg.get("predicted_rho")
@@ -301,8 +317,22 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "y_level": data.get("y_level"),
         "direction": prereg["direction"],
     }
+    pers = []
+    for axis in ("x", "y"):
+        per = data.get(f"{axis}_per")
+        claim[f"{axis}_per"] = column(entry, per) if per else None
+        if per and (
+            entry["variables"][claim[axis]]["kind"] != "numeric"
+            or entry["variables"][claim[f"{axis}_per"]]["kind"] != "numeric"
+        ):
+            raise ValueError(f"dataset.{axis}_per needs a numeric {axis} and a numeric denominator")
+        pers.append(entry["variables"][claim[f"{axis}_per"]] if per else None)
     sides, trivial = check_claim(claim, {name: entry})
     (x, x_level), (y, y_level) = sides
+    if {claim["x_per"], claim["y_per"]} & {claim["x"], claim["y"]} or (
+        claim["x_per"] and claim["x_per"] == claim["y_per"]
+    ):
+        trivial = trivial or "trivial: a denominator is shared or is the other variable"
     rows = read_rows(task_dir / entry["file"]) + read_rows(
         task_dir / ".cache" / "replication" / f"{name}.csv"
     )
@@ -325,7 +355,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
     confirmed = significant and replicated
     graded = {
         **result,
-        "headline": headline(entry, x, x_level, y, y_level, prereg["direction"]),
+        "headline": headline(entry, x, x_level, y, y_level, prereg["direction"], pers),
         "rejected": rejected,
         "n": n,
         "rho": rho,
@@ -335,7 +365,9 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "replicated": replicated,
         "confirmed": confirmed,
         "predicted_rho": predicted,
-        "columns": sorted([claim["x"], claim["y"]]),
+        "columns": sorted(
+            "/".join(filter(None, (claim[axis], claim[f"{axis}_per"]))) for axis in ("x", "y")
+        ),
         "sha256": entry.get("sha256", ""),
         "score": 1.0 if confirmed else 0.0,
     }

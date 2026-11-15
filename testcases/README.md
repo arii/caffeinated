@@ -72,7 +72,9 @@ the task's `round_context.py` (task.json `round_context`) and appends its output
 to the task inputs: the lab notebook (every study registered so far this run
 and its result, so labs build on each other) and real datasets found on Zenodo
 and Hugging Face (`datasets.py`, ported from `ignobel/sources.py`) for the
-least-explored fields, with their columns. When two labs report the same
+least-explored fields, with their columns. A registration can test a derived
+rate (`x_per` / `y_per`: a numeric column divided by another numeric column);
+the host computes it. When two labs report the same
 finding (dataset and column pair), `score_run.py` keeps only the earliest.
 `task.json`'s `scout`
 block points the swarm's Exa scouts at odd everyday phenomena and downloadable

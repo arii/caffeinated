@@ -577,6 +577,14 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertIn("REPLICATED", text)
         self.assertIn("Datasets already tested this run", text)
 
+    def test_derived_rate_variables(self):
+        dataset = {"x": "Dryer age (years)", "x_per": "Socks lost per month"}
+        graded = self.run_prereg(dataset=dataset)["graded"]
+        self.assertIn('higher "Dryer age (years)" per "Socks lost per month"', graded["headline"])
+        self.assertTrue(graded["rejected"].startswith("trivial"))
+        bad = self.run_prereg(dataset={"x_per": "Favourite colour"})
+        self.assertEqual((bad["status"], bad["reason"]), ("crash", "invalid_output"))
+
     def test_trivial_pair_scores_zero(self):
         graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]
         self.assertEqual(graded["score"], 0.0)
