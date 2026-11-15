@@ -24,7 +24,7 @@ from research import read_log
 DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
-RESULT_COLUMNS = {"commit", "val_bpb", "memory_gb", "status", "description"}
+RESULT_COLUMNS = {"commit", "loss", "memory_gb", "status", "description"}
 MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
 _ENSURED_AUDIENCES = set()
 
@@ -51,10 +51,17 @@ def commit_timestamp(commit, repo):
         return utc_now()
 
 
-def commit_train_diff(commit, repo):
+def commit_candidate_diff(commit, repo):
     try:
         result = subprocess.run(
-            ["git", "show", "--format=", commit, "--", "train.py"],
+            [
+                "git",
+                "show",
+                "--format=",
+                commit,
+                "--",
+                os.environ.get("AUTORESEARCH_TARGET", "candidate.py"),
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -238,7 +245,7 @@ def run_data_point(arm, row, repo, research_log):
     commit = str(row.get("commit", ""))
     description = str(row.get("description") or "")
     status = str(row.get("status") or "")
-    value = parse_float(row.get("val_bpb"))
+    value = parse_float(row.get("loss"))
     memory_gb = row.get("memory_gb")
     regime = regime_for(description)
     timestamp = commit_timestamp(commit, repo)
@@ -248,7 +255,7 @@ def run_data_point(arm, row, repo, research_log):
     content_lines = [
         f"autoresearch {arm} run {commit}, {timestamp}",
         f"Idea: {description}",
-        f"Outcome: {status} (val_bpb {row.get('val_bpb')}, "
+        f"Outcome: {status} (loss {row.get('loss')}, "
         f"memory {memory_gb if memory_gb not in (None, '') else 'n/a'} GB)",
     ]
     if regime:
@@ -270,11 +277,11 @@ def run_data_point(arm, row, repo, research_log):
             )
         content_lines.append("Sources: " + "; ".join(source_descriptions))
 
-    diff = commit_train_diff(commit, repo)
+    diff = commit_candidate_diff(commit, repo)
     if diff is not None:
         if len(diff) > 3000:
             diff = diff[:3000] + "... [truncated]"
-        content_lines.extend(["train.py diff:", diff])
+        content_lines.extend(["candidate diff:", diff])
 
     return {
         "id": f"run:{arm}:{commit}",
@@ -284,7 +291,7 @@ def run_data_point(arm, row, repo, research_log):
         "metadata": {
             "arm": arm,
             "commit": commit,
-            "val_bpb": value,
+            "loss": value,
             "status": status,
             "regime": regime,
             "sources": cited_ids,
@@ -448,7 +455,7 @@ def remember(args):
     arm = args.arm or os.environ.get("AUTORESEARCH_ARM") or "boredom"
     row = {
         "commit": args.commit,
-        "val_bpb": args.val_bpb,
+        "loss": args.loss,
         "memory_gb": args.memory_gb,
         "status": args.status,
         "description": args.description,
@@ -983,7 +990,7 @@ def build_parser():
 
     remember_parser = subparsers.add_parser("remember")
     remember_parser.add_argument("--commit", required=True)
-    remember_parser.add_argument("--val-bpb", required=True)
+    remember_parser.add_argument("--loss", required=True)
     remember_parser.add_argument("--status", required=True)
     remember_parser.add_argument("--description", required=True)
     remember_parser.add_argument("--memory-gb", type=float)

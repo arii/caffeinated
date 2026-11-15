@@ -1,7 +1,0 @@
-diff --git a/train.py b/train.py
-index 76391ca..cddb282 100644
---- a/train.py
-+++ b/train.py
-@@ -439 +439 @@ TOTAL_BATCH_SIZE = 2**18 # ~524K tokens per optimizer step
--EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
-+EMBEDDING_LR = 0.4      # learning rate for token embeddings (Adam)

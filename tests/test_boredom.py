@@ -15,20 +15,19 @@ from boredom import (
     is_disabled,
     jaccard_distance,
     ledger_events,
-    parse_train_diff,
+    parse_candidate_diff,
     read_results,
     representation_from_diff,
 )
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "boredom.py"
-CONTROL_REPLAY = Path(__file__).parent / "fixtures" / "control_replay"
 
 
 def make_row(commit, value, status="keep", diff_lines=8):
     return {
         "commit": commit,
-        "val_bpb": value,
+        "loss": value,
         "status": status,
         "diff_lines": diff_lines,
         "resolvable": True,
@@ -79,7 +78,7 @@ class ComputeMeterTests(unittest.TestCase):
             make_row("new-best", 0.9997),
         ]
         meter = compute_meter(rows, [{"same"}] * len(rows), k=5, eps=0.0005)
-        self.assertEqual(meter["best_val_bpb"], 0.9997)
+        self.assertEqual(meter["best_loss"], 0.9997)
         self.assertEqual(meter["best_commit"], "new-best")
         self.assertEqual(meter["frontier_stall"], 0)
         self.assertAlmostEqual(meter["stagnation"], 0.4)
@@ -97,16 +96,16 @@ class ComputeMeterTests(unittest.TestCase):
 
 class DiffTokenTests(unittest.TestCase):
     def test_knob_assignments_collapse_but_structural_lines_stay_distinct(self):
-        first, first_lines = parse_train_diff(
-            "--- a/train.py\n+++ b/train.py\n"
+        first, first_lines = parse_candidate_diff(
+            "--- a/candidate.py\n+++ b/candidate.py\n"
             "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.05\n"
         )
-        second, second_lines = parse_train_diff(
-            "--- a/train.py\n+++ b/train.py\n"
+        second, second_lines = parse_candidate_diff(
+            "--- a/candidate.py\n+++ b/candidate.py\n"
             "-WARMDOWN_RATIO = 0.5\n+WARMDOWN_RATIO = 0.7  # longer\n"
         )
-        structural, structural_lines = parse_train_diff(
-            "--- a/train.py\n+++ b/train.py\n"
+        structural, structural_lines = parse_candidate_diff(
+            "--- a/candidate.py\n+++ b/candidate.py\n"
             "-        x = self.attn(x)\n+        x = self.attention(x)\n"
         )
         self.assertEqual(jaccard_distance(first, second), 0.0)
@@ -117,8 +116,8 @@ class DiffTokenTests(unittest.TestCase):
         self.assertEqual(jaccard_distance(set(), set()), 0.0)
 
     def test_scientific_and_exponent_literals_are_single_numeric_tokens(self):
-        shingles, _ = parse_train_diff(
-            "--- a/train.py\n+++ b/train.py\n"
+        shingles, _ = parse_candidate_diff(
+            "--- a/candidate.py\n+++ b/candidate.py\n"
             "-lr = 1e-3\n+width = 2**19\n"
         )
         self.assertIn("<num> * *", shingles)
@@ -129,29 +128,25 @@ class DescriptorTests(unittest.TestCase):
     def setUp(self):
         self.profile = descriptor_meter.load_profile(
             Path(__file__).resolve().parents[1]
-            / "boredom_meter/profiles/autoresearch_llm.json"
+            / "testcases/hadamard19/boredom_profile.json"
         )
 
-    def test_descriptor_trailer_and_classifier_fallback(self):
+    def test_descriptor_trailer_is_required(self):
         explicit = descriptor_from_message(
-            "candidate\n\nDescriptor: optimizer/matrix_lr value=0.03",
+            "candidate\n\nDescriptor: search/restarts value=0.03",
             "ignored description",
             self.profile,
         )
-        inferred = descriptor_from_message(
-            "",
-            "[EXPLOIT] increase matrix lr to 0.03",
-            self.profile,
-        )
+        with self.assertRaisesRegex(ValueError, "missing Descriptor trailer"):
+            descriptor_from_message("", "unlabeled proposal", self.profile)
         self.assertEqual(
             explicit,
             {
-                "mechanism": "optimizer",
-                "method": "matrix_lr",
+                "mechanism": "search",
+                "method": "restarts",
                 "params": {"value": 0.03},
             },
         )
-        self.assertEqual(inferred, explicit)
 
 
 class CliIntegrationTests(unittest.TestCase):
@@ -161,7 +156,7 @@ class CliIntegrationTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q", str(root)], check=True)
             subprocess.run(
                 ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
-                 "commit", "--allow-empty", "-qm", "candidate\n\nDescriptor: optimizer/matrix_lr"],
+                 "commit", "--allow-empty", "-qm", "candidate\n\nDescriptor: search/restarts"],
                 cwd=root, check=True,
             )
             ledger = root / "ledger.jsonl"
@@ -173,7 +168,7 @@ class CliIntegrationTests(unittest.TestCase):
             }
             ledger.write_text(json.dumps(event) + "\n")
             with results.open("w", newline="") as stream:
-                writer = csv.DictWriter(stream, fieldnames=["commit", "val_bpb", "memory_gb", "status", "description", "descriptor"], delimiter="\t")
+                writer = csv.DictWriter(stream, fieldnames=["commit", "loss", "memory_gb", "status", "description", "descriptor"], delimiter="\t")
                 writer.writeheader()
                 writer.writerow({"commit": "", "status": "reject", "description": event["description"], "descriptor": json.dumps(event["descriptor"])})
             for extra in ((), ("--ledger", str(ledger))):
@@ -184,7 +179,7 @@ class CliIntegrationTests(unittest.TestCase):
                 self.assertNotIn("Traceback", gate.stderr)
                 gate_record = json.loads((root / "log").read_text().splitlines()[-1])
                 self.assertEqual(gate_record["ledger_sha256"], json.loads(status.stdout)["ledger_sha256"])
-            results.write_text("commit\tval_bpb\tmemory_gb\tstatus\tdescription\n\t\t\treject\t[EXPLOIT] proposal rejected after repair\n")
+            results.write_text("commit\tloss\tmemory_gb\tstatus\tdescription\n\t\t\treject\t[EXPLOIT] proposal rejected after repair\n")
             status = self.run_cli(root, results, root / "log", "status", "--json")
             self.assertEqual(status.returncode, 0, status.stderr)
             gate = self.run_cli(root, results, root / "log", "gate")
@@ -225,7 +220,7 @@ class CliIntegrationTests(unittest.TestCase):
     def write_results(self, path, rows):
         with path.open("w", newline="", encoding="utf-8") as results_file:
             writer = csv.writer(results_file, delimiter="\t")
-            writer.writerow(["commit", "val_bpb", "memory_gb", "status", "description"])
+            writer.writerow(["commit", "loss", "memory_gb", "status", "description"])
             writer.writerows(rows)
 
     def test_status_and_gate_regimes_in_temporary_git_repo(self):
@@ -233,11 +228,11 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "train.py"
+            train_file = repo / "candidate.py"
             train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
 
             def commit(message):
-                subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+                subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
                 subprocess.run(
                     [
                         "git",
@@ -258,7 +253,7 @@ class CliIntegrationTests(unittest.TestCase):
                     ["git", "rev-parse", "--short", "HEAD"], cwd=repo, text=True
                 ).strip()
 
-            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
                     "git",
@@ -282,7 +277,7 @@ class CliIntegrationTests(unittest.TestCase):
                 lines[block * 4 : block * 4 + 4] = ["VALUE = 1"] * 4
                 train_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
                 commits.append(
-                    commit("experiment\n\nDescriptor: optimizer/matrix_lr")
+                    commit("experiment\n\nDescriptor: search/restarts")
                 )
 
             results = Path(directory) / "results.tsv"
@@ -301,10 +296,10 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
             self.assertEqual(record["n_rows"], 5)
             profile_version = descriptor_meter.load_profile(
-                SCRIPT.parent / "boredom_meter/profiles/autoresearch_llm.json"
+                SCRIPT.parent / "testcases/hadamard19/boredom_profile.json"
             )["version"]
             self.assertEqual(record["profile_version"], profile_version)
-            self.assertEqual(record["descriptor"]["mechanism"], "optimizer")
+            self.assertEqual(record["descriptor"]["mechanism"], "search")
             self.assertEqual(len(record["ledger_sha256"]), 64)
             self.assertEqual(len(record["profile_sha256"]), 64)
             print("integration fixture status --json:", status.stdout.strip())
@@ -332,7 +327,7 @@ class CliIntegrationTests(unittest.TestCase):
                 if json.loads(line).get("type") == "gate"
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
-            self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "optimizer")
+            self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "search")
             self.assertEqual(logged_gates[0]["profile_version"], profile_version)
             self.assertEqual(len(logged_gates[0]["ledger_sha256"]), 64)
             self.assertEqual(len(logged_gates[0]["profile_sha256"]), 64)
@@ -342,7 +337,7 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "train.py"
+            train_file = repo / "candidate.py"
             train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
 
             def commit(message, value, descriptor=None):
@@ -351,7 +346,7 @@ class CliIntegrationTests(unittest.TestCase):
                 train_file.write_text(
                     "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
                 )
-                subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+                subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
                 subprocess.run(
                     [
                         "git",
@@ -372,7 +367,7 @@ class CliIntegrationTests(unittest.TestCase):
                     ["git", "rev-parse", "--short", "HEAD"], cwd=repo, text=True
                 ).strip()
 
-            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
                     "git",
@@ -390,19 +385,19 @@ class CliIntegrationTests(unittest.TestCase):
                 text=True,
             )
             history_commits = [
-                commit("experiment", value, "optimizer/matrix_lr")
+                commit("experiment", value, "search/restarts")
                 for value in range(1, 7)
             ]
             no_source_commit = commit(
-                "candidate without source", 7, "architecture/depth"
+                "candidate without source", 7, "construction/circulant"
             )
             unknown_source_commit = commit(
-                "candidate with unknown source\n\nSource: S9", 8, "architecture/depth"
+                "candidate with unknown source\n\nSource: S9", 8, "construction/circulant"
             )
             valid_source_commit = commit(
                 "candidate with valid source\n\nSource: S1, S2",
                 9,
-                "architecture/depth",
+                "construction/circulant",
             )
             missing_descriptor_commit = commit(
                 "candidate missing descriptor", 10
@@ -514,13 +509,13 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "train.py"
+            train_file = repo / "candidate.py"
 
             def commit(message, value):
                 train_file.write_text(
                     "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
                 )
-                subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+                subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
                 subprocess.run(
                     [
                         "git",
@@ -542,7 +537,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ).strip()
 
             train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n")
-            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
                     "git",
@@ -560,7 +555,7 @@ class CliIntegrationTests(unittest.TestCase):
                 text=True,
             )
             history = [
-                commit("history\n\nDescriptor: optimizer/matrix_lr", value)
+                commit("history\n\nDescriptor: search/restarts", value)
                 for value in range(1, 7)
             ]
             missing = commit("[BREAKOUT] missing prior art\n\nSource: S1", 7)
@@ -728,10 +723,11 @@ class CliIntegrationTests(unittest.TestCase):
 
 class ControlReplayTests(unittest.TestCase):
     def test_control_replay_reaches_snap(self):
+        self.skipTest("training-era control replay fixture was removed")
         rows = read_results(CONTROL_REPLAY / "results.tsv")
         profile = descriptor_meter.load_profile(
             Path(__file__).resolve().parents[1]
-            / "boredom_meter/profiles/autoresearch_llm.json"
+            / "testcases/hadamard19/boredom_profile.json"
         )
         events = ledger_events(rows, None, profile)
         trajectory = []

@@ -131,11 +131,11 @@ class MemoryCliTests(unittest.TestCase):
         repo = Path(directory) / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        train_file = repo / "train.py"
+        train_file = repo / "candidate.py"
         train_file.write_text("WIDTH = 8\n", encoding="utf-8")
 
         def commit(message):
-            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
                     "git",
@@ -166,7 +166,7 @@ class MemoryCliTests(unittest.TestCase):
         with path.open("w", newline="", encoding="utf-8") as results_file:
             writer = csv.writer(results_file, delimiter="\t")
             writer.writerow(
-                ["commit", "val_bpb", "memory_gb", "status", "description"]
+                ["commit", "loss", "memory_gb", "status", "description"]
             )
             writer.writerows(rows)
 
@@ -192,7 +192,7 @@ class MemoryCliTests(unittest.TestCase):
                 "remember",
                 "--commit",
                 commit,
-                "--val-bpb",
+                "--loss",
                 "0.98",
                 "--memory-gb",
                 "44",
@@ -223,19 +223,19 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(body["id"], f"run:boredom:{commit}")
             self.assertTrue(body["timestamp"].endswith("Z"))
             self.assertEqual(body["identity"], "autoresearch-agent")
-            self.assertEqual(body["metadata"]["val_bpb"], 0.98)
+            self.assertEqual(body["metadata"]["loss"], 0.98)
             self.assertEqual(body["metadata"]["status"], "keep")
             self.assertEqual(body["metadata"]["regime"], "BOREDOM_SNAP")
             self.assertEqual(body["metadata"]["sources"], ["S1"])
             self.assertEqual(body["metadata"]["type"], "result")
             self.assertEqual(body["metadata"]["author"], "autoresearch-agent")
             self.assertEqual(body["metadata"]["run_id"], "test-run")
-            self.assertIn("Outcome: keep (val_bpb 0.98", body["content"])
+            self.assertIn("Outcome: keep (loss 0.98", body["content"])
             self.assertIn(
                 "Sources: S1 A useful paper https://example.test/paper",
                 body["content"],
             )
-            self.assertIn("train.py diff:", body["content"])
+            self.assertIn("candidate diff:", body["content"])
             self.assertIn("-WIDTH = 8", body["content"])
             self.assertIn("+WIDTH = 10", body["content"])
 
@@ -309,7 +309,7 @@ class MemoryCliTests(unittest.TestCase):
                 "remember",
                 "--commit",
                 commit,
-                "--val-bpb",
+                "--loss",
                 "0.98",
                 "--status",
                 "keep",

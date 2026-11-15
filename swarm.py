@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Run a four-agent, meter-guided autoresearch swarm."""
+"""Run a four-agent, meter-guided CPU-task research swarm."""
 
 import argparse
 import csv
 from contextlib import contextmanager, redirect_stdout
 from datetime import datetime, timezone
-import hashlib
 import io
 import json
 import math
@@ -28,18 +27,13 @@ from testcases import sandbox
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_PROFILE = ROOT / "boredom_meter" / "profiles" / "autoresearch_llm.json"
-BASELINE_COMMIT = "7017194"
-BASELINE_VAL_BPB = 0.995814
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
 TESTCASES = ROOT / "testcases"
-TARGET_FILE = "train.py"
+TARGET_FILE = None
 TASK = None
-LOCAL_EVAL_TIMEOUT = 300
-SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 RESULT_COLUMNS = (
     "commit",
-    "val_bpb",
+    "loss",
     "memory_gb",
     "status",
     "description",
@@ -290,7 +284,7 @@ def append_status(out_dir, profile, events, arm):
         "n_rows": len(events),
         "B": status["B"],
         "regime": "EXPLOIT" if disabled else status["regime"],
-        "best_val_bpb": status["best"],
+        "best_loss": status["best"],
         "best_seq": status["best_seq"],
         "frontier_stall": status["frontier_stall"],
         "disabled": disabled,
@@ -322,13 +316,15 @@ def common_values(agent, round_num, role, status, agent_b, best_commit, best_val
     return {
         "agent": agent,
         "best_commit": best_commit,
-        "best_val_bpb": f"{best_val:.6f}",
+        "best_loss": f"{best_val:.6f}",
         "noise": str(profile.get("eps", 0.0036)),
         "round": round_num,
         "swarm_B": f"{status['swarm_B']:.3f}",
         "regime": status["regime"],
         "agent_B": f"{agent_b:.3f}",
         "role": role,
+        "task_brief": (TASK or {}).get("brief", ""),
+        "editable": (TASK or {}).get("editable", ""),
         **(TASK or {}).get("prompt_values", {}),
     }
 
@@ -574,10 +570,7 @@ def run_scouts(
             replay=replay,
             source=source_id,
             question=(
-                "What exact train.py change, settings, and measured effect can "
-                "be tested under a five-minute budget?"
-                if TASK is None
-                else f"What exact method, settings, and measured result could be "
+                f"What exact method, settings, and measured result could be "
                 f"implemented in {TARGET_FILE} for this task?"
             ),
         )
@@ -672,8 +665,8 @@ def validate_proposal(profile, proposal):
     return proposal
 
 
-def apply_edits(train_path, edits):
-    text = Path(train_path).read_text(encoding="utf-8")
+def apply_edits(source_path, edits):
+    text = Path(source_path).read_text(encoding="utf-8")
     edited = text
     for index, edit in enumerate(edits, 1):
         old = edit["old"]
@@ -683,7 +676,7 @@ def apply_edits(train_path, edits):
                 f"edit {index}: old text must occur exactly once (found {count})"
             )
         edited = edited.replace(old, edit["new"], 1)
-    Path(train_path).write_text(edited, encoding="utf-8")
+    Path(source_path).write_text(edited, encoding="utf-8")
 
 
 def descriptor_trailer(descriptor):
@@ -806,7 +799,7 @@ def worker_attempts(
     assigned_cells=None,
 ):
     memory_queries = [
-        f"what has been tried involving {profile.get('objective', 'val_bpb')} and what happened",
+        f"what has been tried involving {profile.get('objective', 'loss')} and what happened",
         "untested implementation leads",
         "who is testing what this round",
     ]
@@ -829,7 +822,7 @@ def worker_attempts(
         ]
     )
     current_base = base_commit
-    train_py = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
+    candidate_source = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
     common = common_values(
         agent, round_num, role, status, agent_b, best_commit, best_val, profile
     )
@@ -837,7 +830,9 @@ def worker_attempts(
         "suggested_cells": format_cells(status.get("suggested_cells", [])),
         "reasons": "none",
         "assigned_cell": "none",
-        "train_py": train_py,
+        "candidate_source": candidate_source,
+        "fake_targets": TASK.get("fake_targets", []),
+        "fake_edits": TASK.get("fake_edits", []),
     })
     proposal = llm_client.call(
         "WORKER_PROPOSE",
@@ -849,9 +844,7 @@ def worker_attempts(
             "recalled_results": recalled_results,
             "recalled_leads": recalled_leads,
             "claims": "\n".join(claims) if claims else "No claims yet.",
-            "train_py": train_py,
-            "fake_targets": (TASK or {}).get("fake_targets"),
-            "fake_edits": (TASK or {}).get("fake_edits"),
+            "candidate_source": candidate_source,
             "vocab": json.dumps(profile.get("vocab", {}), sort_keys=True),
         },
     )
@@ -1110,27 +1103,6 @@ def worker_attempts(
     }
 
 
-def fake_gpu_result(repo, commit):
-    entries = git(repo, "ls-tree", "-z", f"{commit}^{{tree}}").stdout.split("\0")
-    # Audit artifacts contain timestamps and commit IDs, not training inputs.
-    tree = "\0".join(entry for entry in entries if entry and entry.split("\t", 1)[1] != "experiments")
-    digest = int(hashlib.sha256(tree.encode("utf-8")).hexdigest(), 16)
-    score = 0.975 + 0.025 * digest / ((1 << 256) - 1)
-    memory_gb = 44.0
-    return {
-        "commit": commit,
-        "val_bpb": round(score, 6),
-        "memory_gb": memory_gb,
-        "status": "ok",
-        "log": (
-            "---\n"
-            f"val_bpb: {score:.6f}\n"
-            f"peak_vram_mb: {memory_gb * 1024:.0f}\n"
-            "training_seconds: 300\n"
-        ),
-    }
-
-
 def acceptance_margin(profile):
     return float(profile.get("accept_margin", profile["eps"]))
 
@@ -1146,64 +1118,6 @@ def critic_accepts(profile, first_score, second_score, previous_best, status):
         and (first_score + float(second_score)) / 2
         < previous_best - acceptance_margin(profile)
     )
-
-
-def modal_gpu_burst(repo, commits, seed, out_dir):
-    modal_bin = Path.home() / ".venvs" / "modal" / "bin"
-    env = os.environ.copy()
-    env["PATH"] = str(modal_bin) + os.pathsep + env.get("PATH", "")
-    log_dir = Path(out_dir)
-    log_dir.mkdir(parents=True, exist_ok=True)
-    command = [
-        "modal",
-        "run",
-        str(ROOT / "modal_run.py"),
-        "--commits",
-        ",".join(commits),
-        "--seed",
-        str(seed),
-        "--out-dir",
-        str(log_dir),
-    ]
-    result = subprocess.run(
-        command,
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-    )
-    parsed = {}
-    for line in result.stdout.splitlines():
-        fields = line.split("\t")
-        if len(fields) != 4 or fields[0] not in commits:
-            continue
-        try:
-            val_bpb = float(fields[1])
-            memory_gb = float(fields[2])
-        except ValueError:
-            continue
-        parsed[fields[0]] = {
-            "commit": fields[0],
-            "val_bpb": val_bpb,
-            "memory_gb": memory_gb,
-            "status": fields[3],
-        }
-    if result.returncode and not parsed:
-        raise RuntimeError(
-            "Modal burst failed: " + (result.stderr.strip() or result.stdout.strip())
-        )
-    for commit in commits:
-        parsed.setdefault(
-            commit,
-            {
-                "commit": commit,
-                "val_bpb": None,
-                "memory_gb": None,
-                "status": "crash",
-            },
-        )
-    return parsed, result.stdout, result.stderr
 
 
 def prepare_task(task_dir, context_files):
@@ -1241,14 +1155,6 @@ def build_task_context(task_dir, context_files):
     return "\n".join(parts) or "(none)"
 
 
-def evaluator_env():
-    return {
-        key: value
-        for key, value in os.environ.items()
-        if not any(marker in key.upper() for marker in SECRET_ENV_MARKERS)
-    }
-
-
 def load_task(name):
     task_dir = TESTCASES / name
     config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
@@ -1283,47 +1189,26 @@ def local_task_result(repo, commit, out_dir):
     loss = result.get("loss") if result and result.get("status") == "ok" else None
     return {
         "commit": commit,
-        "val_bpb": loss,
+        "loss": loss,
         "memory_gb": 0.0,
         "status": result.get("status", "crash") if result else "crash",
         "reason": result.get("reason") if result else "candidate_source_unavailable",
     }
 
 
-def run_gpu_burst(repo, commits, seed, out_dir, gpu_mode):
+def run_evaluations(repo, commits, out_dir):
     if not commits:
         return {}, ""
-    if gpu_mode == "local":
-        results = {commit: local_task_result(repo, commit, out_dir) for commit in commits}
-        for commit, result in results.items():
-            score = result["val_bpb"]
-            print(
-                f"{commit}\t{score if score is None else f'{score:.6f}'}\t0.0\t"
-                f"{result['status']}"
-            )
-        return results, ""
-    if gpu_mode == "fake":
-        results = {commit: fake_gpu_result(repo, commit) for commit in commits}
-        for commit, result in results.items():
-            result_path = Path(out_dir) / f"{commit}.log"
-            result_path.parent.mkdir(parents=True, exist_ok=True)
-            result_path.write_text(result["log"], encoding="utf-8")
-            print(
-                f"{commit}\t{result['val_bpb']:.6f}\t"
-                f"{result['memory_gb']:.1f}\tok"
-            )
-        return results, ""
-    results, stdout, stderr = modal_gpu_burst(repo, commits, seed, out_dir)
+    results = {
+        commit: local_task_result(repo, commit, out_dir) for commit in commits
+    }
     for commit, result in results.items():
-        if result.get("status") != "ok":
-            result["status"] = "crash"
+        score = result["loss"]
         print(
-            f"{commit}\t"
-            f"{result['val_bpb'] if result['val_bpb'] is not None else 'n/a'}\t"
-            f"{result['memory_gb'] if result['memory_gb'] is not None else 'n/a'}\t"
+            f"{commit}\t{score if score is None else f'{score:.6f}'}\t0.0\t"
             f"{result['status']}"
         )
-    return results, stdout + stderr
+    return results, ""
 
 
 def add_result_event(profile, ledger_path, candidate, round_num, status, score, memory_gb):
@@ -1369,7 +1254,7 @@ def write_result_memory(
     content = (
         f"autoresearch {arm} round {event.get('round')} by {event.get('agent')}\n"
         f"Idea: {event.get('description', '')}\n"
-        f"Outcome: {event.get('status')} (val_bpb "
+        f"Outcome: {event.get('status')} (loss "
         f"{'n/a' if value is None else f'{float(value):.6f}'}, memory "
         f"{'n/a' if memory_gb is None else f'{float(memory_gb):.1f}'} GB)\n"
         f"Descriptor: {json.dumps(event.get('descriptor'), sort_keys=True)}"
@@ -1383,7 +1268,7 @@ def write_result_memory(
             "arm": arm,
             "round": event.get("round"),
             "commit": event.get("commit"),
-            "val_bpb": value,
+            "loss": value,
             "status": event.get("status"),
             "descriptor": event.get("descriptor"),
             "sources": event.get("sources", []),
@@ -1406,8 +1291,8 @@ def update_critic_tsv(path, record):
                 (
                     "round",
                     "commit",
-                    "seed42_val_bpb",
-                    "seed43_val_bpb",
+                    "run1_loss",
+                    "run2_loss",
                     "accepted",
                     "verdict",
                     "why",
@@ -1555,17 +1440,10 @@ def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
 
 def configure_task(args):
     global TASK, TARGET_FILE
-    if not getattr(args, "task", None):
-        TASK, TARGET_FILE = None, "train.py"
-        os.environ.pop("AUTORESEARCH_TARGET", None)
-        return ROOT / "prompts"
     TASK = load_task(args.task)
     TARGET_FILE = TASK["target"]
     os.environ["AUTORESEARCH_TARGET"] = TARGET_FILE
-    if Path(args.profile).resolve() == DEFAULT_PROFILE.resolve():
-        args.profile = str(TASK["profile"])
-    args.gpu = "local"
-    return TESTCASES / "prompts"
+    return ROOT / "prompts"
 
 
 def orchestrate(args):
@@ -1576,7 +1454,7 @@ def orchestrate(args):
         raise ValueError("--arm must be A, B, C, or D")
     repo = Path(args.repo).resolve()
     git_text(repo, "rev-parse", "--show-toplevel")
-    profile_path = Path(args.profile).resolve()
+    profile_path = TASK["profile"].resolve()
     profile = meter.load_profile(profile_path)
     start_commit = git_text(repo, "rev-parse", "HEAD")
     exa_enabled = (
@@ -1584,7 +1462,7 @@ def orchestrate(args):
         and os.environ.get("EXA", "").casefold() != "off"
         and args.exa != "off"
     )
-    effective_no_push = args.no_push or args.gpu in ("fake", "local")
+    effective_no_push = args.no_push or args.llm == "fake"
     branch, conductor, agents_root = create_arm_worktrees(
         repo, args.arm, start_commit
     )
@@ -1611,23 +1489,18 @@ def orchestrate(args):
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
-        arm=args.arm,
-        queue_dir=args.queue_dir or out_dir / "llm_queue",
-        queue_timeout=args.queue_timeout,
     )
     if not critic_path.exists():
         critic_path.write_text(
-            "round\tcommit\tseed42_val_bpb\tseed43_val_bpb\taccepted\tverdict\twhy\n",
+            "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\n",
             encoding="utf-8",
         )
 
-    baseline_commit, baseline_val = BASELINE_COMMIT, BASELINE_VAL_BPB
-    if TASK is not None:
-        baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
-        if baseline["val_bpb"] is None:
-            raise RuntimeError(f"task {TASK['name']} baseline failed to score")
-        baseline_commit, baseline_val = start_commit[:7], baseline["val_bpb"]
-        TASK["prompt_values"]["baseline_val"] = f"{baseline_val:.6f}"
+    baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
+    if baseline["loss"] is None:
+        raise RuntimeError(f"task {TASK['name']} baseline failed to score")
+    baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
+    TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
     run_id_path = out_dir / "run_id"
     if not run_id_path.exists():
@@ -1650,7 +1523,7 @@ def orchestrate(args):
                     "commit": baseline_commit,
                     "round": 0,
                     "lead": None,
-                    "memory_gb": 44.0 if TASK is None else 0.0,
+                    "memory_gb": 0.0,
                     "description": "baseline",
                 },
             )
@@ -1747,21 +1620,17 @@ def orchestrate(args):
                 if candidate.get("status") == "pending"
             ]
             commits = [candidate["commit"] for candidate in run_candidates]
-            gpu_results, gpu_output = run_gpu_burst(
-                repo,
-                commits,
-                args.seed,
-                out_dir / "runs",
-                args.gpu,
+            evaluation_results, _ = run_evaluations(
+                repo, commits, out_dir / "runs"
             )
             provisional = []
             for candidate in run_candidates:
-                result = gpu_results.get(candidate["commit"], {})
-                candidate["score"] = result.get("val_bpb")
+                result = evaluation_results.get(candidate["commit"], {})
+                candidate["score"] = result.get("loss")
                 candidate["memory_gb"] = result.get("memory_gb")
-                candidate["gpu_status"] = result.get("status", "crash")
+                candidate["evaluation_status"] = result.get("status", "crash")
                 if (
-                    candidate["gpu_status"] == "ok"
+                    candidate["evaluation_status"] == "ok"
                     and candidate["score"] is not None
                     and candidate_is_provisional(
                         profile, candidate["score"], best_val
@@ -1778,20 +1647,18 @@ def orchestrate(args):
             if provisional_best is not None:
                 previous_best_val = best_val
                 previous_best_commit = best_metric_commit
-                critic_dir = out_dir / "runs" / "critic_seed43"
-                critic_results, critic_output = run_gpu_burst(
+                critic_dir = out_dir / "runs" / "critic_confirmation"
+                critic_results, _ = run_evaluations(
                     repo,
                     [provisional_best["commit"]],
-                    43,
                     critic_dir,
-                    args.gpu,
                 )
                 critic_result = critic_results[provisional_best["commit"]]
-                provisional_best["critic_score"] = critic_result.get("val_bpb")
-                provisional_best["replicate_score"] = critic_result.get("val_bpb")
+                provisional_best["critic_score"] = critic_result.get("loss")
+                provisional_best["replicate_score"] = critic_result.get("loss")
                 provisional_best["critic_memory_gb"] = critic_result.get("memory_gb")
                 first_score = float(provisional_best["score"])
-                second_score = critic_result.get("val_bpb")
+                second_score = critic_result.get("loss")
                 accepted = critic_accepts(
                     profile,
                     first_score,
@@ -1890,7 +1757,7 @@ def orchestrate(args):
                     "lead": provisional_best.get("lead"),
                     "memory_gb": critic_result.get("memory_gb"),
                     "description": (
-                        f"critic seed-43 confirmation for "
+                        f"critic second-evaluation confirmation for "
                         f"{provisional_best['idea']}"
                     ),
                     "role": "critic",
@@ -1906,7 +1773,7 @@ def orchestrate(args):
 
             for candidate in candidate_records:
                 if candidate.get("status") == "pending":
-                    if candidate.get("gpu_status") != "ok":
+                    if candidate.get("evaluation_status") != "ok":
                         event_status = "crash"
                     elif candidate is provisional_best and accepted:
                         event_status = "keep"
@@ -1992,7 +1859,7 @@ def orchestrate(args):
             if latest_candidate is not None and accepted:
                 print(
                     f"round {round_num}: accepted {latest_candidate['commit']} "
-                    f"at mean val_bpb {best_val:.6f}"
+                    f"at mean loss {best_val:.6f}"
                 )
             else:
                 print(f"round {round_num}: no candidate confirmed")
@@ -2002,7 +1869,7 @@ def orchestrate(args):
         "branch": branch,
         "out": str(out_dir),
         "best_commit": best_metric_commit,
-        "best_val_bpb": best_val,
+        "best_loss": best_val,
         "no_push": effective_no_push,
     }
 
@@ -2013,22 +1880,18 @@ def build_parser():
     parser.add_argument("--rounds", type=int, default=10)
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
-    parser.add_argument("--profile", default=str(DEFAULT_PROFILE))
     parser.add_argument(
-        "--llm", choices=("openai", "tinker", "fake", "queue"), default="openai"
+        "--llm", choices=("openai", "tinker", "fake"), default="openai"
     )
-    parser.add_argument("--gpu", choices=("modal", "fake", "local"), default="modal")
     parser.add_argument(
         "--task",
+        required=True,
         choices=sorted(path.parent.name for path in TESTCASES.glob("*/task.json")),
-        help="run on a small testcases/<task> benchmark with its local evaluator",
+        help="CPU benchmark to run with its sandboxed evaluator",
     )
     parser.add_argument("--model")
-    parser.add_argument("--queue-dir")
-    parser.add_argument("--queue-timeout", type=float, default=3600)
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), default="on")
-    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
     return parser
@@ -2044,7 +1907,7 @@ def main(argv=None):
         return 2
     print(
         f"arm {result['arm']} complete; best {result['best_commit']} "
-        f"val_bpb={result['best_val_bpb']:.6f}; branch={result['branch']}; "
+        f"loss={result['best_loss']:.6f}; branch={result['branch']}; "
         f"out={result['out']}; pushed={not result['no_push']}"
     )
     return 0

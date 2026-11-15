@@ -351,7 +351,7 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertEqual(rows[0]["description"], "baseline")
             self.assertEqual(len(rows), 5)
             for row in rows:
-                self.assertLess(float(row["val_bpb"]), 0.2)
+                self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
 
 

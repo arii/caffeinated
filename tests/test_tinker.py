@@ -30,7 +30,12 @@ class TinkerTests(unittest.TestCase):
         return client.call("SCOUT_QUERY", agent="worker-1", round_num=1, values={})
 
     def test_cli_and_model_precedence(self):
-        self.assertEqual(swarm.build_parser().parse_args(["--llm", "tinker"]).llm, "tinker")
+        self.assertEqual(
+            swarm.build_parser()
+            .parse_args(["--task", "hadamard19", "--llm", "tinker"])
+            .llm,
+            "tinker",
+        )
         self.assertEqual(self.client().model, "stub/chat-model")
         self.assertEqual(self.client(model="explicit-model").model, "explicit-model")
 
