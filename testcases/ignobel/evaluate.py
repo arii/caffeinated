@@ -17,8 +17,8 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
 loss = 1 - (replicated and significant)
 
 Every graded study is appended to <run>/ignobel_studies.jsonl; the Ig Nobel
-committee (committee.py, from ignobel/committee.py) scores the replicated
-ones after the run with score_run.py.
+committee (committee.py) scores the replicated ones after the run with
+score_run.py.
 """
 
 import csv
@@ -132,7 +132,9 @@ def rate(value, row, per):
     if value is None or per is None:
         return value
     denominator = row[per]
-    return value / float(denominator) if denominator not in ("", "0") and float(denominator) else None
+    return (
+        value / float(denominator) if denominator not in ("", "0") and float(denominator) else None
+    )
 
 
 def association(rows, claim, sides):
@@ -267,7 +269,10 @@ def column(entry, name):
 
 
 def test_hash(prereg):
-    test = {key: prereg["dataset"].get(key) for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")}
+    test = {
+        key: prereg["dataset"].get(key)
+        for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")
+    }
     test["direction"] = prereg["direction"]
     return hashlib.sha256(json.dumps(test, sort_keys=True).encode()).hexdigest()[:16]
 

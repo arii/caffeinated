@@ -93,8 +93,7 @@ agents and events, a gap-free `tick`, plus manifest, timeline, keyframes and
 entity files. The frontend can replay these with no backend.
 
 ```sh
-python3 export_viewer.py out/ --dest lab/data/runs                    # swarm.py --out dir
-python3 export_viewer.py ../ignobel/runs/full-s0 --dest lab/data/runs  # ignobel events.jsonl
+python3 export_viewer.py out/ --dest lab/data/runs  # swarm.py --out dir (any --task, including ignobel)
 ```
 
 Prompts, responses and reasoning only appear in `entities/llm_calls.json`,

@@ -1,18 +1,17 @@
-"""The Ig Nobel committee from ignobel/committee.py, run after a swarm run on replicated studies.
+"""The Ig Nobel committee, run after a swarm run on replicated studies.
 
 Two judges with different prompts and models rate a host-written abstract of
 the registered test and its result (no author-written prose, so a study
 cannot talk the judges up): LAUGH and THINK on 1-10, plus whether the joke
 targets a group of people. Per judge the score is min(laugh, think); the study
-gets the lower judge's score, or 0 if either judge flags it. The judge prompts
-are read from ignobel/committee.py (not imported) so both projects share one
-committee. Verdicts are cached by (model, prompt), so a run grades the same
-abstract the same way every time.
+gets the lower judge's score, or 0 if either judge flags it. Verdicts are
+cached by (model, prompt), so a run grades the same abstract the same way
+every time. Nothing on the run side (swarm.py, evaluate.py, round_context.py)
+may import this module; a test enforces it.
 
 Run after a swarm run with score_run.py; needs TINKER_API_KEY.
 """
 
-import ast
 import hashlib
 import json
 import os
@@ -38,20 +37,23 @@ UNTRUSTED_NOTE = (
 )
 
 
-def judge_prompts(path=ROOT / "ignobel" / "committee.py"):
-    tree = ast.parse(Path(path).read_text(encoding="utf-8"))
-    prompts = {}
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in (
-                    "JUDGE_A_SYSTEM",
-                    "JUDGE_B_SYSTEM",
-                ):
-                    prompts[target.id[6].lower()] = ast.literal_eval(node.value)
-    if set(prompts) != {"a", "b"}:
-        raise RuntimeError(f"judge prompts not found in {path}")
-    return prompts
+JUDGE_A_SYSTEM = (
+    "You are a senior member of an Ig Nobel-style committee. You read a study abstract and judge two things "
+    "on a 1-10 scale: LAUGH (does it make a thoughtful adult smile or laugh?) and THINK (does it then make them "
+    "think: is there a real, testable, non-trivial idea underneath?). Be strict: 10 is once-a-decade. "
+    "Also decide targets_group: true if the humour comes at the expense of a group of people (nationality, "
+    "gender, religion, disability, age, profession and the like). Return JSON {laugh, think, targets_group, reason}."
+)
+JUDGE_B_SYSTEM = (
+    "You are a science journalist who writes a weekly column on odd research. Rate this abstract for your readers. "
+    "funny: 1-10, would your readers chuckle? substantive: 1-10, is there a finding you could explain to a skeptic "
+    "without embarrassment? Flag mocks_people=true if the joke depends on belittling a group of people. "
+    "Answer with JSON {laugh: <funny>, think: <substantive>, targets_group: <mocks_people>, reason}."
+)
+
+
+def judge_prompts():
+    return {"a": JUDGE_A_SYSTEM, "b": JUDGE_B_SYSTEM}
 
 
 def models():

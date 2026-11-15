@@ -4,7 +4,9 @@ This reference locates the code, formulas and thresholds described in the
 [backend entry point](../README.md#boredom-meter).
 Local line numbers refer to upstream source baseline `a3c21cc`, merged in `58ff460`.
 Ig Nobel citations retain pinned main revision `be658b6`; PR refs describe separate
-implementations, not the CPU backend.
+implementations, not the CPU backend. These `ignobel/` citations are historical: the
+standalone harness was removed from `main`, and the Ig Nobel hunt is now the swarm task
+`swarm.py --task ignobel` (`testcases/ignobel/`).
 
 ## Implementation map
 

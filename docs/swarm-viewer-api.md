@@ -21,11 +21,10 @@ python -m viewer --data /path/to/export-root --port 8000
 ```
 
 The export root contains index.json and UUID-named run directories. The CLI binds
-to 127.0.0.1. Static export supports both source formats:
+to 127.0.0.1. Static export reads a `swarm.py --out` dir (any `--task`, including `ignobel`):
 
 ```sh
-python export_viewer.py /path/to/run --swarm autoresearch --dest /path/to/export-root
-python export_viewer.py /path/to/ignobel-run --swarm ignobel --dest /path/to/export-root
+python export_viewer.py /path/to/run --dest /path/to/export-root
 ```
 
 ### Implemented HTTP routes
@@ -103,7 +102,7 @@ and publishes exports; [log coverage](#gaps-in-current-logs) describes available
 | swarm | code | native artifacts |
 |---|---|---|
 | autoresearch | `swarm.py` on `autoresearch` | `ledger.jsonl`, `assignments.jsonl`, `boredom_log.jsonl`, `research_log.jsonl`, `memory.jsonl`, `memory_log.jsonl`, `llm_log.jsonl`, `critic.tsv`, `results.tsv`, `run_id`, `run.json`, `boredom_profile.json`, optional `viewer_publish_log.jsonl`, `runs/`, default `viewer/` |
-| ignobel | `ignobel/world.py` on `main` | `events.jsonl` (schema in `ignobel/events.md`), `scores.jsonl`, `state.json`, `prompts.jsonl`, `plots/` |
+| ignobel (legacy) | none: the standalone `ignobel/` harness was removed; the Ig Nobel hunt is now `swarm.py --task ignobel`, which exports as `autoresearch` | only the bundled legacy sample recording uses this value; the `ignobel` columns below describe it |
 
 This replaces the per-experiment `caffeinated-trace/v1` (`export_trace.py`, closed PR #4), which
 has no per-agent state between experiments. It also extends the `ResearchEvent` envelope in
@@ -158,7 +157,7 @@ keys). Optional fields are absent, never `null`, unless the type says `| null`.
 ### 3.1 Run manifest
 
 ```ts
-type Swarm = 'autoresearch' | 'ignobel';
+type Swarm = 'autoresearch' | 'ignobel';  // 'ignobel': legacy recordings only; swarm.py --task ignobel exports 'autoresearch'
 type RunStatus = 'running' | 'completed' | 'failed' | 'stopped';
 
 interface RunManifest {
@@ -383,7 +382,7 @@ Renaming or removing a field does.
 - `Reward.value` (autoresearch): `(reference - metric_value) / reference × 100` for `minimize`
   (positive = better than the best before it); `crash`/`reject` = `0`, `accepted = false`.
   This uses the same sign convention as trace-v1 `score`.
-- `Reward.value` (ignobel): `replicated ? 1 - gap(prediction, actual) : 0`, from `ignobel/boredom.py`.
+- `Reward.value` (legacy ignobel recordings): `replicated ? 1 - gap(prediction, actual) : 0`, from the removed `ignobel/boredom.py`.
   Committee scores arrive at the end as `discovery.made` (`committee_pick`). They are never shown to
   agents during the run.
 - **Swarm best** is the confirmed (critic-accepted) best, as in trace v1, not the raw provisional
@@ -469,7 +468,7 @@ Errors: `404 {error: "unknown_run" | "unknown_agent" | "unknown_entity"}`,
 
 ### 4.1 Static export (no server)
 
-Replay does not need a backend. `export_viewer.py <out_dir> --swarm autoresearch|ignobel` writes
+Replay does not need a backend. `export_viewer.py <out_dir>` writes
 files whose JSON matches the endpoints, so the frontend can switch base URLs:
 
 ```
@@ -575,8 +574,8 @@ Current CPU runs have closed several gaps from the original proposal:
 5. **Model text.** llm_log.jsonl stores prompts, parsed responses and provider-returned
    attempt content/reasoning when available. A proposal's rationale and recorded response
    provide the available explanations; additional internal reasoning is not guaranteed.
-6. **Ig Nobel timestamps.** events.jsonl intentionally omits wall-clock timestamps;
-   file order and ticks supply replay time.
+6. **Legacy Ig Nobel timestamps.** The removed harness's events.jsonl omitted wall-clock
+   timestamps; its recordings use file order and ticks for replay time.
 
 ## Out of scope
 
