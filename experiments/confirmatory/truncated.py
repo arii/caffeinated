@@ -8,8 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "testcases/bixbench_numeric")
-import evaluate as ev
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from testcases.bixbench_numeric import evaluate as ev  # noqa: E402
 
 R = Path("results")
 LLMF = re.compile(r"^round (\d+): \S+ LLM call failed", re.M)
