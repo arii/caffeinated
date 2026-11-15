@@ -200,6 +200,30 @@ class ResearchSourceTests(unittest.TestCase):
             fake.literature = "keyless"
             self.assertEqual(swarm.resolve_research_source(fake), "keyless")
 
+    def test_resume_keeps_the_runs_literature_setting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            run = {"task": "ignobel", "llm": "fake", "exa": "off", "literature": "keyless"}
+            run |= {"repo": "/repo", "branch": "swarm-B-1", "status": "running"}
+            (out / "run.json").write_text(json.dumps(run), encoding="utf-8")
+            swarm.write_checkpoint(
+                out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+            )
+            args = swarm.build_parser().parse_args(["--resume", str(out)])
+            swarm.resolve_run_args(args)
+            self.assertEqual(args.literature, "keyless")
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(swarm.resolve_research_source(args), "keyless")
+            other = swarm.build_parser().parse_args(["--resume", str(out), "--literature", "off"])
+            with self.assertRaisesRegex(ValueError, "--literature off conflicts"):
+                swarm.resolve_run_args(other)
+            del run["literature"]
+            (out / "run.json").write_text(json.dumps(run), encoding="utf-8")
+            legacy = swarm.build_parser().parse_args(["--resume", str(out)])
+            swarm.resolve_run_args(legacy)
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertEqual(swarm.resolve_research_source(legacy), "off")
+
 
 if __name__ == "__main__":
     unittest.main()
