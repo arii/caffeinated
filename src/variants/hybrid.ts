@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { LabWorld, LabState, Collider } from '../engine/types';
 
-/** Common Ground: Daylight instruments and human researchers in a warm modular commons. */
+/** Lab Environment: Daylight instruments and human researchers in a warm modular commons. */
 export function createWorld(): LabWorld {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#dce7e9');
@@ -65,7 +65,7 @@ export function createWorld(): LabWorld {
   box(-7.9,2.25,12.7,7.5,4.5,.14,ivory);box(7.9,2.25,12.7,7.5,4.5,.14,ivory);
   for(const x of [-3.9,3.9])box(x,2.25,12.65,.12,4.5,.18,steel);
   box(0,2.25,12.8,7.7,4.5,.025,glass);
-  label('COMMON GROUND / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,'#f1ecdf','#425859',Math.PI);
+  label('LAB ENVIRONMENT / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,'#f1ecdf','#425859',Math.PI);
   // Clear plaster ceiling with restrained task-light rails.
   for(const z of [-8,-1,6]) {
     box(0,4.35,z,20,.08,.07,charcoal);
@@ -149,7 +149,7 @@ export function createWorld(): LabWorld {
   box(2.35,1.8,-10.25,.04,.38,.05,steel);
   label('03   EXPERIMENT DESIGN',.2,2.65,-11.4,5.65,.32);
   // Rear feature graphic and material sample panels.
-  label('COMMON GROUND',.15,3.82,-13.32,7.4,.8,'#f1ecdf','#3e5c59');
+  label('LAB ENVIRONMENT',.15,3.82,-13.32,7.4,.8,'#f1ecdf','#3e5c59');
   label('A WORKING LAB. A SHARED UNDERSTANDING.',.15,3.22,-13.31,7.4,.24,'#f1ecdf','#84958c');
   for(let i=0;i<5;i++)box(-2.2+i*1.12,2.68,-13.29,.85,.06,.02,i%2?sage:wood);
   // A notebook desk near the entrance, visibly different from the wet lab.

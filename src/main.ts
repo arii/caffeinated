@@ -14,7 +14,7 @@ const styles={
   realistic:{factory:realistic,name:'Daylight',label:'REALISTIC LAB',description:'A contemporary working laboratory.\nDaylight, glass, and material detail.',notes:'A grounded, contemporary lab with daylight windows, wet-lab instruments, human research agents, and carefully proportioned work surfaces. Best when the experience should feel close to a real facility.'},
   cartoon:{factory:cartoon,name:'Wonderworks',label:'CARTOON LAB',description:'Big ideas. A little delightful chaos.\nA lab with personality.',notes:'A cobalt, coral, and yellow idea factory with rounded equipment and expressive robot researchers. Best when character and immediate visual storytelling are the priority.'},
   foundation:{factory:foundation,name:'Fieldwork',label:'MODULAR FOUNDATION',description:'A warm precision workshop.\nBuilt for the next experiment.',notes:'An architectural research commons with ash, ivory, and ink accents. Modular bays give each agent and experiment a clear home. An alternative foundation for multiple scientific domains and an expanding agent team.'},
-  hybrid:{factory:hybrid,name:'Common Ground',label:'DAYLIGHT × FIELDWORK',description:'Real instruments. Warm architecture.\nA shared home for research agents.',notes:'A blend of studies 01 and 03: contemporary scientific equipment, human researchers, continuous terrazzo flooring, a clean plaster ceiling, modular work bays, a shared field table, and a dataset library.'},
+  hybrid:{factory:hybrid,name:'Lab Environment',label:'DAYLIGHT × FIELDWORK',description:'Real instruments. Warm architecture.\nA shared home for research agents.',notes:'A blend of studies 01 and 03: contemporary scientific equipment, human researchers, continuous terrazzo flooring, a clean plaster ceiling, modular work bays, a shared field table, and a dataset library.'},
 };
 type StyleId=keyof typeof styles;
 let world:LabWorld, renderer:THREE.WebGLRenderer, currentStyle:StyleId='hybrid';
@@ -65,7 +65,7 @@ function switchStyle(id:StyleId){
   world.camera.aspect=innerWidth/innerHeight;world.camera.updateProjectionMatrix();world.camera.rotation.order='YXZ';
   const euler=new THREE.Euler().setFromQuaternion(world.camera.quaternion,'YXZ');yaw=euler.y;pitch=euler.x;
   renderer.toneMappingExposure=world.exposure??1;
-  $('style-name').textContent=styles[id].name;$('style-description').innerHTML=styles[id].description.replace('\n','<br>');
+  document.title=`${styles[id].name} / BioLab`;$('style-name').textContent=styles[id].name;$('style-description').innerHTML=styles[id].description.replace('\n','<br>');
   $('style-index').textContent=`STUDY ${Object.keys(styles).indexOf(id)+1<10?'0':''}${Object.keys(styles).indexOf(id)+1} / ${styles[id].label}`;
   document.querySelectorAll<HTMLElement>('[data-style]').forEach(b=>{b.classList.toggle('active',b.dataset.style===id);b.setAttribute('aria-pressed',String(b.dataset.style===id));});
   const url=new URL(location.href);url.searchParams.set('style',id);history.replaceState(null,'',url);

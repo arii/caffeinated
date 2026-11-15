@@ -6,7 +6,7 @@ Four distinct first-person laboratories on one shared engine. Pick a visual dire
 - **Wonderworks** (`?style=cartoon`): cobalt/coral/yellow cartoon lab, rounded equipment, and expressive robot researchers.
 - **Fieldwork** (`?style=foundation`): a modular ash/ivory/ink research commons with a spatial field table and flexible experiment bays. An alternative foundation for domain-neutral research.
 
-- **Common Ground** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s modular bays, shared field table, and dataset library, with a clear plaster ceiling. This is the selected default style.
+- **Lab Environment** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s modular bays, shared field table, and dataset library, with a clear plaster ceiling. This is the selected default style.
 
 ## Locked stack
 
@@ -51,3 +51,15 @@ The current adapter is local and synthetic. NPC roles and experiment results are
 `npm run build` checks TypeScript and builds static deployable assets. Eleven tests cover the synthetic paired experiment, event validation, ordering, metric direction, state completion, and navigable access to all stations in each room. Browser QA checks rendering and style switching. All floors use continuous surfaces rather than overlapping tile geometry; runtime shadow maps are disabled to avoid floor banding.
 
 The three room variants were developed independently on `agent/lab-realistic`, `agent/lab-cartoon`, and `agent/lab-foundation`. The combined comparison app is on `agent/masha/lab-style-options`. The original lab remains on `agent/masha/little-sprout-lab`.
+
+## Agreed backend plan (not implemented yet)
+
+Continue on `agent/masha/lab-style-options`. Use Python/FastAPI for run APIs and adapters, SQLite for run state and ordered events, filesystem storage for original logs and artifacts, and Server-Sent Events for browser updates. Execute research in separate worker processes rather than inside API request handlers.
+
+Inputs are the existing autoresearch/benchmark runner, the Ig Nobel community runner, and the existing `caffeinated-trace/v1` exporter for replay. Each gets an adapter that preserves its native records, metric units and direction, source references, and mock/live provenance. Domain solvers can later supply scientific artifacts through the same boundary.
+
+The frontend connects through `ResearchAdapter`: HTTP commands start or stop supported jobs; an initial snapshot and ordered SSE events update the research-state reducer. World/agent animation and station displays consume that state. Raw metrics and scientific time remain separate from render time and visual effects. Replace fixed demo identities with the actual backend agent roster as part of integration.
+
+First milestone: bring existing trace replay into the selected Lab Environment. Next: durable run/event APIs and reconnect. Then: a bounded live CPU benchmark, followed by the Ig Nobel adapter. Pause applies to replay initially; live stop/pause capabilities must reflect runner support.
+
+Planned API surface: `GET /experiments`, `POST /runs`, `GET /runs/{id}`, `GET /runs/{id}/events`, `GET /runs/{id}/artifacts`, `POST /runs/{id}/stop`. Keep API keys server-side. Verify existing gate/meter review findings and sandbox execution before enabling expensive or generated-code runs.
