@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from datetime import timedelta, timezone
 from pathlib import Path
 
 import export_viewer
@@ -105,3 +106,30 @@ class ViewerApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_singular_hypothesis_kind(self):
+        hypotheses = json.loads((self.run_dir / "entities" / "hypotheses.json").read_text())
+        self.assertTrue(hypotheses)
+        self.assertEqual(self.get(f"/entities/hypothesis/{hypotheses[0]['id']}")["id"], hypotheses[0]["id"])
+
+    def test_ts_seek_compares_instants(self):
+        stamped = [e for e in self.events if e["ts"]]
+        last = viewer_api.instant(stamped[-1]["ts"])
+        shifted = last.astimezone(timezone(timedelta(hours=-8))).isoformat()
+        self.assertEqual(self.get("/world", ts=shifted)["tick"], stamped[-1]["tick"])
+        self.assertEqual(self.client.get(self.base + "/world", params={"ts": "nope"}).status_code, 422)
+
+    def test_events_vary_on_accept(self):
+        self.assertEqual(self.client.get(self.base + "/events").headers["vary"], "Accept")
+
+    def test_half_written_reload_keeps_state_and_retries(self):
+        self.get("")
+        entities = self.run_dir / "entities" / "hypotheses.json"
+        good = entities.read_text()
+        entities.write_text("[{")
+        with (self.run_dir / "events.ndjson").open("a") as handle:
+            handle.write("\n")
+        self.assertEqual(self.get("/ledger"), self.get("/ledger"))
+        entities.write_text(good)
+        store_run = self.get("")
+        self.assertEqual(store_run["run_id"], self.manifest["run_id"])
