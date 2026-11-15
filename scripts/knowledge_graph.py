@@ -103,8 +103,8 @@ def build(recording):
             winner=judge.get("winner") == sid,
             baseline=judged.get("baseline", False),
             verdict=judged.get("verdict"),
-            x=dataset.get("x"),
-            y=dataset.get("y"),
+            var_x=dataset.get("x"),
+            var_y=dataset.get("y"),
         )
         if study.get("agent_id") in agents:
             edges.append({"source": study["agent_id"], "target": sid, "kind": "proposed"})
