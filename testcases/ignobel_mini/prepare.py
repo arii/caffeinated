@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 COMMIT = "4c1ff5e3aef1816ae04af63218015066e186c147"
 BASE = f"https://raw.githubusercontent.com/fivethirtyeight/data/{COMMIT}"
 MAX_LEVELS = 25
+MAX_BYTES = 5_000_000
 DROP = re.compile(r"^(RespondentID|StartDate|EndDate|page_id|name|urlslug|FIRST APPEARANCE|EPISODE|TITLE)$")
 DEMOGRAPHIC = re.compile(
     r"^(Gender|Age|Household Income|Education|Location \(Census Region\)|US Region|"
@@ -85,12 +86,24 @@ def clean(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+def source_url(path):
+    return path if path.startswith("https://") else f"{BASE}/{path}"
+
+
 def fetch(path):
-    cache = HERE / ".cache" / "raw" / path.replace("/", "__")
+    url = source_url(path)
+    name = path.replace("/", "__") if url != path else "url_" + hashlib.sha256(url.encode()).hexdigest()[:16]
+    cache = HERE / ".cache" / "raw" / name
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)
-        with urllib.request.urlopen(f"{BASE}/{path}", timeout=60) as response:
-            cache.write_bytes(response.read())
+        request = urllib.request.Request(url, headers={"User-Agent": "caffeinated-ignobel/1"})
+        with urllib.request.urlopen(request, timeout=60) as response:
+            raw = response.read(MAX_BYTES + 1)
+        if len(raw) > MAX_BYTES:
+            raise ValueError(f"{url} is larger than {MAX_BYTES} bytes")
+        temporary = cache.with_suffix(".tmp")
+        temporary.write_bytes(raw)
+        temporary.replace(cache)
     raw = cache.read_bytes()
     try:
         return raw.decode("utf-8")
@@ -99,7 +112,7 @@ def fetch(path):
 
 
 def read_table(path, spec):
-    rows = list(csv.reader(io.StringIO(fetch(path))))
+    rows = list(csv.reader(io.StringIO(fetch(path)), delimiter=spec.get("delimiter", ",")))
     header, rows = rows[0], rows[1:]
     sub = None
     if rows and "Response" in rows[0]:
@@ -150,7 +163,7 @@ def build(name, spec):
     keep, variables = [], {}
     groups = {}
     for index, column in enumerate(columns):
-        if DROP.match(column["source"]):
+        if DROP.match(column["source"]) or re.match(spec.get("drop", r"(?!)"), column["source"]):
             continue
         fill = spec.get("fill", {}).get(column["source"])
         values = [clean(row[index]) if index < len(row) else "" for row in rows]
@@ -205,8 +218,8 @@ def build(name, spec):
             writer.writerows(part)
     return {
         "title": spec["title"],
-        "source": [f"{BASE}/{p}" for p in spec["files"]],
-        "license": "CC BY 4.0",
+        "source": [source_url(p) for p in spec["files"]],
+        "license": spec.get("license", "CC BY 4.0"),
         "file": f"data/{name}.csv",
         "n_discovery": len(discovery),
         "variables": variables,

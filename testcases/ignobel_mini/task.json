@@ -1,6 +1,6 @@
 {
  "editable": "study.py",
- "brief": "a study script (`study.py`) that explores the discovery half of 8 real FiveThirtyEight surveys (codebook under Task inputs; data/<dataset>.csv) and prints one JSON claim {dataset, x, x_level, y, y_level, direction}. The host re-tests the claim on a hidden replication half (Spearman, p < 0.01, same sign) and scores the codebook wording of x and y with a frozen judge trained on real Ig Nobel winners vs ordinary paper titles; loss = 1 - min(1, |rho_rep|/0.2) * ignobel_likeness (0 if it fails to replicate or is trivial: same question, near-identical wording, or two demographics). The record to beat is a brute-force discovery-half scan (macaroni and cheese goes with cheesecake), loss 0.3721",
+ "brief": "a study script (`study.py`) that explores the discovery half of 8 real FiveThirtyEight surveys (codebook under Task inputs; data/<dataset>.csv) or of NEW real public data it brings in: list CSV/TSV URLs in the top-level EXTRA_DATA literal (open-data hosts such as raw.githubusercontent.com, zenodo, figshare, OSF, Dryad, data.gov, or any URL cited in the swarm's Exa results). The host downloads each once, splits its rows the same way, and exposes data/<id>.csv plus data/<id>.codebook.json, where id = 'x' + sha256(url)[:10]; because the study runs on that data it can pick its claim programmatically in the same edit and prints one JSON claim {dataset, x, x_level, y, y_level, direction}. The host re-tests the claim on a hidden replication half (Spearman, p < 0.01, same sign) and scores the codebook wording of x and y with a frozen judge trained on real Ig Nobel winners vs ordinary paper titles; loss = 1 - min(1, |rho_rep|/0.2) * ignobel_likeness (0 if it fails to replicate or is trivial: same question, near-identical wording, or two demographics). The record to beat is a brute-force discovery-half scan (macaroni and cheese goes with cheesecake), loss 0.3721",
  "fake_edits": [
   {
    "old": "Y, Y_LEVEL = \"v04\", \"Bread-based\"",
@@ -40,5 +40,22 @@
  "context_files": [
   "codebook.txt",
   "data/thanksgiving.csv"
- ]
+ ],
+ "scout": {
+  "goal": "a real, odd, everyday phenomenon (human, animal, food or object behaviour) that is documented in published research or open data the swarm has NOT used yet, ideally with a downloadable raw CSV/TSV",
+  "channels": "paper_query: search papers and past Ig Nobel winners for a measurable everyday oddity. code_query: search for a raw, downloadable CSV/TSV dataset on that oddity (GitHub raw files, Zenodo, figshare, OSF, Dryad, data.gov).",
+  "pick_criterion": "points to real data (ideally a direct CSV/TSV URL) or a real published effect the study can test on the existing surveys",
+  "extract_question": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "since": "1990-01-01",
+  "code_domains": [
+   "github.com",
+   "raw.githubusercontent.com",
+   "zenodo.org",
+   "figshare.com",
+   "osf.io",
+   "datadryad.org",
+   "data.gov",
+   "vincentarelbundock.github.io"
+  ]
+ }
 }

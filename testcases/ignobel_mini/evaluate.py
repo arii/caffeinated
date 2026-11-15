@@ -30,6 +30,7 @@ for path in (ROOT, HERE):
 from testcases import sandbox
 from judge_text import likeness, tokens
 from stats import spearman
+import external
 
 TIMEOUT_S = 120
 ALPHA = 0.01
@@ -69,13 +70,12 @@ def side_text(variable, level):
 
 
 def headline(dataset, x, x_level, y, y_level, direction):
-    def phrase(variable, level):
+    def phrase(variable, level, up=True):
         if level is None:
-            return f'higher "{variable["label"]}"'
-        return f'answering "{level}" to "{variable["label"]}"'
+            return f'{"higher" if up else "lower"} "{variable["label"]}"'
+        return f'{"" if up else "not "}answering "{level}" to "{variable["label"]}"'
 
-    more = "more" if direction == "positive" else "less"
-    return f"In the {dataset['title']}, {phrase(x, x_level)} goes with {more} {phrase(y, y_level)}"
+    return f"In the {dataset['title']}, {phrase(x, x_level)} goes with {phrase(y, y_level, direction == 'positive')}"
 
 
 def shared_words(dataset):
@@ -180,12 +180,14 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
     status, reason, diagnostics, candidate_stderr = "crash", None, "", ""
     network_isolated = False
     graded = None
+    notes = []
     try:
         sandbox.prepare_task(
             task_dir,
             config.get("context_files", []),
             required_files=("codebook.json", ".cache/replication/thanksgiving.csv"),
         )
+        extra, notes = external.intake(source, task_dir)
         run = sandbox.run_candidate(
             task_dir,
             config["editable"],
@@ -203,7 +205,8 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
                 lines = [line for line in run.stdout.splitlines() if line.strip()]
                 if not lines:
                     raise ValueError("study.py printed nothing")
-                graded = score_claim(json.loads(lines[-1]), task_dir)
+                codebook = {**load_codebook(task_dir), **extra}
+                graded = score_claim(json.loads(lines[-1]), task_dir, codebook=codebook)
             except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
                 reason, diagnostics = "invalid_output", f"{type(error).__name__}: {error}"
             else:
@@ -215,7 +218,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
 
     score = graded["score"] if graded else 0.0
     loss = 1.0 - score
-    out = []
+    out = list(notes)
     if graded:
         out += [
             f"claim: {graded['headline']}",

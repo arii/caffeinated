@@ -400,14 +400,18 @@ def run_scout(args):
     records = read_log(args.log)
     query_id = query_id_for(records)
     if args.kind == "paper":
+        category = getattr(args, "category", None) or "publication"
         payload = query_payload(
-            args.query, args.n, category="publication", start_published_date=since
+            args.query,
+            args.n,
+            category=None if category.casefold() == "none" else category,
+            start_published_date=since,
         )
     else:
         payload = query_payload(
             args.query,
             args.n,
-            include_domains=["github.com"],
+            include_domains=getattr(args, "domains", None) or ["github.com"],
             start_published_date=since,
         )
     purpose = "worker-search" if args.command == "worker-search" else "scout"

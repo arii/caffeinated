@@ -58,6 +58,17 @@ logistic regression trained on real Ig Nobel rationales and winning-paper titles
 with `python3 testcases/_reference/ignobel_reference.py`. The judge is a proxy
 for the committee, not the committee.
 
+Studies can also bring in new real data: a top-level `EXTRA_DATA = [url, ...]`
+literal in `study.py` (read with `ast`, never executed on the host) names up to
+three CSV/TSV files. `external.py` fetches each https URL only if it is on an
+open-data host (GitHub raw, Zenodo, figshare, OSF, Dryad, data.gov, Rdatasets,
+...) or appears in the run's Exa research log (`TASK_RESEARCH_LOG`), caps it at
+5 MB, freezes it in `.cache/raw`, drops id/row-number columns, and splits it like
+the surveys into `data/<id>.csv` + `data/<id>.codebook.json` and a hidden
+`.cache/replication/<id>.csv` (id = `x` + sha256(url)[:10]). The candidate still
+runs offline. `task.json`'s `scout` block points the swarm's Exa scouts at odd
+everyday phenomena and downloadable datasets instead of small-GPT training.
+
 ## Run the swarm on a task
 
 ```sh

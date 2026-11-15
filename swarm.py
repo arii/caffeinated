@@ -539,6 +539,8 @@ def research_call(
     n=3,
     since=None,
     cell=None,
+    category="publication",
+    domains=None,
 ):
     log_path = Path(out_dir) / "research_log.jsonl"
     cache_dir = Path(out_dir) / "exa_cache"
@@ -558,6 +560,8 @@ def research_call(
         replay=replay,
         category="publication",
         cell=cell,
+        category=category,
+        domains=domains,
     )
     if os.environ.get("EXA", "").casefold() == "off":
         research.run_disabled(args)
@@ -839,6 +843,7 @@ def run_scouts(
     replay,
 ):
     leads = {}
+    scout = (TASK or {}).get("scout", {})
     cells = [] if arm == "A" else suggest_cells(profile, events)
     targets = direction_cells(cells) or ["none"]
     for scout_number, agent in enumerate(scouts):
@@ -883,6 +888,8 @@ def run_scouts(
             kind="paper",
             n=3,
             cell=target_cell,
+            since=scout.get("since"),
+            category=scout.get("paper_category", "publication"),
         )
         code_records = research_call(
             "scout",
@@ -894,6 +901,8 @@ def run_scouts(
             kind="code",
             n=3,
             cell=target_cell,
+            since=scout.get("since"),
+            domains=scout.get("code_domains"),
         )
         sources = source_records(paper_records) + source_records(code_records)
         if not sources:
@@ -920,9 +929,10 @@ def run_scouts(
             regime=status["regime"],
             replay=replay,
             source=source_id,
-            question=(
+            question=scout.get(
+                "extract_question",
                 f"What exact method, settings, and measured result could be "
-                f"implemented in {TARGET_FILE} for this task?"
+                f"implemented in {TARGET_FILE} for this task?",
             ),
         )
         extract = next(
@@ -1718,6 +1728,7 @@ def load_task(name):
     task_context = build_task_context(
         task_dir, context_files, config.get("context_max_chars", 6000)
     )
+    scout = config.get("scout", {})
     return {
         **config,
         "name": name,
@@ -1732,6 +1743,16 @@ def load_task(name):
                 task_context
                 if len(task_context) <= 1500
                 else task_context[:1500] + "\n...(truncated)"
+            ),
+            "scout_focus": (
+                f"Task-specific search focus: {scout['goal']}. {scout.get('channels', '')}"
+                if scout.get("goal")
+                else ""
+            ),
+            "scout_pick_focus": (
+                f"For this task, prefer a source that {scout['pick_criterion']}."
+                if scout.get("pick_criterion")
+                else ""
             ),
         },
     }
@@ -2154,6 +2175,7 @@ def _orchestrate(args, publish_state, cleanup):
             **provenance,
         },
     )
+    os.environ["TASK_RESEARCH_LOG"] = str(out_dir / "research_log.jsonl")
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
     critic_path = out_dir / "critic.tsv"

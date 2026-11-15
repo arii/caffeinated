@@ -1,7 +1,8 @@
 """Ig Nobel study: find a real, replicable, laugh-then-think association.
 
 Inputs (read-only): codebook.json and data/<dataset>.csv, the discovery half of
-real FiveThirtyEight survey data. Print ONE JSON claim as the last stdout line:
+real FiveThirtyEight survey data, plus data/<id>.csv for any EXTRA_DATA URL
+(described by data/<id>.codebook.json; ids are fixed per URL). Print ONE JSON claim as the last stdout line:
   {"dataset": ..., "x": "vNN", "x_level": ..., "y": "vNN", "y_level": ...,
    "direction": "positive" | "negative", "title": "optional headline"}
 x_level / y_level are required for categorical variables (the claim compares
@@ -10,10 +11,18 @@ The grader re-tests the claim on a hidden replication half.
 """
 
 import csv
+import glob
 import json
 import math
+import os
+
+# Real public CSV/TSV URLs (e.g. found by the swarm's Exa scouts) for the host to
+# download and split. Each appears next run as data/<id>.csv + data/<id>.codebook.json.
+EXTRA_DATA = []
 
 CODEBOOK = json.load(open("codebook.json", encoding="utf-8"))
+for path in glob.glob("data/*.codebook.json"):
+    CODEBOOK[os.path.basename(path).split(".")[0]] = json.load(open(path, encoding="utf-8"))
 
 
 def rows(dataset):

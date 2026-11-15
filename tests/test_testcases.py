@@ -299,6 +299,21 @@ def predict(context_frames, context_actions, future_actions):
 
 
 class SwarmTaskModeTests(unittest.TestCase):
+    def test_task_scout_settings_reach_prompts(self):
+        from llm import render_prompt
+
+        task = swarm.load_task("ignobel_mini")
+        extra = {"recalled": "", "suggested_cells": "", "target_cell": "none", "sources": ""}
+        prompt = render_prompt("SCOUT_QUERY", {**task["prompt_values"], **extra})
+        self.assertIn("downloadable", prompt)
+        self.assertNotIn("{scout_", prompt)
+        self.assertIn("real data", render_prompt("SCOUT_PICK", {**task["prompt_values"], **extra}))
+        default = swarm.load_task("hadamard19")["prompt_values"]
+        for role in ("SCOUT_QUERY", "SCOUT_PICK"):
+            plain = render_prompt(role, {**default, **extra})
+            self.assertNotIn("Task-specific search focus", plain)
+            self.assertNotIn("{scout_", plain)
+
     def test_task_context_previews_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
@@ -389,6 +404,79 @@ class SwarmTaskModeTests(unittest.TestCase):
             for row in rows:
                 self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
+
+
+class IgnobelExternalDataTests(unittest.TestCase):
+    URL = "https://raw.githubusercontent.com/example/odd/main/socks.csv"
+
+    def setUp(self):
+        sys.path.insert(0, str(TESTCASES / "ignobel_mini"))
+        import external
+        import prepare
+
+        self.external, self.prepare = external, prepare
+        self.tmp = tempfile.TemporaryDirectory()
+        self.task_dir = Path(self.tmp.name)
+        rows = ["rownames,socks_lost,dryer_age,colour"]
+        for i in range(200):
+            rows.append(f"{i},{i % 7 + i % 3},{i % 7},{'red' if i % 2 else 'blue'}")
+        self.csv = "\n".join(rows) + "\n"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_requested_urls_reads_literal_only(self):
+        source = f"EXTRA_DATA = ['{self.URL}', '{self.URL}']\nEXTRA_DATA_2 = ['x']\n"
+        self.assertEqual(self.external.requested_urls(source), [self.URL])
+        self.assertEqual(self.external.requested_urls("EXTRA_DATA = make()\n"), [])
+        self.assertEqual(self.external.requested_urls("not python ("), [])
+
+    def test_url_policy(self):
+        check = self.external.check_url
+        check(self.URL)
+        for url in (
+            "http://raw.githubusercontent.com/a.csv",
+            "https://127.0.0.1/a.csv",
+            "https://localhost/a.csv",
+            "https://evil.example.com/a.csv",
+        ):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                check(url, research_log=self.task_dir / "missing.jsonl")
+        log = self.task_dir / "research_log.jsonl"
+        log.write_text(json.dumps({"url": "https://lab.example.org/raw/odd.csv"}) + "\n")
+        check("https://lab.example.org/raw/odd.csv", research_log=log)
+
+    def test_intake_splits_and_hides_replication(self):
+        with patch.object(self.prepare, "fetch", return_value=self.csv):
+            datasets, notes = self.external.intake(
+                f"EXTRA_DATA = ['{self.URL}']\n", self.task_dir
+            )
+        name = self.external.dataset_id(self.URL)
+        self.assertEqual(list(datasets), [name], notes)
+        entry = datasets[name]
+        labels = {v["label"] for v in entry["variables"].values()}
+        self.assertEqual(labels, {"socks_lost", "dryer_age", "colour"})
+        discovery = (self.task_dir / "data" / f"{name}.csv").read_text().count("\n") - 1
+        hidden = (self.task_dir / ".cache" / "replication" / f"{name}.csv").read_text().count("\n") - 1
+        self.assertEqual(discovery + hidden, 200)
+        self.assertEqual(entry["n_discovery"], discovery)
+        self.assertTrue((self.task_dir / "data" / f"{name}.codebook.json").is_file())
+        ids = {v["label"]: k for k, v in entry["variables"].items()}
+        graded = ignobel.score_claim(
+            {"dataset": name, "x": ids["dryer_age"], "y": ids["socks_lost"], "direction": "positive"},
+            self.task_dir,
+            codebook={name: entry},
+            judge=ignobel.load_judge(),
+        )
+        self.assertTrue(graded["replicated"])
+        self.assertIn('higher "dryer_age" goes with higher "socks_lost"', graded["headline"])
+
+    def test_intake_skips_rejected_urls(self):
+        datasets, notes = self.external.intake(
+            "EXTRA_DATA = ['https://evil.example.com/a.csv']\n", self.task_dir
+        )
+        self.assertEqual(datasets, {})
+        self.assertIn("skipped", notes[0])
 
 
 class IgnobelTests(unittest.TestCase):
