@@ -1410,6 +1410,31 @@ class IgnobelTaskTests(unittest.TestCase):
         self.assertIn(f"raw response excerpt: {raw[:500]}", str(raised.exception))
         self.assertNotIn(raw[:501], str(raised.exception))
 
+    def test_committee_can_use_another_openai_compatible_endpoint(self):
+        committee = ignobel_score_run.committee
+        body = io.BytesIO(json.dumps({"choices": [{"message": {"content": "{}"}}]}).encode())
+        env = {
+            "IGNOBEL_JUDGE_BASE_URL": "https://judge.example/v1/",
+            "IGNOBEL_JUDGE_API_KEY_ENV": "JUDGE_KEY",
+            "JUDGE_KEY": "judge-only",
+            "TINKER_API_KEY": "",
+        }
+        with (
+            patch.dict(os.environ, env),
+            patch.object(committee.urllib.request, "urlopen") as urlopen,
+        ):
+            urlopen.return_value.__enter__.return_value = body
+            committee.require_key()
+            committee._complete("judge/model", "system", "user")
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://judge.example/v1/chat/completions")
+        self.assertEqual(request.get_header("Authorization"), "Bearer judge-only")
+        with (
+            patch.dict(os.environ, {**env, "JUDGE_KEY": ""}),
+            self.assertRaisesRegex(RuntimeError, "JUDGE_KEY is not set"),
+        ):
+            committee.require_key()
+
     def test_committee_prompts_are_the_two_judges(self):
         prompts = ignobel_score_run.committee.judge_prompts()
         self.assertEqual(set(prompts), {"a", "b"})

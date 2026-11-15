@@ -8,8 +8,9 @@ gets the lower judge's score, or 0 if either judge flags it. Verdicts are
 cached by (model, prompt and user message), so a run grades the same abstract
 and prior-work evidence the same way every time.
 
-Judge A uses gpt-oss-120b and judge B uses Qwen3.5; neither is the Kimi
-generator model.
+Judge A uses gpt-oss-120b and judge B uses Qwen3.5 on Tinker by default; neither is
+the Kimi generator model. IGNOBEL_JUDGE_BASE_URL and IGNOBEL_JUDGE_API_KEY_ENV point
+the judges at another OpenAI-compatible endpoint (with IGNOBEL_JUDGE_A_MODEL/_B_MODEL).
 
 `score_run.py` writes a post-run report from the cached in-run verdicts.
 """
@@ -97,9 +98,14 @@ def enabled():
     return os.environ.get("IGNOBEL_COMMITTEE", "on").casefold() != "off"
 
 
+def _key_env():
+    return os.environ.get("IGNOBEL_JUDGE_API_KEY_ENV") or "TINKER_API_KEY"
+
+
 def require_key():
-    if not os.environ.get("TINKER_API_KEY"):
-        raise RuntimeError(COMMITTEE_KEY_MISSING)
+    name = _key_env()
+    if not os.environ.get(name):
+        raise RuntimeError(COMMITTEE_KEY_MISSING.replace("TINKER_API_KEY", name))
 
 
 def _exa_search(headline, task_dir):
@@ -266,10 +272,13 @@ def _normalize_targets_group(value):
 
 
 def _complete(model, system, user):
-    """One Tinker chat completion (OpenAI-compatible endpoint), seed 0, no reasoning knobs."""
+    """One judge chat completion (OpenAI-compatible endpoint), seed 0, no reasoning knobs."""
     import llm
 
-    base_url = os.environ.get("TINKER_BASE_URL", llm.TINKER_BASE_URL).rstrip("/")
+    base_url = (
+        os.environ.get("IGNOBEL_JUDGE_BASE_URL")
+        or os.environ.get("TINKER_BASE_URL", llm.TINKER_BASE_URL)
+    ).rstrip("/")
     payload = {
         "model": model,
         "messages": [
@@ -284,7 +293,7 @@ def _complete(model, system, user):
         f"{base_url}/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {os.environ.get('TINKER_API_KEY', '')}",
+            "Authorization": f"Bearer {os.environ.get(_key_env(), '').strip()}",
             "Content-Type": "application/json",
             "User-Agent": "caffeinated-ignobel-committee",
         },
@@ -299,12 +308,12 @@ def _complete(model, system, user):
                 time.sleep(5 * (attempt + 1))
                 continue
             detail = error.read().decode("utf-8", "replace")[:300]
-            raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
+            raise RuntimeError(f"judge endpoint returned HTTP {error.code}: {detail}") from error
         except urllib.error.URLError as error:
             if attempt < 2:
                 time.sleep(5 * (attempt + 1))
                 continue
-            raise RuntimeError(f"Tinker request failed: {error.reason}") from error
+            raise RuntimeError(f"judge endpoint request failed: {error.reason}") from error
 
 
 def _ask(model, system, user, task_dir):
