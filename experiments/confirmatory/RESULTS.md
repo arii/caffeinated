@@ -1,5 +1,29 @@
 # Confirmatory results (Kimi K3.1 via Tinker, research off for BixBench)
 
+## Summary (n = 3 seeds per comparison; descriptive only, not significance-tested)
+- **S > B on held-out accuracy in the completed strict-guard bixbench_numeric set:** S 0.296 vs B 0.056
+  (S better on 3/3 seeds). S also beats A (0.093) on 3/3 seeds. These are 3 paired seeds; the smallest
+  attainable sign-flip p is 0.25, so no claim here is statistically significant.
+- **Guarded vs unguarded held-out accuracy (mean over 3 seeds):**
+
+  | set | A guarded / unguarded | B guarded / unguarded | S guarded / unguarded |
+  |---|---|---|---|
+  | strict guard, complete | 0.093 / 0.093 | 0.056 / 0.056 | 0.296 / 0.296 |
+  | guard2, truncated | 0.111 / 0.222 | 0.259 / 0.259 | 0.241 / 0.352 |
+
+- **Known false-positive classes in the gold-literal guard:**
+  1. conventional statistical constants (0.8, 0.975, 1.0, 0.75) inside wide gold ranges, fixed in c31ab55;
+  2. numerical tolerances (1e-10 inside 1.13e-12 to 1.13e-10), fixed in a0d4fcd;
+  3. integer loop bounds (`range(50)` inside 48 to 50), not fixed, so the unguarded score is shown.
+- **Runs truncated at the 01:45 PST HTTP 402 cutoff.** "Clean rounds" means the last checkpoint
+  before the cutoff.
+  - guard2 bixbench_numeric, clean rounds A/B/S (of 12/12/48): seed 3001: 6/8/24; seed 3002:
+    9/5/26; seed 3003: 10/7/46. Compared at matched candidate budgets of 24, 20 and 28.
+  - hadamard29, clean rounds A/B (of 16): seed 2001: 15/9; seed 2002: 13/10; seed 2003: 8/6.
+    Compared at rounds 9, 10 and 6.
+  - The strict-guard bixbench set ran all 12/12/48 rounds. Seed 3001 A and B each lost one worker
+    slot to a 402 in round 5.
+
 Status at 01:45 PST, 2026-11-15: both Tinker keys returned HTTP 402 and all live arms were stopped.
 Only one set finished all its rounds: the **strict-guard bixbench_numeric A/B/S set, seeds 3001-3003**.
 The fixed-guard rerun (`guard2`) and hadamard29 stopped partway. They are reported below at a
