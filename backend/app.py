@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
+from backend import openai_launch
 from backend.ingest import ingest
 from backend.replay import RecordingCatalog
 from backend.store import ACTIVE, Store
@@ -40,6 +41,28 @@ class RunConfig(BaseModel):
     rounds: int = Field(default=1, ge=1, le=3)
     seed: int = Field(default=42, ge=0, le=2147483647)
     model: str | None = Field(default=None, max_length=180, pattern=r"^[A-Za-z0-9_./:\-]+$")
+
+
+class OpenAIRunConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rounds: int = Field(default=3, ge=1, le=5)
+
+
+def preview_hosts():
+    """Hostname suffixes (LAB_ALLOWED_HOSTS, comma-separated) allowed besides loopback."""
+    return [
+        h.strip().lstrip(".")
+        for h in os.environ.get("LAB_ALLOWED_HOSTS", "").split(",")
+        if h.strip()
+    ]
+
+
+def allowed_origin(hostname):
+    if hostname in {"127.0.0.1", "localhost"}:
+        return True
+    return bool(hostname) and any(
+        hostname == h or hostname.endswith("." + h) for h in preview_hosts()
+    )
 
 
 class Manager:
@@ -332,9 +355,9 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
             repo_root=ROOT if discover else None,
             stale_after=float(stale_after) if stale_after else None,
         )
-        holder["manager"] = Manager(
-            data_dir or os.environ.get("LAB_DATA_DIR", str(ROOT / ".lab_data")), runner
-        )
+        directory = data_dir or os.environ.get("LAB_DATA_DIR", str(ROOT / ".lab_data"))
+        holder["manager"] = Manager(directory, runner)
+        holder["openai"] = openai_launch.Launcher(Path(directory) / "openai-runs")
         yield
         holder["manager"].close()
 
@@ -349,7 +372,7 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
         if (
             request.method in {"POST", "PUT", "DELETE", "PATCH"}
             and origin
-            and urlparse(origin).hostname not in {"127.0.0.1", "localhost"}
+            and not allowed_origin(urlparse(origin).hostname)
         ):
             return JSONResponse({"detail": "Local origins only"}, status_code=403)
         return await call_next(request)
@@ -371,7 +394,19 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
             "viewerMode": "recorded",
             "executionEnabled": execution_enabled,
             "modes": manager().capabilities()["modes"] if execution_enabled else [],
+            "openaiLaunch": holder["openai"].status(),
         }
+
+    @app.post("/api/openai-runs", status_code=201)
+    def start_openai(config: OpenAIRunConfig):
+        if not openai_launch.enabled():
+            raise HTTPException(409, "Sol/Luna launching is disabled on this server.")
+        try:
+            return holder["openai"].start(config.rounds)
+        except RuntimeError as error:
+            raise HTTPException(409, "A Sol/Luna run is already active.") from error
+        except LookupError as error:
+            raise HTTPException(422, str(error)) from error
 
     @app.get("/api/recordings")
     def recordings():

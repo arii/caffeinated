@@ -20,7 +20,7 @@ import {prefersReducedMotion} from './engine/affect';
 import {momentsBetween,formatValue,type Moment} from './engine/moments';
 import {scoreSeries,scoreChartSvg,outcomeOf,type ResultRow} from './engine/scoreChart';
 import {taskTitle,pickerOptions,compactDock,evidenceMetricLabel,metricValueLabel} from './engine/runInfo';
-import type {RunSnapshot} from './engine/contract';
+import type {RunSnapshot,Capabilities} from './engine/contract';
 import {reconcileByKey} from './engine/keyed-list';
 import {firstScientistTick,highlightStops,highlightTickAt,type HighlightStop} from './engine/highlights';
 import type {LabWorld,AgentView} from './engine/types';
@@ -592,7 +592,10 @@ async function attachRecording(id:string,preserve=false){
  }
 }
 async function loadRecordings(){try{const items=sortedRecordings(await request<RecordingManifest[]>('/recordings'));recordingManifests=items;$('run-picker').innerHTML=pickerOptions(items,esc)||'<option>No artificial scientist swarm recordings available</option>';if(recording)$<HTMLSelectElement>('run-picker').value=recording.manifest.id;else if(items.length){const selected=new URL(location.href).searchParams.get('recording');await attachRecording(items.find(m=>m.id===selected)?.id||items[0].id);}else if(!items.length){$('connection').textContent='NO SWARM RECORDINGS';$('replay-title').textContent='No artificial scientist swarm recordings available';}}catch(e){$('connection').textContent='ARCHIVE UNAVAILABLE';$('replay-title').textContent='Archive unavailable';toast((e as Error).message);}}
-$('refresh-runs').onclick=()=>loadRecordings();$('run-picker').onchange=()=>attachRecording($<HTMLSelectElement>('run-picker').value);
+$('refresh-runs').onclick=()=>loadRecordings();
+async function loadLaunch(){if(STATIC_SITE)return;try{const l=(await request<Capabilities>('/health')).openaiLaunch;$('openai-launch').hidden=!l?.enabled;const b=$<HTMLButtonElement>('launch-openai');b.disabled=!l?.available||!!l?.running;b.textContent=l?.running?`Live run in progress (${l.current})`:`Start live Ig Nobel run (Sol + Luna, up to $${l?.maxCostUsd??20})`;}catch{$('openai-launch').hidden=true;}}
+$('launch-openai').onclick=async()=>{if(!confirm('Start a live Sol + Luna Ig Nobel run? It calls the OpenAI API and may spend up to the server cost cap.'))return;try{const r=await request<{name:string}>('/openai-runs',{method:'POST',body:JSON.stringify({rounds:3})});toast(`Started ${r.name}; it appears in RUNS once round 1 begins.`);}catch(e){toast((e as Error).message);}loadLaunch();};
+loadLaunch();if(!STATIC_SITE)setInterval(loadLaunch,10000);$('run-picker').onchange=()=>attachRecording($<HTMLSelectElement>('run-picker').value);
 let polling=false;
 if(STATIC_SITE){$('refresh-runs').hidden=true;document.body.classList.add('static-site');}
 else setInterval(async()=>{if(polling)return;polling=true;const current=recording,generation=loadGeneration;try{await loadRecordings();const updated=recordingManifests.find(m=>m.id===current?.manifest.id);if(current&&generation===loadGeneration&&recording===current&&recordingChanged(current.manifest,updated))await attachRecording(current.manifest.id,true);}finally{polling=false;}},4000);

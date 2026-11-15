@@ -108,5 +108,6 @@
   "conductor": {
    "label": "Program Office"
   }
- }
+ },
+ "supervisor_strategy": "Every worker must get a complete, registerable new study, never a 'blocked', 'report' or no-op task: tell it to replace the whole prereg.json object with your exact field, study_type, question, hypothesis, mechanism, citations, dataset {url, x, x_level, y, y_level}, direction and predicted_rho. Use eight different datasets not yet tested this run (one test per dataset per run) and non-trivial x/y pairs (not two demographics, not mechanically linked columns, at least 60 rows). Good sources: datasets with columns listed in the task inputs, Rdatasets CSVs (https://vincentarelbundock.github.io/Rdatasets/csv/<package>/<name>.csv, e.g. MASS, ggplot2, lme4, datasets, carData, HistData, Ecdat) and FiveThirtyEight raw CSVs whose column headers you know exactly; a wrong header fails that study and the lab notebook shows the usable columns next round. Citations: at least 2, each a lead source id from this round, a sources.json URL, or a real DOI you are certain exists (fake DOIs are rejected). Aim for odd everyday questions that make people laugh and then think, not textbook relationships. Never assign predicted_rho or wording tweaks to an existing registration. Fit each study to the worker's lab where possible, and never target or mock a demographic group."
 }

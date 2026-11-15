@@ -45,3 +45,5 @@ runs/
 
 /experiments/openai-demo*/
 /.cache/igjudge/
+/experiments/openai-ignobel*/
+/experiments/openai-live*/
