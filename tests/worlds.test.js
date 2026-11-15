@@ -1,12 +1,9 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {createWorld as realistic} from '../src/variants/realistic.ts';
-import {createWorld as cartoon} from '../src/variants/cartoon.ts';
-import {createWorld as foundation} from '../src/variants/foundation.ts';
-import {createWorld as hybrid} from '../src/variants/hybrid.ts';
-import {initialState} from '../src/engine/state.ts';
+import {createWorld} from '../src/variants/lab.ts';
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},strokeRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){}})})};
-for(const [name,create] of Object.entries({realistic,cartoon,foundation,hybrid}))test(`${name}: every station is reachable with player collision clearance`,()=>{
+test('Lab Environment: all stations are reachable and backend roster can change',()=>{
+  const create=createWorld;
   const w=create(),r=.34,spacing=.4;
   const blocked=(x,z)=>x<w.bounds.minX+r||x>w.bounds.maxX-r||z<w.bounds.minZ+r||z>w.bounds.maxZ-r||w.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);
   assert.equal(blocked(w.camera.position.x,w.camera.position.z),false,'spawn must be walkable');
@@ -19,7 +16,11 @@ for(const [name,create] of Object.entries({realistic,cartoon,foundation,hybrid})
   }
   assert.deepEqual(w.stations.map(s=>s.id).sort(),['analyzer','culture','explorer','notebook']);
   for(const s of w.stations)assert.ok(queue.some(([x,z])=>Math.hypot(x-s.position.x,z-s.position.z)<s.radius-.1),`${s.id} needs an accessible interaction approach`);
-  w.update(0,initialState());w.update(1,{...initialState(),running:true,progress:1,boredom:100});
+  const empty={running:false,progress:0,boredom:0,agents:[]};
+  w.update(0,empty);
+  const agents=Array.from({length:6},(_,i)=>({id:`worker-${i}`,name:`Worker ${i}`,role:'worker',state:'working',stationId:['culture','analyzer','explorer','notebook'][i%4],boredom:40}));
+  for(let i=1;i<300;i++)w.update(i/20,{...empty,running:true,agents});
+  w.update(16,empty);
   w.scene.traverse(o=>{assert.ok(Number.isFinite(o.position.x)&&Number.isFinite(o.position.y)&&Number.isFinite(o.position.z));});
   w.dispose?.();
 });

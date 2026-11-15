@@ -1,1 +1,29 @@
-{"name":"biolab-engine","version":"0.3.0","private":true,"type":"module","scripts":{"dev":"vite --host 127.0.0.1 --port 5175","build":"tsc --noEmit && vite build","preview":"vite preview --host 127.0.0.1 --port 4175","test":"node --test tests/*.test.js"},"dependencies":{"three":"^0.187.0","zod":"^4.0.0"},"devDependencies":{"@types/three":"^0.183.0","typescript":"^5.9.0","vite":"^7.0.0"},"engines":{"node":">=22.18.0"}}
+{
+  "name": "biolab-engine",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4175",
+    "test": "node --test tests/*.test.js",
+    "dev:frontend": "vite",
+    "dev:backend": ".venv/bin/python -m uvicorn backend.app:create_app --factory --host 127.0.0.1 --port 8765 --timeout-graceful-shutdown 2",
+    "setup": "uv venv --python python3.12 .venv && uv pip install --python .venv/bin/python -r backend/requirements.txt",
+    "setup:tinker": "uv pip install --python .venv/bin/python -r backend/requirements-tinker.txt torch==2.10.0",
+    "test:backend": ".venv/bin/python -m unittest discover -s backend/tests"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.183.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

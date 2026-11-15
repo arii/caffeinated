@@ -1,18 +1,19 @@
 import * as THREE from 'three';
 import type { LabWorld, LabState, Collider } from '../engine/types';
+import {findPath} from '../engine/navigation.ts';
 
-/** Fieldwork: a contemporary, human-scale research lab in warm daylight. */
+/** Lab Environment: Daylight instruments and human researchers in a warm modular commons. */
 export function createWorld(): LabWorld {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#dce7e9');
   scene.fog = new THREE.Fog('#dce7e9', 34, 90);
   const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .08, 110);
-  camera.position.set(0, 1.69, 10.7); camera.lookAt(.1, 1.65, -7);
+  camera.position.set(0, 1.69, 9.5); camera.lookAt(0, 1.8, -3);
   const colliders: Collider[] = [];
   const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
   const mat = (color: string, roughness = .68, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
-  const ivory = mat('#ecece5'), porcelain = mat('#fafaf6', .37), charcoal = mat('#28383c', .42), steel = mat('#a5afb0', .32, .65);
-  const cabinetry = mat('#c8cfca'), sage = mat('#a7bdb0'), wood = mat('#b69b77', .8), darkWood = mat('#947b5b');
+  const ivory = mat('#f1ecdf'), porcelain = mat('#fafaf6', .37), charcoal = mat('#31434b', .42), steel = mat('#a5afb0', .32, .65);
+  const cabinetry = mat('#c9c9b6'), sage = mat('#a8b5a1'), wood = mat('#bd9b74', .8), darkWood = mat('#947b5b');
   const black = mat('#18252a', .38), paper = mat('#f9f4e6'), blue = mat('#3e8493'), amber = mat('#d2a468');
   const glass = new THREE.MeshPhysicalMaterial({color:'#c6dfdc',transparent:true,opacity:.14,roughness:.12,metalness:.08,depthWrite:false,side:THREE.DoubleSide});
   const lightMaterial = new THREE.MeshBasicMaterial({color:'#fff6dd'});
@@ -47,8 +48,8 @@ export function createWorld(): LabWorld {
 
   // A single floor slab with a seamless terrazzo texture; no overlapping tiles.
   const floorCanvas=document.createElement('canvas');floorCanvas.width=512;floorCanvas.height=512;
-  const fc=floorCanvas.getContext('2d')!;fc.fillStyle='#b9bcb5';fc.fillRect(0,0,512,512);
-  for(let i=0;i<1700;i++){const a=Math.sin(i*41.77)*.5+.5,b=Math.sin(i*19.31+5)*.5+.5;fc.fillStyle=i%3?'#c9cbc4':'#a7aca5';fc.fillRect(a*512,b*512,1+(i%3),1+(i%2));}
+  const fc=floorCanvas.getContext('2d')!;fc.fillStyle='#d1cdbf';fc.fillRect(0,0,512,512);
+  for(let i=0;i<1700;i++){const a=Math.sin(i*41.77)*.5+.5,b=Math.sin(i*19.31+5)*.5+.5;fc.fillStyle=i%3?'#e1d9c8':'#bdb9ad';fc.fillRect(a*512,b*512,1+(i%3),1+(i%2));}
   const floorTexture=new THREE.CanvasTexture(floorCanvas);floorTexture.colorSpace=THREE.SRGBColorSpace;floorTexture.wrapS=floorTexture.wrapT=THREE.RepeatWrapping;floorTexture.repeat.set(8,9);floorTexture.anisotropy=8;
   box(0,-.12,0,24,.24,28,new THREE.MeshStandardMaterial({map:floorTexture,roughness:.85}));
   // Wall architecture: warm plaster and continuous oak service dado.
@@ -65,13 +66,18 @@ export function createWorld(): LabWorld {
   box(-7.9,2.25,12.7,7.5,4.5,.14,ivory);box(7.9,2.25,12.7,7.5,4.5,.14,ivory);
   for(const x of [-3.9,3.9])box(x,2.25,12.65,.12,4.5,.18,steel);
   box(0,2.25,12.8,7.7,4.5,.025,glass);
-  label('FIELDWORK  /  LIFE SCIENCES',0,4.1,12.55,6.6,.38,'#ecece5','#425859',Math.PI);
-  // Suspended acoustic baffles and linear lighting, all comfortably above eye level.
-  for(const x of [-7.5,0,7.5])for(const z of [-8,-1,6]){
-    box(x,4.58,z,3.9,.13,1.7,porcelain);
-    box(x,4.49,z,3.2,.035,.16,lightMaterial);
-    for(const dx of [-1.35,1.35])line(new THREE.Vector3(x+dx,4.65,z),new THREE.Vector3(x+dx,4.87,z),.012,steel);
+  label('LAB ENVIRONMENT / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,'#f1ecdf','#425859',Math.PI);
+  // Clear plaster ceiling with restrained task-light rails.
+  for(const z of [-8,-1,6]) {
+    box(0,4.35,z,20,.08,.07,charcoal);
+    for(const x of [-7,0,7]) {
+      cylinder(x,4.18,z,.13,.22,charcoal);
+      cylinder(x,4.06,z,.1,.025,lightMaterial);
+    }
   }
+  const pendant=new THREE.Mesh(new THREE.TorusGeometry(1.8,.025,8,64),darkWood);
+  pendant.rotation.x=Math.PI/2;pendant.position.set(0,3.9,.5);scene.add(pendant);
+  for(const x of [-1.6,1.6])line(new THREE.Vector3(x,3.9,.5),new THREE.Vector3(x,4.84,.5),.012,steel);
   // Garden outside, low rolling landscape, no ominous landscape silhouettes.
   box(-28,-.65,-2,45,1,70,mat('#b0bf9d'));
   const treeLeaf=mat('#98af91'),trunk=mat('#897e69');
@@ -144,8 +150,8 @@ export function createWorld(): LabWorld {
   box(2.35,1.8,-10.25,.04,.38,.05,steel);
   label('03   EXPERIMENT DESIGN',.2,2.65,-11.4,5.65,.32);
   // Rear feature graphic and material sample panels.
-  label('FIELDWORK',.15,3.82,-13.32,7.4,.8,'#ecece5','#3e5c59');
-  label('SMALL QUESTIONS. MEANINGFUL DISCOVERIES.',.15,3.22,-13.31,7.4,.24,'#ecece5','#84958c');
+  label('LAB ENVIRONMENT',.15,3.82,-13.32,7.4,.8,'#f1ecdf','#3e5c59');
+  label('A WORKING LAB. A SHARED UNDERSTANDING.',.15,3.22,-13.31,7.4,.24,'#f1ecdf','#84958c');
   for(let i=0;i<5;i++)box(-2.2+i*1.12,2.68,-13.29,.85,.06,.02,i%2?sage:wood);
   // A notebook desk near the entrance, visibly different from the wet lab.
   bench(-7.3,5.4,4.8,1.45);monitor(-8.6,5.18,'SHARED NOTEBOOK');
@@ -155,7 +161,7 @@ export function createWorld(): LabWorld {
   label('04   SHARED RESEARCH',-7.3,.65,6.145,3.7,.22,'#fafaf6','#425859');
   // Tall storage, sink, and wall details.
   for(const z of [-9.9,-7.9,-5.9]){box(10.75,1.22,z,1.4,2.4,1.5,porcelain);box(10.02,1.22,z,.035,2.18,1.35,cabinetry);box(9.98,1.35,z+.42,.035,.43,.035,steel);collider(10.75,z,1.5,1.6);}
-  label('SAMPLE STORAGE',10.0,2.7,-7.9,3.6,.26,'#ecece5','#667d74',-Math.PI/2);
+  label('SAMPLE STORAGE',10.0,2.7,-7.9,3.6,.26,'#f1ecdf','#667d74',-Math.PI/2);
   bench(9.3,7.2,3.7,1.35);box(9.5,.99,7.1,.8,.025,.6,steel);box(9.5,1.008,7.1,.63,.015,.46,charcoal);
   line(new THREE.Vector3(9.5,1.0,6.8),new THREE.Vector3(9.5,1.5,6.8),.025,steel);line(new THREE.Vector3(9.5,1.5,6.8),new THREE.Vector3(9.5,1.5,7.05),.025,steel);
   label('WASH / RESET',9.3,.65,7.89,2.9,.22,'#fafaf6','#425859');
@@ -166,9 +172,36 @@ export function createWorld(): LabWorld {
     collider(x,z,.7,.7);
   }
 
+  // A domain-neutral field table gives live experiments a common spatial home.
+  cylinder(0,.13,.5,1.85,.26,darkWood);cylinder(0,.52,.5,1.7,.55,wood);
+  cylinder(0,.84,.5,1.84,.1,porcelain);cylinder(0,.9,.5,1.62,.035,charcoal);
+  collider(0,.5,3.7,3.7);
+  label('LIVE RUN / AGENT ACTIVITY',0,.64,2.23,2.5,.23,'#f1ecdf','#536b68');
+  const field=new THREE.Group();field.position.set(0,.95,.5);scene.add(field);
+  const fieldPoints:THREE.Mesh[]=[];
+  for(let i=0;i<36;i++) {
+    const angle=i*2.39996,r=Math.sqrt(i/36)*1.35;
+    const point=sphere(Math.cos(angle)*r,.15+(i%5)*.11,Math.sin(angle)*r,.045+(i%3)*.014,i%4===0?amber:sage,field);
+    fieldPoints.push(point);
+  }
+  for(const x of [-1.45,1.45])for(const z of [-1.1,2.1])cylinder(x,1.03,z,.018,.22,steel);
+  // Open ash shelves for datasets, notebooks, and small scientific artifacts.
+  const bookColors=[sage,wood,blue,paper,amber];
+  for(const x of [-6.2,6.2]) {
+    for(const xx of [x-.9,x+.9])box(xx,1.75,-12.7,.1,3.5,.5,wood);
+    for(const y of [.25,1.25,2.25,3.25]) {
+      box(x,y,-12.7,1.9,.075,.6,wood);
+      for(let i=0;i<6;i++)box(x-.7+i*.27,y+.3,-12.7,.17,.5-(i%3)*.06,.32,bookColors[i%5]);
+    }
+    collider(x,-12.7,2.05,.75);
+  }
+  label('DATASETS / SHARED KNOWLEDGE',-6.2,3.62,-12.36,2.9,.22);
+  label('MODELS / REFERENCE LIBRARY',6.2,3.62,-12.36,2.9,.22);
+
   // Working agent avatars: quiet lab colleagues, with hands reaching the tools.
-  const workers: {id:string;station:string;head:THREE.Group;arm:THREE.Group;light:THREE.Mesh}[]=[];
-  function researcher(x:number,z:number,rotation:number,name:string,station:string,skinColor:string,hairColor:string){
+  type Worker={id:string;station:string;head:THREE.Group;arm:THREE.Group;light:THREE.Mesh;group:THREE.Group;sign:THREE.Mesh;path:{x:number;z:number}[];target:string};
+  const workers=new Map<string,Worker>();
+  function researcher(x:number,z:number,rotation:number,name:string,station:string,skinColor:string,hairColor:string,id:string){
     const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
     const skin=mat(skinColor,.84),hair=mat(hairColor),trousers=mat('#4d5b60'),shoe=mat('#465251'),coat=mat('#f3f2ea');
     const pelvis=sphere(0,.78,0,.19,trousers,g);pelvis.scale.set(1.15,.7,.75);
@@ -190,13 +223,10 @@ export function createWorld(): LabWorld {
     const left=cylinder(-.24,1.06,.08,.064,.44,coat,g);left.rotation.x=-.3;
     sphere(-.24,.86,.15,.055,skin,g);
     const light=sphere(-.1,1.14,.181,.018,led,g);
-    workers.push({id:name,station,head,arm,light});collider(x,z,.62,.55);
-    label(name.toUpperCase()+'  /  RESEARCH AGENT',x,2.07,z+.16,1.7,.2,'#f5f4ec','#69857a');
+    const sign=label(name.toUpperCase(),x,2.07,z+.16,1.45,.19,'#f5f4ec','#69857a');
+    g.userData.ownedMaterials=[skin,hair,trousers,shoe,coat];
+    const worker:Worker={id,station,head,arm,light,group:g,sign,path:[],target:''};workers.set(id,worker);return worker;
   }
-  // Facing their benches; their side profiles are visible from the central aisle.
-  researcher(-7.0,-3.0,Math.PI,'Mira','culture','#d0a080','#4b3c32');
-  researcher(5.5,-1.15,Math.PI,'Theo','analyzer','#a47c60','#343b3d');
-  researcher(-1.0,-9.1,Math.PI,'June','explorer','#d8b99b','#67584a');
   // Static architectural boxes are instanced by material, greatly reducing draws.
   const batches=new Map<THREE.Material,THREE.Mesh[]>();
   for(const child of [...scene.children])if(child instanceof THREE.Mesh&&child.geometry===boxGeometry&&!Array.isArray(child.material)&&!child.material.transparent){
@@ -209,14 +239,35 @@ export function createWorld(): LabWorld {
     {id:'explorer' as const,name:'Experiment design',description:'Explore a different hypothesis',position:new THREE.Vector3(.2,1.25,-8.8),radius:3.1},
     {id:'notebook' as const,name:'Shared research desk',description:'Read what the research agents learned',position:new THREE.Vector3(-6.3,1.25,7.2),radius:3.1},
   ];
+  let lastTime=0;
+  const bounds={minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05};
   function update(time:number,state:LabState){
-    for(const [index,worker]of workers.entries()){
-      const a=state.agents.find(a=>a.stationId===worker.station);const active=state.running&&(a?.state==='working'||a?.state==='thinking'||!a);
-      worker.arm.rotation.x=active?Math.sin(time*1.8+index)*.08:0;
-      worker.head.rotation.y=Math.sin(time*.32+index)*.055;worker.head.rotation.x=active?.12:0;
-      worker.light.scale.setScalar(active?1+Math.sin(time*2)*.12:1);
+    const dt=Math.max(0,Math.min(.05,time-lastTime));lastTime=time;
+    field.rotation.y=time*(state.running?.025:.006);
+    fieldPoints.forEach((p,i)=>{p.visible=i<state.agents.length*4;p.position.y=.15+(i%5)*.11+Math.sin(time*.8+i)*.025;});
+    const ids=new Set(state.agents.map(a=>a.id));
+    for(const [id,w]of workers)if(!ids.has(id)){
+      scene.remove(w.group,w.sign);w.group.traverse(o=>{if(o instanceof THREE.Mesh&&o.geometry!==boxGeometry)o.geometry.dispose();});
+      for(const m of w.group.userData.ownedMaterials as THREE.Material[])m.dispose();
+      w.sign.geometry.dispose();const m=w.sign.material as THREE.MeshBasicMaterial;m.map?.dispose();m.dispose();workers.delete(id);
     }
-    for(const item of animated)item.object.rotation.y=time*.1+item.phase;
+    state.agents.forEach((a,index)=>{
+      let w=workers.get(a.id);
+      if(!w)w=researcher((index%3-1)*.6,10.4+Math.floor(index/3)*.4,Math.PI,a.name,a.stationId,index%2?'#d0a080':'#a47c60','#4b3c32',a.id);
+      const slot=Number(a.id.match(/\d+$/)?.[0]||1)-1;
+      const goal=a.stationId==='culture'?{x:-9+slot*.85,z:-3.45}:a.stationId==='analyzer'?{x:5.5,z:-1.15}:a.stationId==='notebook'?{x:-6.3,z:6.8}:{x:-.9+slot*.55,z:-9.25};
+      const target=`${a.stationId}:${slot}`;
+      if(w.target!==target){w.target=target;w.station=a.stationId;w.path=findPath(w.group.position,goal,bounds,colliders);}
+      const next=w.path[0];
+      if(next){const dx=next.x-w.group.position.x,dz=next.z-w.group.position.z,d=Math.hypot(dx,dz);if(d<.07)w.path.shift();else{const speed=Math.min(d,dt*1.8);w.group.position.x+=dx/d*speed;w.group.position.z+=dz/d*speed;w.group.rotation.y=Math.atan2(dx,dz);}}
+      else w.group.rotation.y=Math.PI;
+      w.sign.position.set(w.group.position.x,2.12,w.group.position.z);w.sign.lookAt(camera.position);
+      const working=state.running&&(a.state==='working'||a.state==='thinking');
+      w.arm.rotation.x=next?Math.sin(time*5+index)*.12:working?Math.sin(time*1.8+index)*.08:0;
+      w.head.rotation.y=Math.sin(time*.32+index)*.055;w.head.rotation.x=working&&!next?.12:0;
+      w.light.scale.setScalar(working?1+Math.sin(time*2)*.12:1);
+    });
   }
-  return {scene,camera,colliders,stations,bounds:{minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05},update,exposure:.95};
+
+  return {scene,camera,colliders,stations,bounds:{minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05},update,exposure:1.0};
 }

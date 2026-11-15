@@ -38,3 +38,7 @@ runs/
 .env
 .env.*
 !.env.example
+
+# Local run database, workspaces, and service environments
+.lab_data/
+.venv*/

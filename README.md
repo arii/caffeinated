@@ -1,82 +1,65 @@
 # Lab Environment + Autoresearch
 
-The selected first-person Lab Environment and Ari’s autoresearch swarm now share this branch. The frontend still uses its synthetic demo adapter; live backend-to-avatar integration is the next planned step.
+The selected first-person Lab Environment is the only frontend. It connects to Ari’s autoresearch swarm through a local FastAPI service. The comparison rooms and scripted demonstration are removed.
 
-- Frontend setup and environment design: below.
-- Research runner, training requirements, and original project documentation: [Autoresearch upstream README](docs/autoresearch-upstream.md).
-- Swarm orchestration and Tinker setup: [Swarm protocol](program_swarm.md).
-- Backend lifecycle and next implementation steps: [Backend design](docs/lab-backend-design.md).
+## Run locally
 
-## Frontend environment studies
-
-Four distinct first-person laboratories on one shared engine. Pick a visual direction before expanding the scientific simulation adapters.
-
-- **Daylight** (`?style=realistic`): contemporary lab, believable instruments, material detail, and human research agents.
-- **Wonderworks** (`?style=cartoon`): cobalt/coral/yellow cartoon lab, rounded equipment, and expressive robot researchers.
-- **Fieldwork** (`?style=foundation`): a modular ash/ivory/ink research commons with a spatial field table and flexible experiment bays. An alternative foundation for domain-neutral research.
-
-- **Lab Environment** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s modular bays, shared field table, and dataset library, with a clear plaster ceiling. This is the selected default style.
-
-## Locked stack
-
-Three.js + TypeScript + Vite. Zod validates the research event boundary. The environment does not depend on a particular biological domain or scientific solver.
-
-## Run
-
-Node.js 22.18 or newer.
+Requires Node 22.18+, Python 3.12, Git, and uv.
 
 ```sh
 npm ci
+npm run setup
 npm run dev
 ```
 
-Open http://localhost:5175. Production build: `npm run build`. Preview it: `npm run preview`.
+Open http://localhost:5175. This starts the API on 127.0.0.1:8765 and Vite on 127.0.0.1:5175. For separate terminals use `npm run dev:backend` and `npm run dev:frontend`. Refreshing automatically restores the selected or latest run; starting the server does not launch research.
+
+Choose **New research run**, select an execution profile, and start. Actual agent identities and assignments create characters in the room. The observatory and stations show the native ledger, findings, shared memory, provenance, and downloadable logs. Completed runs stay available in the run selector.
+
+| Profile | Model calls | Evaluation |
+| --- | --- | --- |
+| Offline protocol check | Fake provider | Deterministic fake GPU scores |
+| Tinker protocol | Real Tinker sampling | Deterministic fake GPU scores |
+| Tinker + Modal | Real Tinker sampling | Modal GPU training; requires separate setup |
+
+Protocol scores validate orchestration, not scientific or training performance. The room and central table are visualizations, not a biological solver. The frontend does not calculate research scores or schedule the swarm.
+
+## Tinker and training
+
+```sh
+npm run setup:tinker
+```
+
+Copy `.env.example` to `.env` and set `TINKER_API_KEY` and `TINKER_MODEL`. Python automatically loads the repository-root `.env`; existing process variables take precedence. Credentials stay on the server and must never use a `VITE_` prefix. Local `.env`, virtual environments, and research artifacts are ignored by Git.
+
+The orchestration environment uses PyTorch 2.10 for the Kimi renderer. The training environment has separate pinned dependencies; follow [Ari’s swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md) for Modal authentication, prepared data, and training requirements. An installed Modal CLI is a prerequisite, not proof that GPU training is configured.
+
+Runs allow 1–3 rounds, one active job, a default limit of 32 high-level LLM calls (each may retry once), and a 20-minute local deadline. `LAB_MAX_LLM_CALLS` and `LAB_RUN_TIMEOUT` can adjust these server limits. Stop terminates local orchestration; remote work already dispatched can still finish and consume credits. Exa is explicitly off, memory is local, and research workers never push Git changes.
+
+## Integration
+
+- Three.js + TypeScript + Vite render the sole room in `src/variants/lab.ts`.
+- `backend/app.py` exposes `/api/health`, `/api/experiments`, run creation/snapshots/stop, SSE snapshots, ordered audit events, history exports, and registered artifacts.
+- `backend/worker.py` invokes the upstream runner in a separate process and per-run Git clone, pinned to the branch’s committed HEAD. Commit source changes before testing them as research input.
+- `backend/ingest.py` normalizes native JSONL artifacts and uses Ari’s own meter for per-agent boredom. `backend/store.py` persists snapshots and idempotent ordered events in SQLite.
+- `src/engine/contract.ts` validates incoming snapshots; `api.ts` handles snapshot loading and SSE reconnect. The world consumes roster and assignment state.
+
+Data lives in ignored `.lab_data/` (or `LAB_DATA_DIR`). A server restart marks unfinished jobs interrupted rather than silently rerunning them. The service binds to loopback for local use. Git clones separate research changes from the working branch; they are not a security sandbox for untrusted code.
+
+Each agent’s API/export JSON includes `boredom` on a 0–100 scale and `boredomSpectrum: {position, color, regime}`. Position is 0–1, color is a continuous teal-to-rose mapping, and regime comes from the upstream meter. Individual spectra stay in JSON; the screen shows one swarm spectrum. Color does not replace the scheduler’s threshold, hysteresis, and convergence rules.
+
+The API is the integration boundary for future domain adapters, including diffusion or cell simulations. Preserve their metric units, source records, and simulation timestamps. Ig Nobel, trace replay, and generic benchmark branches have not been folded into this frontend task. See [backend design](docs/lab-backend-design.md).
+
+## Controls and checks
+
+Step inside, use WASD to walk, Shift to sprint, mouse/drag/arrows to look, E to open a nearby station, and Escape to release the pointer. Keys 1–4 face stations. Agent list buttons face an agent’s assigned station.
 
 ```sh
 npm test
+npm run test:backend
+npm run build
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
+.venv/bin/python -m unittest discover -s boredom_meter/tests
 ```
 
-## Controls and comparison
-
-Choose any study from the bottom selector; switching preserves research state and resets the camera to that room's entry. Click **Step inside**, then use WASD to walk, Shift to sprint, mouse look, or drag/arrow-key look. Escape releases the mouse. Approach a station and press E. Keys 1–4 face the four stations. Touch devices have a movement pad.
-
-**Run demonstration** starts a deterministic synthetic search. The Scientist works, the Analyst observes, and the Explorer changes strategy after a plateau. Pause stops the demo; restart starts a fresh run. The research console shows findings and exports the complete event log. Every room exposes the same four station IDs.
-
-## Integration handoff
-
-- `src/engine/types.ts`: `LabWorld`, station/collision contract, and shared visual agent state.
-- `src/engine/contract.ts`: validated experiment manifest, research events, and `ResearchAdapter` interface.
-- `src/engine/state.ts`: research-state reducer. Ignores duplicate, old-sequence, and wrong-run events.
-- `src/engine/mock.ts`: replaceable synthetic demonstration adapter.
-- `src/variants/*.ts`: independent room factories. They consume shared state; they do not own experiments or scheduling.
-- `src/main.ts`: room selection, resource cleanup, navigation, station interaction, HUD, and adapter connection.
-
-A live solver integration should implement `ResearchAdapter`, deliver the validated events, and extend the contract explicitly for scientific artifacts such as concentration fields, cell snapshots, and plots. Preserve physical units, simulation timestamps, model versions, and source references. Current visual update time is animation time, not scientific simulation time.
-
-The current adapter is local and synthetic. NPC roles and experiment results are simulated; no real swarm, biological solver, external AI, or network backend is running. The synthetic search switches to a predefined favorable region, so the demo is not evidence of scientific discovery. Run history is in memory and is lost on reload; export before closing.
-
-## Validation
-
-`npm run build` checks TypeScript and builds static deployable assets. Eleven tests cover the synthetic paired experiment, event validation, ordering, metric direction, state completion, and navigable access to all stations in each room. Browser QA checks rendering and style switching. All floors use continuous surfaces rather than overlapping tile geometry; runtime shadow maps are disabled to avoid floor banding.
-
-The three room variants were developed independently on `agent/lab-realistic`, `agent/lab-cartoon`, and `agent/lab-foundation`. The combined comparison app is on `agent/masha/lab-style-options`. The original lab remains on `agent/masha/little-sprout-lab`.
-
-## Agreed backend plan (not implemented yet)
-
-Continue on `agent/masha/lab-style-options`. Use Python/FastAPI for run APIs and adapters, SQLite for run state and ordered events, filesystem storage for original logs and artifacts, and Server-Sent Events for browser updates. Execute research in separate worker processes rather than inside API request handlers.
-
-Inputs are the existing autoresearch/benchmark runner, the Ig Nobel community runner, and the existing `caffeinated-trace/v1` exporter for replay. Each gets an adapter that preserves its native records, metric units and direction, source references, and mock/live provenance. Domain solvers can later supply scientific artifacts through the same boundary.
-
-The frontend connects through `ResearchAdapter`: HTTP commands start or stop supported jobs; an initial snapshot and ordered SSE events update the research-state reducer. World/agent animation and station displays consume that state. Raw metrics and scientific time remain separate from render time and visual effects. Replace fixed demo identities with the actual backend agent roster as part of integration.
-
-First milestone: bring existing trace replay into the selected Lab Environment. Next: durable run/event APIs and reconnect. Then: a bounded live CPU benchmark, followed by the Ig Nobel adapter. Pause applies to replay initially; live stop/pause capabilities must reflect runner support.
-
-Planned API surface: `GET /experiments`, `POST /runs`, `GET /runs/{id}`, `GET /runs/{id}/events`, `GET /runs/{id}/artifacts`, `POST /runs/{id}/stop`. Keep API keys server-side. Verify existing gate/meter review findings and sandbox execution before enabling expensive or generated-code runs.
-
-Detailed design and integration lifecycle: [Lab backend and research agents](docs/lab-backend-design.md).
-
-## Local credentials
-
-Copy `.env.example` to `.env` and supply your own Tinker key. The Python LLM client automatically loads the repository-root `.env` when imported by the swarm runner, including when launched from another directory. Existing environment variables take precedence. No shell sourcing or extra dependency is required. The file supports literal `KEY=value` assignments, quoted values, comments, and optional `export`; shell expansion and multiline values are not supported. `.env` remains ignored by Git.
-
-Use the separate Tinker environment described in `program_swarm.md`. Keep server credentials unprefixed: never rename them with `VITE_`, which is reserved for values exposed to the frontend. Loading credentials alone does not start a research run.
+Frontend checks cover snapshot validation/ordering and station access; backend checks cover durable ingestion, API validation, interruption recovery, and an actual offline swarm run. Upstream tests include mocked Tinker behavior. A bounded live Tinker/protocol run was also completed locally; Modal training remains separately configured.

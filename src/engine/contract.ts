@@ -1,24 +1,6 @@
-import { z } from 'zod';
-export const StationIdSchema = z.enum(['culture', 'analyzer', 'explorer', 'notebook']);
-export const ExperimentManifestSchema = z.object({
-  id: z.string().min(1), title: z.string().min(1), domain: z.string(),
-  metric: z.object({ name: z.string(), unit: z.string(), direction: z.enum(['minimize', 'maximize']) }),
-  stationId: StationIdSchema, datasetRef: z.string().optional(),
-});
-export type ExperimentManifest = z.infer<typeof ExperimentManifestSchema>;
-const Envelope = z.object({ version: z.literal(1), runId: z.string(), eventId: z.string(), sequence: z.number().int().nonnegative(), time: z.number().nonnegative() });
-export const ResearchEventSchema = z.discriminatedUnion('type', [
-  Envelope.extend({ type: z.literal('run.started'), payload: z.object({ experiment: ExperimentManifestSchema }) }),
-  Envelope.extend({ type: z.literal('agent.updated'), payload: z.object({ id: z.string(), name: z.string(), role: z.string(), state: z.enum(['idle','thinking','working','reviewing']), stationId: StationIdSchema, boredom: z.number().min(0).max(100) }) }),
-  Envelope.extend({ type: z.literal('experiment.progress'), payload: z.object({ progress: z.number().min(0).max(1), value: z.number().finite(), boredom: z.number().min(0).max(100) }) }),
-  Envelope.extend({ type: z.literal('finding.written'), payload: z.object({ role: z.string(), message: z.string(), sourceRef: z.string().optional() }) }),
-  Envelope.extend({ type: z.literal('run.completed'), payload: z.object({ value: z.number().finite() }) }),
-]);
-export type ResearchEvent = z.infer<typeof ResearchEventSchema>;
-// Both real solver adapters and replay/mock adapters implement this boundary.
-export interface ResearchAdapter {
-  subscribe(onEvent: (event: ResearchEvent) => void): () => void;
-  start(experiment: ExperimentManifest): void | Promise<void>;
-  pause(): void | Promise<void>;
-  dispose(): void;
-}
+import {z} from 'zod';
+export const AgentSchema=z.object({id:z.string(),name:z.string(),role:z.string(),state:z.enum(['idle','thinking','working','reviewing']),stationId:z.enum(['culture','analyzer','explorer','notebook']),boredom:z.number().min(0).max(100),boredomSpectrum:z.object({position:z.number().min(0).max(1),color:z.string(),regime:z.string()}).optional()});
+export const SnapshotSchema=z.object({runId:z.string(),lastSequence:z.number().int().nonnegative(),status:z.enum(['queued','starting','running','stopping','completed','failed','stopped','interrupted']),createdAt:z.number(),config:z.object({mode:z.enum(['offline','tinker_protocol','tinker_modal']),arm:z.enum(['A','B']),rounds:z.number(),seed:z.number(),model:z.string().nullable()}),sourceCommit:z.string(),progress:z.number().min(0).max(1),round:z.number(),boredom:z.number(),regime:z.string(),value:z.number().nullable(),reference:z.number().nullable(),agents:z.array(AgentSchema),findings:z.array(z.object({agent:z.string().optional(),role:z.string(),message:z.string(),round:z.number().optional(),memoryId:z.string().optional()})),results:z.array(z.object({agent:z.string(),round:z.number(),kind:z.string(),status:z.string(),value:z.number().nullable(),commit:z.string().nullable().optional(),description:z.string(),sources:z.array(z.string()).optional()})),sources:z.array(z.object({id:z.string().nullable(),title:z.string().nullable(),url:z.string().nullable(),query_id:z.string().nullable()})),error:z.string().nullable(),metric:z.object({name:z.string(),unit:z.string(),direction:z.enum(['minimize','maximize'])}),provenance:z.object({llm:z.string(),gpu:z.string(),exa:z.string(),memory:z.string()})});
+export type RunSnapshot=z.infer<typeof SnapshotSchema>;
+export interface Capabilities{connected:boolean;tinkerInstalled:boolean;tinkerConfigured:boolean;model:string;modes:{id:string;name:string;description:string;available:boolean}[];maxRounds:number;maxModelCalls:number}
+export interface RunConfig{mode:'offline'|'tinker_protocol'|'tinker_modal';arm:'A'|'B';rounds:number;seed:number;model?:string}
