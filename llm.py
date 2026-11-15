@@ -482,6 +482,20 @@ class LLMClient:
                 else:
                     response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
+                append_log(
+                    self.log_path.with_name("llm_errors.jsonl"),
+                    {
+                        "ts": timestamp(),
+                        "call_id": call_id,
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                        "model": model,
+                        "prompt_sha": digest,
+                        "error": str(error),
+                        "attempts": self.request_attempts,
+                    },
+                )
                 if self.mode == "openai" and self.supervised:
                     record = {
                         "ts": timestamp(),
@@ -509,20 +523,6 @@ class LLMClient:
                         "round": round_num,
                     }
                     self.last_call_id = call_id
-                append_log(
-                    self.log_path.with_name("llm_errors.jsonl"),
-                    {
-                        "ts": timestamp(),
-                        "call_id": call_id,
-                        "role": role.upper(),
-                        "agent": agent,
-                        "round": round_num,
-                        "model": model,
-                        "prompt_sha": digest,
-                        "error": str(error),
-                        "attempts": self.request_attempts,
-                    },
-                )
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
             raise LLMError(f"LLM role {role} response must be a JSON object")

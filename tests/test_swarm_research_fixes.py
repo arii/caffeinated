@@ -1286,6 +1286,37 @@ class LiveToolGuardTests(unittest.TestCase):
         self.assertIn("round 4 spend: calls=2", console.getvalue())
         self.assertIn("failed_calls=1 transport_retries=4", console.getvalue())
 
+    def test_round_spend_deduplicates_supervised_failed_call_retries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            attempts = [
+                {"transport_error": "TimeoutError: read timed out", "usage": None} for _ in range(3)
+            ]
+            failed_call = {
+                "round": 2,
+                "call_id": "WORKER_EXECUTE-r2-worker-1-1",
+                "role": "WORKER_EXECUTE",
+                "agent": "worker-1",
+                "response": None,
+                "attempts": attempts,
+            }
+            (output / "llm_log.jsonl").write_text(json.dumps(failed_call) + "\n", encoding="utf-8")
+            (output / "llm_errors.jsonl").write_text(
+                json.dumps({**failed_call, "error": "request timed out"}) + "\n",
+                encoding="utf-8",
+            )
+
+            spend = swarm.record_round_spend(
+                output,
+                2,
+                0,
+                0,
+                {"exa_searches": 0, "pastdev_recalls": 0, "pastdev_writes": 0},
+            )
+
+        self.assertEqual(spend["failed_calls"], 1)
+        self.assertEqual(spend["transport_retries"], 3)
+
 
 class LLMCallLinkTests(unittest.TestCase):
     def test_worker_outcome_categories_are_recorded_per_call(self):

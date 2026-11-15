@@ -2228,13 +2228,6 @@ def worker_attempts(
             )
             if mismatch_reason:
                 raise ValueError(mismatch_reason)
-            stray_lead = current_proposal.get("lead_id")
-            if stray_lead and not any(item.get("id") == stray_lead for item in known_leads):
-                current_proposal["lead_id"] = None
-                if re.fullmatch(research.SOURCE_ID_PATTERN, stray_lead):
-                    current_proposal["source_ids"] = source_union(
-                        current_proposal["source_ids"], [stray_lead]
-                    )
             lead_claim = validate_lead_reference(current_proposal, known_leads)
         except (ValueError, TypeError) as error:
             attempts.append(
@@ -3310,10 +3303,22 @@ def _token_count(value):
         return 0
 
 
-def _transport_retry_count(records):
+def _transport_retry_count(llm_records, error_records):
+    llm_call_ids = {
+        record["call_id"]
+        for record in llm_records
+        if isinstance(record.get("call_id"), str) and record["call_id"]
+    }
+    unmatched_errors = [
+        record
+        for record in error_records
+        if not isinstance(record.get("call_id"), str)
+        or not record["call_id"]
+        or record["call_id"] not in llm_call_ids
+    ]
     return sum(
         1
-        for record in records
+        for record in llm_records + unmatched_errors
         for attempt in (record.get("attempts") if isinstance(record.get("attempts"), list) else [])
         if isinstance(attempt, dict) and attempt.get("transport_error")
     )
@@ -3354,7 +3359,7 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
         **usage,
         "wasted_calls": wasted_calls,
         "failed_calls": len(errors),
-        "transport_retries": _transport_retry_count(llm_records + errors),
+        "transport_retries": _transport_retry_count(llm_records, errors),
         "exa_searches": tool_counts["exa_searches"],
         "pastdev_recalls": tool_counts["pastdev_recalls"],
         "pastdev_writes": tool_counts["pastdev_writes"],

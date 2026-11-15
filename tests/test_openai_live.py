@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import llm
 import openai_live
 
 
@@ -90,6 +91,39 @@ class OpenAILiveTests(unittest.TestCase):
                 openai_live.request(c, "JSON", model="gpt-6-luna", role="WORKER_IMPLEMENT")
             self.assertEqual(c.request_attempts[0]["usage"]["completion_tokens"], 50)
             self.assertTrue((self.path / "openai_budget.jsonl").exists())
+
+    def test_supervised_failure_is_written_to_replay_and_error_logs(self):
+        client = llm.LLMClient(
+            mode="openai",
+            model="gpt-6-luna",
+            role_models={"SUPERVISOR": "gpt-6.1-sol"},
+            log_path=self.path / "llm_log.jsonl",
+        )
+
+        def fail_after_attempts(request_client, prompt, *, model, role):
+            request_client.request_attempts.extend(
+                [
+                    {"transport_error": "TimeoutError: read timed out", "usage": None},
+                    {"transport_error": "TimeoutError: read timed out", "usage": None},
+                ]
+            )
+            raise RuntimeError("request timed out")
+
+        with (
+            patch("llm.render_prompt", return_value="test prompt"),
+            patch("openai_live.request", side_effect=fail_after_attempts),
+            self.assertRaisesRegex(llm.LLMError, "request timed out"),
+        ):
+            client.call("WORKER_EXECUTE", agent="worker-1", round_num=2, values={})
+
+        logged = llm.read_log(client.log_path)
+        errors = llm.read_log(client.log_path.with_name("llm_errors.jsonl"))
+        self.assertEqual(len(logged), 1)
+        self.assertEqual(logged[0]["response"], None)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(logged[0]["call_id"], errors[0]["call_id"])
+        self.assertEqual(client.last_call_id, logged[0]["call_id"])
+        self.assertEqual(len(errors[0]["attempts"]), 2)
 
     def test_unknown_model_and_endpoint(self):
         with self.assertRaisesRegex(RuntimeError, "verified price"):

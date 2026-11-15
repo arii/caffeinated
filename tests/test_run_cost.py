@@ -203,6 +203,36 @@ class RunCostTests(unittest.TestCase):
             text_output.getvalue(),
         )
 
+    def test_supervised_failure_in_both_logs_counts_transport_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            attempts = [
+                {"transport_error": "TimeoutError: read timed out", "usage": None} for _ in range(3)
+            ]
+            failed_call = {
+                "call_id": "WORKER_EXECUTE-r2-a-1",
+                "role": "WORKER_EXECUTE",
+                "round": 2,
+                "agent": "a",
+                "response": None,
+                "attempts": attempts,
+            }
+            error = {
+                **failed_call,
+                "error": "request timed out",
+            }
+            (run_dir / "llm_log.jsonl").write_text(json.dumps(failed_call) + "\n", encoding="utf-8")
+            (run_dir / "llm_errors.jsonl").write_text(json.dumps(error) + "\n", encoding="utf-8")
+
+            report = run_cost.build_report(run_dir)["llm"]
+
+        self.assertEqual(report["failed_calls"], 1)
+        self.assertEqual(report["transport_retries"], 3)
+        for group in (report["by_role"]["WORKER_EXECUTE"], report["by_round"]["2"]):
+            self.assertEqual(group["failed_calls"], 1)
+            self.assertEqual(group["transport_retries"], 3)
+        self.assertEqual(report["by_agent"]["a"]["transport_retries"], 3)
+
     def test_repaired_worker_call_only_counts_the_failed_proposal_as_waste(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)
