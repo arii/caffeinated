@@ -37,7 +37,7 @@ RHO_FULL = 0.2
 MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
-RECORD_LOSS = 0.3119
+RECORD_LOSS = 0.3721
 CANDIDATE_INPUTS = ("codebook.json", "codebook.txt", "data")
 
 
@@ -78,6 +78,15 @@ def headline(dataset, x, x_level, y, y_level, direction):
     return f"In the {dataset['title']}, {phrase(x, x_level)} goes with {more} {phrase(y, y_level)}"
 
 
+def shared_words(dataset):
+    """Words in most of a dataset's labels (e.g. Bob Ross 'painting features') say nothing about overlap."""
+    counts = {}
+    for variable in dataset["variables"].values():
+        for word in set(tokens(variable["label"])):
+            counts[word] = counts.get(word, 0) + 1
+    return {word for word, count in counts.items() if count > len(dataset["variables"]) / 2}
+
+
 def check_claim(claim, codebook):
     if not isinstance(claim, dict):
         raise ValueError("claim must be a JSON object")
@@ -105,7 +114,8 @@ def check_claim(claim, codebook):
         return sides, "trivial: x and y are options of the same survey question"
     if x["demographic"] and y["demographic"]:
         return sides, "trivial: both variables are demographics"
-    wx, wy = set(tokens(x["label"])), set(tokens(y["label"]))
+    common = shared_words(dataset)
+    wx, wy = set(tokens(x["label"])) - common, set(tokens(y["label"])) - common
     if wx and wy and len(wx & wy) / len(wx | wy) >= MAX_WORD_OVERLAP:
         return sides, "trivial: x and y ask nearly the same question"
     return sides, None

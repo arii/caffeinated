@@ -446,6 +446,33 @@ class IgnobelTests(unittest.TestCase):
         self.assertEqual(graded["score"], 0.0)
         self.assertIn("same variable", ignobel.score_claim(self.claim(y="v06", y_level="No"))["rejected"])
 
+    def test_shared_label_prefix_is_not_overlap(self):
+        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
+        ids = {
+            v["label"].split(": ")[1].split()[0]: k
+            for k, v in codebook["bob_ross"]["variables"].items()
+        }
+        claim = {"dataset": "bob_ross", "x": ids["CONIFER"], "y": ids["MOUNTAIN"], "direction": "positive"}
+        graded = ignobel.score_claim(claim)
+        self.assertIsNone(graded["rejected"])
+        self.assertTrue(graded["replicated"])
+
+    def test_single_checkbox_question_has_unselected_level(self):
+        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
+        parade = [
+            v for v in codebook["thanksgiving"]["variables"].values() if "Macy" in v["label"]
+        ]
+        self.assertEqual(len(parade), 1)
+        self.assertIn("(not selected)", parade[0]["levels"])
+
+    def test_unnamed_survey_columns_keep_their_own_values(self):
+        variables = ignobel.load_codebook(TESTCASES / "ignobel_mini")["star_wars"]["variables"]
+        seen = [v for v in variables.values() if "films have you seen" in v["label"]]
+        self.assertEqual(len(seen), 6)
+        for variable in seen:
+            self.assertEqual(variable["levels"][0], "(not selected)")
+            self.assertIn(variable["levels"][1], variable["label"])
+
     def test_malformed_claims_raise(self):
         for claim in (
             self.claim(dataset="nope"),
