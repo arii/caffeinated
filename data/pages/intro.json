@@ -1,9 +1,9 @@
 {
-  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): a swarm of AI scientists that notices when it is bored and changes approach."},
+  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): an artificial scientist swarm that notices when it is bored and changes approach."},
   "tools": [
-    {"name": "Tinker", "detail": "Kimi via Thinking Machines powers every researcher in the swarm."},
-    {"name": "Exa", "detail": "Research search: workers look up prior work and public datasets before proposing a study."},
-    {"name": "past.dev", "detail": "Shared swarm memory: agents recall what has already been tried and write back what they learned."},
+    {"kind": "llm", "name": "Language model", "tinkerName": "Tinker", "detail": "{model} powers the researchers' language-model calls.", "tinkerDetail": "{model} runs through Tinker, the researchers' language-model provider.", "fakeName": "LLM", "fakeDetail": "A simulated model drives the researchers for this plumbing demo.", "fakeSuffix": "(fake LLM in this recording)", "unverifiedDetail": "A language model helps researchers plan and evaluate ideas.", "unknownSuffix": "(model not verified in this recording)"},
+    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; every citation links to its Exa result.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
+    {"kind": "memory", "name": "past.dev", "detail": "Shared memory helps agents recall earlier attempts and share what they learn.", "localSuffix": "(local memory in this recording)", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
   ],
   "authors": {"placeholder": true, "names": ["[AUTHORS — names to come]"]},
@@ -16,5 +16,39 @@
     ],
     "source": "Summarized from docs/boredom.md"
   },
-  "replay": {"title": "The Ig Nobel prize hunt", "button": "Watch the replay"}
+  "replay": {
+    "title": "This year's Ig Nobel research prize was discovered early — by a phenomenal breakthrough in artificial scientist swarms.",
+    "subline": "The secret: making AI less boring.",
+    "button": "Watch the swarm",
+    "qualifier": "tongue-in-cheek headline · see the real results"
+  },
+  "sections": {
+    "event": "Hack",
+    "tools": "Tools",
+    "authors": "Authors",
+    "boredom": "Boredom",
+    "trail": "Exa",
+    "results": "The real results"
+  },
+  "labels": {
+    "source": "Exa result:",
+    "missingExa": "no Exa result in this recording",
+    "recording": "This recording",
+    "searches": "literature searches",
+    "sources": "Exa source cards",
+    "recalls": "shared-memory recalls via",
+    "pastdev": "past.dev",
+    "localMemory": "local memory",
+    "noCitations": "No study citations in this recording yet."
+  },
+  "results": {
+    "studyCount": "Ig Nobel studies",
+    "passedCount": "passed",
+    "awardCount": "award.issued entries",
+    "awardFallback": "Award issued",
+    "proxyNote": "Proxy note",
+    "noStudies": "No Ig Nobel study registrations appear in this recording.",
+    "noAwards": "No award.issued entries appear in this recording.",
+    "noProxy": "No proxy note is present in this recording."
+  }
 }
