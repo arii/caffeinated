@@ -124,13 +124,19 @@ SANDBOX_BUILD = f"docker build -t {sandbox.SANDBOX_IMAGE} -f testcases/Dockerfil
 
 
 def resolve_research_source(args):
-    """exa, keyless (OpenAlex/arXiv/PubMed via literature.py) or off. Arm C never researches."""
+    """exa, keyless (OpenAlex/arXiv/PubMed via literature.py) or off. Arm C never researches.
+
+    With Exa requested but EXA_API_KEY unset, only an explicit --literature keyless|auto falls
+    back to keyless; by default the run stays on Exa and preflight reports the missing key.
+    """
     if args.arm == "C":
         return "off"
-    literature_mode = getattr(args, "literature", None) or "auto"
-    keyless = literature_mode == "keyless" or (literature_mode == "auto" and args.llm != "fake")
+    mode = getattr(args, "literature", None)
+    keyless = mode == "keyless" or (mode in (None, "auto") and args.llm != "fake")
     exa_requested = os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
-    if exa_requested and (args.replay or os.environ.get("EXA_API_KEY") or not keyless):
+    if exa_requested and (
+        args.replay or os.environ.get("EXA_API_KEY") or not keyless or mode is None
+    ):
         return "exa"
     return "keyless" if keyless else "off"
 
@@ -157,7 +163,7 @@ def preflight(args, memory_backend, exa_enabled):
         if exa_enabled and not os.environ.get("EXA_API_KEY"):
             problems.append(
                 f"EXA_API_KEY is required for Exa search (arm {args.arm}); set it in the "
-                "environment or .env, or pass --exa off"
+                "environment or .env, or pass --literature keyless (or --exa off)"
             )
     if not sandbox.docker_available():
         problems.append("Docker is not running; candidate code is scored in a Docker sandbox")
@@ -2097,6 +2103,7 @@ ROUND_UNTRACKED = (
     "viewer",
     "runs",
     "exa_cache",
+    "literature_cache",
     "llm_log.jsonl",
     "research_log.jsonl",
     "viewer_publish_log.jsonl",
@@ -2107,6 +2114,7 @@ FINAL_ARCHIVES = {
     "research_log.jsonl": "research_log.jsonl.gz",
     "runs": "runs.tar.gz",
     "exa_cache": "exa_cache.tar.gz",
+    "literature_cache": "literature_cache.tar.gz",
 }
 
 
@@ -2448,7 +2456,7 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
 
 
 RESUMED_SETTINGS = ("task", "arm", "seed", "llm", "model", "exa", "literature", "memory_backend")
-RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on", "literature": "auto"}
+RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
 
 
 def resolve_run_args(args):
@@ -2477,7 +2485,7 @@ def resolve_run_args(args):
             raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
         if given is None:
             setattr(args, key, stored)
-    if args.literature is None:
+    if "literature" not in run_artifact and args.literature is None:
         args.literature = "off"  # runs from before --literature never researched keylessly
     if args.rounds is None:
         args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
@@ -3231,8 +3239,8 @@ def build_parser():
     parser.add_argument(
         "--literature",
         choices=("auto", "keyless", "off"),
-        help="research source when Exa is off or EXA_API_KEY is unset: keyless OpenAlex/arXiv/"
-        "PubMed search (default auto: keyless unless --llm fake, which stays offline)",
+        help="keyless OpenAlex/arXiv/PubMed research: by default only under --exa off (and not "
+        "with --llm fake); keyless or auto also stand in for Exa when EXA_API_KEY is unset",
     )
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")

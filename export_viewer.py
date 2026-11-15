@@ -773,6 +773,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "url": record.get("url"),
                     "published": record.get("published"),
                     "highlights": record.get("highlights", []),
+                    "provider": record.get("provider"),
                     "query_id": qid,
                     "extract": None,
                     "cited_by": [],
@@ -1332,6 +1333,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "exa": "live"
             if any(r.get("type") == "query" and not r.get("disabled") for _, r in research)
             else "off",
+            "research": run_artifact.get("research", "unknown"),
+            "llm_mode": run_artifact.get("llm", "unknown"),
             "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
             "command": run_artifact.get("command", ""),
             "swarm_commit": run_artifact.get("swarm_commit", ""),

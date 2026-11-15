@@ -256,7 +256,9 @@ class ExportViewerTests(unittest.TestCase):
                 set(manifest["provenance"]),
                 {
                     "llm",
+                    "llm_mode",
                     "exa",
+                    "research",
                     "native_run_id",
                     "memory_backend",
                     "swarm_commit",

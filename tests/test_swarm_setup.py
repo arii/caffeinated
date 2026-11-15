@@ -117,7 +117,13 @@ class WorktreeRecoveryTests(unittest.TestCase):
     def test_round_commit_leaves_out_viewer_and_bulky_logs(self):
         _, conductor, _ = self.create()
         target = conductor / "experiments/swarm_B"
-        for name in ("viewer/run/events.ndjson", "runs/a.log", "exa_cache/q.json"):
+        for name in (
+            "viewer/run/events.ndjson",
+            "runs/a.log",
+            "exa_cache/q.json",
+            "literature_cache/q.bin",
+        ):
+            self.assertIn(Path(name).parts[0], swarm.ROUND_UNTRACKED)
             (target / name).parent.mkdir(parents=True, exist_ok=True)
             (target / name).write_text("x\n", encoding="utf-8")
         for name in ("ledger.jsonl", "llm_log.jsonl", "research_log.jsonl", "results.tsv"):

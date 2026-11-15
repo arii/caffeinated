@@ -207,26 +207,30 @@ def parse_prereg(source, fields):
 
 
 def research_sources(research_log):
-    """(Exa source id -> url, full log text) for this run, or ({}, "") without a log."""
+    """(source id -> url, canonical url/doi of every logged source) for this run."""
     path = Path(research_log) if research_log else None
     if not path or not path.is_file():
-        return {}, ""
-    text = path.read_text(encoding="utf-8", errors="replace")
-    ids = {}
-    for line in text.splitlines():
+        return {}, set()
+    ids, logged = {}, set()
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         try:
             record = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if isinstance(record, dict) and record.get("type") == "source" and record.get("id"):
+        if not isinstance(record, dict) or record.get("type") != "source":
+            continue
+        if record.get("id"):
             ids[str(record["id"])] = str(record.get("url") or "")
-    return ids, text
+        for key in ("url", "doi"):
+            if record.get(key):
+                logged.add(external.canonical_citation(str(record[key])))
+    return ids, logged
 
 
 def check_citations(citations, dataset_url, task_dir, research_log):
     vetted = json.loads((Path(task_dir) / "sources.json").read_text(encoding="utf-8"))
     vetted_urls = {source["url"] for source in vetted}
-    ids, text = research_sources(research_log)
+    ids, logged = research_sources(research_log)
     resolved, problems = [], []
     for citation in dict.fromkeys(c.strip() for c in citations):
         if re.fullmatch(r"S\d+", citation):
@@ -236,7 +240,7 @@ def check_citations(citations, dataset_url, task_dir, research_log):
                 continue
         else:
             url = citation
-            if url not in vetted_urls and not (url.startswith("https://") and url in text):
+            if url not in vetted_urls and external.canonical_citation(url) not in logged:
                 try:
                     real = external.doi_title(url, task_dir)
                 except Exception as error:

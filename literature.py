@@ -195,11 +195,15 @@ def openalex(query, n, cache_dir, since=None):
 
 def arxiv(query, n, cache_dir, since=None):
     terms = words(query, 3)
+    if not terms:
+        return []
+    # Filter by date in the query, so relevance ranking does not spend max_results on old papers.
+    dated = f" AND submittedDate:[{year(since)}01010000 TO 300001010000]" if year(since) else ""
     entries = []
     # arXiv ANDs every term; drop the last one once if that is too strict.
     for k in (3, 2)[: max(len(terms) - 1, 1)]:
         url = "https://export.arxiv.org/api/query?" + urlencode(
-            {"search_query": " AND ".join(f"all:{w}" for w in terms[:k]), "max_results": n}
+            {"search_query": " AND ".join(f"all:{w}" for w in terms[:k]) + dated, "max_results": n}
         )
         entries = _xml(url, cache_dir).findall("a:entry", ATOM)
         if entries:

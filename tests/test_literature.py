@@ -47,6 +47,15 @@ class SearchTests(RecordedTestCase):
         self.assertEqual(search.call_args_list[0].args[3][:4], str(date.today().year - 1))
         self.assertIsNone(search.call_args_list[1].args[3])
 
+    def test_arxiv_filters_dates_in_the_query_and_skips_empty_queries(self):
+        with patch.object(literature, "_xml", side_effect=AssertionError("request")) as xml:
+            self.assertEqual(literature.arxiv("the of and", 3, self.out, "2025-01-01"), [])
+            xml.assert_not_called()
+            xml.side_effect = None
+            xml.return_value.findall.return_value = []
+            literature.arxiv(QUERY, 3, self.out, "2025-06-01")
+        self.assertIn("submittedDate%3A%5B202501010000+TO+", xml.call_args.args[0])
+
     def test_interleaves_providers_with_urls_from_the_apis(self):
         hits, status = literature.search(QUERY, INDEX["n"], self.out)
         self.assertEqual(status, {"openalex": 3, "arxiv": 2, "pubmed": 1})
@@ -131,6 +140,26 @@ class SwarmResearchTests(RecordedTestCase):
         self.assertEqual([row["endpoint"] for row in rows], ["disabled"])
         self.fetch.assert_not_called()
 
+    def test_only_a_logged_source_url_counts_not_text_quoted_in_an_abstract(self):
+        self.call("prior-art", query=QUERY, n=3)
+        log = self.out / "research_log.jsonl"
+        quoted = "https://example.com/quoted-in-an-abstract"
+        record = {"type": "source", "id": "S9", "url": "https://example.com/real", "title": "t"}
+        record["highlights"] = [f"see {quoted} and https://doi.org/10.1103/PhysRevE.85.046117"]
+        with log.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record) + "\n")
+        with patch.object(ignobel.external, "doi_title", return_value=None):
+            resolved, problems = ignobel.check_citations(
+                [quoted, "https://doi.org/10.1103/Phys", "https://example.com/real"],
+                "https://zenodo.org/records/1",
+                ignobel.HERE,
+                log,
+            )
+        self.assertEqual(resolved, ["https://example.com/real"])
+        self.assertEqual(len(problems), 3)
+        self.assertTrue(problems[0].startswith(quoted))
+        self.assertTrue(problems[1].startswith("https://doi.org/10.1103/Phys "))
+
     def test_keyless_sources_pass_the_ignobel_citation_check_without_crossref(self):
         self.call("prior-art", query=QUERY, n=3)
         log = self.out / "research_log.jsonl"
@@ -183,13 +212,24 @@ class ResearchSourceTests(unittest.TestCase):
         with patch.dict(os.environ, env, clear=True):
             return swarm.resolve_research_source(args)
 
-    def test_keyless_when_exa_is_off_or_has_no_key(self):
+    def test_keyless_under_exa_off_or_when_asked_for_without_a_key(self):
         self.assertEqual(self.source(key="k"), "exa")
-        self.assertEqual(self.source(), "keyless")
         self.assertEqual(self.source("--exa", "off", key="k"), "keyless")
+        self.assertEqual(self.source("--literature", "keyless"), "keyless")
+        self.assertEqual(self.source("--literature", "auto"), "keyless")
         self.assertEqual(self.source("--arm", "C"), "off")
         self.assertEqual(self.source("--literature", "off"), "exa")
         self.assertEqual(self.source("--exa", "off", "--literature", "off"), "off")
+
+    def test_a_missing_exa_key_fails_preflight_instead_of_switching_to_keyless(self):
+        self.assertEqual(self.source(), "exa")
+        args = swarm.build_parser().parse_args(["--task", "ignobel", "--llm", "fake"])
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(swarm.sandbox, "docker_available", return_value=False),
+            self.assertRaisesRegex(RuntimeError, "EXA_API_KEY.*--literature keyless"),
+        ):
+            swarm.preflight(args, "local", exa_enabled=True)
 
     def test_fake_llm_runs_stay_offline_unless_asked(self):
         fake = swarm.build_parser().parse_args(

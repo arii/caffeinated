@@ -54,7 +54,8 @@ class ReplayTests(unittest.TestCase):
         b=next(c.get(m['id']) for m in c.list() if m['title'].startswith('Ig Nobel'))
         self.assertIn('ignobel',b['manifest']['provenance']['command'])
         self.assertEqual(b['frames'][-1]['snapshot']['metric']['direction'],'minimize')
-        self.assertTrue(b['manifest']['sample']);self.assertEqual(b['manifest']['description'],'Recorded research · no live model calls')
+        self.assertTrue(b['manifest']['sample']);self.assertEqual(b['manifest']['provenance']['llm_mode'],'fake');self.assertEqual(b['manifest']['description'],'Recorded offline run · fake LLM (scripted agents)')
+        self.assertEqual({c.get(m['id'])['manifest']['description'] for m in c.list() if not m['title'].startswith('Ig Nobel')},{'Recorded research · no live model calls'})
         urls=[s['url'] for s in b['entities']['sources']]
         self.assertTrue(urls);self.assertTrue(all(u.startswith('https://') and 'example.org' not in u for u in urls))
     def test_backend_team_can_select_a_bundle_without_replacing_sample_data(self):

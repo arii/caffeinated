@@ -59,14 +59,14 @@ def build_recording(native_manifest, native_events, entities, sample=True):
     manifest.update({'id':manifest['run_id'],'totalTicks':last_tick,'tickDurationMs':700,'live':live})
     provenance=manifest.get('provenance',{})
     manifest['sample']=sample
-    llm=provenance.get('llm','unknown')
+    llm=provenance.get('llm_mode') or provenance.get('llm','unknown')
     try:
         command=provenance.get('command',[])
         if isinstance(command,str):command=shlex.split(command)
         provider=next((part.split('=',1)[1] if '=' in part else command[i+1] for i,part in enumerate(command) if part=='--llm' or part.startswith('--llm=')),None)
-        if provider:llm=provider
+        if provider and not provenance.get('llm_mode'):llm=provider
     except (ValueError,IndexError):pass
-    manifest['description']='Recorded research · no live model calls' if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
+    manifest['description']=('Recorded offline run · fake LLM (scripted agents)' if llm=='fake' else 'Recorded research · no live model calls') if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
     created=manifest.get('time',{}).get('ts_start')
     created_at=datetime.fromisoformat(created.replace('Z','+00:00')).timestamp() if created else 0
     agents=[]

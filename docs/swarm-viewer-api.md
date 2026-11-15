@@ -182,6 +182,8 @@ interface RunManifest {
   agents: AgentIdentity[];
   provenance: {
     llm: string; gpu: string; exa: string; memory_backend: string; // gpu is a legacy contract field
+    research: 'exa' | 'keyless' | 'off' | 'unknown';  // run.json research source
+    llm_mode: string;                  // run.json --llm (e.g. 'fake', 'tinker'); 'unknown' if absent
     command: string; swarm_commit: string;
     artifacts: Record<string, string>; // file -> sha256[:16]
   };
