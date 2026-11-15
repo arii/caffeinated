@@ -60,7 +60,7 @@ export function sourceCards(recording:Source|null|undefined,tick:number):SourceC
  return entityRows(recording,'sources').flatMap(s=>{const id=String(s.id),e=seen.get(id),t=num(s.tick);if(!e&&(t==null||t>tick))return [];
   const highlights=Array.isArray(s.highlights)?s.highlights.map(text).filter(Boolean):[];
   const citedBy=[...new Set([...(Array.isArray(s.cited_by)?s.cited_by.map(String):[]).filter(x=>started.has(x)),...experiments.filter(x=>Array.isArray(x.source_ids)&&x.source_ids.includes(id)).map(x=>String(x.id))])];
-  return [{id,title:text(s.title)||text(e?.payload?.summary)||text(s.url)||id,url:text(s.url)||text(e?.payload?.url),highlight:(highlights[0] as string|undefined)||text(s.extract)||text(e?.payload?.text),agentId:text(s.agent_id)||e?.agentId||null,tick:e?.tick??t!,citedBy}];});
+  return [{id,title:text(s.title)||text(e?.payload?.summary)||text(s.url)||id,url:text(s.url)||text(e?.payload?.url),highlight:(highlights[0] as string|undefined)||text(s.highlight)||text(s.extract)||text(e?.payload?.text),agentId:text(s.agent_id)||e?.agentId||null,tick:e?.tick??t!,citedBy}];});
 }
 
 export interface StudyCheck{rho:number|null;p:number|null;n:number|null;halves:{rho:number|null;p:number|null;n:number|null}[];significant:boolean|null;replicated:boolean|null;confirmed:boolean|null}

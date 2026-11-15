@@ -108,6 +108,11 @@ test('empty baseline gate placeholders are not shown as a gate check and rejecte
  assert.match(studyCardHtml(cards[1],ctx),/Rejected: dataset reused/);
 });
 
+test('singular source highlight is shown on the card',()=>{
+ const r={entities:{sources:[{id:'s',title:'T',highlight:'Key line',tick:0}]},events:[]};
+ assert.equal(sourceCards(r,0)[0].highlight,'Key line');
+});
+
 test('native hypothesis_id rows keep the experiment idea',()=>{
  const r={entities:{hypotheses:[{hypothesis_id:'h',text:'Seeds matter',rationale:'Variance'}],studies:[{study_id:'s'}]},events:[{tick:0,type:'hypothesis.proposed',refs:{hypothesis_id:'h'}},{tick:1,type:'experiment.started',refs:{experiment_id:'e',hypothesis_id:'h'}}]};
  assert.deepEqual(entityRows(r,'hypotheses').map(x=>x.id),['h']);assert.deepEqual(entityRows(r,'studies').map(x=>x.id),['s']);
