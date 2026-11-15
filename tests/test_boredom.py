@@ -264,7 +264,10 @@ class CliIntegrationTests(unittest.TestCase):
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
             self.assertEqual(record["n_rows"], 5)
-            self.assertEqual(record["profile_version"], 3)
+            profile_version = descriptor_meter.load_profile(
+                SCRIPT.parent / "boredom_meter/profiles/autoresearch_llm.json"
+            )["version"]
+            self.assertEqual(record["profile_version"], profile_version)
             self.assertEqual(record["descriptor"]["mechanism"], "optimizer")
             self.assertEqual(len(record["ledger_sha256"]), 64)
             self.assertEqual(len(record["profile_sha256"]), 64)
@@ -294,7 +297,7 @@ class CliIntegrationTests(unittest.TestCase):
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
             self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "optimizer")
-            self.assertEqual(logged_gates[0]["profile_version"], 3)
+            self.assertEqual(logged_gates[0]["profile_version"], profile_version)
             self.assertEqual(len(logged_gates[0]["ledger_sha256"]), 64)
             self.assertEqual(len(logged_gates[0]["profile_sha256"]), 64)
 

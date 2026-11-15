@@ -41,6 +41,8 @@ def load_profile(path):
     profile.setdefault("min_attempts", 3)
     profile.setdefault("trivial_distance", 0.05)
     profile.setdefault("fail_statuses", ["crash", "invalid", "qc_fail"])
+    profile.setdefault("attempt_statuses", ["keep", "discard", "crash"])
+    profile.setdefault("required_mechanisms", list(profile.get("vocab") or {}))
     profile.setdefault("gate", {"snap_min_distance": 0.35, "failed_min_distance": 0.25})
     profile["_hash"] = sha({k: v for k, v in profile.items() if not k.startswith("_")})
     return profile
@@ -165,8 +167,10 @@ def fold(profile, events, agent=None):
     novelty_hist, trivial_hist, fail_hist, cell_hist = [], [], [], []
     regime = "EXPLOIT"
     trace = []
-    required_cells = set(profile.get("vocab") or {}) - {"baseline"}
+    required_cells = set(profile["required_mechanisms"])
     for e in events:
+        if e.get("status") not in profile["attempt_statuses"] or e.get("kind") == "critic":
+            continue
         d = e["descriptor"]
         nov = sparseness(profile, d, archive)
         nearest = min((distance(profile, d, o) for o in archive), default=1.0)
@@ -245,7 +249,7 @@ def status(profile, events, agent=None, at=None):
     }
     out = {k: v for k, v in last.items() if k != "agent"}
     out.update({
-        "scope": agent or "swarm", "n_attempts": len(events),
+        "scope": agent or "swarm", "n_attempts": len(trace),
         "ledger_sha256": sha(events), "profile_sha256": profile["_hash"],
         "directive": profile.get("directives", {}).get(out["regime"], ""),
     })

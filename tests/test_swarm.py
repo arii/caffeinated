@@ -257,7 +257,7 @@ class CriticAcceptanceTests(unittest.TestCase):
         profile = meter.load_profile(PROFILE_PATH)
         best = 0.995814
 
-        self.assertEqual(profile["version"], 3)
+        self.assertEqual(profile["version"], json.loads(PROFILE_PATH.read_text())["version"])
         self.assertEqual(profile["accept_margin"], 0.0018)
         self.assertTrue(swarm.candidate_is_provisional(profile, 0.993814, best))
         self.assertTrue(
@@ -367,6 +367,14 @@ class SwarmOrchestratorTests(unittest.TestCase):
             self.assertGreaterEqual(
                 sum(item.get("kind") == "critic" for item in ledger), 1
             )
+            for critic in (item for item in ledger if item.get("kind") == "critic"):
+                candidate = next(
+                    item for item in ledger
+                    if item.get("kind") == "candidate"
+                    and item["commit"] == critic["commit"]
+                    and item["round"] == critic["round"]
+                )
+                self.assertEqual(candidate["replicate_score"], critic["score"])
             assignments = self.jsonl(out_dir / "assignments.jsonl")
             self.assertEqual(len(assignments), 2)
             for assignment in assignments:

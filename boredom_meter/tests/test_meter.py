@@ -145,6 +145,55 @@ class ConvergedTest(unittest.TestCase):
     def setUp(self):
         self.profile = meter.load_profile(AUTORESEARCH)
 
+    def assert_audit_event_does_not_count(self, event):
+        for events in ([], autoresearch_ledger()[:8]):
+            with self.subTest(n=len(events)):
+                before = meter.status(self.profile, events)
+                after = meter.status(self.profile, events + [dict(event, seq=len(events) + 1)])
+                for key in ("B", "regime", "novelty", "frontier_stall", "n_attempts"):
+                    self.assertEqual(before[key], after[key], key)
+                self.assertNotEqual(before["ledger_sha256"], after["ledger_sha256"])
+
+    def test_reject_event_leaves_meter_unchanged(self):
+        self.assert_audit_event_does_not_count({
+            "status": "reject", "score": None,
+            "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+        })
+
+    def test_critic_event_leaves_meter_unchanged(self):
+        self.assert_audit_event_does_not_count({
+            "kind": "critic", "status": "keep", "score": 0.5,
+            "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+        })
+
+    def test_attempt_statuses_from_profile(self):
+        self.profile["attempt_statuses"] = ["discard", "crash"]
+        self.assertEqual(meter.fold(self.profile, autoresearch_ledger()), [])
+        event = dict(autoresearch_ledger()[0], status="crash", score=None)
+        self.assertEqual(meter.status(self.profile, [event])["n_attempts"], 1)
+
+    def test_required_mechanisms_from_profile(self):
+        self.profile["required_mechanisms"] = ["optimizer"]
+        self.assertEqual(
+            meter.status(self.profile, autoresearch_ledger(include_all=False))["regime"],
+            "CONVERGED",
+        )
+
+    def test_required_mechanisms_default_to_all_vocab(self):
+        import tempfile
+        raw = json.loads(AUTORESEARCH.read_text())
+        del raw["required_mechanisms"]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "profile.json"
+            path.write_text(json.dumps(raw))
+            profile = meter.load_profile(path)
+        self.assertEqual(set(profile["required_mechanisms"]), set(profile["vocab"]))
+        self.assertNotEqual(
+            meter.status(profile, autoresearch_ledger(include_all=False))["regime"],
+            "CONVERGED",
+        )
+        self.assertEqual(meter.status(profile, autoresearch_ledger())["regime"], "CONVERGED")
+
     def test_enters_after_stall_and_all_top_level_cells_visited(self):
         events = autoresearch_ledger()
         state = meter.status(self.profile, events)

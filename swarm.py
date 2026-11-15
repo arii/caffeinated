@@ -1171,6 +1171,7 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score, 
         "agent": candidate["agent"],
         "status": status,
         "score": score,
+        "replicate_score": candidate.get("replicate_score"),
         "descriptor": candidate["descriptor"],
         "sources": candidate.get("sources", []),
         "commit": candidate.get("commit") or None,
@@ -1590,6 +1591,7 @@ def orchestrate(args):
                 )
                 critic_result = critic_results[provisional_best["commit"]]
                 provisional_best["critic_score"] = critic_result.get("val_bpb")
+                provisional_best["replicate_score"] = critic_result.get("val_bpb")
                 provisional_best["critic_memory_gb"] = critic_result.get("memory_gb")
                 first_score = float(provisional_best["score"])
                 second_score = critic_result.get("val_bpb")
