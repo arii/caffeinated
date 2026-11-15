@@ -582,6 +582,10 @@ class IgnobelPreregTests(unittest.TestCase):
         graded = self.run_prereg(dataset=dataset)["graded"]
         self.assertIn('higher "Dryer age (years)" per "Socks lost per month"', graded["headline"])
         self.assertTrue(graded["rejected"].startswith("trivial"))
+        self.assertNotEqual(
+            ignobel.test_hash(self.prereg(dataset=dataset)),
+            ignobel.test_hash(self.prereg(dataset={"x": "Dryer age (years)"})),
+        )
         bad = self.run_prereg(dataset={"x_per": "Favourite colour"})
         self.assertEqual((bad["status"], bad["reason"]), ("crash", "invalid_output"))
 

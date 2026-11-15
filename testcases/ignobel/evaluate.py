@@ -267,7 +267,7 @@ def column(entry, name):
 
 
 def test_hash(prereg):
-    test = {key: prereg["dataset"].get(key) for key in ("url", "x", "x_level", "y", "y_level")}
+    test = {key: prereg["dataset"].get(key) for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")}
     test["direction"] = prereg["direction"]
     return hashlib.sha256(json.dumps(test, sort_keys=True).encode()).hexdigest()[:16]
 
