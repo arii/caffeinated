@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {researchTrail,researchResults,introHtml} from '../src/engine/intro.ts';
+import {researchTrail,researchResults,introResults,introHtml} from '../src/engine/intro.ts';
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const config=JSON.parse(readFileSync(new URL('../data/pages/intro.json',import.meta.url),'utf8'));
 test('intro follows the requested order and keeps its secondary sections collapsed',()=>{
@@ -114,7 +114,9 @@ test('Ig Nobel factual line counts accepted finite-p results as ran and register
   const payload=i>=13?{rejected:'dataset unavailable'}:{rho:.2,p:i<10?.001:.1,n:100,confirmed:true,replicated:true,halves:[{rho:.2,p:.01,n:50},{rho:.2,p:.02,n:50}]};
   return [registered,{tick:2,type:'study.result',refs:{study_id:study.id},payload}];
  });
- const run={manifest:{task:'ignobel',totalTicks:2},entities:{studies},events},results=researchResults(run),html=introHtml(config,researchTrail(run),esc,results,run.manifest,run);
+ const run={manifest:{task:'ignobel',totalTicks:2},entities:{studies},events};
+ assert.equal(researchResults(run,0).ran,0);
+ const results=introResults(run),html=introHtml(config,researchTrail(run),esc,results,run.manifest,run);
  assert.equal(results.registered,21);assert.equal(results.ran,13);assert.equal(results.underCurrentRules,10);
  assert.match(html,/Real result so far: 10 of 13 preregistered tests that ran held up \(21 registered\); no committee score yet/);
 });

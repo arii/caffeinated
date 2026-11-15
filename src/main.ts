@@ -7,7 +7,7 @@ import './results.css';
 import {createWorld} from './variants/lab';
 import {request} from './engine/api';
 import {STATIC_SITE,staticPath} from './engine/staticSite';
-import {introHtml,researchTrail,researchResults,type IntroConfig} from './engine/intro';
+import {introHtml,introResults,researchTrail,researchResults,type IntroConfig} from './engine/intro';
 import introConfig from '../data/pages/intro.json';
 import judgingCopy from '../data/pages/judging.json';
 import {nextCoach} from './engine/introProgress';
@@ -307,7 +307,7 @@ async function loadRecordings(){try{const items=sortedRecordings(await request<R
 $('refresh-runs').onclick=()=>loadRecordings();$('run-picker').onchange=()=>attachRecording($<HTMLSelectElement>('run-picker').value);
 let polling=false;
 /** Static site only: the hackathon intro sits in front of the replay until dismissed. */
-function showIntro(){$('intro').innerHTML=introHtml(introConfig as IntroConfig,researchTrail(recording),esc,researchResults(recording,tick),recording?.manifest,recording);$('prestart').hidden=true;$('intro').hidden=false;$('intro-start').onclick=startExperience;$('intro-results-link').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};$('intro-qualifier').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};}
+function showIntro(){$('intro').innerHTML=introHtml(introConfig as IntroConfig,researchTrail(recording),esc,introResults(recording),recording?.manifest,recording);$('prestart').hidden=true;$('intro').hidden=false;$('intro-start').onclick=startExperience;$('intro-results-link').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};$('intro-qualifier').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};}
 if(STATIC_SITE){$('refresh-runs').hidden=true;document.body.classList.add('static-site');}
 else setInterval(async()=>{if(polling)return;polling=true;const current=recording,generation=loadGeneration;try{await loadRecordings();const updated=recordingManifests.find(m=>m.id===current?.manifest.id);if(current&&generation===loadGeneration&&recording===current&&recordingChanged(current.manifest,updated))await attachRecording(current.manifest.id,true);}finally{polling=false;}},4000);
 function blocked(x:number,z:number){const r=.34,b=world.bounds;return x<b.minX+r||x>b.maxX-r||z<b.minZ+r||z>b.maxZ-r||world.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);}

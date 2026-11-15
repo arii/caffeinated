@@ -34,6 +34,7 @@ export function researchResults(r:Recording|null,tick=Number.MAX_SAFE_INTEGER){
  const proxyNote=recordingProxyNote(r?.manifest,r)||'';
  return {studies:cards.length,registered:cards.length,ran,confirmed:confirmed.length,underCurrentRules,passed:confirmed.length,awards:awards.map(a=>[a.title,a.detail].filter(Boolean).join(' · ')),proxyNote,isIgnobel:isIgnobelRecording(r?.manifest,r),preCommittee:isPreCommitteeIgnobel(r?.manifest,r)};
 }
+export function introResults(r:Recording|null){return researchResults(r,Number.MAX_SAFE_INTEGER);}
 
 export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,esc:(v:unknown)=>string,results=researchResults(null),manifest:Recording['manifest']|null=null,recording:Recording|null=null){
  const provenance=manifest?.provenance,badge=provenanceBadge(manifest,recording||undefined);
