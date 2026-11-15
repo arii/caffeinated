@@ -58,6 +58,21 @@ MIN_CITATIONS = 2
 MAX_CITATIONS = 8
 MAX_TEXT = 600
 TEXT_FIELDS = ("question", "hypothesis", "mechanism")
+ENDPOINTS = (
+    ("start", "end"),
+    ("begin", "end"),
+    ("onset", "offset"),
+    ("min", "max"),
+    ("minimum", "maximum"),
+    ("lowest", "highest"),
+    ("low", "high"),
+    ("lower", "upper"),
+    ("open", "close"),
+    ("opening", "closing"),
+    ("first", "last"),
+    ("entry", "exit"),
+    ("arrival", "departure"),
+)
 
 
 def load_fields(task_dir=HERE):
@@ -99,6 +114,17 @@ def shared_words(dataset):
     return {word for word, count in counts.items() if count > len(dataset["variables"]) / 2}
 
 
+def interval_endpoints(label_a, label_b):
+    """True when two labels are the two ends of one quantity (start/end time, min/max price):
+    such columns move together by construction (end = start + duration)."""
+    a, b = set(tokens(label_a)), set(tokens(label_b))
+    for low, high in ENDPOINTS:
+        crossed = (low in a and high in b) or (high in a and low in b)
+        if crossed and a - {low, high} == b - {low, high}:
+            return True
+    return False
+
+
 def check_claim(claim, codebook):
     if not isinstance(claim, dict):
         raise ValueError("claim must be a JSON object")
@@ -128,6 +154,8 @@ def check_claim(claim, codebook):
         return sides, "trivial: x and y are options of the same survey question"
     if x["demographic"] and y["demographic"]:
         return sides, "trivial: both variables are demographics"
+    if interval_endpoints(x["label"], y["label"]):
+        return sides, "trivial: x and y are two ends of one quantity (related by construction)"
     common = shared_words(dataset)
     wx, wy = set(tokens(x["label"])) - common, set(tokens(y["label"])) - common
     if wx and wy and len(wx & wy) / len(wx | wy) >= MAX_WORD_OVERLAP:
@@ -312,19 +340,8 @@ def claim_registry(research_log, name, digest, predicted):
     return None, predicted
 
 
-def grade_prereg(prereg, task_dir=HERE, research_log=None):
-    task_dir = Path(task_dir)
-    url = prereg["dataset"]["url"].strip()
-    citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
-    result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
-    if problems:
-        result["rejected"] = "citations: " + "; ".join(problems)
-        return {**result, "score": 0.0}
-    try:
-        name, entry = external.ensure(url, task_dir, research_log)
-    except Exception as error:
-        result["rejected"] = f"dataset unavailable: {type(error).__name__}: {error}"
-        return {**result, "score": 0.0}
+def registered_claim(prereg, name, entry):
+    """Resolve the registered columns, levels and rates against the dataset codebook."""
     data = prereg["dataset"]
     claim = {
         "dataset": name,
@@ -345,11 +362,48 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
             raise ValueError(f"dataset.{axis}_per needs a numeric {axis} and a numeric denominator")
         pers.append(entry["variables"][claim[f"{axis}_per"]] if per else None)
     sides, trivial = check_claim(claim, {name: entry})
-    (x, x_level), (y, y_level) = sides
     if {claim["x_per"], claim["y_per"]} & {claim["x"], claim["y"]} or (
         claim["x_per"] and claim["x_per"] == claim["y_per"]
     ):
         trivial = trivial or "trivial: a denominator is shared or is the other variable"
+    return claim, sides, trivial, pers
+
+
+def preflight_source(source, task_dir=HERE, research_log=None):
+    """Problems that make a registration untestable, found without running its test."""
+    task_dir = Path(task_dir).resolve()
+    research_log = research_log or os.environ.get("TASK_RESEARCH_LOG")
+    try:
+        prereg = parse_prereg(source, load_fields(task_dir))
+        url = prereg["dataset"]["url"].strip()
+        problems = check_citations(prereg["citations"], url, task_dir, research_log)[1]
+        if problems:
+            return ["citations: " + "; ".join(problems)]
+        try:
+            name, entry = external.ensure(url, task_dir, research_log)
+        except Exception as error:
+            return [f"dataset unavailable: {type(error).__name__}: {error}"]
+        trivial = registered_claim(prereg, name, entry)[2]
+    except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
+        return [f"invalid registration: {error}"[:MAX_TEXT]]
+    return [trivial] if trivial else []
+
+
+def grade_prereg(prereg, task_dir=HERE, research_log=None):
+    task_dir = Path(task_dir)
+    url = prereg["dataset"]["url"].strip()
+    citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
+    result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
+    if problems:
+        result["rejected"] = "citations: " + "; ".join(problems)
+        return {**result, "score": 0.0}
+    try:
+        name, entry = external.ensure(url, task_dir, research_log)
+    except Exception as error:
+        result["rejected"] = f"dataset unavailable: {type(error).__name__}: {error}"
+        return {**result, "score": 0.0}
+    claim, sides, trivial, pers = registered_claim(prereg, name, entry)
+    (x, x_level), (y, y_level) = sides
     rows = read_rows(task_dir / entry["file"]) + read_rows(
         task_dir / ".cache" / "replication" / f"{name}.csv"
     )
@@ -397,13 +451,19 @@ def record_study(research_log, prereg, graded):
     """Append the graded study, including the in-run committee result."""
     if not research_log:
         return
-    record = {"ts": time.time(), "prereg": prereg, "result": graded}
+    path = Path(research_log).parent / "ignobel_studies.jsonl"
+    record = {"prereg": prereg, "result": graded}
     with contextlib.suppress(ValueError):
         record.update(json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}"))
-    line = json.dumps(record, sort_keys=True) + "\n"
-    with (Path(research_log).parent / "ignobel_studies.jsonl").open(
-        "a", encoding="utf-8"
-    ) as stream:
+    same = json.dumps(record, sort_keys=True)
+    if path.is_file():
+        for previous in path.read_text(encoding="utf-8").splitlines():
+            old = json.loads(previous)
+            old.pop("ts", None)
+            if json.dumps(old, sort_keys=True) == same:
+                return
+    line = json.dumps({"ts": time.time(), **record}, sort_keys=True) + "\n"
+    with path.open("a", encoding="utf-8") as stream:
         stream.write(line)
 
 
@@ -444,6 +504,16 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
         status = "ok"
     except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
         reason, diagnostics = "invalid_output", f"{type(error).__name__}: {error}"
+        if prereg is not None:
+            record_study(
+                research_log,
+                prereg,
+                {
+                    "dataset_id": external.dataset_id(prereg["dataset"]["url"].strip()),
+                    "rejected": f"invalid registration: {error}"[:MAX_TEXT],
+                    "score": 0.0,
+                },
+            )
     except Exception as error:
         reason, diagnostics = "grader_error", f"{type(error).__name__}: {error}"
     score = graded["score"] if graded else 0.0

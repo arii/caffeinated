@@ -82,6 +82,9 @@ test('study cards follow registration, result, replication and award',()=>{
  const res=studyCards(recording,6)[0].result;
  assert.equal(res.rho,0.2);assert.equal(res.halves.length,2);assert.equal(res.significant,true);assert.equal(res.replicated,true);
  const done=studyCards(recording,9)[0];
+ const priorArt={...done,award:null,result:{...done.result,confirmed:true},priorArtPass:false,novelty:0.2};
+ assert.match(awardBadge(priorArt,ctx),/not accepted: prior art \(novelty 0\.20\)/);assert.doesNotMatch(awardBadge(priorArt,ctx),/badge ok/);
+ assert.match(awardBadge({...priorArt,priorArtPass:true},ctx),/badge ok">Confirmed/);
  assert.equal(done.replications.length,1);assert.equal(done.award.score,8.5);assert.deepEqual(done.award.verdicts,['judge: Funny and true']);
  const html=studyCardHtml(done,ctx);
  for(const text of ['Ig Nobel Prize in Gastronomy','Half 2: rho 0.300','significant','replicated','Rare-steak eaters smoke','Funny and true','d.csv','0.150','0.200'])assert.ok(html.includes(text),text);

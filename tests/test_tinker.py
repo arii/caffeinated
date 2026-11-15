@@ -89,6 +89,7 @@ class TinkerTests(unittest.TestCase):
         self.assertEqual(
             record["usage"], {"prompt_tokens": 24, "completion_tokens": 14, "total_tokens": 38}
         )
+        self.assertEqual(record["call_id"], client.last_call_id)
         self.assertEqual(len(record["attempts"]), 2)
         self.assertIn("parse_error", record["attempts"][0])
         self.assertGreaterEqual(record["latency_ms"], 0)
@@ -168,7 +169,13 @@ class TinkerTests(unittest.TestCase):
                     }
                 }
             ],
-            "usage": {"prompt_tokens": 98, "completion_tokens": 33, "total_tokens": 131},
+            "usage": {
+                "prompt_tokens": 98,
+                "completion_tokens": 33,
+                "total_tokens": 131,
+                "prompt_tokens_details": {"cached_tokens": 19},
+                "completion_tokens_details": {"reasoning_tokens": 11},
+            },
         }
         model = "moonshotai/Kimi-K3.1-Pro:peft:262144"
         with patch("llm.urlopen", return_value=self.http_response(body)) as urlopen:
@@ -184,13 +191,84 @@ class TinkerTests(unittest.TestCase):
         self.assertEqual(record["model"], "role-specific-model")
         self.assertEqual(payload["model"], "role-specific-model")
         self.assertEqual(payload["messages"], [{"role": "user", "content": record["prompt"]}])
-        self.assertEqual(payload["reasoning_effort"], "low")
+        self.assertEqual(payload["reasoning_effort"], llm.DEFAULT_TINKER_REASONING_EFFORT)
+        self.assertEqual(llm.DEFAULT_TINKER_REASONING_EFFORT, "low")
         self.assertEqual(payload["seed"], record["seed"])
         self.assertEqual(
-            record["usage"], {"prompt_tokens": 98, "completion_tokens": 33, "total_tokens": 131}
+            record["usage"],
+            {
+                "prompt_tokens": 98,
+                "completion_tokens": 33,
+                "total_tokens": 131,
+                "prompt_tokens_details": {"cached_tokens": 19},
+                "cached_tokens": 19,
+                "reasoning_tokens": 11,
+                "completion_tokens_details": {"reasoning_tokens": 11},
+                "reasoning_chars": len('{"not_final": true}'),
+            },
+        )
+        self.assertEqual(record["call_id"], client.last_call_id)
+        self.assertEqual(record["attempts"][0]["usage"]["cached_tokens"], 19)
+        self.assertEqual(record["attempts"][0]["usage"]["reasoning_tokens"], 11)
+        self.assertEqual(
+            record["attempts"][0]["usage"]["reasoning_chars"], len('{"not_final": true}')
         )
         self.assertEqual(record["attempts"][0]["reasoning"], '{"not_final": true}')
         self.assertNotIn("stub-tinker-key", self.log_path.read_text())
+
+    def test_pi_role_uses_its_reasoning_effort(self):
+        body = {"choices": [{"message": {"content": '{"steers": []}'}}], "usage": {}}
+        with (
+            patch.dict(os.environ, {"TINKER_PI_REASONING_EFFORT": "medium"}),
+            patch("llm.urlopen", return_value=self.http_response(body)) as urlopen,
+        ):
+            client = self.client()
+            self.assertEqual(client.call("PI", agent="pi", round_num=2, values={}), {"steers": []})
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(payload["reasoning_effort"], "medium")
+
+    def test_openai_path_logs_cached_tokens_reasoning_and_call_ids(self):
+        body = {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"ok": true}',
+                        "reasoning_content": "think",
+                    }
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 20,
+                "completion_tokens": 8,
+                "total_tokens": 28,
+                "prompt_tokens_details": {"cached_tokens": 5},
+                "completion_tokens_details": {"reasoning_tokens": 3},
+            },
+        }
+        with (
+            patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
+            patch("llm.urlopen", return_value=self.http_response(body)),
+        ):
+            client = llm.LLMClient(mode="openai", model="openai-model", log_path=self.log_path)
+            self.assertEqual(self.call(client), {"ok": True})
+            first_id = client.last_call_id
+            self.assertEqual(self.call(client), {"ok": True})
+        records = llm.read_log(self.log_path)
+        self.assertEqual(len({record["call_id"] for record in records}), 2)
+        self.assertEqual(records[0]["call_id"], first_id)
+        self.assertEqual(
+            records[0]["usage"],
+            {
+                "prompt_tokens": 20,
+                "completion_tokens": 8,
+                "total_tokens": 28,
+                "prompt_tokens_details": {"cached_tokens": 5},
+                "cached_tokens": 5,
+                "completion_tokens_details": {"reasoning_tokens": 3},
+                "reasoning_tokens": 3,
+                "reasoning_chars": 5,
+            },
+        )
 
     def test_http_errors_report_status_and_detail(self):
         error = HTTPError(

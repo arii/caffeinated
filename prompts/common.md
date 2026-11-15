@@ -8,3 +8,8 @@ Edit only the declared task file. Do not alter data, harnesses, graders, sandbox
 Protocol:
 {program}
 Respond with a single JSON object only.
+Hard rules this round (proposals breaking these are rejected without scoring):
+{hard_rules}
+Your recent rejections (do not repeat these mistakes):
+{own_feedback}
+PI guidance for you this round: {pi_steer}

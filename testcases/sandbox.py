@@ -478,3 +478,23 @@ def evaluate_task(task_dir, candidate_source, **kwargs):
         }
     finally:
         sys.modules.pop(module_name, None)
+
+
+def preflight_task(task_dir, candidate_source):
+    """Registration problems from the task's optional preflight_source hook ([] if none)."""
+    task_dir = Path(task_dir).resolve()
+    evaluator = TESTCASES / task_dir.name / "evaluate.py"
+    if task_dir.name not in TASK_TIMEOUTS or not evaluator.is_file():
+        return []
+    module_name = f"_autoresearch_{task_dir.name}_preflight"
+    spec = importlib.util.spec_from_file_location(module_name, evaluator)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+        hook = getattr(module, "preflight_source", None)
+        return list(hook(candidate_source, task_dir=task_dir)) if hook else []
+    except Exception:
+        return []
+    finally:
+        sys.modules.pop(module_name, None)
