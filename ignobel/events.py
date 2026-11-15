@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 
 EVENT_TYPES = {
     "seed", "idea", "prediction", "boredom", "snap", "talk", "share",
-    "measurement_request", "study_result", "lesson", "spawn",
+    "measurement_request", "study_result", "lesson", "spawn", "research",
 }
 
 

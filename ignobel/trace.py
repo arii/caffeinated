@@ -40,6 +40,10 @@ def esc(x) -> str:
     return html.escape(str(x))
 
 
+def link(url, text=None) -> str:
+    return f"<a href='{esc(url or '#')}'>{esc(text or url or 'link')}</a>"
+
+
 def body(e: dict, run: Path, agents: dict) -> str:
     p, t = e["payload"], e["type"]
     if t == "idea":
@@ -67,7 +71,23 @@ def body(e: dict, run: Path, agents: dict) -> str:
     if t == "spawn":
         why = "founds" if p.get("reason") == "founded" else f"field boredom {esc(p.get('field_B'))} →"
         return (f"{why} new daughter lab <b>{esc(p.get('daughter'))}</b> "
-                f"in <b>{esc(p.get('field'))}</b><div>instruments: {esc(', '.join(p.get('instruments', [])))}</div>")
+                f"in <b>{esc(p.get('field'))}</b><div>methods: {esc(', '.join(p.get('methods') or p.get('instruments') or []))}</div>")
+    if t == "research":
+        tool = p.get("tool")
+        if p.get("error"):
+            return f"<span class=tag>{esc(tool)}</span> {esc(p.get('query', ''))} <span class=bad>{esc(p['error'])}</span>"
+        if tool == "read":
+            return (f"<span class=tag>read</span> {esc(p.get('source'))} {link(p.get('url'))}: <i>{esc(p.get('question'))}</i>"
+                    f"<div>{esc(p.get('notes', ''))}</div>")
+        if tool == "load":
+            d = p.get("dataset", {})
+            return (f"<span class=tag>load</span> real dataset <b>{esc(d.get('name'))}</b>: {link(d.get('url'), d.get('title'))} "
+                    f"({esc(d.get('rows'))} rows, licence {esc(d.get('license') or 'not stated')})"
+                    f"<div>columns: {esc(', '.join(d.get('columns', [])))}</div>")
+        rows = "".join(f"<li>{esc(x.get('id') or x.get('lead'))}: {link(x.get('url'), x.get('title'))}"
+                       + (f" <small>columns: {esc(', '.join(x['columns'][:12]))}</small>" if x.get("columns") else "") + "</li>"
+                       for x in p.get("results", []))
+        return f"<span class=tag>{esc(tool)}</span> <i>{esc(p.get('query'))}</i><ul>{rows or '<li>nothing found</li>'}</ul>"
     if t == "seed":
         rows = "".join(f"<li><a href='{esc(s.get('url', '#'))}'>{esc(s.get('title') or s.get('url'))}</a></li>"
                        for s in p.get("sources", []))
@@ -78,13 +98,20 @@ def body(e: dict, run: Path, agents: dict) -> str:
         st = p.get("stats") or {}
         verdict = ("<span class=ok>replicated</span>" if p.get("replicated") else
                    "<span class=bad>did not run</span>" if not p.get("ok") else "<span class=bad>not replicated</span>")
+        ev = p.get("evidence")
+        proof = ""
+        if ev:
+            data = "; ".join(f"{link(d.get('url'), d.get('title'))} ({esc(d.get('rows'))} rows)" for d in ev.get("datasets", []))
+            cites = "".join(f"<li>{esc(c['id'])}: {link(c.get('url'), c.get('title'))}</li>" for c in ev.get("citations", []))
+            tag = "<span class=ok>supported by real data</span>" if ev.get("supported") else "<span class=bad>not supported</span>"
+            proof = f"<div>{tag}. Data: {data or 'none'}</div><details><summary>{len(ev.get('citations', []))} cited sources</summary><ul>{cites}</ul></details>"
         plot = ""
         if p.get("plot_path") and (run / p["plot_path"]).exists():
             plot = f"<div class=plot>{(run / p['plot_path']).read_text(encoding='utf-8')}</div>"
         return (f"<b>{esc(p.get('title', ''))}</b> — {verdict}"
                 f"<div>effect {esc(st.get('effect_size'))}, n={esc(st.get('n'))}, p={esc(st.get('p'))}; "
                 f"predicted {esc((p.get('prediction') or {}).get('direction'))} {esc((p.get('prediction') or {}).get('effect_size'))}; "
-                f"{esc(st.get('reason', ''))}</div><p>{esc(p.get('abstract', ''))}</p>{plot}"
+                f"{esc(st.get('reason', ''))}</div><p>{esc(p.get('abstract', ''))}</p>{proof}{plot}"
                 f"<details><summary>study code</summary><pre>{esc(p.get('code', ''))}</pre></details>"
                 + (f"<details><summary>stderr</summary><pre>{esc(p.get('stderr'))}</pre></details>" if p.get("stderr") else ""))
     return f"<pre>{esc(json.dumps(p, indent=1))}</pre>"

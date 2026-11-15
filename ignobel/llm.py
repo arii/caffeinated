@@ -103,14 +103,23 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     t0 = time.monotonic()
     tokens = 0
     budget = max_tokens
-    for _ in range(2):  # a cut-off reply is retried once with double the budget
-        resp = _openai_call(lambda client: client.chat.completions.create(
-            model=model,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            response_format={"type": "json_object"},
-            max_completion_tokens=budget,
-            seed=seed,
-        ))
+    import openai
+    for attempt in range(2):  # a cut-off reply is retried once with double the budget
+        try:
+            resp = _openai_call(lambda client: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                response_format={"type": "json_object"},
+                max_completion_tokens=budget,
+                seed=seed,
+            ))
+        except openai.UnprocessableEntityError as e:
+            # the provider could not turn the model's output into a reply (seen with Tinker when the
+            # model answers in function-call syntax). One retry, then an unusable, uncached reply.
+            if attempt == 0:
+                continue
+            return LLMResult(data={"_raw": "", "_parse_error": True, "_error": f"HTTP 422: {str(e)[:200]}"},
+                             tokens=tokens, latency_ms=int((time.monotonic() - t0) * 1000), model=model)
         used = resp.usage.total_tokens if resp.usage else 0
         tokens += used
         _charge(used)
@@ -327,6 +336,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
             "method": method,
             "prediction": {"direction": "+" if n % 2 == 0 else "-",
                            "effect_size": round(0.1 + (n % 80) / 100, 2)},
+            **({"citations": ctx["sources"][:2]} if ctx.get("sources") else {}),
         }
     if kind == "refine":
         # A sensible scientist keeps the idea, sharpens the hypothesis, and predicts what it saw last time.
@@ -353,18 +363,24 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
                             f"{verdict} We discuss what this says about {noun} and about us."}
     if kind == "lesson":
         return {"lesson": _pick(_LESSONS, h)}
+    if kind == "research_plan":
+        query = _pick(ctx.get("queries") or [noun], h)
+        paper = {"tool": _pick(("openalex", "arxiv", "pubmed", "exa"), h, 8), "query": query}
+        if not ctx.get("datasets"):
+            first = {"tool": "load", "lead": "D1"} if ctx.get("leads") else {"tool": "datasets", "query": query}
+            return {"steps": [first, paper], "why": "mock: a study needs real data"}
+        steps = [paper]
+        if ctx.get("sources"):
+            steps.append({"tool": "read", "source": ctx["sources"][n % len(ctx["sources"])],
+                          "question": "What was the main result, in numbers?"})
+        return {"steps": steps, "why": "mock: read more"}
     if kind == "spawn":
         field = ctx.get("field", "science")
         k = int(ctx.get("spawned", 0)) + 1
         topic = _pick(_SUBFIELDS, h)
         return {"name": f"{field[:4]}{topic.split()[0]}{k}", "field": f"{topic} {field}",
                 "seed_queries": [f"{topic} {field} odd findings", f"everyday {field} experiments"],
-                "methods": [method, "randomised trials"],
-                "instruments": [
-                    {"name": "dose", "description": "strength of the everyday manipulation", "mean": 5, "sd": 2},
-                    {"name": "response", "description": "measured response", "mean": 20, "sd": 4,
-                     "depends_on": {"dose": round(0.2 + (n % 50) / 100, 2)}},
-                    {"name": "mood", "description": "experimenter mood 1-7", "mean": 4, "sd": 1}]}
+                "methods": [method, "randomised trials"]}
     if kind in ("judge_a", "judge_b"):
         base = 3 + (n % 7)
         return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),
@@ -391,7 +407,14 @@ def _mock_requests(n: int, ctx: dict) -> list[dict]:
 
 def _mock_study_code(n: int, ctx: dict) -> str:
     variant = n % 10
-    if ctx.get("instruments"):
+    real = [d for d in ctx.get("datasets") or [] if len(d["numeric"]) >= 2]
+    if real:
+        d = real[n % len(real)]
+        a, b = d["numeric"][n % len(d["numeric"])], d["numeric"][(n // 3 + 1) % len(d["numeric"])]
+        b = b if b != a else d["numeric"][(d["numeric"].index(a) + 1) % len(d["numeric"])]
+        head = ("from lab_runtime import rows, report, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{a!r}, {b!r}]))\n")
+    elif ctx.get("instruments"):
         head = ("from lab_runtime import instruments, instrument, report, report_corr\n"
                 "names = instruments()\n"
                 "x = instrument(names[0])\n"

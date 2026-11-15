@@ -1,9 +1,7 @@
 import asyncio
-import csv
+import json
 import filecmp
 from pathlib import Path
-
-import numpy as np
 
 import events
 import families
@@ -14,18 +12,6 @@ from conftest import requires_sandbox
 def _cfg(**over):
     import config
     return {**config.load(), **over}
-
-
-def test_dataset_follows_recipe_and_is_deterministic(tmp_path):
-    cols = [families.Column(name="x", mean=10, sd=2),
-            families.Column(name="y", mean=0, sd=1, depends_on={"x": 0.8}),
-            families.Column(name="z", mean=5, sd=1, depends_on={"nope": 0.9})]
-    families.make_dataset(cols, tmp_path / "a.csv", "s", rows=400)
-    families.make_dataset(cols, tmp_path / "b.csv", "s", rows=400)
-    assert filecmp.cmp(tmp_path / "a.csv", tmp_path / "b.csv", shallow=False)
-    rows = list(csv.DictReader(open(tmp_path / "a.csv")))
-    x, y, z = (np.array([float(r[k]) for r in rows]) for k in "xyz")
-    assert abs(x.mean() - 10) < 0.5 and np.corrcoef(x, y)[0, 1] > 0.6 and abs(np.corrcoef(x, z)[0, 1]) < 0.2
 
 
 def test_mothers_talk_first_then_found_daughters(tmp_path):
@@ -42,7 +28,7 @@ def test_mothers_talk_first_then_found_daughters(tmp_path):
     assert all(e.payload["reason"] == "founded" for e in spawns)
     names = [a.name for a in w.agents]
     assert len(names) == len(set(names)) == 6
-    assert all(Path(a.spec.dataset).exists() and a.spec.instruments and a.ideas for a in w.agents)
+    assert all(a.spec.dataset is None and not a.spec.instruments and a.ideas for a in w.agents)  # no planted data
 
 
 def test_agents_caps_founded_daughters(tmp_path):
@@ -53,11 +39,11 @@ def test_agents_caps_founded_daughters(tmp_path):
 
 def test_unusable_spawn_reply_falls_back_to_a_working_lab():
     m = families.load()[0]
-    d = families._to_daughter({"name": "Watson!", "instruments": [{"name": ""}, "junk"]}, m, {"watson"})
-    assert d.name != "watson" and len(d.instruments) >= 2 and d.seed_queries
-    d = families._to_daughter({"instruments": 3, "seed_queries": 7, "methods": 1.5, "name": 2}, m, set())
-    assert len(d.instruments) == 3 and d.seed_queries and d.methods == []
-    assert families._to_daughter(["not", "a", "dict"], m, set()).instruments
+    d = families._to_daughter({"name": "Watson!", "methods": "junk"}, m, {"watson"})
+    assert d.name != "watson" and d.seed_queries and d.methods == []
+    d = families._to_daughter({"seed_queries": 7, "methods": 1.5, "name": 2}, m, set())
+    assert d.seed_queries and d.methods == []
+    assert families._to_daughter(["not", "a", "dict"], m, set()).seed_queries
 
 
 def test_simultaneous_spawns_get_unique_names(tmp_path, monkeypatch):
@@ -70,7 +56,6 @@ def test_simultaneous_spawns_get_unique_names(tmp_path, monkeypatch):
     asyncio.run(w._spawn(1, {a.name: 1.0 for a in w.agents}))
     names = [a.name for a in w.agents]
     assert len(names) == len(set(names)) == 6
-    assert len({a.spec.dataset for a in w.agents}) == 6
 
 
 def test_encounters_are_random_and_cross_any_department(tmp_path):
@@ -126,3 +111,45 @@ def test_single_arm_never_spawns(tmp_path):
     asyncio.run(w.run(2))
     assert len(w.agents) == 1
     assert [e.payload["reason"] for e in events.read(tmp_path / "events.jsonl") if e.type == "spawn"] == ["founded"]
+
+
+def test_daughters_research_real_sources_and_load_a_public_dataset(tmp_path):
+    w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    evs = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "research"]
+    assert {e.payload["tool"] for e in evs} >= {"datasets", "load"} and {e.agent for e in evs} == {a.name for a in w.agents}
+    log = [json.loads(l) for l in open(tmp_path / "research_log.jsonl")]
+    sids = {r["id"] for r in log if r["type"] == "source"}
+    for a in w.agents:
+        d = a.datasets[0]
+        assert d["url"].startswith("https://") and (tmp_path / d["file"]).exists() and d["rows"] == 150
+        assert "Real datasets you have loaded" in a.system_prompt() and "petallengthcm" in a.system_prompt()
+        assert a.known_sources() and set(a.known_sources()) <= sids
+        idea = a.current_idea()
+        assert idea.citations and set(idea.citations) <= set(a.known_sources())  # only sources she really has
+        assert a.can_run()
+
+
+def test_made_up_citations_and_leads_are_rejected(tmp_path):
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    a = w.agents[0]
+    idea = a._new_idea({"idea": "x", "citations": ["S99999", "Smith et al. 2020"]}, "propose", 1, ["u"])
+    assert idea.citations == [] and idea.source_urls == ["u"]
+    assert "error" in w._do_step(a, {"tool": "read", "source": "S99999"})
+    assert "error" in w._do_step(a, {"tool": "load", "lead": "D9"})
+    assert "error" in w._do_step(a, {"tool": "simulate", "query": "make data"})
+    assert len(a.datasets) == 1
+
+
+@requires_sandbox
+def test_studies_run_on_the_real_dataset_and_carry_evidence(tmp_path):
+    w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
+    asyncio.run(w.run(1))
+    studies = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"]
+    assert studies
+    for e in studies:
+        ev = e.payload["evidence"]
+        assert ev["datasets"][0]["url"].startswith("https://huggingface.co/datasets/")
+        assert ev["supported"] == (e.payload["ok"] and e.payload["replicated"])
+        assert "rows(" in e.payload["code"] and "instrument(" not in e.payload["code"]

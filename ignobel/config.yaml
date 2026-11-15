@@ -10,6 +10,11 @@ spawn_cooldown: 2            # rounds between two spawns by the same mother
 max_daughters: 5             # per mother
 initial_daughters: 2         # labs each mother founds after the opening meeting
 mother_talk_rounds: 2        # each mother speaks this many times in the opening meeting
+research_steps: 2            # research steps a daughter may choose per round (papers, read, datasets, load)
+first_research_passes: 2     # research passes before a new daughter's first idea (find data, then load it)
+papers_per_search: 4
+dataset_leads: 3             # dataset candidates returned per search
+max_datasets: 2              # real datasets a daughter can hold
 wander_prob: 0.15            # chance a working daughter bumps into a random colleague each round;
                              # a bored (SNAP) daughter always wanders
 alpha: 0.05                  # base significance threshold before dividing by study count

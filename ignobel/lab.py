@@ -17,7 +17,23 @@ import llm
 HERE = Path(__file__).parent
 RUNTIME = HERE / "lab_runtime.py"
 TIMEOUT_S = 120
-SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE", "python:3.11-slim")
+SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE", "python:3.11-slim")  # mock mode: stdlib is enough
+SCI_IMAGE = "caffeinated-testcases:py311-v1"  # real mode: numpy, pandas, scipy (sandbox/Dockerfile,
+SCI_PACKAGES = ("numpy==2.2.6", "pandas==2.2.3", "scipy==1.15.3")  # the autoresearch testcases image)
+_built: set[str] = set()
+
+
+def _image(docker: str) -> str:
+    """Image for study containers. Real runs use the scientific image, built once from sandbox/Dockerfile."""
+    if llm.MOCK or os.environ.get("IGNOBEL_SANDBOX_IMAGE"):
+        return SANDBOX_IMAGE
+    if SCI_IMAGE not in _built:
+        if subprocess.run([docker, "image", "inspect", SCI_IMAGE], capture_output=True).returncode != 0:
+            b = subprocess.run([docker, "build", "-t", SCI_IMAGE, str(HERE / "sandbox")], capture_output=True, text=True)
+            if b.returncode != 0:
+                raise SandboxUnavailable(f"could not build {SCI_IMAGE}: {b.stderr.strip()[-300:]}")
+        _built.add(SCI_IMAGE)
+    return SCI_IMAGE
 
 
 def _sandbox() -> str:
@@ -78,9 +94,9 @@ def _run_docker(workdir: Path) -> tuple[str, str, int]:
               "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
               "--memory", "512m", "--cpus", "1", "--pids-limit", "64",
               "--user", f"{os.getuid()}:{os.getgid()}",
-              "-e", "PYTHONDONTWRITEBYTECODE=1",
+              "-e", "PYTHONDONTWRITEBYTECODE=1", "-e", "OPENBLAS_NUM_THREADS=1", "-e", "OMP_NUM_THREADS=1",
               "-v", f"{workdir}:/work:ro", "-w", "/work",
-              SANDBOX_IMAGE, "python", "-E", "-s", "study.py"]
+              _image(docker), "python", "-E", "-s", "study.py"]
     c = subprocess.run(create, capture_output=True, text=True)
     if c.returncode != 0:  # docker failed before any study code ran (daemon down, bad image)
         raise SandboxUnavailable(f"docker could not create the sandbox: {c.stderr.strip()}")
@@ -112,7 +128,8 @@ def _run_modal(workdir: Path) -> tuple[str, str, int]:
     import modal
     from modal.exception import SandboxTimeoutError
     app = modal.App.lookup("ignobel-lab", create_if_missing=True)
-    image = modal.Image.debian_slim(python_version="3.11").add_local_dir(str(workdir), remote_path="/work")
+    image = (modal.Image.debian_slim(python_version="3.11").pip_install(*SCI_PACKAGES)
+             .add_local_dir(str(workdir), remote_path="/work"))
     sb = modal.Sandbox.create("python", "-E", "-s", "/work/study.py", image=image, app=app,
                               timeout=TIMEOUT_S, block_network=True, workdir="/work")
     try:
@@ -154,11 +171,12 @@ def _svg_plot(result: dict, path: Path) -> None:
 
 
 def run_study(code: str, agent, measurements: list[list[float]] | None = None,
-              plot_path: str | Path | None = None) -> dict:
+              plot_path: str | Path | None = None, datasets: list[tuple] | None = None) -> dict:
     """Execute study code for `agent`. Returns {ok, stats, plot_path, stderr, calls}.
 
     `stats` is the raw @@RESULT dict (groups or x/y plus the agent's prediction);
     stats.check() turns it into a verdict. Instrument calls are charged to agent.budget_left.
+    `datasets` is [(name, csv path, [columns])]: real datasets the agent loaded, copied in read-only.
     """
     ds = dataset_path(agent)
     spec = {"dataset": str(ds) if ds else None,
@@ -172,6 +190,11 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
             shutil.copy(ds, workdir / ds.name)  # the sandbox has no access to the host filesystem
             spec["dataset"] = f"/work/{ds.name}"
             (workdir / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
+        spec["datasets"] = {}
+        for name, src, columns in datasets or []:
+            shutil.copy(src, workdir / f"{name}.csv")
+            spec["datasets"][name] = {"file": f"/work/{name}.csv", "columns": columns}
+        (workdir / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
         (workdir / "study.py").write_text(code, encoding="utf-8")
         stdout, stderr, rc = (_run_docker if _sandbox() == "docker" else _run_modal)(workdir)
     finally:

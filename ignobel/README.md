@@ -12,8 +12,25 @@ Agents come in families (`families.yaml`, `families.py`). A **mother** is a depa
 chemistry, physics). It does no research. A run starts with only the mothers: in round 0 they talk
 with no agenda (`mother_talk_rounds`), then each founds `initial_daughters` **daughter** labs in
 subfields it picks itself, inspired by the conversation. Each daughter is an individual expert with
-its own methods, search queries, private dataset (generated from a hidden recipe its mother invents)
-and private boredom meter. `--agents N` caps how many daughters are founded.
+its own methods, search queries and private boredom meter. `--agents N` caps how many are founded.
+
+Daughters do real research only (`sources.py`). Nothing is planted: a mother never hands out data.
+Each round a daughter chooses her own research steps (`research` events):
+
+- **Papers:** `exa`, `openalex`, `arxiv`, `pubmed` searches, and `read` (one source, one question).
+  Exa search and reading go through the team's autoresearch `research.py`, vendored unchanged as
+  `autoresearch_research.py`. Every source gets an S id in `<run>/research_log.jsonl`; an idea or
+  abstract can only cite S ids its author really holds, so a made-up citation is dropped.
+- **Data:** `datasets` finds real public datasets (Zenodo CSV deposits with a DOI, Hugging Face CSV
+  datasets) and `load` downloads one into `<run>/data/<agent>/`. A daughter cannot run a study
+  until she has loaded one. Study code reads it in the sandbox (`lab_runtime.rows`, or pandas).
+- **Evidence:** each `study_result` lists the datasets and sources it rests on, and
+  `supported: true` only if the code ran on real data and the result replicated. `score.py` ranks
+  supported studies; the top one is the community's Ig Nobel candidate.
+
+Real runs execute studies in the `caffeinated-testcases:py311-v1` image (numpy, pandas, scipy; the
+same recipe as the autoresearch `testcases/Dockerfile`, copied to `sandbox/Dockerfile` and built on
+first use). `--roster flat` and its CSVs in `data/` are a small synthetic fixture kept for offline tests.
 
 - When a mother's daughters' mean boredom reaches `spawn_threshold`, the mother spawns a new
   daughter in a subfield none of them covers (one LLM call; at most `max_daughters`, one per

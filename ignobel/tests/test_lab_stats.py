@@ -195,6 +195,7 @@ def _fake_modal(monkeypatch, timeout=False, returncode=0):
         pass
 
     image = types.SimpleNamespace(add_local_dir=lambda *a, **k: "image")
+    image.pip_install = lambda *a, **k: image
     modal = types.SimpleNamespace(
         App=types.SimpleNamespace(lookup=lambda *a, **k: "app"),
         Image=types.SimpleNamespace(debian_slim=lambda **k: image),

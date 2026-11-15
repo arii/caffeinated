@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import random
+import re
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,7 @@ import memory
 import policy as policy_mod
 import search
 import seed as seed_mod
+import sources
 import stats
 from agents import StudyRecord
 from memory import Item
@@ -31,6 +33,7 @@ class World:
         self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
         self.log = events.EventLog(self.out / "events.jsonl", arm, run_seed)
+        self.bib = sources.Bibliography(self.out)  # research_log.jsonl: every real source any agent found
         self.rng = random.Random(run_seed)
         self.policy = policy_fn
         self.exchange = exchange
@@ -56,7 +59,7 @@ class World:
 
     # ------------------------------------------------------------- state
     def save_state(self) -> None:
-        st = {"round_done": self.round_done, "events_bytes": self.log.size(),
+        st = {"round_done": self.round_done, "events_bytes": self.log.size(), "research_bytes": self.bib.size(),
               "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
               "agents": {a.name: a.to_state() for a in self.agents},
               "spawned_specs": self.spawned_specs,
@@ -73,11 +76,13 @@ class World:
         f = self.out / "state.json"
         if not f.exists():
             self.log.truncate(0)  # round 0 never finished; it will be replayed from scratch
+            self.bib.truncate(0)
             return False
         st = json.loads(f.read_text(encoding="utf-8"))
         self.round_done = st["round_done"]
         if "events_bytes" in st:
             self.log.truncate(st["events_bytes"])
+        self.bib.truncate(st.get("research_bytes", 0))
         self.rng.setstate((3, tuple(st["rng"]), st["rng_gauss"]))
         for raw in st.get("spawned_specs", []):
             if raw["name"] not in self.by_name:
@@ -164,7 +169,8 @@ class World:
                                 {"requester": a.name, "instrument": req.get("instrument"), "error": str(e)})
         study_id = f"{a.name}-r{round}-s{len(a.studies) + 1}"
         plot_rel = Path("plots") / f"{study_id}.svg"  # relative to the run dir so same seed => same file
-        out = lab.run_study(spec.get("code", ""), a, measurements, plot_path=self.out / plot_rel)
+        real = [(d["name"], self.out / d["file"], [c["name"] for c in d["columns"]]) for d in a.datasets]
+        out = lab.run_study(spec.get("code", ""), a, measurements, plot_path=self.out / plot_rel, datasets=real)
         if out["plot_path"]:
             out["plot_path"] = str(plot_rel)
         verdict = stats.check(out["stats"] if out["ok"] else None, len(a.studies) + 1, float(self.cfg.get("alpha", 0.05)), seed=self.seed)
@@ -181,7 +187,16 @@ class World:
         a.memory.write(Item(id=f"{a.name}-{study_id}", kind="result" if verdict["replicated"] else "failure",
                             text=abstract or f"{study_id}: {verdict['reason']}", source_agent=a.name,
                             meta={"study_id": study_id, **info}))
+        evidence = {}
+        if a.spec.family:  # what this result rests on: real datasets (with DOI/URL) and sources the agent really has
+            known = a.known_sources()
+            cited = dict.fromkeys((idea.citations if idea else []) + re.findall(r"S\d+", abstract))
+            evidence = {"evidence": {
+                "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")} for d in a.datasets],
+                "citations": [known[c] for c in cited if c in known],
+                "supported": bool(a.datasets and out["ok"] and verdict["replicated"])}}
         self.log.append(round, a.name, "study_result", {
+            **evidence,
             "study_id": study_id, "idea_id": rec.idea_id, "title": idea.title if idea else "",
             "ok": out["ok"], "replicated": verdict["replicated"], "stats": verdict,
             "prediction": idea.prediction.model_dump(), "abstract": abstract, "plot_path": out["plot_path"],
@@ -189,6 +204,74 @@ class World:
             "measurements": len(measurements), "novelty": novelty,
         }, tokens=code_res.tokens + ares.tokens, latency_ms=code_res.latency_ms + ares.latency_ms)
         return f"study {study_id}: ok={out['ok']} replicated={verdict['replicated']} ({verdict['reason']})"
+
+    # ---------------------------------------------------------- research
+    async def _research(self, who: list, r: int) -> None:
+        """Each daughter lab picks and runs its own research steps: search papers, read one, find or load
+        a real public dataset. Nobody assigns the steps; the world only executes what each lab asked for."""
+        who = [a for a in who if a.spec.family]
+        if not who:
+            return
+        k = int(self.cfg.get("research_steps", 2))
+        plans = await self._gather([(lambda a=a: a.plan_research(r, k)) for a in who])
+        for a, (steps, res) in zip(who, plans):  # executed in agent order so S ids are reproducible
+            tokens, latency = res.tokens, res.latency_ms
+            for step in steps or [{"tool": "none"}]:
+                self.log.append(r, a.name, "research", self._do_step(a, step), tokens=tokens, latency_ms=latency)
+                tokens = latency = 0
+
+    def _do_step(self, a, step: dict) -> dict:
+        tool = str(step.get("tool", "")).strip().lower()
+        query = sources._clean(step.get("query"))[:200]
+        try:
+            if tool in sources.LITERATURE:
+                recs = self.bib.search(a.name, tool, query, int(self.cfg.get("papers_per_search", 4)))
+                for s in recs:
+                    year = f" ({s['published'][:4]})" if s.get("published") else ""
+                    a.memory.write(Item(id=f"{a.name}-{s['id']}", kind="library", source_agent=a.name,
+                                        text=f"{s['title']}{year}. {' '.join(s.get('highlights') or [])[:500]}",
+                                        meta={"url": s["url"], "sid": s["id"], "title": s["title"], "tool": tool}))
+                return {"tool": tool, "query": query,
+                        "results": [{"id": s["id"], "title": s["title"], "url": s["url"]} for s in recs]}
+            if tool == "read":
+                m = re.search(r"S\d+", str(step.get("source", "")))
+                src = a.known_sources().get(m.group(0)) if m else None
+                if src is None:
+                    raise sources.ResearchError(f"{step.get('source')!r} is not a source this lab has")
+                question = sources._clean(step.get("question"))[:300] or "What was measured, and what was the main result in numbers?"
+                notes = self.bib.read(a.name, src["id"], question)
+                n = sum(1 for it in a.memory.items if (it.meta or {}).get("read"))
+                a.memory.write(Item(id=f"{a.name}-{src['id']}-read{n + 1}", kind="library", source_agent=a.name,
+                                    text=f"Reading notes on {src['title']}: {notes}",
+                                    meta={"url": src["url"], "sid": src["id"], "title": src["title"], "read": True}))
+                return {"tool": "read", "source": src["id"], "url": src["url"], "question": question, "notes": notes[:800]}
+            if tool == "datasets":
+                have = {d["id"] for d in a.datasets} | {l["id"] for l in a.leads}
+                new = [l for l in sources.find_datasets(query, int(self.cfg.get("dataset_leads", 3))) if l["id"] not in have]
+                a.leads = (a.leads + new)[-6:]
+                return {"tool": "datasets", "query": query,
+                        "results": [{"lead": f"D{a.leads.index(l) + 1}", "title": l["title"], "url": l["url"],
+                                     "license": l.get("license", ""), "columns": l.get("preview", [])} for l in new]}
+            if tool == "load":
+                m = re.search(r"D(\d+)", str(step.get("lead", "")))
+                i = int(m.group(1)) - 1 if m else -1
+                if not 0 <= i < len(a.leads):
+                    raise sources.ResearchError(f"{step.get('lead')!r} is not one of this lab's dataset leads")
+                if len(a.datasets) >= int(self.cfg.get("max_datasets", 2)):
+                    raise sources.ResearchError("this lab already has its maximum number of datasets")
+                lead = a.leads.pop(i)  # an unusable lead is dropped too, so the lab does not retry it
+                name = f"d{len(a.datasets) + 1}"
+                rel = Path("data") / a.name / f"{name}.csv"
+                ds = {"name": name, "file": str(rel), **sources.fetch_dataset(lead, self.out / rel)}
+                a.datasets.append(ds)
+                return {"tool": "load", "dataset": {**{k: ds[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")},
+                                                    "columns": [c["name"] for c in ds["columns"]]}}
+            raise sources.ResearchError(f"unknown tool {tool!r}")
+        except (sources.ResearchError, ValueError, KeyError, TypeError, OSError) as e:  # a bad source never ends a run
+            out = {"tool": tool or "none", "error": str(e)[:300]}
+            if query:
+                out["query"] = query
+            return out
 
     # ------------------------------------------------------------ rounds
     async def _found(self) -> None:
@@ -219,20 +302,22 @@ class World:
         while d.name in taken:  # two mothers picked the same name this round
             d.name = f"{d.name}{m.name[:3]}"
         taken.add(d.name)
-        spec = families_mod.to_spec(d, m, self.out / "data", self.seed)
+        spec = families_mod.to_spec(d, m)
         a = self._add_agent(spec)
         m.daughters.append(a.name)
         m.spawned += 1
         self.spawned_specs.append(spec.model_dump())
         self.log.append(r, m.name, "spawn", {"daughter": a.name, "field": spec.field, **info,
-                                             "instruments": [i.name for i in spec.instruments]},
+                                             "methods": spec.methods, "seed_queries": spec.seed_queries},
                         tokens=res.tokens, latency_ms=res.latency_ms)
         return a
 
     async def round0(self) -> None:
         if self.mothers and not self.agents:
             await self._found()
-        seed_mod.seed_libraries(self.agents, self.log, self.cfg)
+        seed_mod.seed_libraries(self.agents, self.log, self.cfg, bib=self.bib)
+        for _ in range(int(self.cfg.get("first_research_passes", 2))):  # e.g. find a dataset, then load it
+            await self._research(self.agents, 0)
         results = await self._gather([
             (lambda a=a: a.propose(0, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in self.agents])
         for a, (idea, res) in zip(self.agents, results):
@@ -271,13 +356,15 @@ class World:
                 self._share(x, y, r)
                 self._share(y, x, r)
 
-        sources = {}
+        await self._research(acting, r)
+
+        found = {}
         for a in snappers:
-            sources[a.name] = search.obscure_source(self._topic(a))
-            self.log.append(r, a.name, "snap", {"partner": partner_of.get(a.name), "source": sources[a.name].model_dump()},
+            found[a.name] = search.obscure_source(self._topic(a))
+            self.log.append(r, a.name, "snap", {"partner": partner_of.get(a.name), "source": found[a.name].model_dump()},
                             latency_ms=search.last_latency_ms())
         proposals = await self._gather([
-            (lambda a=a: a.propose(r, a.memory.search(self._topic(a), 5), extra_source=sources[a.name])) for a in snappers])
+            (lambda a=a: a.propose(r, a.memory.search(self._topic(a), 5), extra_source=found[a.name])) for a in snappers])
         for a, (idea, res) in zip(snappers, proposals):
             self._record_idea(a, idea, res, r)
 
@@ -319,7 +406,9 @@ class World:
         for (m, field_B), (d, res) in zip(ready, defs):
             m.last_spawn_round = r
             born.append(self._birth(m, d, res, r, taken, {"reason": "bored", "field_B": field_B}))
-        seed_mod.seed_libraries(born, self.log, self.cfg, round=r)
+        seed_mod.seed_libraries(born, self.log, self.cfg, round=r, bib=self.bib)
+        for _ in range(int(self.cfg.get("first_research_passes", 2))):
+            await self._research(born, r)
         results = await self._gather([
             (lambda a=a: a.propose(r, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in born])
         for a, (idea, res) in zip(born, results):

@@ -26,6 +26,9 @@ One JSON object per line. Every line has exactly these keys:
 - `study_result` {study_id, idea_id, ok, replicated, stats:{...}, prediction, abstract, plot_path, stderr, novelty:{score, sources:[...]}} one study
 - `lesson` {text} the agent's rewritten private lessons note
 - `spawn` {daughter, field, reason, field_B?, instruments:[name]} a mother (agent = mother name) started a daughter lab: `reason` is `founded` (round 0, after the mothers' meeting) or `bored` (its daughters' mean boredom reached `spawn_threshold`; `field_B` is that mean)
+- `research` {tool, ...} one research step a daughter lab chose for itself. `tool` is `exa` / `openalex` / `arxiv` / `pubmed` {query, results:[{id (S id), title, url}]}, `read` {source, url, question, notes}, `datasets` {query, results:[{lead (D id), title, url, license, columns}]} or `load` {dataset:{name, id, title, url, license, rows, sha256, columns}}. A step that failed has `error` instead. Every S id is a record in the run's `research_log.jsonl` (autoresearch `research.py` format).
+
+For daughter labs, `study_result` also has `evidence` {datasets:[{name, id, title, url, license, rows, sha256}], citations:[{id, title, url}], supported: bool}. `supported` means the code ran on a real loaded dataset and the result replicated.
 
 Search-backed events (seed, snap, study_result.novelty) always carry source URLs in `payload`.
 

@@ -11,7 +11,7 @@ class Action(str, Enum):
 
 def _work(agent) -> Action:
     """Below threshold: run the current idea if it is unrun and affordable, else refine it."""
-    can_run = agent.unrun_idea() is not None and (agent.budget_left > 0 or agent.spec.is_statistician)
+    can_run = agent.unrun_idea() is not None and agent.can_run()
     return Action.RUN_STUDY if can_run else Action.REFINE
 
 
