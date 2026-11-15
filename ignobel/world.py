@@ -363,7 +363,7 @@ class World:
         for x, y in pairs:
             for me, other in ((x, y), (y, x)):
                 me.meter["fresh"] = r  # a chance meeting is something new
-                if me.spec.family and not me.datasets:  # no data yet: ask what the colleague uses
+                if self.exchange and me.spec.family and not me.datasets:  # no data yet: ask what the colleague uses
                     have = {l["id"] for l in me.leads}
                     me.leads += [{"id": d["id"], "title": d["title"], "url": d["url"], "license": d.get("license", ""),
                                   "file_url": d["file_url"], "bytes": d.get("bytes", 0),

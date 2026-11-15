@@ -242,3 +242,20 @@ def test_unsafe_links_and_bad_cells_are_dropped(tmp_path, monkeypatch):
     import importlib
     import lab_runtime
     assert importlib.reload(lab_runtime).rows("d", ["a", "b"]) == [(1.0, 2.0), (5.0, 6.0)]
+
+
+def _leads_after_meeting(tmp_path, arm):
+    w = run_arm.build_world(arm, None, 0, tmp_path / arm, cfg=_cfg(wander_prob=1.0), roster="families")
+    asyncio.run(w.round0())
+    w.cfg["research_steps"] = 0  # nobody finds data alone in round 1, so a lead can only come from a meeting
+    donor = w.agents[0]
+    donor.datasets = [{**donor.datasets[0], "id": "shared-x"}]
+    for a in w.agents[1:]:
+        a.datasets, a.leads = [], []
+    asyncio.run(w.round(1))
+    return [a.name for a in w.agents[1:] if any(l["id"] == "shared-x" for l in a.leads + a.datasets)]
+
+
+def test_dataset_leads_pass_between_labs_only_when_exchange_is_on(tmp_path):
+    assert len(_leads_after_meeting(tmp_path, "full")) == 1
+    assert _leads_after_meeting(tmp_path, "no_exchange") == []
