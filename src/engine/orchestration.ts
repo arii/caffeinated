@@ -4,10 +4,16 @@ export type MarkKind='idea'|'critic'|'veto'|'scout'|'memory'|'boredom'|'evaluati
 export interface Mark{tick:number;round:number;kind:MarkKind;label:string;why:string;eventId:string}
 export interface Lane{id:string;name:string;marks:Mark[]}
 export interface Swimlanes{rounds:number[];lanes:Lane[];roundCloses:{round:number;tick:number}[]}
+export interface MarkGroup{round:number;visible:Mark[];hidden:Mark[]}
 export type Turn='active'|'waiting'|'done'|'idle';
 const obj=(v:unknown)=>v&&typeof v==='object'?v as Record<string,unknown>:{};
 const str=(v:unknown)=>typeof v==='string'?v:'';
 const eventsOf=(r:Recording,tick:number)=>r.events.filter(e=>e.tick<=tick);
+export function compactMarks(marks:readonly Mark[],limit=6):MarkGroup[]{
+ const grouped=new Map<number,Mark[]>();for(const mark of marks){const group=grouped.get(mark.round)||[];group.push(mark);grouped.set(mark.round,group);}
+ const cap=Math.max(1,Math.floor(limit));
+ return [...grouped].sort(([a],[b])=>a-b).map(([round,group])=>{group.sort((a,b)=>a.tick-b.tick);return {round,visible:group.slice(0,cap),hidden:group.slice(cap)};});
+}
 function kindOf(e:ReplayEvent):MarkKind|null{
  if(e.type==='hypothesis.proposed')return 'idea';
  if(e.type==='llm.called'){const role=str(e.payload?.role).toLowerCase();return role.includes('scout')||role.includes('search')?'scout':role.includes('memory')?'memory':'idea';}
@@ -19,7 +25,7 @@ function kindOf(e:ReplayEvent):MarkKind|null{
  if(e.type==='round.started'&&['BOREDOM_SNAP','PARADIGM_BREAKOUT'].includes(str(e.payload?.regime)))return 'boredom';
  if(e.type==='experiment.finished')return e.payload?.status==='keep'?'keep':'evaluation';
  if(e.type==='discovery.made')return 'keep';
- if(e.type==='gate.checked'&&e.payload?.passed===false)return 'gate';
+ if(e.type==='gate.checked'&&(e.payload?.pass??e.payload?.passed)===false)return 'gate';
  if(e.type==='experiment.started'&&e.payload?.kind!=='baseline')return 'idea';
  return null;
 }
