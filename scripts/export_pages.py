@@ -20,6 +20,7 @@ PRE_COMMITTEE_IGNOBEL_METRIC_DESCRIPTION = (
     "split-half consistency loss: 0 = the study passed its preregistered gates and "
     "split-half consistency, 1 = failed"
 )
+GATE_ONLY_LOSS_NAMES = ("replication loss", "interesting-finding loss")
 DIRECT_COMMITTEE_FIELDS = ("score", "scores", "judges", "verdicts")
 COMMITTEE_EVENT_TYPES = {
     "award.issued",
@@ -47,32 +48,32 @@ def _has_direct_committee_fields(value):
     return _has_fields(value, DIRECT_COMMITTEE_FIELDS)
 
 
-def _rewrite_committee_note_fields(value):
+def _rewrite_committee_note_fields(value, note=PRE_COMMITTEE_NOTE):
     if isinstance(value, dict):
         for key, child in value.items():
             if key in {"proxy_note", "reference_note"} and isinstance(child, str):
                 if "committee" in child.casefold():
-                    value[key] = PRE_COMMITTEE_NOTE
+                    value[key] = note
             else:
-                _rewrite_committee_note_fields(child)
+                _rewrite_committee_note_fields(child, note)
     elif isinstance(value, list):
         for child in value:
-            _rewrite_committee_note_fields(child)
+            _rewrite_committee_note_fields(child, note)
 
 
-def _rewrite_committee_metric_descriptions(value):
+def _rewrite_committee_metric_descriptions(value, note=PRE_COMMITTEE_NOTE):
     if isinstance(value, dict):
         metric = value.get("metric")
         if (
             isinstance(metric, dict)
             and "committee" in str(metric.get("description") or "").casefold()
         ):
-            metric["description"] = PRE_COMMITTEE_NOTE
+            metric["description"] = note
         for child in value.values():
-            _rewrite_committee_metric_descriptions(child)
+            _rewrite_committee_metric_descriptions(child, note)
     elif isinstance(value, list):
         for child in value:
-            _rewrite_committee_metric_descriptions(child)
+            _rewrite_committee_metric_descriptions(child, note)
 
 
 def _rewrite_ignobel_metric_fields(value):
@@ -83,7 +84,7 @@ def _rewrite_ignobel_metric_fields(value):
             description = str(metric.get("description") or "").casefold()
             if (
                 metric.get("name") == "replicated_findings"
-                or "replication loss" in label
+                or any(name in label for name in GATE_ONLY_LOSS_NAMES)
                 or "replicated and significant" in description
             ):
                 metric["label"] = PRE_COMMITTEE_IGNOBEL_METRIC_LABEL
@@ -95,11 +96,53 @@ def _rewrite_ignobel_metric_fields(value):
             _rewrite_ignobel_metric_fields(child)
 
 
-def _rewrite_pre_committee_notes(manifest):
-    manifest["proxy_note"] = PRE_COMMITTEE_NOTE
-    _rewrite_committee_note_fields(manifest)
+def _rewrite_pre_committee_notes(manifest, note=PRE_COMMITTEE_NOTE):
+    manifest["proxy_note"] = note
+    _rewrite_committee_note_fields(manifest, note)
     _rewrite_ignobel_metric_fields(manifest)
-    _rewrite_committee_metric_descriptions(manifest)
+    _rewrite_committee_metric_descriptions(manifest, note)
+
+
+def _rewrite_gate_only_event_text(value):
+    """Rename the loss in host-written text/message fields; recorded LLM calls stay verbatim."""
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key in {"text", "message", "lastMessage"} and isinstance(child, str):
+                for name in GATE_ONLY_LOSS_NAMES:
+                    child = child.replace(name, PRE_COMMITTEE_IGNOBEL_METRIC_LABEL)
+                value[key] = child
+            elif key != "llm_calls":
+                _rewrite_gate_only_event_text(child)
+    elif isinstance(value, list):
+        for child in value:
+            _rewrite_gate_only_event_text(child)
+
+
+def _post_run_awards(recording):
+    return [
+        event.get("payload") or {}
+        for event in _rows(recording.get("events"))
+        if isinstance(event, dict) and event.get("type") == "award.issued"
+    ]
+
+
+def post_run_committee_note(awards):
+    """Proxy note for a gate-only run judged by the committee afterwards (scores.jsonl)."""
+    models = sorted(
+        {
+            judge.get("model")
+            for award in awards
+            for judge in (award.get("judges") or {}).values()
+            if isinstance(judge, dict) and judge.get("model")
+        }
+    )
+    scores = [award["score"] for award in awards if isinstance(award.get("score"), (int, float))]
+    best = f"; best score {max(scores):.1f} of 1" if scores else ""
+    judged_by = f" ({' + '.join(models)})" if models else ""
+    return (
+        "Run losses are preregistered-gate only: 0 = passed, 1 = failed. After the run, the "
+        f"Ig Nobel committee{judged_by} judged {len(awards)} confirmed finding(s){best}."
+    )
 
 
 def _is_ignobel(recording):
@@ -147,16 +190,27 @@ def _has_committee_data(recording):
     return False
 
 
-def _is_pre_committee_ignobel(recording):
+def _is_gate_only_ignobel(recording):
+    """Ig Nobel run whose in-run losses had no committee score (post-run awards don't count)."""
     if not _is_ignobel(recording):
         return False
-    if any(
-        event.get("type") == "award.issued"
-        for event in _rows(recording.get("events"))
-        if isinstance(event, dict)
-    ):
-        return False
-    return not _has_committee_data(recording)
+    in_run = {
+        **recording,
+        "entities": {
+            **(recording.get("entities") or {}),
+            "studies": [
+                {key: value for key, value in study.items() if key != "committee"}
+                for study in _rows((recording.get("entities") or {}).get("studies"))
+                if isinstance(study, dict)
+            ],
+        },
+        "events": [
+            event
+            for event in _rows(recording.get("events"))
+            if isinstance(event, dict) and event.get("type") != "award.issued"
+        ],
+    }
+    return not _has_committee_data(in_run)
 
 
 def export(viewer_dir, out_dir):
@@ -173,16 +227,20 @@ def export(viewer_dir, out_dir):
             if key not in manifest and key in recording["manifest"]:
                 manifest[key] = recording["manifest"][key]
         # A published snapshot is never live, even if the run was still going when it was copied.
+        gate_only = _is_gate_only_ignobel(recording)
+        awards = _post_run_awards(recording)
+        note = post_run_committee_note(awards) if awards else PRE_COMMITTEE_NOTE
         for m in (manifest, recording["manifest"]):
             m.update(live=False, stale=False, sample=False)
             if m.get("status") in {"running", "live"}:
                 m["status"] = "snapshot"
-            if _is_pre_committee_ignobel(recording):
-                _rewrite_pre_committee_notes(m)
-        if _is_pre_committee_ignobel(recording):
-            _rewrite_committee_note_fields(recording)
+            if gate_only:
+                _rewrite_pre_committee_notes(m, note)
+        if gate_only:
+            _rewrite_committee_note_fields(recording, note)
             _rewrite_ignobel_metric_fields(recording)
-            _rewrite_committee_metric_descriptions(recording)
+            _rewrite_committee_metric_descriptions(recording, note)
+            _rewrite_gate_only_event_text(recording)
         content = deepcopy(recording)
         for key in ("contentVersion", "lastUpdateTs", "staleAfterSeconds"):
             content["manifest"].pop(key, None)

@@ -188,6 +188,66 @@ class ExportPagesTests(unittest.TestCase):
             self.assertEqual(items[0]["proxy_note"], source_manifest["proxy_note"])
             self.assertEqual(shipped["manifest"]["proxy_note"], source_manifest["proxy_note"])
 
+    def test_post_run_committee_keeps_gate_only_metric_and_names_the_judges(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            viewer = root / "viewer"
+            write_recording(
+                viewer,
+                title="Ig Nobel Prize hunt",
+                task="ignobel",
+                events=[
+                    {
+                        "event_id": "result-1",
+                        "run_id": "run-1",
+                        "tick": 1,
+                        "round": 1,
+                        "type": "study.result",
+                        "refs": {"study_id": "study:1"},
+                        "payload": {
+                            "committee": None,
+                            "text": "Result keep: interesting-finding loss 0, reward +1.0%",
+                        },
+                    },
+                    {
+                        "event_id": "award-1",
+                        "run_id": "run-1",
+                        "tick": 2,
+                        "round": 1,
+                        "type": "award.issued",
+                        "refs": {"study_id": "study:1"},
+                        "payload": {
+                            "award": "Ig Nobel committee",
+                            "score": 0.2,
+                            "judges": {"a": {"model": "judge/a"}, "b": {"model": "judge/b"}},
+                        },
+                    },
+                ],
+            )
+            manifest_path = viewer / "run-1" / "manifest.json"
+            source_manifest = json.loads(manifest_path.read_text())
+            source_manifest["metric"] = {
+                "name": "loss",
+                "label": "interesting-finding loss",
+                "direction": "minimize",
+                "description": "1 - score from the committee",
+            }
+            manifest_path.write_text(json.dumps(source_manifest))
+
+            items = export(viewer, root / "out")
+            shipped = json.loads(gzip.decompress((root / "out" / "run-1.json.gz").read_bytes()))
+            note = items[0]["proxy_note"]
+            self.assertIn("preregistered-gate only", note)
+            self.assertIn("(judge/a + judge/b) judged 1 confirmed finding(s); best score 0.2", note)
+            self.assertEqual(
+                shipped["manifest"]["metric"]["label"], PRE_COMMITTEE_IGNOBEL_METRIC_LABEL
+            )
+            texts = [event["payload"].get("text") for event in shipped["events"]]
+            self.assertIn("Result keep: split-half consistency loss 0, reward +1.0%", texts)
+            self.assertEqual(
+                [event["type"] for event in shipped["events"]].count("award.issued"), 1
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
