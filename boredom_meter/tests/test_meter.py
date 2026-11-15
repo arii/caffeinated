@@ -111,6 +111,42 @@ class MeterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             meter.gate(self.p, [], bad)
 
+    def test_reject_and_critic_events_leave_gate_and_suggestions_unchanged(self):
+        near = stuck_ledger()[-1]["descriptor"]
+        far = {"hypothesis": "co_limitation", "assay": "factorial_screen",
+               "params": {"nutrient": 0.8, "oxygen": 0.8}}
+        for regime, events, breakout in (
+            ("EXPLOIT", [], 1.1),
+            ("BOREDOM_SNAP", [dict(e, status="keep") for e in stuck_ledger()], 1.1),
+            ("PARADIGM_BREAKOUT", stuck_ledger(), 0.0),
+        ):
+            self.p["thresholds"]["breakout"] = breakout
+            self.assertEqual(meter.status(self.p, events)["regime"], regime)
+            for audit in ({"status": "reject"}, {"status": "discard", "kind": "critic"}):
+                appended = events + [
+                    dict(audit, seq=len(events) + i + 1, descriptor=far, score=0.1)
+                    for i in range(self.p["k"] + 1)
+                ]
+                with self.subTest(regime=regime, audit=audit):
+                    for descriptor in (near, far):
+                        before = meter.gate(self.p, events, descriptor)
+                        after = meter.gate(self.p, appended, descriptor)
+                        self.assertEqual(before["min_recent_distance"], after["min_recent_distance"])
+                        self.assertNotEqual(before.pop("ledger_sha256"), after.pop("ledger_sha256"))
+                        self.assertEqual(before, after)
+                    self.assertEqual(meter.suggest(self.p, events), meter.suggest(self.p, appended))
+
+    def test_gate_and_suggest_use_configured_attempt_statuses(self):
+        self.p["attempt_statuses"] = ["keep"]
+        events = stuck_ledger()
+        attempts = [events[0]]
+        descriptor = events[-1]["descriptor"]
+        actual = meter.gate(self.p, events, descriptor)
+        expected = meter.gate(self.p, attempts, descriptor)
+        self.assertNotEqual(actual.pop("ledger_sha256"), expected.pop("ledger_sha256"))
+        self.assertEqual(actual, expected)
+        self.assertEqual(meter.suggest(self.p, events), meter.suggest(self.p, attempts))
+
     def test_exploit_role_skips_near_duplicate_but_not_failed_basin(self):
         self.p["thresholds"]["breakout"] = 1.1
         events = [dict(e, status="keep") for e in stuck_ledger()]

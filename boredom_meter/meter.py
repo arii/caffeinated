@@ -152,6 +152,11 @@ def simpson(cells):
     return 1.0 - sum(v * v for v in counts.values()) / (n * n)
 
 
+def attempt_events(profile, events):
+    return (e for e in events
+            if e.get("status") in profile["attempt_statuses"] and e.get("kind") != "critic")
+
+
 def fold(profile, events, agent=None):
     """Replay the ledger once, returning per-event metrics and final state."""
     k, patience = profile["k"], profile["patience"]
@@ -168,9 +173,7 @@ def fold(profile, events, agent=None):
     regime = "EXPLOIT"
     trace = []
     required_cells = set(profile["required_mechanisms"])
-    for e in events:
-        if e.get("status") not in profile["attempt_statuses"] or e.get("kind") == "critic":
-            continue
+    for e in attempt_events(profile, events):
         d = e["descriptor"]
         nov = sparseness(profile, d, archive)
         nearest = min((distance(profile, d, o) for o in archive), default=1.0)
@@ -276,7 +279,7 @@ def suggest(profile, events, n=5, depth=None):
     """Least-visited descriptor cells, failures counted against a cell; deterministic order."""
     depth = depth or min(2, len(profile["levels"]))
     visits, fails, best = {}, {}, {}
-    for e in events:
+    for e in attempt_events(profile, events):
         c = cell_key(profile, e["descriptor"], depth)
         visits[c] = visits.get(c, 0) + 1
         if e.get("status") in profile["fail_statuses"]:
@@ -291,8 +294,9 @@ def suggest(profile, events, n=5, depth=None):
 def gate(profile, events, descriptor, agent=None, sources=None, role=None):
     validate_descriptor(profile, descriptor)
     st = status(profile, events, agent)
-    archive = [e["descriptor"] for e in events]
-    failed = [e["descriptor"] for e in events if e.get("status") in profile["fail_statuses"]
+    attempts = list(attempt_events(profile, events))
+    archive = [e["descriptor"] for e in attempts]
+    failed = [e["descriptor"] for e in attempts if e.get("status") in profile["fail_statuses"]
               or e.get("status") == "discard"]
     recent = archive[-profile["k"]:]
     min_recent = min((distance(profile, descriptor, o) for o in recent), default=None)
@@ -301,7 +305,7 @@ def gate(profile, events, descriptor, agent=None, sources=None, role=None):
     reasons = []
     if st["regime"] == "CONVERGED":
         best_event = next(
-            (event for event in events if event.get("seq") == st["best_seq"]),
+            (event for event in attempts if event.get("seq") == st["best_seq"]),
             None,
         )
         if best_event is None or distance(
