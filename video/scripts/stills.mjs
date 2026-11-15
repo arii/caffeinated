@@ -17,6 +17,7 @@ const stills = [
   ['scene-05-boredom.png', 34],
   ['scene-06-real-lab.png', 59],
   ['scene-07-results.png', 89],
+  ['track3-results.png', 88],
   ['scene-08-ignobel.png', 107],
   ['scene-09-close.png', 117]
 ];

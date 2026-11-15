@@ -445,6 +445,8 @@ const RESULTS = {
     '3 seeds, not significance-tested; ordering depends on a grader fix',
     'made after winners were known — exploratory'
   ],
+  track3EarlierGrader:
+    'earlier grader: single agent 0.07 · without meter 0.09 · boredom swarm 0.06',
   playworld: 'Playworld proxy: loss 0.87 → 0.25 on 200 held-out episodes',
   playworldCaveat: 'synthetic proxy, not official PlayWorld',
   memoryComparison:
@@ -471,14 +473,35 @@ function Results() {
         <FadeBeat from={150} to={198} fontSize={47}>
           {RESULTS.track3Intro}
         </FadeBeat>
-        <FadeBeat from={198} to={252} fontSize={45}>
-          {RESULTS.track3Results}
-        </FadeBeat>
-        <FadeBeat from={252} to={321} fontSize={38} color={COLORS.muted}>
-          {RESULTS.track3CaveatParts[0]}
-        </FadeBeat>
-        <FadeBeat from={321} to={390} fontSize={38} color={COLORS.muted}>
-          {RESULTS.track3CaveatParts[1]}
+        <FadeBeat from={198} to={390} fontSize={44} maxWidth={1650}>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 14}}>
+            <div>{RESULTS.track3Results}</div>
+            {RESULTS.track3CaveatParts.map((part) => (
+              <div
+                key={part}
+                style={{
+                  color: COLORS.muted,
+                  fontSize: 38,
+                  fontWeight: 400,
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.02em'
+                }}
+              >
+                {part}
+              </div>
+            ))}
+            <div
+              style={{
+                color: COLORS.muted,
+                fontSize: 38,
+                fontWeight: 400,
+                lineHeight: 1.15,
+                letterSpacing: '-0.02em'
+              }}
+            >
+              {RESULTS.track3EarlierGrader}
+            </div>
+          </div>
         </FadeBeat>
       </ContentCard>
       <ContentCard from={390} to={510}>
@@ -534,7 +557,7 @@ function IgNobel() {
         So we added an Ig Nobel committee score
       </FadeBeat>
       <FadeBeat from={349} to={388} fontSize={42}>
-        (laugh × think, two non-Kimi judges).
+        (lower judge's min of laugh and think; two non-Kimi judges).
       </FadeBeat>
       <FadeBeat from={388} to={420} fontSize={31} color={COLORS.muted}>
         committee-scored rerun pending Tinker credit
