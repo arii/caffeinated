@@ -139,7 +139,7 @@ class World:
         out = lab.run_study(spec.get("code", ""), a, measurements, plot_path=self.out / plot_rel)
         if out["plot_path"]:
             out["plot_path"] = str(plot_rel)
-        verdict = stats.check(out["stats"], len(a.studies) + 1, float(self.cfg.get("alpha", 0.05)), seed=self.seed)
+        verdict = stats.check(out["stats"] if out["ok"] else None, len(a.studies) + 1, float(self.cfg.get("alpha", 0.05)), seed=self.seed)
         if idea is not None:
             idea.run = True
         info = {"ok": out["ok"], "replicated": verdict["replicated"], "effect_size": verdict["effect_size"],
