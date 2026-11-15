@@ -38,7 +38,7 @@ export function awardBadge(s:StudyCard,c:ViewContext){
  return s.result.confirmed?'<span class="badge ok">Confirmed</span>':'<span class="badge">Not confirmed</span>';
 }
 export function studyCardHtml(s:StudyCard,c:ViewContext){
- const e=c.esc,d=s.dataset,r=s.result,variable=(v:string|null,l:string|null)=>v?`${e(v)}${l?` = <b>${e(l)}</b>`:''}`:'—',failures=r?.confirmed?currentRules(r,currentRuleThresholds(c.judging)).failures:[];
+ const e=c.esc,d=s.dataset,r=s.result,variable=(v:string|null,l:string|null)=>v?`${e(v)}${l?` = <b>${e(l)}</b>`:''}`:'—',failures=r?.confirmed?currentRules({...r,direction:s.direction||undefined},currentRuleThresholds(c.judging)).failures:[];
  const ruleBadges=failures.map(f=>`<span class="badge current-rule-failure">Fails current ${e(f)} rule</span>`).join('');
  const halves=r?.halves.length?`<div class="halves">${r.halves.map((h,i)=>`<span>Half ${i+1}: rho ${rho(h.rho)}, p ${pValue(h.p)}, n ${h.n??'—'}</span>`).join('')}</div>`:'<p class="muted">Half-sample split not logged.</p>';
  const reps=s.replications.length?`<p class="muted">Critic replications</p><ul>${s.replications.map(x=>`<li>${checkLine(x)} ${state(x.replicated,'replicated','did not replicate')}</li>`).join('')}</ul>`:'';

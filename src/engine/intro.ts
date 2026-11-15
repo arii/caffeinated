@@ -29,7 +29,7 @@ export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
 export function researchResults(r:Recording|null){
  const cards=studyCards(r,Number.MAX_SAFE_INTEGER),awards=momentsBetween(r?.events||[],-1,Number.MAX_SAFE_INTEGER).filter(m=>m.kind==='award');
  const confirmed=cards.filter(s=>s.result?.confirmed===true||s.result?.replicated===true||s.replications.some(x=>x.confirmed===true||x.replicated===true));
- const underCurrentRules=confirmed.filter(s=>currentRules(s.result,currentRuleThresholds(r?.manifest?.judging)).pass).length;
+ const underCurrentRules=confirmed.filter(s=>currentRules(s.result?{...s.result,direction:s.direction||undefined}:null,currentRuleThresholds(r?.manifest?.judging)).pass).length;
  const proxyNote=recordingProxyNote(r?.manifest,r)||'';
  return {studies:cards.length,registered:cards.length,confirmed:confirmed.length,underCurrentRules,passed:confirmed.length,awards:awards.map(a=>[a.title,a.detail].filter(Boolean).join(' · ')),proxyNote,isIgnobel:isIgnobelRecording(r?.manifest,r),preCommittee:isPreCommitteeIgnobel(r?.manifest,r)};
 }
