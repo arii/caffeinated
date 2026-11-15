@@ -1,14 +1,14 @@
 # Artificial Scientist Swarms: backend
 
-Artificial Scientist Swarms is a system for autonomous research that uses a
-**boredom meter to redirect search when local refinement stops paying off**. Agents propose code,
-run CPU experiments, and keep measured improvements. The meter is a search-control
-signal, not a claim that agents feel bored.
+Artificial Scientist Swarms uses a **boredom meter to redirect autonomous research
+when local refinement stops paying off**. Agents propose code changes, evaluate
+them on CPU benchmarks, and keep measured improvements. This entry point
+describes the runnable autoresearch backend at source baseline `3b50aaf` and
+distinguishes it from the separate Ig Nobel research community on `main`.
+The meter controls search rather than claiming that agents feel bored, and
+features that are not yet merged are labeled throughout.
 
-This is the hackathon judges' backend entry point. The runnable backend here is
-the Artificial Scientist Swarms autoresearch backend (source baseline `3b50aaf`).
-The Ig Nobel research community is a separate backend on `main`, not another mode of `swarm.py`.
-Unmerged work is labeled below.
+Core concepts: [agent types](#types-of-agents) · [boredom B](#boredom-meter-exact-cpu-implementation) · [orchestration loop](#orchestration-loop)
 
 ## Reading map
 
@@ -30,7 +30,7 @@ critic templates. Task contracts and profiles live in `testcases/<task>/`.
 **No GPU training:** `llm.py:LLMClient._request_tinker` creates a sampling
 client and sends the rendered prompt on each call. Tinker is used for stateless
 LLM inference, not gradient updates or model training. Candidate evaluation is
-CPU-only. This says nothing about the remote provider's inference hardware.
+CPU-only; the remote provider may use different hardware for inference.
 
 ## Architecture and round loop
 
@@ -52,25 +52,52 @@ flowchart LR
   A --> V[export_viewer.py: static replay]
 ```
 
+## Types of agents
+
+These are responsibilities, not separate trained models. Scouts are an extra
+assignment on worker slots, not additional candidate slots. Gate and conductor
+are deterministic Python control components, not LLM personas.
+
+| Type / role | Reads | Writes / action | LLM prompt |
+| --- | --- | --- | --- |
+| Conductor | Task/profile, ledger, all status and evaluation results | Assignments, suggested/reserved cells, worktrees, outcomes, Git history, memory | None; `swarm.py` calls role prompts below |
+| Scout | Brief, regime, memory, research query results/extracts | Queries, source selection, grounded implementation leads and lead memory | `prompts/scout_query.md`, `scout_pick.md`, `scout_lead.md` |
+| Worker: exploit | Current best source, protocol, task inputs, status, recalled results/leads/claims | Focused local patch, descriptor, claim, predicted delta and research trailers | `prompts/worker_propose.md`; `worker_repair.md` on rejection |
+| Worker: divergent | Same inputs plus suggested/assigned under-visited cells | Alternative mechanism/method patch, source-backed claim; conductor-cell repair if needed | Same worker prompts, role/regime-dependent instructions |
+| Critic | Provisional claim, both measured losses, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`; omitted in A |
+| Gate | Commit trailers, descriptor/profile, ledger, research IDs | Pass/reasons and distance/citation audit in boredom_log.jsonl | None; `boredom.py:run_gate`, `meter.py:gate` |
+| Ig Nobel researcher (main) | Private library, ideas/studies, peer conversation and instruments | Proposals/refinements, study code, abstracts and lessons in memory/events | Inline `ignobel/agents.py`: `propose`, `refine`, `talk`, `write_study_code`, `write_abstract`, `write_lesson`; not root prompts/ |
+| Ig Nobel statistician (main) | Same agent interface; statistician specialization in AgentSpec | Research using statistical instruments; #7 adds peer design review | Same inline agent methods; #7 adds review/refine advice |
+| Ig Nobel committee (main) | Finished study abstracts after the run | Independent judge scores/reasons | Inline `ignobel/committee.py` judge A/B prompts; never a round controller |
+| Ig Nobel mother / daughter (#8, **not yet merged**) | Mother: meeting + daughter histories; daughter: private data/library | Mother founds/spawns labs, no studies; daughter acts as researcher | Inline `families.py` talk/propose_daughter and `agents.py`; not root prompts/ |
+
+Root LLM role templates share `prompts/common.md`, including the human protocol.
+
+## Orchestration loop
+
 The conductor owns a Git worktree and four slots (`worker-1` … `worker-4`).
 Each worker gets its own worktree at the same round base commit.
 Proposal calls and CPU evaluations are iterated **sequentially** at this revision
-(`swarm.py:orchestrate`, `run_evaluations`), despite the swarm terminology.
+in `swarm.py:orchestrate` and `run_evaluations`; the worker slots do not imply
+parallel execution.
 
-The orchestration loop (`swarm.py:orchestrate`) is:
+The conductor implements the following loop in `swarm.py:orchestrate`:
 
-1. Load task/profile and evaluate starting HEAD as the round-0 baseline.
-2. Fold the shared ledger; compute swarm and per-agent B; assign four roles and
-   optional scouts, recording the assignment and suggested descriptor cells.
-3. Scouts recall memory, query/select/extract research and write implementation leads.
-4. Each worker recalls outcomes/leads/claims, proposes an editable-file patch,
-   checks prior art and commits it in its own worktree.
-5. Gate each commit; repair or reassign within the bounded proposal attempts.
-6. Evaluate passing candidates in Docker; choose the best provisional improvement.
-7. Repeat that candidate's evaluation; apply the numeric mean predicate and,
-   outside A, obtain the critic LLM explanation. Keep only a confirmed improvement.
-8. Record every final outcome and memory, regenerate TSV/status, fast-forward
-   a kept commit, commit artifacts, tag attempts and optionally push; repeat.
+1. Load the task and profile, then evaluate the starting HEAD as the round-0 baseline.
+2. Fold the shared ledger to compute swarm and per-agent B, then assign four
+   roles and optional scouts. Record the assignment and suggested descriptor cells.
+3. Have scouts recall memory, search and select research sources, extract relevant
+   findings, and write implementation leads.
+4. Have each worker recall outcomes, leads and claims, propose an editable-file
+   patch, check prior art, and commit the patch in its own worktree.
+5. Check each commit at the gate, then repair or reassign rejected work within
+   the bounded proposal attempts.
+6. Evaluate passing candidates in Docker and choose the best provisional improvement.
+7. Repeat that candidate's evaluation and apply the numeric mean predicate.
+   Outside arm A, obtain the critic LLM explanation. Keep only a confirmed improvement.
+8. Record every final outcome and memory, regenerate the TSV and status, and
+   fast-forward to a kept commit. Commit artifacts, tag attempts and optionally
+   push before starting the next round.
 
 ```mermaid
 sequenceDiagram
@@ -112,36 +139,15 @@ not proof of scientific originality. Rejections are recorded.
 Only the best provisional candidate is confirmed; `critic_accepts` requires a
 successful second evaluation and
 `(first_loss + second_loss)/2 < previous_best - margin`.
-The critic LLM explains but cannot override this predicate. A skips the critic
-LLM, not numeric confirmation.
+The critic LLM explains the result but cannot override this predicate. Arm A
+skips the critic LLM, but still performs numeric confirmation.
 
 **This is not a second-seed check:** `local_task_result` changes no seed.
-Hadamard is deterministic; Playworld reuses its held-out seeds. A kept commit
-fast-forwards the conductor. Each round writes memory, copies artifacts into
+Hadamard is deterministic, and Playworld reuses its held-out seeds. The conductor
+fast-forwards to a kept commit. Each round writes memory, copies artifacts into
 `experiments/swarm_<arm>`, commits them and tags attempts. `--no-push` disables
 remote pushes, not local Git writes; fake mode also forces no-push.
 There is **no per-round viewer publish hook** here.
-
-## Types of agents
-
-These are responsibilities, not separate trained models. Scouts are an extra
-assignment on worker slots, not additional candidate slots. Gate and conductor
-are deterministic Python control components, not LLM personas.
-
-| Type / role | Reads | Writes / action | LLM prompt |
-| --- | --- | --- | --- |
-| Conductor | Task/profile, ledger, all status and evaluation results | Assignments, suggested/reserved cells, worktrees, outcomes, Git history, memory | None; `swarm.py` calls role prompts below |
-| Scout | Brief, regime, memory, research query results/extracts | Queries, source selection, grounded implementation leads and lead memory | `prompts/scout_query.md`, `scout_pick.md`, `scout_lead.md` |
-| Worker: exploit | Current best source, protocol, task inputs, status, recalled results/leads/claims | Focused local patch, descriptor, claim, predicted delta and research trailers | `prompts/worker_propose.md`; `worker_repair.md` on rejection |
-| Worker: divergent | Same inputs plus suggested/assigned under-visited cells | Alternative mechanism/method patch, source-backed claim; conductor-cell repair if needed | Same worker prompts, role/regime-dependent instructions |
-| Critic | Provisional claim, both measured losses, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`; omitted in A |
-| Gate | Commit trailers, descriptor/profile, ledger, research IDs | Pass/reasons and distance/citation audit in boredom_log.jsonl | None; `boredom.py:run_gate`, `meter.py:gate` |
-| Ig Nobel researcher (main) | Private library, ideas/studies, peer conversation and instruments | Proposals/refinements, study code, abstracts and lessons in memory/events | Inline `ignobel/agents.py`: `propose`, `refine`, `talk`, `write_study_code`, `write_abstract`, `write_lesson`; not root prompts/ |
-| Ig Nobel statistician (main) | Same agent interface; statistician specialization in AgentSpec | Research using statistical instruments; #7 adds peer design review | Same inline agent methods; #7 adds review/refine advice |
-| Ig Nobel committee (main) | Finished study abstracts after the run | Independent judge scores/reasons | Inline `ignobel/committee.py` judge A/B prompts; never a round controller |
-| Ig Nobel mother / daughter (#8, **not yet merged**) | Mother: meeting + daughter histories; daughter: private data/library | Mother founds/spawns labs, no studies; daughter acts as researcher | Inline `families.py` talk/propose_daughter and `agents.py`; not root prompts/ |
-
-Root LLM role templates share `prompts/common.md`, including the human protocol.
 
 ## Swarm types and fair comparisons
 
@@ -151,10 +157,10 @@ Root LLM role templates share `prompts/common.md`, including the human protocol.
 | --- | --- |
 | A: meter off | Fixed 3 exploit / 1 divergent; the divergent worker scouts if Exa is on. Meter gate disabled; no critic LLM. Shadow meter values remain available. |
 | B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED uses a confirmation-only gate. |
-| C | Meter path with Exa disabled. |
-| D | Meter path defaulting to local memory instead of past.dev. |
+| C: meter on, Exa off | The meter controls allocation, but Exa is disabled. |
+| D: meter on, local memory | The meter controls allocation, and memory defaults to local storage instead of past.dev. |
 
-Meter-enabled B/C/D allocation (`allocate_roles`) is exactly:
+For the meter-enabled B/C/D arms, `allocate_roles` assigns the following slots:
 
 | Regime | Exploit / divergent worker slots | Scouts when Exa on / off |
 | --- | --- | --- |
@@ -163,16 +169,17 @@ Meter-enabled B/C/D allocation (`allocate_roles`) is exactly:
 | PARADIGM_BREAKOUT | 0 / 4 | 2 / 0 |
 | CONVERGED | 4 / 0 | 1 / 0; gate restricts workers to confirmation |
 
-An agent is “bored” at per-agent B >=0.70. Bored agents sort by descending B,
-then name; missing scout slots fill from the lowest-B remaining agents. Without
-bored agents, the EXPLOIT divergent slot uses the lowest-B worker. Scouts are
-divergent workers except in CONVERGED. C always has zero scouts; D's local-memory
-default can be overridden by explicit memory backend settings. A always has
-3/1 slots, regardless of shadow regime.
+An agent counts as “bored” when its per-agent B >=0.70. The conductor sorts
+bored agents by descending B, then by name, and fills remaining scout slots
+from the lowest-B available agents. If no agents are bored, the EXPLOIT divergent
+slot goes to the lowest-B worker. Scouts are divergent workers except in
+CONVERGED. Arm C always has zero scouts. Explicit memory backend settings can
+override arm D's local-memory default. Arm A always has three exploit slots and
+one divergent slot, regardless of its shadow regime.
 
-Sources: `swarm.py:allocate_roles`, `arm_environment`, `orchestrate`.
-Compare the same task, starting HEAD, four slots, round budget, LLM and service
-settings, with separate output directories. **This is not exact call/token-budget
+These rules are implemented in `swarm.py:allocate_roles`, `arm_environment` and
+`orchestrate`. For a comparison, use the same task, starting HEAD, four slots,
+round budget, LLM and service settings, with separate output directories. **This is not exact call/token-budget
 matching:** scouts, repairs and the critic change call counts. Arm A also removes
 the critic LLM; differences cannot all be attributed to boredom timing.
 
@@ -191,7 +198,7 @@ There is **no literal off arm or yoked_random on inspected main**.
 Matching seeds/rosters and cached initial libraries aid reproducibility, but
 single/shared/no-exchange also alter the experiment, not just meter timing.
 
-Open PRs, inspected without switching this checkout:
+The following open PRs describe separate extensions:
 
 - [#6](https://github.com/arii/caffeinated/pull/6), **not yet merged**:
   Modal timeout cleanup, Docker/Modal selection, CPU local embeddings,
@@ -218,25 +225,28 @@ progress, and overload (failures or near-repeats):
 B = round(clip(0.45*(1-N) + 0.45*S + 0.10*O, 0, 1), 9)
 ```
 
-N is rolling descriptor novelty, S is normalized stagnation, and
+N is rolling descriptor novelty, S is normalized stagnation, and overload is
 O=max(fail_rate,trivial_rate). This is the CPU implementation
 (`boredom_meter/meter.py:fold`, lines 206–215; default weights at line 39),
-not the different private Ig Nobel formula below.
+not the different private Ig Nobel formula below. The
+[formula source reference](docs/backend.md) lists line-level citations for every
+formula and threshold in this section.
 
 The active descriptor meter is `boredom_meter/meter.py`, imported through
 `boredom.py`. The older token/Jaccard helper `boredom.py:compute_meter` is
 **not** this scoring path.
 
-Inputs are an ordered ledger prefix and loaded domain profile. B uses no LLM,
-clock, randomness, network or embeddings. Status contains canonical ledger and
-effective-profile SHA-256 hashes. `attempt_events` includes keep/discard/crash
-and excludes critic rows. **Rejects are audited but do not enter B** at this
+The inputs are an ordered ledger prefix and a loaded domain profile. Computing
+B uses no LLM, clock, randomness, network or embeddings. The returned status
+contains canonical ledger and effective-profile SHA-256 hashes.
+`attempt_events` includes rows with keep, discard or crash status and excludes
+critic rows. **Rejects are audited but do not enter B** at this
 revision; candidate crashes do.
 
 ### Formulas
 
-Defaults: `meter.py:load_profile`; computations: `param_distance`,
-`distance`, `sparseness`, `simpson`, `fold`.
+`meter.py:load_profile` supplies the defaults. The functions `param_distance`,
+`distance`, `sparseness`, `simpson` and `fold` compute the quantities below.
 
 | Quantity | Exactly implemented |
 | --- | --- |
@@ -255,20 +265,23 @@ Defaults: `meter.py:load_profile`; computations: `param_distance`,
 B = round(clip(0.45*(1-N) + 0.45*S + 0.10*O, 0, 1), 9)
 ```
 
-Status rounds metrics to six decimals (`r`); regime comparisons use nine-decimal B.
-Empty status is B=0, N=1, EXPLOIT. Per-agent windows/streaks compare against the
-**shared preceding archive**. Any global significant improvement resets all agent
-streaks. Global regime drives allocation; per-agent B prioritizes bored workers
-(allocation cutoff >=0.70, `swarm.py:allocate_roles`).
+The returned status rounds metrics to six decimals using `r`, while regime
+comparisons use nine-decimal B. An empty ledger returns B=0, N=1 and EXPLOIT.
+Per-agent scoring uses its own windows and streaks but compares novelty against
+the **shared preceding archive**. Any global significant improvement resets all
+agent streaks. The global regime drives allocation, while per-agent B prioritizes
+bored workers at the >=0.70 cutoff in `swarm.py:allocate_roles`.
 
 ### Regimes and hysteresis
 
-`fold` tests in order: significant improvement resets EXPLOIT; existing CONVERGED
-stays; stall >=3*patience plus complete required top-level mechanism coverage
-enters CONVERGED; fewer than min_attempts=3 stays EXPLOIT; then breakout, snap and
+`fold` checks the regime conditions in a fixed order. A significant improvement
+resets the regime to EXPLOIT; otherwise, an existing CONVERGED regime persists.
+A stall >=3*patience together with complete required top-level mechanism coverage
+enters CONVERGED. If none of those conditions applies, fewer than min_attempts=3
+attempts keeps the regime in EXPLOIT; the function then checks breakout, snap and
 exit hysteresis. Required mechanisms default to all vocabulary mechanisms,
-including baseline. This revision has no explicit “scored best exists” convergence
-guard.
+including baseline. This revision does not explicitly require a scored best
+before entering CONVERGED.
 
 ```mermaid
 stateDiagram-v2
@@ -284,7 +297,8 @@ stateDiagram-v2
   CONVERGED --> EXPLOIT: significant improvement
 ```
 
-SNAP holds down to 0.55. BREAKOUT stays BREAKOUT while B >=0.55 even below 0.85.
+SNAP remains active down to 0.55. BREAKOUT also remains active while B >=0.55,
+even if B falls below 0.85.
 There is **no timed cooldown** in the CPU meter. `gate` defaults to recent-distance
 minimum 0.35 and failed/discarded-distance minimum 0.25 outside EXPLOIT.
 Exploit-role workers are exempt from the former only. BREAKOUT also rejects a
@@ -298,7 +312,8 @@ and Exa-off disables prior-art requirements.
 | bixbench_mini/boredom_profile.json | 0.03 | 5 / 3 / 5 |
 | playworld_mini/boredom_profile.json | 0.005 | 5 / 3 / 5 |
 
-None explicitly sets accept_margin. Eps is configured, not learned.
+None of these profiles explicitly sets accept_margin. Eps is a configured value,
+not a learned value.
 Profiles define closed vocabularies, objective direction, parameter scales and
 directives. Reusable non-CPU examples are
 `boredom_meter/profiles/biolab_growth.json` and `compbio_pipeline.json`.
@@ -309,12 +324,14 @@ over older conceptual descriptions there.
 
 On main, `ignobel/boredom.py:components` computes
 `clip(0.5*similarity + 0.5*unsurprise - 0.5*failure,0,1)`, rounded to four decimals.
-Similarity is clipped mean cosine of newest versus up to five previous ideas
-(fewer than two: 0). Unsurprise is mean 1-gap over the last five replicated studies
-(none: 0). Gap is 1 for missing/wrong direction, otherwise
+Similarity is the clipped mean cosine of the newest idea versus up to five
+previous ideas; it is 0 when fewer than two ideas are available. Unsurprise is
+the mean of 1-gap over the last five replicated studies, or 0 if there are none.
+Gap is 1 when the direction is missing or wrong; otherwise it is
 `min(abs(abs(predicted)-abs(actual))/(abs(predicted)+abs(actual)),1)`
-(zero denominator: 0). Failure is the last-five crashed/unreplicated fraction
-(none: 0). `config.yaml` sets snap at 0.50, overriding policy default 0.70.
+(or 0 when the denominator is zero). Failure is the fraction of the last five
+studies that crashed or did not replicate, or 0 if there are none.
+`config.yaml` sets the snap threshold at 0.50, overriding the policy default of 0.70.
 Main has no multi-regime cooldown policy.
 
 **PR #7, not yet merged:** `ignobel/boredom.py:components` and
@@ -324,24 +341,28 @@ Main has no multi-regime cooldown policy.
 B = clip(0.30*self_repeat + 0.25*ext_familiar + 0.20*unsurprise + 0.25*stall,0,1)
 ```
 
-- `self_repeat=clip(((similarity-base_mu)/base_sd)/3,0,1)`; baseline is
-  round-0 idea cosine against its own seeded library (zero sd becomes 1;
-  missing baseline mean/sd 0/1). Similarity uses up to five previous ideas
-  since exploration; fewer than two gives self_repeat 0.
-- `ext_familiar=clip(1-idea.novelty,0,1)` (missing: 0), using external novelty
-  unlike CPU B. Unsurprise/gap retain the definitions above.
-  `stall=min(1,max(0,round-last_progress_round)/3)`; progress is a replicated
-  new descriptor cell or gap >=0.5. Components round to four decimals.
-- Frustration is last-five failed/unreplicated fraction and **not part of B**.
-  At >=0.6, design review is requested when a statistician is available.
-- `policy.py:decide` prioritizes convergence, frustration, pending breakout/
-  cooldown, then snap. Snap requires two consecutive rounds at
+- Self-repetition is `self_repeat=clip(((similarity-base_mu)/base_sd)/3,0,1)`.
+  The baseline is the cosine of the round-0 idea against the agent's own seeded
+  library. A zero standard deviation becomes 1; a missing baseline defaults
+  to mean 0 and standard deviation 1. Similarity uses up to five previous ideas
+  since exploration, and fewer than two gives self_repeat 0.
+- External familiarity is `ext_familiar=clip(1-idea.novelty,0,1)`, or 0 when
+  novelty is missing. Unlike CPU B, it uses external novelty. Unsurprise and gap
+  retain the definitions above. Stall is
+  `stall=min(1,max(0,round-last_progress_round)/3)`; progress means a replicated
+  new descriptor cell or gap >=0.5. Components are rounded to four decimals.
+- Frustration is the fraction of the last five studies that failed or did not
+  replicate, and it is **not part of B**. At >=0.6, the policy requests a design
+  review when a statistician is available.
+- `policy.py:decide` prioritizes convergence, then frustration, then pending
+  breakout and cooldown, and finally snap. Snap requires two consecutive rounds at
   `B >= 0.5 + jitter`; seeded per-agent jitter is uniform in [-0.05,0.05],
   rounded to four decimals. Exploration resets similarity history and starts
-  two-round cooldown. Pending breakout at elapsed >=2 and stall >=0.8 is checked
+  a two-round cooldown. Pending breakout at elapsed >=2 and stall >=0.8 is checked
   **before** cooldown (elapsed <=2).
-- Convergence: current idea has a study; last two studies replicated with
-  gaps <=0.2; ext_familiar <=0.5. Replicate once more, then sticky hold.
+- Convergence requires the current idea to have a study, the last two studies
+  to have replicated with gaps <=0.2, and ext_familiar <=0.5. The agent replicates
+  once more and then remains on hold.
 
 **PR #8, not yet merged:** family spawning uses mean daughter B >=0.40,
 two-round spawn cooldown and fewer than five daughters per mother; initial
@@ -356,21 +377,23 @@ These are population rules, not #7's private exploration policy.
 | bixbench_mini | **17-question subset, not full BixBench**. Host answer-key accuracy; loss=1-accuracy. Published reference accuracy 0.523 is not a full-benchmark swarm result. | analysis.py |
 | playworld_mini | **synthetic proxy, not PlayWorld**. 9×9 environment, 10 context frames, 20 future 5×5 frames, 200 held-out episodes; exact-frame fraction, loss=1-score; 8-frame-memory reference score 0.3598. | world_model.py |
 
-Sources: each task's `task.json` and `evaluate.py`;
-[task documentation](testcases/README.md). First BixBench preparation downloads
-public data; it is not fully offline on an empty cache.
+Each task's `task.json` and `evaluate.py` define its scope and metric; the
+[task documentation](testcases/README.md) provides further details. BixBench
+preparation downloads public data on its first run, so it is not fully offline
+when its cache is empty.
 
-`testcases/sandbox.py:run_candidate` is **fail-closed**: unavailable Docker/image
-or sandbox startup failure produces a crash, never host candidate execution.
+`testcases/sandbox.py:run_candidate` is **fail-closed**: if Docker or its image is
+unavailable, or the sandbox fails to start, the evaluator records a crash rather
+than executing candidate code on the host.
 The pinned `testcases/Dockerfile` image uses network none, read-only root,
 dropped capabilities, no-new-privileges, non-root UID and PID/CPU/memory/time
 limits. Stdout/stderr and output are bounded. Only declared public files,
 editable source and required harness enter a read-only work mount, with a
-separate output mount: no repository, home, hidden answers, reference solutions
-or host environment credentials.
+separate output mount. The container receives no repository, home directory,
+hidden answers, reference solutions or host environment credentials.
 
 **Trusted host graders never import candidate code.** Hadamard parses a JSON
-matrix, BixBench an answer dictionary. Playworld's `run_candidate.py` imports the
+matrix, and BixBench parses an answer dictionary. Playworld's `run_candidate.py` imports the
 model **inside Docker** and returns predictions. Hidden future frames and the
 simulator stay on the host; BixBench's answer key remains in host `.cache/`.
 This container boundary is not proof against runtime/kernel vulnerabilities.
@@ -399,7 +422,8 @@ separate output directories isolate local arms. Retrieval is outside CPU B.
 
 ## Run artifacts and viewer
 
-CPU writer contracts under --out (or conductor experiments/swarm_<arm>):
+The CPU backend writes the following artifacts under `--out`, or under the
+conductor's `experiments/swarm_<arm>` directory when no output path is supplied:
 
 | File | Key fields / purpose | Writer |
 | --- | --- | --- |
@@ -415,8 +439,8 @@ CPU writer contracts under --out (or conductor experiments/swarm_<arm>):
 | run_id | Persisted UUID hex for memory run scope | swarm.orchestrate |
 | run.json | **Not written here.** Export manifest.json is separate; no run.json writer exists in swarm.py. | — |
 
-Other outputs include runs/<commit>.log, critic confirmation logs and Exa cache.
-Full prompts/responses/retrieved content need review before sharing.
+Other outputs include `runs/<commit>.log`, critic confirmation logs and the Exa
+cache. Review full prompts, responses and retrieved content before sharing them.
 
 ```mermaid
 flowchart TD
@@ -443,16 +467,16 @@ ticks start at 0 and are gap-free. Events include round starts, assignments,
 boredom measurements, questions, observations, hypotheses, gates, experiments,
 verdicts and discoveries, plus Ig Nobel talk/share/diary events. Entity references
 link evidence and discovery lineage. A reducer produces WorldSnapshot state;
-round-end and periodic keyframes support seek.
+round-end and periodic keyframes let viewers seek through the run.
 
-Output: index.json, <run_id>/manifest.json, timeline.json, events.ndjson,
-keyframes/<tick>.json and entities/<kind>.json. Manifest provenance includes
-LLM, CPU evaluation and Exa/memory settings. The manifest's command and
-swarm_commit are empty strings and provenance.artifacts is an empty object here,
-not populated hashes. Missing timestamps
-stay null. Prompt/response/reasoning text stays in entities/llm_calls.json, not
-timeline events. Run identity also depends on input directory name and first
-timestamp: renaming inputs is not guaranteed to preserve it.
+The exporter writes index.json, <run_id>/manifest.json, timeline.json,
+events.ndjson, keyframes/<tick>.json and entities/<kind>.json. Manifest provenance
+records the LLM, CPU evaluation and Exa/memory settings. The manifest's command
+and swarm_commit fields are empty strings, and provenance.artifacts is an empty
+object rather than a set of populated hashes. Missing timestamps stay null.
+Prompt, response and reasoning text stays in entities/llm_calls.json rather than
+timeline events. Run identity also depends on the input directory name and first
+timestamp, so renaming inputs is not guaranteed to preserve it.
 
 The full [docs/swarm-viewer-api.md contract](https://github.com/arii/caffeinated/blob/main/docs/swarm-viewer-api.md)
 was merged to main in #9 but is absent from this branch. It is a design document:
@@ -467,21 +491,16 @@ agents/collections, ledger, discoveries, entities and artifacts, with optional
 SSE. It cannot start/stop runs or influence agents; see the contract for shapes.
 
 Implementation work is tracked on `agent/devin/swarm-viewer-impl` and
-`agent/devin/viewer-live-publish`. Neither is merged into inspected
-origin/autoresearch (`3b50aaf`); neither remote branch was advertised at initial
-inspection. **Not yet merged:** no server/live command is supported by this
-README. The supported path is a finished run plus an explicit static export.
-
-Final fetch for this documentation still found origin/autoresearch at 3b50aaf;
-the two named implementation branches were not advertised. A separate
-origin/agent/devin/viewer-api branch was advertised, but was not inspected and
-is not evidence that the API is merged here.
+`agent/devin/viewer-live-publish`. These branches are **not yet merged** into
+`autoresearch`. This README therefore provides no server or live-mode command;
+the supported path is a finished run followed by an explicit static export.
 
 ## Quickstart and tests
 
-From repository root: Python >=3.10, Git and a working Docker daemon.
-Root declares no mandatory Python dependencies; Tinker extras need Python >=3.11.
-Build once (the build pulls packages; candidate containers have no network):
+Run the commands below from the repository root with Python >=3.10, Git and a
+working Docker daemon. The root project declares no mandatory Python dependencies;
+Tinker extras require Python >=3.11. Build the sandbox image once before running
+experiments. The build downloads packages, but candidate containers have no network:
 
 ```sh
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
@@ -492,9 +511,11 @@ python3 export_viewer.py /tmp/readme_check --dest /tmp/readme_viewer
 Use fresh output directories; keep valuable outputs outside /tmp. Fake mode is
 an offline plumbing check, not evidence of autonomous discoveries; it still needs
 Docker. The runner creates local branches/worktrees/tags and artifact commits:
-use your own checkout and preserve others' work. Export prints its generated path.
+use your own checkout and preserve others' work. The exporter prints the path
+it generated.
 
-Tinker setup (not live-service verified for this documentation):
+To use Tinker, install its optional packages and supply the environment variables
+shown below. These instructions have not been verified against the live service:
 
 ```sh
 python3 -m venv .venv
@@ -512,11 +533,13 @@ EXA=off MEMORY_BACKEND=local python3 -m unittest discover -s tests -v
 python3 -m unittest discover -s boredom_meter/tests -v
 ```
 
-Docker cases need the image above; BixBench integration may prepare public data.
-Inspect skips rather than treating skipped sandbox tests as security evidence.
+Docker test cases need the image above, and BixBench integration tests may prepare
+public data. Inspect the test summary: a skipped sandbox test is not security
+evidence.
 
 Ig Nobel commands belong in a **separate main worktree**, not this branch's
-empty ignobel/ directory. From that worktree's ignobel/:
+empty `ignobel/` directory. Run the following from that worktree's `ignobel/`
+directory:
 
 ```sh
 python3 -m venv .venv
@@ -525,48 +548,17 @@ MOCK=1 .venv/bin/python run_arm.py --arm full --agents 4 --rounds 3 --seed 0
 MOCK=1 .venv/bin/python -m pytest -q
 ```
 
-Mock study tests require Docker (python:3.11-slim, or IGNOBEL_SANDBOX_IMAGE).
+Mock study tests require Docker with the python:3.11-slim image, or an image
+specified by IGNOBEL_SANDBOX_IMAGE.
 Do not use PR #7/#8 flags against main before they land.
 
-### Verification at the documented revision
+### Verified offline
 
-The exact fake command above evaluated four candidates with status ok, produced
-five ledger rows (baseline + four discards), one assignment, five boredom log
-rows, four disabled research queries, nine memory items, 21 memory operations
-and four LLM calls. Best loss stayed 0.058514; no candidate was confirmed.
-There was no run.json. The exporter wrote a swarm-viewer/v1 run directory.
-
-Root tests: 67 run, OK, one skip (removed training-era replay fixture).
-Meter tests: 23 run, OK. Ig Nobel main tests: 56 passed, using the environment's
-existing ignobel/.venv interpreter from a separate detached main worktree.
-No live Tinker/Exa/past.dev/Modal calls were made. The CPU Docker image build
-and public-data test preparation are separate from those research services.
-
-### Formula and threshold source index
-
-Line numbers refer to source baseline 3b50aaf unless a remote ref is stated:
-
-| Formula / threshold | Exact source |
-| --- | --- |
-| CPU k/knn/patience, weights, regime thresholds, warmup, trivial and gate thresholds | `boredom_meter/meter.py:33-46` (`load_profile`) |
-| Parameter scales / clamps / ratio formula | `boredom_meter/meter.py:91-112` (`param_distance`) |
-| Hierarchical weights and rounding; nearest-neighbor novelty | `boredom_meter/meter.py:115-131` (`distance`, `sparseness`) |
-| Strict improvement direction/margin | `boredom_meter/meter.py:134-142` (`is_better`, `score_ok`) |
-| Diversity and eligible attempt statuses | `boredom_meter/meter.py:145-157` (`simpson`, `attempt_events`) |
-| Archive, significant/raw best, streaks/stall, scoped windows, rates and B | `boredom_meter/meter.py:176-215` (`fold`) |
-| Regime precedence / hysteresis / convergence | `boredom_meter/meter.py:216-233` (`fold`) |
-| Six-decimal return rounding and empty defaults | `boredom_meter/meter.py:29-30,244-261` (`r`, `status`) |
-| Gate distance restrictions | `boredom_meter/meter.py:300-340` (`gate`) |
-| CPU eps, k/knn/patience, level/parameter weights, ratio 4 | `testcases/hadamard19/boredom_profile.json:6-20,44-48`; `testcases/bixbench_mini/boredom_profile.json:6-20,43-47`; `testcases/playworld_mini/boredom_profile.json:6-20,44-48` |
-| Allocation cutoff and slot counts | `swarm.py:163-238` (`allocate_roles`) |
-| Accept margin, provisional inequality, confirmation mean | `swarm.py:1120-1135` (`acceptance_margin`, `candidate_is_provisional`, `critic_accepts`) |
-| Main Ig Nobel similarity/gap/unsurprise/failure/B and rounding | `origin/main:ignobel/boredom.py:15-58` |
-| Main snap threshold override / policy default | `origin/main:ignobel/config.yaml:2`; `origin/main:ignobel/run_arm.py:37-40`; `origin/main:ignobel/policy.py:18-24` |
-| #7 baseline, self_repeat, familiarity, gap, unsurprise, frustration | `origin/pr7:ignobel/boredom.py:27-97` |
-| #7 progress, stall, weighted B, rounding | `origin/pr7:ignobel/boredom.py:110-144` |
-| #7 weights and every private-policy threshold | `origin/pr7:boredom_meter/profiles/ignobel.json:24-37` |
-| #7 jitter, convergence, cooldown, snap and window reset | `origin/pr7:ignobel/policy.py:39-105` |
-| #8 family mean-B threshold, cooldown, cap and founding count | `origin/pr8:ignobel/config.yaml:8-11`; `origin/pr8:ignobel/world.py:301-311` |
+The fake one-round command and static export above completed successfully.
+The root unittest command ran 67 tests with one skip (66 passed); the meter
+unittest command passed all 23 tests. Ig Nobel's `MOCK=1` pytest command passed
+all 56 tests in a separate main worktree using the existing environment venv.
+No live Tinker, Exa, past.dev or Modal calls were made.
 
 ## Honest limitations
 
