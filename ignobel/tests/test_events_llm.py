@@ -72,6 +72,31 @@ def test_local_embed_backend_needs_no_key(monkeypatch, tmp_path):
     assert llm.embed_dim() == 2  # real-mode dim comes from the backend, not a constant
 
 
+def test_truncated_reply_is_flagged_not_cached(monkeypatch, tmp_path):
+    import types
+    import llm
+
+    seen = []
+
+    def fake_call(fn):
+        def create(**kw):
+            seen.append(kw["max_completion_tokens"])
+            msg = types.SimpleNamespace(content="")
+            return types.SimpleNamespace(
+                choices=[types.SimpleNamespace(message=msg, finish_reason="length")], usage=None)
+        return fn(types.SimpleNamespace(chat=types.SimpleNamespace(completions=types.SimpleNamespace(create=create))))
+
+    monkeypatch.setattr(llm, "MOCK", False)
+    monkeypatch.setattr(llm, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(llm, "REASONING_TOKENS", 2000)
+    monkeypatch.setattr(llm, "_openai_call", fake_call)
+    r = llm.chat_json("m", "s", "u", kind="propose", max_tokens=900)
+    assert r.data["_truncated"] and r.data["_parse_error"]
+    assert seen == [2900]
+    llm.chat_json("m", "s", "u", kind="propose", max_tokens=900)
+    assert len(seen) == 2  # not served from the cache
+
+
 def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):
     import httpx
     import openai

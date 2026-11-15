@@ -23,6 +23,9 @@ EMBED_MODEL = os.environ.get("EMBED_MODEL") or (
     "BAAI/bge-small-en-v1.5" if EMBED_BACKEND == "local" else "text-embedding-3-small")
 CACHE_DIR = Path(os.environ.get("LLM_CACHE_DIR", Path(__file__).parent / ".cache"))
 TOKEN_CAP = int(os.environ.get("TOKEN_CAP", "0") or 0)  # 0 = unlimited
+# Reasoning models spend completion tokens thinking before they answer; this is added to every
+# call's max_tokens so the answer isn't cut off (Tinker's Inkling needs ~2000).
+REASONING_TOKENS = int(os.environ.get("REASONING_TOKENS", "0") or 0)
 MOCK_EMBED_DIM = 64
 
 
@@ -88,6 +91,7 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
         _charge(tokens)
         return LLMResult(data=data, tokens=tokens, latency_ms=0, model=f"mock-{model}")
 
+    max_tokens += REASONING_TOKENS
     key = _hash("chat", model, system, user, str(seed), str(max_tokens))
     cache_file = CACHE_DIR / "llm" / f"{key}.json"
     if cache_file.exists():
@@ -103,14 +107,20 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
         seed=seed,
     ))
     latency_ms = int((time.monotonic() - t0) * 1000)
-    text = resp.choices[0].message.content or "{}"
+    choice = resp.choices[0]
+    text = choice.message.content or ""
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
         data = {"_raw": text, "_parse_error": True}
+    truncated = choice.finish_reason == "length"
+    if truncated:
+        data["_truncated"] = True
     tokens = resp.usage.total_tokens if resp.usage else 0
     _charge(tokens)
     result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
+    if truncated:  # don't cache a cut-off reply; a rerun with more REASONING_TOKENS should retry it
+        return result
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     cache_file.write_text(json.dumps(result.model_dump(exclude={"cached"})), encoding="utf-8")
     return result

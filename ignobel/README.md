@@ -28,7 +28,9 @@ keeps real runs in Docker). Docker must be running for mock runs and tests that 
 
 Any OpenAI-compatible chat provider works: set `OPENAI_BASE_URL`, `OPENAI_API_KEY` and the `MODEL_*`
 names. If it has no embeddings model (e.g. Tinker), set `EMBED_BACKEND=local` to embed on CPU with
-`fastembed` (`BAAI/bge-small-en-v1.5`, downloaded on first use).
+`fastembed` (`BAAI/bge-small-en-v1.5`, downloaded on first use). Reasoning models (e.g. Tinker's
+`thinkingmachines/Inkling-2-Small`) think before answering, so set `REASONING_TOKENS=2000` or their
+replies get cut off; cut-off replies are marked `_truncated` and not cached.
 
 ## Layout
 
