@@ -248,8 +248,8 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
 
 
 def _mock_requests(n: int, ctx: dict) -> list[dict]:
-    """Statistician (no instruments) asks other labs for measurements."""
-    if ctx.get("instruments"):
+    """Statistician (no instruments), or a cross-field study, asks other labs for measurements."""
+    if ctx.get("instruments") and not ctx.get("cross_field"):
         return []
     peers = [p for p in ctx.get("peers", []) if p.get("instruments")]
     if not peers:
@@ -264,7 +264,12 @@ def _mock_requests(n: int, ctx: dict) -> list[dict]:
 
 def _mock_study_code(n: int, ctx: dict) -> str:
     variant = n % 10
-    if ctx.get("instruments"):
+    if ctx.get("instruments") and ctx.get("cross_field"):
+        head = ("from lab_runtime import instruments, instrument, measurements, report, report_corr\n"
+                "names = instruments()\n"
+                "x = instrument(names[0])\n"
+                "y = measurements()[0] if measurements() else instrument(names[-1])\n")
+    elif ctx.get("instruments"):
         head = ("from lab_runtime import instruments, instrument, report, report_corr\n"
                 "names = instruments()\n"
                 "x = instrument(names[0])\n"

@@ -9,9 +9,9 @@ import events
 import run_arm
 
 
-def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None):
+def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None, yoke_from=None):
     out = Path(out or tmp_path / f"{arm}-{seed}")
-    world = run_arm.build_world(arm, agents, seed, out)
+    world = run_arm.build_world(arm, agents, seed, out, yoke_from=yoke_from)
     if resume:
         assert world.load_state()
     asyncio.run(world.run(rounds))
@@ -31,8 +31,8 @@ def test_same_seed_same_file(tmp_path):
 
 
 def test_different_seed_different_file(tmp_path):
-    a = _run(tmp_path, arm="random_snap", seed=0, out=tmp_path / "a")
-    b = _run(tmp_path, arm="random_snap", seed=1, out=tmp_path / "b")
+    a = _run(tmp_path, arm="full", seed=0, out=tmp_path / "a")
+    b = _run(tmp_path, arm="full", seed=1, out=tmp_path / "b")
     assert not filecmp.cmp(a, b, shallow=False)
 
 
@@ -43,9 +43,10 @@ def test_resume_matches_uninterrupted_run(tmp_path):
     assert filecmp.cmp(full, part, shallow=False)
 
 
-@pytest.mark.parametrize("arm", ["random_snap", "single", "shared_memory", "no_exchange"])
+@pytest.mark.parametrize("arm", ["yoked_random", "single", "shared_memory", "no_exchange"])
 def test_other_arms_run(tmp_path, arm):
-    path = _run(tmp_path, arm=arm, rounds=2)
+    paired = _run(tmp_path, rounds=2, out=tmp_path / "full-s0") if arm == "yoked_random" else None
+    path = _run(tmp_path, arm=arm, rounds=2, yoke_from=paired)
     evs = list(events.read(path))
     assert evs and all(e.arm == arm for e in evs)
     if arm == "single":

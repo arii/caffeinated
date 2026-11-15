@@ -9,6 +9,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 import llm
+import meter_profile
 
 HERE = Path(__file__).parent
 GOAL = "Your goal is research that makes people laugh, then think."
@@ -37,6 +38,10 @@ class Idea(BaseModel):
     source_urls: list[str] = Field(default_factory=list)
     run: bool = False
     embedding: list[float] | None = None
+    novelty: float | None = None          # Exa novelty_check score of the idea text
+    cross_field: bool = False             # PARADIGM_BREAKOUT idea: uses another lab's instrument
+    partner: str | None = None            # colleague talked to before this idea, if any
+    descriptor: dict | None = None        # {mechanism, method, params, partner}; see meter_profile
 
 
 class StudyRecord(BaseModel):
@@ -94,6 +99,7 @@ class Agent:
         self.studies: list[StudyRecord] = []
         self.lessons: str = ""
         self.budget_left: int = spec.budget_per_round
+        self.meter: dict = {}  # private boredom-meter state (policy.decide); never shown in prompts
 
     # ------------------------------------------------------------ helpers
     @property
@@ -140,21 +146,28 @@ class Agent:
         return llm.chat_json(model, self.system_prompt(), user, kind=kind,
                              seed=self.run_seed, mock_context=self._mock_ctx(**ctx))
 
-    def _new_idea(self, data: dict, kind: str, round: int, source_urls: list[str]) -> Idea:
+    def _new_idea(self, data: dict, kind: str, round: int, source_urls: list[str],
+                  cross_field: bool = False, partner: str | None = None) -> Idea:
         text = str(data.get("idea") or data.get("title") or "untitled idea")
         idea = Idea(
             idea_id=f"{self.name}-i{len(self.ideas) + 1}", round=round, kind=kind,
             title=str(data.get("title") or text[:60]), text=text,
             hypothesis=str(data.get("hypothesis", "")), method=str(data.get("method", "")),
             prediction=_parse_prediction(data, self.run_seed), source_urls=source_urls,
+            cross_field=cross_field, partner=partner,
         )
+        idea.descriptor = meter_profile.describe(idea, self.spec)
         idea.embedding = llm.embed([idea.text])[0].tolist()
         self.ideas.append(idea)
         return idea
 
     # -------------------------------------------------------- LLM methods
-    def propose(self, round: int, library: list, extra_source=None) -> tuple[Idea, llm.LLMResult]:
-        """Propose a new study from the agent's library (and an optional fresh source)."""
+    def propose(self, round: int, library: list, extra_source=None, partner: str | None = None,
+                breakout: dict | None = None) -> tuple[Idea, llm.LLMResult]:
+        """Propose a new study from the agent's library (and an optional fresh source).
+
+        breakout = {"instruments": [{agent, instruments}], "methods": [...]} asks for a cross-field
+        study that uses another lab's instrument and a method outside this agent's field."""
         items = list(library)
         urls = []
         for it in items:
@@ -165,11 +178,20 @@ class Agent:
         if extra_source is not None:
             lines.append(f"- NEW SOURCE: {extra_source.title} {extra_source.url} {extra_source.snippet[:200]}")
             urls.append(extra_source.url)
+        constraint, ctx = "", {}
+        if breakout:
+            labs = "; ".join(f"{p['agent']}: {', '.join(p['instruments'])}" for p in breakout["instruments"])
+            outside = [m for m in breakout["methods"] if m not in self.spec.methods]
+            constraint = ("This must be a cross-field study: measure with at least one instrument owned by another lab "
+                          f"({labs}) and use a method outside your field's standard list, for example "
+                          f"{', '.join(outside[:4]) or 'one borrowed from a colleague'}.\n")
+            if outside:
+                ctx["method"] = outside[0]
         user = ("Propose one new study. Return JSON with keys: title, idea, hypothesis, method, "
                 "prediction {direction: '+' or '-', effect_size: number (Cohen's d or r)}.\n"
-                "Relevant notes from your library:\n" + "\n".join(lines))
-        res = self._call("propose", user)
-        return self._new_idea(res.data, "propose", round, urls), res
+                + constraint + "Relevant notes from your library:\n" + "\n".join(lines))
+        res = self._call("propose", user, **ctx)
+        return self._new_idea(res.data, "propose", round, urls, cross_field=bool(breakout), partner=partner), res
 
     def refine(self, round: int) -> tuple[Idea, llm.LLMResult]:
         """Refine the current idea into a sharper, more testable version."""
@@ -185,7 +207,8 @@ class Agent:
                 "Return JSON with keys: title, idea, hypothesis, method, prediction {direction, effect_size}.")
         res = self._call("refine", user)
         urls = cur.source_urls if cur else []
-        return self._new_idea(res.data, "refine", round, urls), res
+        return self._new_idea(res.data, "refine", round, urls, cross_field=bool(cur and cur.cross_field),
+                              partner=cur.partner if cur else None), res
 
     def talk(self, other: str, other_field: str, history: list[str], topic: str) -> tuple[str, llm.LLMResult]:
         """One conversational turn with another scientist."""
@@ -199,12 +222,18 @@ class Agent:
         """Return {code, requests}. Code runs in a sandbox using lab_runtime only."""
         idea = self.current_idea()
         peer_lines = "\n".join(f"- {p['agent']}: {', '.join(p['instruments'])}" for p in peers if p["instruments"])
+        cross = bool(idea and idea.cross_field)
         if self.spec.instruments:
             api = ("from lab_runtime import instruments, instrument, report, report_corr\n"
                    "instrument(name, where=None, offset=0, limit=None) -> list[float]; each call costs 1 budget.\n"
                    f"Budget this round: {self.budget_left}.\n"
                    "Finish with report(group_a, group_b, direction, effect_size) or report_corr(x, y, direction, effect_size).")
             req = "requests must be []."
+            if cross:
+                api += ("\nThis is a cross-field study: measurement(i) -> list[float] is the i-th request's data "
+                        "(from lab_runtime import measurement).")
+                req = ("requests is a list of {owner, instrument, args} measurements you need from other labs "
+                       "(at least one):\n" + peer_lines)
         else:
             api = ("from lab_runtime import measurement, report, report_corr\n"
                    "measurement(i) -> list[float] is the i-th request's data.\n"
@@ -215,7 +244,7 @@ class Agent:
                 f"Prediction: {idea.prediction.model_dump() if idea else {}}\n{api}\n"
                 "Only lab_runtime and the standard library are available. No network.\n"
                 f"Return JSON {{code: string, requests: list}}. {req}")
-        res = self._call("study_code", user, model=llm.MODEL_STRONG, peers=peers)
+        res = self._call("study_code", user, model=llm.MODEL_STRONG, peers=peers, cross_field=cross)
         code = str(res.data.get("code", ""))
         requests = res.data.get("requests") or []
         return {"code": code, "requests": requests if isinstance(requests, list) else []}, res
@@ -240,10 +269,11 @@ class Agent:
     def to_state(self) -> dict:
         return {"ideas": [i.model_dump() for i in self.ideas],
                 "studies": [s.model_dump() for s in self.studies],
-                "lessons": self.lessons, "budget_left": self.budget_left}
+                "lessons": self.lessons, "budget_left": self.budget_left, "meter": self.meter}
 
     def load_state(self, st: dict) -> None:
         self.ideas = [Idea(**i) for i in st["ideas"]]
         self.studies = [StudyRecord(**s) for s in st["studies"]]
         self.lessons = st["lessons"]
         self.budget_left = st["budget_left"]
+        self.meter = st.get("meter", {})
