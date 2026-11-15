@@ -75,6 +75,21 @@ class DirectoryReplayTests(unittest.TestCase):
             self.assertEqual(len(client.get('/api/recordings').json()), 2)
             self.assertEqual(client.get('/api/recordings/bad').status_code, 404)
 
+    def test_explicit_directory_order_overrides_default_duplicate_ids(self):
+        default = self.run_dir('experiments/default/viewer/run-1')
+        first = self.run_dir('z-explicit/run-1')
+        last = self.run_dir('a-explicit/run-1')
+        for path in (default, first, last):
+            manifest = json.loads((path / 'manifest.json').read_text())
+            manifest['title'] = str(path)
+            (path / 'manifest.json').write_text(json.dumps(manifest))
+        catalog = RecordingCatalog(self.root / 'none', [first.parent, last.parent], repo_root=self.root)
+        self.assertEqual(catalog.get('run-1')['manifest']['title'], str(last))
+        catalog = RecordingCatalog(self.root / 'none', [last.parent, default.parent, first.parent], repo_root=self.root)
+        self.assertEqual(catalog.get('run-1')['manifest']['title'], str(first))
+        catalog = RecordingCatalog(self.root / 'none', [first.parent, default.parent], repo_root=self.root)
+        self.assertEqual(catalog.get('run-1')['manifest']['title'], str(default))
+
     def test_path_safety_and_size_cap(self):
         safe = self.run_dir()
         self.run_dir('viewer/bad_id')

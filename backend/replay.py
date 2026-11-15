@@ -204,10 +204,10 @@ class RecordingCatalog:
                     self.manifests[rid]=m
     def _scan(self):
         runs={}
-        roots=set(self.directories)
+        roots=set()
         for pattern in ('.swarm_worktrees/*/conductor/experiments/*/viewer', 'experiments/*/viewer'):
             roots.update(self.repo_root.glob(pattern))
-        for root in sorted(roots):
+        for root in sorted(roots-set(self.directories))+self.directories:
             if root.is_symlink():continue
             if not root.is_dir():continue
             for parent, dirs, files in os.walk(root,followlinks=False):
