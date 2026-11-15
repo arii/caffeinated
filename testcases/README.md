@@ -66,7 +66,15 @@ prompts from `ignobel/committee.py`; Tinker models `IGNOBEL_JUDGE_A_MODEL`,
 `IGNOBEL_JUDGE_B_MODEL`, defaults Kimi K3.1 Pro and Qwen3.5-397B) and writes
 `scores.jsonl`: laugh and think 1–10 on a grader-written abstract, each judge
 counts min(laugh, think), the lower judge wins, and a joke at a group's expense
-scores 0. `task.json`'s `scout`
+scores 0. The swarm is open-ended: `field` may be any snake_case field or subfield a lab
+founds (logged as descriptor `other/<subfield>`), and each round `swarm.py` runs
+the task's `round_context.py` (task.json `round_context`) and appends its output
+to the task inputs: the lab notebook (every study registered so far this run
+and its result, so labs build on each other) and real datasets found on Zenodo
+and Hugging Face (`datasets.py`, ported from `ignobel/sources.py`) for the
+least-explored fields, with their columns. When two labs report the same
+finding (dataset and column pair), `score_run.py` keeps only the earliest.
+`task.json`'s `scout`
 block points the swarm's Exa scouts at odd everyday phenomena and downloadable
 datasets instead of small-GPT training.
 

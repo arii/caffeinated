@@ -40,6 +40,7 @@ import external
 from judge_text import tokens
 from stats import spearman
 
+FIELD = re.compile(r"[a-z][a-z0-9_]{2,40}")
 ALPHA = 0.005
 REPLICATION_ALPHA = 0.05
 MIN_N = 30
@@ -145,10 +146,15 @@ def parse_prereg(source, fields):
     prereg = json.loads(source)
     if not isinstance(prereg, dict):
         raise ValueError("prereg.json must be a JSON object")
-    if prereg.get("field") not in fields:
-        raise ValueError(f"field must be one of {sorted(fields)}")
-    if prereg.get("study_type") not in fields[prereg["field"]]:
-        raise ValueError(f"study_type must be one of {fields[prereg['field']]}")
+    field = prereg.get("field")
+    if not isinstance(field, str) or not FIELD.fullmatch(field):
+        raise ValueError(
+            "field must be a snake_case research field or subfield, "
+            f"e.g. one of {sorted(fields)} or a new one such as myrmecology"
+        )
+    study_types = sorted({kind for kinds in fields.values() for kind in kinds})
+    if prereg.get("study_type") not in study_types:
+        raise ValueError(f"study_type must be one of {study_types}")
     for key in TEXT_FIELDS:
         value = prereg.get(key)
         if not isinstance(value, str) or not value.strip() or len(value) > MAX_TEXT:
@@ -329,6 +335,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "replicated": replicated,
         "confirmed": confirmed,
         "predicted_rho": predicted,
+        "columns": sorted([claim["x"], claim["y"]]),
         "sha256": entry.get("sha256", ""),
         "score": 1.0 if confirmed else 0.0,
     }

@@ -1709,6 +1709,44 @@ def preview_file(path, max_chars=6000):
     return text if len(text) <= max_chars else text[:max_chars] + "\n...(truncated)"
 
 
+def set_task_context(task_context):
+    TASK["prompt_values"]["task_context"] = task_context
+    TASK["prompt_values"]["task_inputs_brief"] = (
+        task_context if len(task_context) <= 1500 else task_context[:1500] + "\n...(truncated)"
+    )
+
+
+def refresh_round_context(out_dir, round_num, cells):
+    """Append the output of the task's round_context script (if any) to the task inputs."""
+    hook = (TASK or {}).get("round_context")
+    if not hook:
+        return
+    command = [
+        sys.executable,
+        str(TASK["dir"] / hook),
+        "--out-dir",
+        str(out_dir),
+        "--round",
+        str(round_num),
+        "--cells",
+        json.dumps(cells, default=str),
+    ]
+    try:
+        proc = subprocess.run(
+            command, cwd=TASK["dir"], capture_output=True, text=True, timeout=240, check=False
+        )
+        extra = proc.stdout.strip() if proc.returncode == 0 else ""
+        if proc.returncode:
+            print(f"[round_context] {hook} failed: {proc.stderr.strip()[-300:]}", flush=True)
+    except subprocess.TimeoutExpired:
+        extra = ""
+        print(f"[round_context] {hook} timed out", flush=True)
+    limit = TASK.get("round_context_max_chars", 8000)
+    set_task_context(
+        TASK["base_task_context"] + (f"\n--- this round\n{extra[:limit]}" if extra else "")
+    )
+
+
 def build_task_context(task_dir, context_files, max_chars=6000):
     parts = [
         f"--- {name}\n{preview_file(task_dir / name, max_chars)}"
@@ -1734,6 +1772,7 @@ def load_task(name):
         "dir": task_dir,
         "target": target,
         "profile": task_dir / "boredom_profile.json",
+        "base_task_context": task_context,
         "prompt_values": {
             "task_brief": config["brief"],
             "target_file": target,
@@ -2257,6 +2296,7 @@ def _orchestrate(args, publish_state, cleanup):
             cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
+            refresh_round_context(out_dir, round_num, cell_suggestions)
             append_assignment(
                 allocation,
                 out_dir=out_dir,

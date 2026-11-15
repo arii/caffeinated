@@ -27,6 +27,8 @@ OPEN_DATA_HOSTS = (
     "raw.githubusercontent.com",
     "gist.githubusercontent.com",
     "zenodo.org",
+    "huggingface.co",
+    "hf.co",
     "figshare.com",
     "ndownloader.figshare.com",
     "datadryad.org",

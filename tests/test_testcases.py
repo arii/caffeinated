@@ -1,4 +1,5 @@
 import csv
+import io
 import json
 import os
 import re
@@ -8,6 +9,7 @@ import sys
 import tempfile
 import types
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -16,6 +18,7 @@ from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.ignobel import evaluate as ignobel
+from testcases.ignobel import round_context as ignobel_round_context
 from testcases.ignobel import score_run as ignobel_score_run
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
@@ -220,6 +223,7 @@ class EvaluatorTests(unittest.TestCase):
     def test_playworld_candidate_cannot_import_grader_or_reach_network(self):
         source = """
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 import socket
 import sys
@@ -546,7 +550,7 @@ class IgnobelPreregTests(unittest.TestCase):
 
     def test_invalid_registrations_fail_closed(self):
         for overrides in (
-            {"field": "astrology"},
+            {"field": "Astrology!"},
             {"study_type": "fishing"},
             {"predicted_rho": 0},
             {"hypothesis": ""},
@@ -557,6 +561,21 @@ class IgnobelPreregTests(unittest.TestCase):
                 self.assertEqual((result["status"], result["reason"]), ("crash", "invalid_output"))
         result = ignobel.evaluate_source("print('the gravy did it')", task_dir=self.task_dir)
         self.assertEqual((result["status"], result["score"]), ("crash", 0.0))
+
+    def test_labs_may_found_new_subfields(self):
+        result = self.run_prereg(field="myrmecology")
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        self.assertTrue(result["graded"]["confirmed"])
+
+    def test_round_context_shows_the_lab_notebook(self):
+        self.run_prereg()
+        out = io.StringIO()
+        with patch.dict(os.environ, {"EXA": "off"}), redirect_stdout(out):
+            ignobel_round_context.main(["--out-dir", str(self.log.parent)])
+        text = out.getvalue()
+        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', text)
+        self.assertIn("REPLICATED", text)
+        self.assertIn("Datasets already tested this run", text)
 
     def test_trivial_pair_scores_zero(self):
         graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]
