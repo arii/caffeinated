@@ -47,5 +47,17 @@ python3 export_viewer.py ../ignobel/runs/full-s0 --dest lab/data/runs  # ignobel
 Prompts, responses and reasoning only appear in `entities/llm_calls.json`,
 never in the timeline. Missing source timestamps stay `null`.
 
+`viewer_api.py` serves the same exports over the read-only HTTP API from the
+spec (`/api/v1/runs`, `/timeline`, `/world?tick=|round=|ts=`, `/events`,
+`/agents/{id}`, `/ledger`, `/discoveries`, `/entities/{kind}/{id}`,
+`/artifacts/...`, SSE `/stream`). It only reads files and holds no
+credentials; `create_router(Store(dir))` can be mounted into another FastAPI app.
+
+```sh
+uv sync --extra api
+python3 viewer_api.py --data lab/data/runs --export out/   # export, then serve on :8000
+# docs: http://127.0.0.1:8000/api/v1/docs
+```
+
 See [`program.md`](program.md) for the human-edited experiment protocol and
 [`testcases/README.md`](testcases/README.md) for task details and scoring.

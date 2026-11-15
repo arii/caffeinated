@@ -11,3 +11,8 @@ tinker = [
     "tinker==0.39.0; python_version >= '3.11'",
     "tml-renderers==0.4.1; python_version >= '3.11'",
 ]
+api = [
+    "fastapi==0.115.12",
+    "uvicorn==0.34.2",
+    "httpx==0.28.1",
+]

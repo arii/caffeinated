@@ -10,6 +10,7 @@ import argparse
 import bisect
 import csv
 import json
+import shutil
 import uuid
 from pathlib import Path
 
@@ -783,6 +784,7 @@ def build(run, extra):
         "schema": SCHEMA, "run_id": run.run_id, "swarm": run.swarm, "title": extra["title"],
         "status": "completed", "live": False, "arm": extra["arm"], "metric": extra["metric"],
         "compare_group": extra.get("compare_group"),
+        "baseline": extra.get("baseline"),
         "boredom": extra["boredom"],
         "time": {"ticks": len(events), "rounds": max((e["round"] for e in events), default=0),
                  "ts_start": min(ts_values) if ts_values else None,
@@ -845,7 +847,7 @@ def world_at(events, run_manifest, entities, tick, keyframes=None):
         class Shim:
             run_id = run_manifest["run_id"]
             agents = {a["native_id"]: a for a in run_manifest["agents"]}
-        world = initial_world(Shim, {"baseline": None})
+        world = initial_world(Shim, run_manifest)
         start = 0
     else:
         frame = json.loads(json.dumps(keyframes[base]))
@@ -896,7 +898,21 @@ def export(out_dir, dest, swarm=None, arm=None, title=None):
     else:
         run, extra = export_autoresearch(out_dir, arm, title)
     manifest, timeline, events, keyframes = build(run, extra)
-    return write(dest, manifest, timeline, events, keyframes, run.entities)
+    run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
+    copy_artifacts(out_dir, run_dir, run.entities)
+    return run_dir
+
+
+def copy_artifacts(out_dir, run_dir, entities):
+    """Copy the per-experiment run logs the entities point at, so the API can serve them."""
+    root = out_dir.resolve()
+    for experiment in entities["experiments"].values():
+        for relative in (experiment.get("artifacts") or {}).values():
+            source = (root / relative).resolve()
+            if root in source.parents and source.is_file():
+                target = run_dir / "artifacts" / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
 
 
 def main(argv=None):
