@@ -1,4 +1,5 @@
 {
+ "title": "Ig Nobel Prize hunt",
  "editable": "prereg.json",
  "brief": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one field (descriptor mechanism = field, method = study_type) and must do real research first: read papers via the swarm's Exa leads, then register BEFORE seeing data: {field, study_type, question, hypothesis, mechanism (why the effect should exist), citations (>= 2 Exa source ids S<k> or URLs from this run's research, or sources.json), dataset: {url of a real public CSV/TSV (open-data host such as raw.githubusercontent.com, zenodo, figshare, OSF, Dryad, data.gov, Rdatasets, or a URL in the Exa results), x, x_level, y, y_level (exact column header text; level = the answer compared vs everyone else, omit for numeric columns)}, direction (positive|negative), predicted_rho (expected |Spearman rho|)}. The host verifies citations, downloads the data once, and runs the registered test ONCE on all rows (Spearman, p < 0.005, matching sign; one test per dataset per run, so a second registration on a used dataset scores 0). Trivial pairs (same column, near-identical wording, two demographics) score 0. loss = 1 - (replicated and significant): significant = the registered test gives p < 0.005 on all rows with the registered sign; replicated = the same sign with p < 0.05 in each of the two fixed hash halves of the rows. Every study is logged for a post-run Ig Nobel committee (two LLM judges, laugh and think), which does not affect the loss. If a column name is wrong the run fails and lists the dataset's usable columns. The baseline registration (rare-steak eaters smoke more) is a real hypothesis that fails (loss 1); aim for a real, odd, everyday effect that makes people laugh, then think Labs are open-ended: field may be any snake_case field or subfield you found (myrmecology, psychoacoustics, ...), not only the listed ones; a new subfield is logged as descriptor other/<subfield>. Each round the task inputs add the lab notebook (every study registered so far this run and its result: build on other labs' ideas and nulls, never repeat a tested dataset) and real downloadable datasets found on Zenodo and Hugging Face with their column names. When two labs report the same finding (same dataset, same column pair), only the earliest counts. Derived rates: dataset.x_per / dataset.y_per may name a numeric denominator column, so a numeric variable is tested per unit of another (e.g. \"Bites\" per \"Minutes observed\"); the host computes the rate itself.",
  "fake_edits": [
@@ -56,5 +57,33 @@
    "vincentarelbundock.github.io"
   ]
  },
- "round_context": "round_context.py"
+ "round_context": "round_context.py",
+ "agents": {
+  "worker-1": {
+   "label": "Kitchen Physics Lab",
+   "family": "physics",
+   "brief": "You lead the Kitchen Physics Lab: expert in everyday physics, acoustics and food science (crunch, spills, bubbles, sounds). Register studies from your expertise first; found new subfields when your field is exhausted."
+  },
+  "worker-2": {
+   "label": "Animal Behaviour Lab",
+   "family": "biology",
+   "brief": "You lead the Animal Behaviour Lab: expert in animal behavior and ecology (field observations, odd habits of animals and plants). Register studies from your expertise first; found new subfields when your field is exhausted."
+  },
+  "worker-3": {
+   "label": "Sleep & Medicine Lab",
+   "family": "biology",
+   "brief": "You lead the Sleep & Medicine Lab: expert in sleep science, medicine and sports science (bodies, habits, health records). Register studies from your expertise first; found new subfields when your field is exhausted."
+  },
+  "worker-4": {
+   "label": "Mind & Money Lab",
+   "family": "chemistry",
+   "brief": "You lead the Mind & Money Lab: expert in psychology, behavioral economics, linguistics and transport (how people decide, talk and move). Register studies from your expertise first; found new subfields when your field is exhausted."
+  },
+  "critic": {
+   "label": "Peer Review Board"
+  },
+  "conductor": {
+   "label": "Program Office"
+  }
+ }
 }

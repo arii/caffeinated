@@ -589,6 +589,11 @@ class IgnobelPreregTests(unittest.TestCase):
         bad = self.run_prereg(dataset={"x_per": "Favourite colour"})
         self.assertEqual((bad["status"], bad["reason"]), ("crash", "invalid_output"))
 
+    def test_delimiter_respects_quotes(self):
+        prepare = sys.modules["prepare"]
+        self.assertEqual(prepare.delimiter('"a,b,c"\t"d"'), "\t")
+        self.assertEqual(prepare.delimiter("a,b,c"), ",")
+
     def test_trivial_pair_scores_zero(self):
         graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]
         self.assertEqual(graded["score"], 0.0)

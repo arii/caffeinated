@@ -418,6 +418,7 @@ def common_values(agent, round_num, role, status, agent_b, best_commit, best_val
         "role": role,
         "task_brief": (TASK or {}).get("brief", ""),
         "editable": (TASK or {}).get("editable", ""),
+        "agent_brief": ((TASK or {}).get("agents") or {}).get(agent, {}).get("brief", ""),
         **(TASK or {}).get("prompt_values", {}),
     }
 

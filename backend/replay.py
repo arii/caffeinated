@@ -82,7 +82,7 @@ def build_recording(native_manifest, native_events, entities, sample=True):
             prefix='B' if field in {'b','bio','biology'} else 'C' if field in {'c','chem','chemistry'} else 'P' if field in {'p','physics'} else ['B','C','P'][human_index%3]
             identity['familySource']='recorded' if field in {'b','bio','biology','c','chem','chemistry','p','physics'} else 'display assignment'
             identity['family']={'B':'Bio','C':'Chem','P':'Physics'}[prefix]
-            family_counts[prefix]+=1;identity['display_name']=prefix+str(family_counts[prefix]);human_index+=1
+            family_counts[prefix]+=1;identity['display_name']=original if identity.get('named') else prefix+str(family_counts[prefix]);human_index+=1
         identity['label']=identity['display_name']
     for identity in manifest.get('agents',[]):
         kind=identity.get('type','worker')
