@@ -26,6 +26,7 @@ RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
 RESULT_COLUMNS = {"commit", "val_bpb", "memory_gb", "status", "description"}
 MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
+_ENSURED_AUDIENCES = set()
 
 
 def utc_now():
@@ -94,9 +95,39 @@ def api_key_for_arm(arm=None):
         key = os.environ.get(f"PAST_API_KEY_{arm.upper()}")
         if key:
             return key
-        if arm.upper() == "C":
-            return None
     return os.environ.get("PAST_API_KEY")
+
+
+def audience_for_arm(arm=None):
+    arm = str(arm or os.environ.get("AUTORESEARCH_ARM") or "").casefold()
+    if not re.fullmatch(r"[a-z]", arm):
+        return None
+    return f"arm-{arm}", f"swarm-arm-{arm}"
+
+
+def ensure_arm_audience(arm=None, api_key=None):
+    audience = audience_for_arm(arm)
+    if audience is None:
+        return None
+    slug, identity = audience
+    api_key = api_key or api_key_for_arm(arm)
+    if not api_key:
+        raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+    base_url = os.environ.get("PAST_BASE_URL", "https://api.past.dev").rstrip("/")
+    cache_key = (
+        base_url,
+        hashlib.sha256(api_key.encode("utf-8")).hexdigest(),
+        slug,
+    )
+    if cache_key not in _ENSURED_AUDIENCES:
+        api_request(
+            "PUT",
+            f"/audiences/{quote(slug, safe='')}",
+            {"kind": "fixed", "identities": [identity]},
+            api_key=api_key,
+        )
+        _ENSURED_AUDIENCES.add(cache_key)
+    return slug, identity
 
 
 def selected_backend(backend=None, arm=None):
@@ -143,35 +174,35 @@ def memory_payload(mem_type, memory_id, content, author, metadata, timestamp):
 
 
 def append_mirror(mirror, payload, source_id):
-    append_jsonl(
-        mirror,
-        {
-            "id": payload["id"],
-            "sourceId": source_id or payload["id"],
-            "content": payload["content"],
-            "label": payload["label"],
-            "timestamp": payload["timestamp"],
-            "author": payload["identity"],
-            "metadata": payload["metadata"],
-        },
-    )
+    record = {
+        "id": payload["id"],
+        "sourceId": source_id or payload["id"],
+        "content": payload["content"],
+        "label": payload["label"],
+        "timestamp": payload["timestamp"],
+        "author": payload["identity"],
+        "metadata": payload["metadata"],
+    }
+    if payload.get("audience"):
+        record["audience"] = payload["audience"]
+    append_jsonl(mirror, record)
 
 
 def append_write_log(log, memory_id, mem_type, author, backend, latency_ms,
-                     completed_ms):
-    append_jsonl(
-        log,
-        {
-            "type": "write",
-            "ts": utc_now(),
-            "agent": author,
-            "backend": backend,
-            "id": memory_id,
-            "mem_type": mem_type,
-            "latency_ms": latency_ms,
-            "completed_ms": completed_ms,
-        },
-    )
+                     completed_ms, audience=None):
+    record = {
+        "type": "write",
+        "ts": utc_now(),
+        "agent": author,
+        "backend": backend,
+        "id": memory_id,
+        "mem_type": mem_type,
+        "latency_ms": latency_ms,
+        "completed_ms": completed_ms,
+    }
+    if audience:
+        record["audience"] = audience
+    append_jsonl(log, record)
 
 
 def regime_for(description):
@@ -354,6 +385,7 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
     )
     ingestion_id = None
     completed_ms = None
+    audience = None
     if backend == "none":
         source_id = None
         latency_ms = 0
@@ -367,6 +399,10 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+        audience_scope = ensure_arm_audience(arm, api_key)
+        if audience_scope:
+            audience = audience_scope[0]
+            payload["audience"] = audience
         started_at = time.monotonic()
         response = api_request("POST", "/ingest", payload, api_key=api_key)
         latency_ms = int((time.monotonic() - started_at) * 1000)
@@ -378,7 +414,14 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
         append_mirror(mirror_path, payload, source_id)
 
     append_write_log(
-        log_path, memory_id, mem_type, author, backend, latency_ms, completed_ms
+        log_path,
+        memory_id,
+        mem_type,
+        author,
+        backend,
+        latency_ms,
+        completed_ms,
+        audience,
     )
     return {
         "sourceId": source_id,
@@ -470,6 +513,11 @@ def sync(args):
     api_key = api_key_for_arm(args.arm)
     if not api_key:
         raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+    audience_scope = ensure_arm_audience(args.arm, api_key)
+    audience = audience_scope[0] if audience_scope else None
+    if audience:
+        for item in typed_items:
+            item["audience"] = audience
     serialized_items = json.dumps(typed_items, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(serialized_items.encode("utf-8")).hexdigest()[:16]
     idempotency_key = f"sync:{args.arm}:{digest}"
@@ -511,6 +559,7 @@ def sync(args):
             backend,
             latency_ms,
             completed_ms,
+            audience,
         )
     print(f"synced {len(items)} runs for {args.arm} (ingestion {ingestion_id})")
     return 0
@@ -709,6 +758,8 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     started_at = time.monotonic()
     pending = 0
     raw_response = None
+    audience = None
+    recall_identity = agent
     if backend == "none":
         results = []
         used_tokens = 0
@@ -720,10 +771,13 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+        audience_scope = ensure_arm_audience(arm, api_key)
+        if audience_scope:
+            audience, recall_identity = audience_scope
         response = api_request(
             "POST",
             "/recall",
-            {"query": query, "identity": agent, "limit": limit},
+            {"query": query, "identity": recall_identity, "limit": limit},
             api_key=api_key,
         )
         raw_response = response
@@ -748,22 +802,22 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
                 source_ids.append(source_id)
             if author and author not in authors:
                 authors.append(author)
-    append_recall_log(
-        log_path,
-        {
-            "type": "recall",
-            "ts": utc_now(),
-            "agent": agent,
-            "backend": backend,
-            "query": query,
-            "latency_ms": latency_ms,
-            "used_evidence_tokens": used_tokens,
-            "n_results": len(results),
-            "source_ids": source_ids,
-            "authors": authors,
-            "pending": pending,
-        },
-    )
+    log_record = {
+        "type": "recall",
+        "ts": utc_now(),
+        "agent": agent,
+        "backend": backend,
+        "query": query,
+        "latency_ms": latency_ms,
+        "used_evidence_tokens": used_tokens,
+        "n_results": len(results),
+        "source_ids": source_ids,
+        "authors": authors,
+        "pending": pending,
+    }
+    if audience:
+        log_record["audience"] = audience
+    append_recall_log(log_path, log_record)
     recall_result = {
         "results": results,
         "latency_ms": latency_ms,

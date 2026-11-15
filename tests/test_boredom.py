@@ -155,11 +155,16 @@ class DescriptorTests(unittest.TestCase):
 
 
 class CliIntegrationTests(unittest.TestCase):
-    def run_cli(self, repo, results, log, command, *extra, env=None):
+    def run_cli(
+        self, repo, results, log, command, *extra, env=None, prior_art_off=True
+    ):
         environment = os.environ.copy()
         environment.pop("BOREDOM", None)
         environment.pop("GROUNDING", None)
+        environment.pop("EXA", None)
         environment.pop("PRIOR_ART", None)
+        if prior_art_off:
+            environment["PRIOR_ART"] = "off"
         if env:
             environment.update(env)
         return subprocess.run(
@@ -259,7 +264,7 @@ class CliIntegrationTests(unittest.TestCase):
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
             self.assertEqual(record["n_rows"], 5)
-            self.assertEqual(record["profile_version"], 2)
+            self.assertEqual(record["profile_version"], 3)
             self.assertEqual(record["descriptor"]["mechanism"], "optimizer")
             self.assertEqual(len(record["ledger_sha256"]), 64)
             self.assertEqual(len(record["profile_sha256"]), 64)
@@ -289,7 +294,7 @@ class CliIntegrationTests(unittest.TestCase):
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
             self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "optimizer")
-            self.assertEqual(logged_gates[0]["profile_version"], 2)
+            self.assertEqual(logged_gates[0]["profile_version"], 3)
             self.assertEqual(len(logged_gates[0]["ledger_sha256"]), 64)
             self.assertEqual(len(logged_gates[0]["profile_sha256"]), 64)
 
@@ -594,6 +599,49 @@ class CliIntegrationTests(unittest.TestCase):
             unknown_query_result = gate(unknown_query, prior_art=True)
             self.assertEqual(unknown_query_result.returncode, 1, unknown_query_result.stdout)
             self.assertIn("no-prior-art: unknown id Q9", unknown_query_result.stdout)
+
+            default_result = self.run_cli(
+                repo,
+                results,
+                gate_log,
+                "gate",
+                "--commit",
+                missing,
+                "--research-log",
+                str(research_log),
+                "--min-lines",
+                "0",
+                "--delta-min",
+                "0",
+                "--failed-delta",
+                "0",
+                env={"BOREDOM": "off"},
+                prior_art_off=False,
+            )
+            self.assertEqual(default_result.returncode, 1, default_result.stdout)
+            self.assertIn(
+                "no-prior-art: missing Prior-art trailer", default_result.stdout
+            )
+            for override in ("EXA", "GROUNDING", "PRIOR_ART"):
+                disabled_by = self.run_cli(
+                    repo,
+                    results,
+                    gate_log,
+                    "gate",
+                    "--commit",
+                    missing,
+                    "--research-log",
+                    str(research_log),
+                    "--min-lines",
+                    "0",
+                    "--delta-min",
+                    "0",
+                    "--failed-delta",
+                    "0",
+                    env={"BOREDOM": "off", override: "off"},
+                    prior_art_off=False,
+                )
+                self.assertEqual(disabled_by.returncode, 0, disabled_by.stdout)
 
             legacy_result = gate(missing)
             self.assertEqual(legacy_result.returncode, 0, legacy_result.stdout)

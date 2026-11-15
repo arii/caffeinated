@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import llm
 import swarm
+import swarm_queue
 from boredom import descriptor_meter as meter
 
 
@@ -165,6 +166,91 @@ class LLMClientTests(unittest.TestCase):
         edited_lines = {proposal["edits"][0]["old"] for proposal in proposals}
         self.assertEqual(len(edited_lines), len(swarm.AGENTS))
 
+    def test_queue_client_waits_for_answer_and_logs_queue_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            queue_dir = Path(directory) / "llm_queue"
+            errors = []
+            stop = threading.Event()
+            invalid_sent = set()
+
+            def answer_queued_call():
+                while not stop.is_set():
+                    for prompt_file in queue_dir.glob("*.prompt.json"):
+                        try:
+                            document = json.loads(
+                                prompt_file.read_text(encoding="utf-8")
+                            )
+                            call_id = document["call_id"]
+                            response_path = swarm_queue.response_path(
+                                queue_dir, call_id
+                            )
+                            error_path = queue_dir / f"{call_id}.error.txt"
+                            if call_id not in invalid_sent:
+                                response_path.write_text("{ invalid", encoding="utf-8")
+                                invalid_sent.add(call_id)
+                                continue
+                            if not error_path.exists():
+                                continue
+                            swarm_queue.answer(
+                                queue_dir,
+                                call_id,
+                                {
+                                    "paper_query": "query",
+                                    "code_query": "code",
+                                    "bottleneck": "loss",
+                                },
+                            )
+                        except Exception as error:
+                            errors.append(error)
+                    stop.wait(0.01)
+
+            thread = threading.Thread(target=answer_queued_call)
+            thread.start()
+            log_path = Path(directory) / "llm_log.jsonl"
+            client = llm.LLMClient(
+                mode="queue",
+                arm="B",
+                queue_dir=queue_dir,
+                queue_timeout=5,
+                log_path=log_path,
+            )
+            try:
+                response = client.call(
+                    "SCOUT_QUERY",
+                    agent="scout-1",
+                    round_num=2,
+                    values={
+                        **self.common_values(),
+                        "recalled": "none",
+                        "suggested_cells": "optimizer/matrix_lr",
+                    },
+                )
+            finally:
+                stop.set()
+                thread.join(timeout=2)
+
+            self.assertFalse(errors, errors)
+            self.assertEqual(response["paper_query"], "query")
+            prompt_file = next(queue_dir.glob("*.prompt.json"))
+            document = json.loads(prompt_file.read_text(encoding="utf-8"))
+            self.assertEqual(
+                document["call_id"],
+                prompt_file.name.removesuffix(".prompt.json"),
+            )
+            self.assertEqual(document["role"], "SCOUT_QUERY")
+            self.assertEqual(document["agent"], "scout-1")
+            self.assertEqual(document["round"], 2)
+            self.assertEqual(document["arm"], "B")
+            self.assertIn("Under-visited mechanism cells", document["prompt"])
+            self.assertEqual(swarm_queue.show_prompt(queue_dir, document["call_id"]),
+                             document["prompt"])
+            self.assertEqual(swarm_queue.list_pending(queue_dir), [])
+            self.assertFalse(
+                (queue_dir / f"{document['call_id']}.error.txt").exists()
+            )
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["model"], "devin-queue")
+
 
 class CriticAcceptanceTests(unittest.TestCase):
     def test_two_seed_mean_uses_one_sigma_acceptance_margin(self):
@@ -295,7 +381,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
             }
             self.assertTrue({"assignment", "claim", "result"} <= memory_types)
 
-    def test_arm_a_is_four_exploit_slots_and_forced_snap_is_divergent(self):
+    def test_scout_allocation_in_exploit_snap_and_arm_a(self):
         profile = meter.load_profile(PROFILE_PATH)
         profile["thresholds"]["snap"] = 0.0
         profile["_hash"] = meter.sha(
@@ -320,9 +406,147 @@ class SwarmOrchestratorTests(unittest.TestCase):
             all(snap["roles"][agent] == "divergent" for agent in snap["scouts"])
         )
 
-        static = swarm.allocate_roles(profile, events, arm="A")
-        self.assertEqual(set(static["roles"].values()), {"exploit"})
-        self.assertEqual(static["scouts"], [])
+        static_allocations = [
+            swarm.allocate_roles(profile, events, arm="A", exa_enabled=True),
+            swarm.allocate_roles(profile, [], arm="A", exa_enabled=True),
+        ]
+        for static in static_allocations:
+            self.assertEqual(
+                list(static["roles"].values()).count("exploit"), 3
+            )
+            self.assertEqual(
+                list(static["roles"].values()).count("divergent"), 1
+            )
+            self.assertEqual(len(static["scouts"]), 1)
+
+        exploit_profile = meter.load_profile(PROFILE_PATH)
+        exploit = swarm.allocate_roles(
+            exploit_profile, [], arm="B", exa_enabled=True
+        )
+        self.assertEqual(exploit["regime"], "EXPLOIT")
+        self.assertEqual(len(exploit["scouts"]), 1)
+        self.assertEqual(
+            exploit["roles"][exploit["scouts"][0]], "divergent"
+        )
+        no_exa = swarm.allocate_roles(
+            exploit_profile, [], arm="B", exa_enabled=False
+        )
+        self.assertEqual(no_exa["scouts"], [])
+
+    def test_arm_memory_backend_defaults(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with swarm.arm_environment("A", True):
+                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
+            with swarm.arm_environment("B", True):
+                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
+            with swarm.arm_environment("C", False):
+                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
+            with swarm.arm_environment("D", True):
+                self.assertEqual(os.environ["MEMORY_BACKEND"], "local")
+
+    def test_converged_round_keeps_confirmation_roles_and_scouts(self):
+        profile = meter.load_profile(PROFILE_PATH)
+
+        def converged_status(_profile, _events, agent=None):
+            return {
+                "B": 0.8 if agent == "worker-2" else 0.1,
+                "regime": "CONVERGED",
+                "ledger_sha256": "a" * 64,
+                "profile_sha256": "b" * 64,
+            }
+
+        with patch.object(swarm.meter, "status", side_effect=converged_status):
+            allocation = swarm.allocate_roles(
+                profile, [], arm="B", exa_enabled=True
+            )
+        self.assertEqual(set(allocation["roles"].values()), {"exploit"})
+        self.assertEqual(allocation["scouts"], ["worker-2"])
+
+    def test_one_round_queue_swarm_runs_without_openai_key(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = self.create_repo(directory)
+            out_dir = Path(directory) / "queue-out"
+            queue_dir = out_dir / "llm_queue"
+            train_py = (repo / "train.py").read_text(encoding="utf-8")
+            env = os.environ.copy()
+            for name in list(env):
+                if name.startswith(("PAST_API_KEY", "OPENAI_API_KEY")):
+                    env.pop(name)
+            env.pop("OPENAI_MODEL", None)
+            env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    str(SWARM_SCRIPT),
+                    "--arm",
+                    "B",
+                    "--rounds",
+                    "1",
+                    "--llm",
+                    "queue",
+                    "--gpu",
+                    "fake",
+                    "--queue-timeout",
+                    "10",
+                    "--out",
+                    str(out_dir),
+                    "--repo",
+                    str(repo),
+                ],
+                cwd=REPO_ROOT,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            stop = threading.Event()
+            errors = []
+
+            def answer_round_calls():
+                while not stop.is_set():
+                    for prompt_file in queue_dir.glob("*.prompt.json"):
+                        try:
+                            document = json.loads(
+                                prompt_file.read_text(encoding="utf-8")
+                            )
+                            response_file = swarm_queue.response_path(
+                                queue_dir, document["call_id"]
+                            )
+                            if response_file.exists():
+                                continue
+                            role = document["role"]
+                            if role.startswith("WORKER_"):
+                                response = llm.fake_response(
+                                    role,
+                                    {
+                                        "agent": document["agent"],
+                                        "train_py": train_py,
+                                    },
+                                )
+                            else:
+                                response = llm.fake_response(role, {})
+                            swarm_queue.answer(
+                                queue_dir, document["call_id"], response
+                            )
+                        except Exception as error:
+                            errors.append(error)
+                    stop.wait(0.01)
+
+            answer_thread = threading.Thread(target=answer_round_calls)
+            answer_thread.start()
+            try:
+                stdout, stderr = process.communicate(timeout=120)
+            finally:
+                stop.set()
+                answer_thread.join(timeout=5)
+
+            self.assertFalse(errors, errors)
+            self.assertEqual(process.returncode, 0, stderr + stdout)
+            calls = self.jsonl(out_dir / "llm_log.jsonl")
+            self.assertTrue(calls)
+            self.assertTrue(all(call["model"] == "devin-queue" for call in calls))
+            self.assertTrue(list(queue_dir.glob("*.prompt.json")))
+            self.assertTrue(list(queue_dir.glob("*.response.json")))
 
     def test_gate_rejection_gets_one_repair_and_is_recorded_as_reject(self):
         with tempfile.TemporaryDirectory() as directory:
