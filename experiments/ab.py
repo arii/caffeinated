@@ -6,6 +6,7 @@ from collections import Counter
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 import csv
 import hashlib
+import itertools
 import json
 import math
 import os
@@ -89,9 +90,7 @@ def summarize(run_dir, settings):
     if len(baseline) != 1:
         raise ValueError(f"expected one scored baseline: {run_dir}")
     candidates = [e for e in ledger if e.get("kind") == "candidate"]
-    if Counter(e.get("round") for e in candidates) != {
-        r: settings["workers"] for r in range(1, completed + 1)
-    }:
+    if Counter(e.get("round") for e in candidates) != dict.fromkeys(range(1, completed + 1), settings["workers"]):
         raise ValueError(f"candidate budget mismatch: {run_dir}")
     if any(e.get("status") not in ("keep", "discard", "crash", "reject", "duplicate") for e in candidates):
         raise ValueError(f"unknown candidate status: {run_dir}")
@@ -136,7 +135,7 @@ def summarize(run_dir, settings):
         "best_loss": best,
         "best_observed_loss": min([curve[0]] + [e["score"] for e in evaluated if finite(e.get("score"))]),
         "loss_by_round": json.dumps(curve), "rounds_to_best": curve.index(best),
-        "auc": sum((a + b) / 2 for a, b in zip(curve, curve[1:])),
+        "auc": sum((a + b) / 2 for a, b in itertools.pairwise(curve)),
         "keeps": sum(e.get("status") == "keep" for e in candidates),
         "evaluated": len(evaluated), "rejected": sum(e.get("status") == "reject" for e in candidates),
         "duplicates": sum(e.get("status") == "duplicate" for e in candidates),

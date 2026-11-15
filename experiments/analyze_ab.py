@@ -4,6 +4,7 @@
 import argparse
 from collections import Counter, defaultdict
 import csv
+import itertools
 import json
 import math
 from pathlib import Path
@@ -110,9 +111,9 @@ def analyze(rows, *, samples=10000, seed=2026):
         rounds = int(row["rounds"])
         if rounds < 1 or len(curve) != rounds + 1 or any(not isinstance(v, (int, float)) or not math.isfinite(v) for v in curve):
             raise ValueError("incomplete/nonfinite best-so-far curve")
-        if any(b > a for a, b in zip(curve, curve[1:])):
+        if any(b > a for a, b in itertools.pairwise(curve)):
             raise ValueError("best-so-far curve must not increase")
-        auc = sum((a + b) / 2 for a, b in zip(curve, curve[1:]))
+        auc = sum((a + b) / 2 for a, b in itertools.pairwise(curve))
         if not math.isclose(float(row["best_loss"]), curve[-1], abs_tol=1e-12) or not math.isclose(float(row["auc"]), auc, abs_tol=1e-12):
             raise ValueError("summary does not match the best-so-far curve")
         pairs[key][row["arm"]] = row

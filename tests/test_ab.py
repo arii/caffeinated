@@ -26,7 +26,7 @@ class StatisticsTests(unittest.TestCase):
                 "workers": "4", "exa": "off", "exa_max_calls": "200", "memory_backend": "local",
                 "eps": "0.005", "profile_sha256": "profile", "task_inputs_sha256": "inputs", "best_loss": str(curve[-1]),
                 "loss_by_round": json.dumps(curve),
-                "auc": str(sum((a + b) / 2 for a, b in zip(curve, curve[1:]))),
+                "auc": str(sum((a + b) / 2 for a, b in itertools.pairwise(curve))),
             })
         return rows
 
@@ -220,7 +220,7 @@ class CollectionTests(unittest.TestCase):
                 if any(r["status"] == "failed" for r in manifest["runs"]):
                     failed_written.set()
 
-            def run_arm(run, *unused):
+            def run_arm(run, *_args):
                 started.append((run["seed"], run["arm"]))
                 barrier.wait(timeout=5)
                 if run["arm"] == "A":
@@ -229,9 +229,8 @@ class CollectionTests(unittest.TestCase):
                     raise AssertionError("failure was not checkpointed while the other arm ran")
                 return {"task": run["task"], "seed": run["seed"], "arm": run["arm"]}
 
-            with patch.object(ab, "git", side_effect=lambda repo, *parts: "abc" if parts[0] == "rev-parse" else ""), patch.object(ab, "run_arm", side_effect=run_arm), patch.object(ab, "write_manifest", side_effect=write_manifest):
-                with self.assertRaisesRegex(RuntimeError, "planned failure"):
-                    ab.run_experiment(args)
+            with patch.object(ab, "git", side_effect=lambda repo, *parts: "abc" if parts[0] == "rev-parse" else ""), patch.object(ab, "run_arm", side_effect=run_arm), patch.object(ab, "write_manifest", side_effect=write_manifest), self.assertRaisesRegex(RuntimeError, "planned failure"):
+                ab.run_experiment(args)
             self.assertEqual(set(started), {(11, "A"), (11, "B")})
             manifest = json.loads((out / "manifest.json").read_text())
             self.assertEqual(manifest["status"], "failed")

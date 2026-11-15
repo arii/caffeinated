@@ -2322,7 +2322,7 @@ def _orchestrate(args, publish_state):
                 )
 
             events = write_results(ledger_path, results_path)
-            _status_after, status_record = append_status(
+            _status_after, _status_record = append_status(
                 out_dir, profile, events, args.arm
             )
             copy_target = copy_artifacts_to_arm_branch(

@@ -57,7 +57,7 @@ ignore = [
 "testcases/**/*.py" = ["E402"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["boredom", "export_viewer", "llm", "memory", "meter", "research", "swarm", "testcases", "test_testcases", "viewer"]
+known-first-party = ["boredom", "experiments", "export_viewer", "llm", "memory", "meter", "research", "swarm", "testcases", "test_testcases", "viewer"]
 
 [tool.vulture]
 paths = [".", "vulture_whitelist.py"]
@@ -69,8 +69,10 @@ ignore_decorators = ["@app.get", "@app.exception_handler", "@app.middleware"]
 known_first_party = ["meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
 # testcases/ candidate and evaluator code runs inside the Docker sandbox image, whose deps live in testcases/Dockerfile.
 exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees"]
-pep621_dev_dependency_groups = ["dev"]
+optional_dependencies_dev_groups = ["dev"]
 
 [tool.deptry.per_rule_ignores]
-DEP001 = ["pandas"]  # swarm.preview_file imports it lazily and degrades when it is missing
-DEP002 = ["httpx"]   # required at test time by fastapi.testclient.TestClient
+DEP002 = [
+    "httpx",     # required at test time by fastapi.testclient.TestClient
+    "openpyxl",  # pandas.read_excel engine used by swarm.preview_file
+]
