@@ -166,6 +166,32 @@ class LLMClientTests(unittest.TestCase):
         self.assertEqual(len(edited_lines), len(swarm.AGENTS))
 
 
+class CriticAcceptanceTests(unittest.TestCase):
+    def test_two_seed_mean_uses_one_sigma_acceptance_margin(self):
+        profile = meter.load_profile(PROFILE_PATH)
+        best = 0.995814
+
+        self.assertEqual(profile["version"], 3)
+        self.assertEqual(profile["accept_margin"], 0.0018)
+        self.assertTrue(swarm.candidate_is_provisional(profile, 0.993814, best))
+        self.assertTrue(
+            swarm.critic_accepts(profile, 0.993814, 0.993814, best, "ok")
+        )
+        self.assertFalse(
+            swarm.critic_accepts(profile, 0.994814, 0.994814, best, "ok")
+        )
+        self.assertFalse(
+            swarm.candidate_is_provisional(profile, 0.994814, best)
+        )
+
+    def test_critic_margin_falls_back_to_meter_eps(self):
+        profile = meter.load_profile(PROFILE_PATH)
+        profile.pop("accept_margin")
+        self.assertFalse(
+            swarm.critic_accepts(profile, 0.993814, 0.993814, 0.995814, "ok")
+        )
+
+
 class SwarmOrchestratorTests(unittest.TestCase):
     def create_repo(self, parent):
         repo = Path(parent) / "repo"

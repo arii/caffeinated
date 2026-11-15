@@ -1048,6 +1048,23 @@ def fake_gpu_result(commit):
     }
 
 
+def acceptance_margin(profile):
+    return float(profile.get("accept_margin", profile["eps"]))
+
+
+def candidate_is_provisional(profile, score, best_val):
+    return score < best_val - acceptance_margin(profile)
+
+
+def critic_accepts(profile, first_score, second_score, previous_best, status):
+    return (
+        status == "ok"
+        and second_score is not None
+        and (first_score + float(second_score)) / 2
+        < previous_best - acceptance_margin(profile)
+    )
+
+
 def modal_gpu_burst(repo, commits, seed, out_dir):
     modal_bin = Path.home() / ".venvs" / "modal" / "bin"
     env = os.environ.copy()
@@ -1524,7 +1541,9 @@ def orchestrate(args):
                 if (
                     candidate["gpu_status"] == "ok"
                     and candidate["score"] is not None
-                    and candidate["score"] < best_val - profile["eps"]
+                    and candidate_is_provisional(
+                        profile, candidate["score"], best_val
+                    )
                 ):
                     provisional.append(candidate)
             provisional_best = (
@@ -1550,11 +1569,12 @@ def orchestrate(args):
                 provisional_best["critic_memory_gb"] = critic_result.get("memory_gb")
                 first_score = float(provisional_best["score"])
                 second_score = critic_result.get("val_bpb")
-                accepted = (
-                    critic_result.get("status") == "ok"
-                    and second_score is not None
-                    and (first_score + float(second_score)) / 2
-                    < previous_best_val - profile["eps"]
+                accepted = critic_accepts(
+                    profile,
+                    first_score,
+                    second_score,
+                    previous_best_val,
+                    critic_result.get("status"),
                 )
                 critic_record = {
                     "round": round_num,
