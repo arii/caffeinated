@@ -1,0 +1,1821 @@
+{
+  "created_at": "2026-11-15T19:32:14.681485+00:00",
+  "criteria": [
+    {
+      "key": "humor",
+      "label": "Humor & Absurdity",
+      "weight": 2
+    },
+    {
+      "key": "plausibility",
+      "label": "Scientific Plausibility",
+      "weight": 2
+    },
+    {
+      "key": "originality",
+      "label": "Originality",
+      "weight": 1.5
+    },
+    {
+      "key": "insight",
+      "label": "Unexpected Insight",
+      "weight": 2
+    },
+    {
+      "key": "appeal",
+      "label": "Public Appeal",
+      "weight": 1
+    },
+    {
+      "key": "alignment",
+      "label": "Ig Nobel Alignment",
+      "weight": 1.5
+    }
+  ],
+  "ideas": [
+    {
+      "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+      "classification": "Moderate Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: rho 0.065 (predicted 0.15), p 0.18, n 428: not significant",
+      "hypothesis": "Respondents who order their steak rare are more likely to also smoke cigarettes.",
+      "model_total": 58.5,
+      "prior_work": [
+        {
+          "title": "The role of risk preferences and risk perceptions in risky food behaviors: Evidence from the United States",
+          "url": "https://doi.org/10.1002/jaa2.70025"
+        },
+        {
+          "title": "Survey of cooking practices and methods for beef steaks and roasts",
+          "url": "https://doi.org/10.4148/2378-5977.1602"
+        },
+        {
+          "title": "Are You What You Eat? Healthy Behaviour and Risk Preferences",
+          "url": "https://doi.org/10.1515/bejeap-2016-0081"
+        },
+        {
+          "title": "The potential relationship between spicy taste and risk seeking | Judgment and Decision Making | Cambridge Core",
+          "url": "https://www.cambridge.org/core/journals/judgment-and-decision-making/article/potential-relationship-between-spicy-taste-and-risk-seeking/D852F0B9D6C3A61E941E1B9F8DAE88E4"
+        },
+        {
+          "title": "Risk preference shares the psychometric structure of major psychological traits | Science Advances",
+          "url": "https://www.science.org/doi/10.1126/sciadv.1701381"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/research-status caveat: this should be treated as an interesting proposal or exploratory analysis, not an established finding.",
+        "The supplied result reports rho 0.065 and p 0.18, so it does not demonstrate the claimed rare-steak/smoking association.",
+        "Originality safeguard: prior-work overlap appears likely with research on risk preferences, risky food behaviors, smoking, and taste-linked risk seeking; originality is mainly in the specific steak-doneness framing.",
+        "Scientific improvement needed: use larger preregistered samples, validated risk-preference instruments, demographic and dietary controls, and multiple food-risk indicators.",
+        "Historical benchmarking was not independently verified."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 6,
+          "initial": 7,
+          "reason": "It fits the Ig Nobel spirit by making people laugh first and then consider risk psychology, but the current evidence is too thin and derivative for top-tier alignment. It would need a more rigorous and surprising demonstrated result.",
+          "revised": 6
+        },
+        "appeal": {
+          "final": 8,
+          "initial": 8,
+          "reason": "The concept is easy to explain and headline-friendly: rare steak as a tiny window into risky living. Public appeal remains strong despite the weak evidence because the premise is vivid and relatable.",
+          "revised": 8
+        },
+        "humor": {
+          "final": 7,
+          "initial": 7,
+          "reason": "The idea that rare-steak preference might signal a smoker-like appetite for risk is funny and instantly graspable. The humor survives review, though it is more wry than spectacularly absurd.",
+          "revised": 7
+        },
+        "insight": {
+          "final": 5,
+          "initial": 6,
+          "reason": "It could make people think about whether risk-taking carries across everyday domains, but the proposed link may be confounded by demographics, culture, masculinity signaling, diet, or class. The insight is real but modest unless the mechanism is tested directly.",
+          "revised": 5
+        },
+        "originality": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The rare-steak-versus-smoking pairing is distinctive, but the broader idea overlaps with existing work on risk preferences, food-risk behavior, spicy taste, smoking, and health-risk clustering. Novelty would improve if it tested multiple food-doneness behaviors against validated risk measures rather than one cute association.",
+          "revised": 5
+        },
+        "plausibility": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The question is testable and has a plausible behavioral-economics mechanism, but the supplied dataset is observational, self-reported, underpowered for small effects, and apparently non-significant. A stronger study would need preregistration, covariate control, larger samples, and clearer separation of perceived versus actual food risk.",
+          "revised": 5
+        }
+      },
+      "study_id": "study:1",
+      "title": "Do people who like their steak rare take more everyday risks?",
+      "total": 58.5,
+      "verdict": "A charming and communicable Ig Nobel-style behavioral question, but its current scientific weakness and overlap with prior risk-preference research keep it at moderate potential."
+    },
+    {
+      "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "classification": "Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across labelled sources in the SPASS street scene, the x-coordinate is positively correlated with the y-coordinate.",
+      "model_total": 43,
+      "prior_work": [
+        {
+          "title": "Urban Background Noise Mapping: The Multiple-Reflection Correction Term",
+          "url": "https://doi.org/10.3813/aaa.918709"
+        },
+        {
+          "title": "Directivity patterns for road traffic auralization",
+          "url": "https://doi.org/10.1121/10.0035317"
+        },
+        {
+          "title": "Experimental study of sound propagation in a street",
+          "url": "https://doi.org/10.1121/1.4786374"
+        },
+        {
+          "title": "Modelling the propagation pathway of street-traffic noise: practical comparison of German guidelines and real-world measurements",
+          "url": "https://doi.org/10.1016/s0003-682x(98)00048-6"
+        },
+        {
+          "title": "Direction of arrival estimation of partial sound sources of vehicles with a two-microphone array",
+          "url": "https://doi.org/10.1051/aacus/2021011"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/reported-status caveat: the supplied rho, p-value, replication language, registration claims, citations, and committee judgments are treated as unverified study text, not established findings.",
+        "Originality safeguard: possible overlap exists with spatial statistics, coordinate transformations, source-localization datasets, and urban noise-mapping research; no claim of novelty is warranted without literature verification.",
+        "Scientific weakness: the main effect may be a coordinate-system artifact or street-corridor geometry rather than an acoustics discovery; improvement would require testing invariance under coordinate rotation, independence of observations, and practical effect size.",
+        "Historical benchmarking was not independently verified, per the user's instruction."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 5,
+          "initial": 5,
+          "reason": "It somewhat fits the Ig Nobel spirit by making a silly-sounding coordinate claim point toward real issues in statistics and spatial data interpretation. It falls short because the scientific payoff is modest and the absurdity may feel intentionally contrived.",
+          "revised": 5
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The headline is easy to understand—higher x goes with higher y—but it is too technical and anticlimactic for broad public fascination. Journalists might enjoy the p-value absurdity, but the story is narrow.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The joke is the grand statistical framing of a near-trivial coordinate relationship, but the premise is more dry than laugh-out-loud absurd. Revised downward because the humor depends heavily on knowing statistics and coordinate geometry.",
+          "revised": 4
+        },
+        "insight": {
+          "final": 4,
+          "initial": 5,
+          "reason": "It could illustrate how huge samples make tiny effects statistically significant and how coordinate systems can manufacture-looking discoveries. The deeper acoustics insight is limited unless connected to source distribution, modeling bias, or spatial-audio methodology.",
+          "revised": 4
+        },
+        "originality": {
+          "final": 3,
+          "initial": 4,
+          "reason": "Correlations among spatial coordinates in constrained environments overlap with ordinary spatial statistics, urban geometry, and noise-mapping work. Without verification, it should not be treated as unprecedented; it would need a sharper methodological twist to become distinctive.",
+          "revised": 3
+        },
+        "plausibility": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The question is testable with coordinate data, but the result would mostly reflect coordinate-system choice, street layout, sampling structure, and possible pseudo-replication rather than a deep acoustics phenomenon. A stronger design would predefine spatial units, independence assumptions, and compare alternative coordinate rotations or street geometries.",
+          "revised": 5
+        }
+      },
+      "study_id": "study:2",
+      "title": "Do street sound sources farther along one horizontal axis also tend to be farther along the other?",
+      "total": 42.0,
+      "verdict": "A mildly amusing statistics-and-coordinates gag with real methodological lessons, but too geometrically trivial and scientifically thin to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "classification": "Very Low Potential",
+      "committee": "score 0.1",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across all observations in the sleepstudy data, average reaction time is positively correlated with the number of days of sleep restriction.",
+      "model_total": 32,
+      "prior_work": [
+        {
+          "title": "Sleep restriction may lead to disruption in physiological attention and reaction time",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5241616/"
+        },
+        {
+          "title": "Sleepiness and Performance in Response to Repeated Sleep Restriction and Subsequent Recovery during Semi‐Laboratory Conditions",
+          "url": "https://doi.org/10.1080/07420520802107031"
+        },
+        {
+          "title": "Neurocognitive Consequences of Sleep Deprivation",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3564638/"
+        },
+        {
+          "title": "Sleep deprivation, vigilant attention, and brain function: a review",
+          "url": "https://doi.org/10.1038/s41386-019-0432-6"
+        },
+        {
+          "title": "The Cumulative Cost of Additional Wakefulness: Dose-Response Effects on Neurobehavioral Functions and Sleep Physiology From Chronic Sleep Restriction and Total Sleep Deprivation",
+          "url": "https://doi.org/10.1093/sleep/26.2.117"
+        }
+      ],
+      "safeguards": [
+        "Research-status caveat: the supplied analysis should be treated as a secondary analysis or replication claim from a public dataset, not as an independently established new discovery.",
+        "Originality safeguard: there is substantial overlap with prior sleep restriction, vigilant attention, and canonical lme4 sleepstudy analyses; a more distinctive question would be needed.",
+        "Scientific caveat: a credible version should use repeated-measures or mixed-effects modeling rather than relying only on a pooled correlation.",
+        "Unexpected insight safeguard noted: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even with a higher total.",
+        "Historical benchmarking was not independently verified here, consistent with the user's caveat."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The proposal is scientifically sensible but does not strongly make people laugh first and then think. It reads more like a routine confirmation of sleep-science knowledge than an Ig Nobel-style candidate.",
+          "revised": 2
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The topic is easy to understand and relevant to everyday life, but it lacks the surprising or bizarre hook that tends to attract broad Ig Nobel-style attention. Public interest would likely be modest.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 1,
+          "initial": 2,
+          "reason": "The phrase about reaction times 'crawling upward' has slight comic phrasing, but the underlying idea is a straightforward sleep-deprivation finding with little inherent absurdity. The score was lowered because any humor comes from wording, not from the research premise.",
+          "revised": 1
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It reinforces the meaningful point that sleep loss impairs performance, but this is already well known and unlikely to make people rethink the phenomenon. The main insight is practical rather than unexpected.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea strongly overlaps established sleep-deprivation and reaction-time research, including widely used analyses of the lme4 sleepstudy dataset. Without a new angle, it appears mainly confirmatory rather than distinctive.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 7,
+          "initial": 8,
+          "reason": "The question is scientifically testable and fits a plausible mechanism linking sleep restriction to slower vigilant attention. The score was reduced because a simple correlation across repeated observations is methodologically weaker than a mixed-effects analysis accounting for subjects.",
+          "revised": 7
+        }
+      },
+      "study_id": "study:3",
+      "title": "Do people's reaction times crawl upward as days of sleep restriction accumulate?",
+      "total": 32.0,
+      "verdict": "Chief judge verdict: scientifically plausible but far too familiar and insufficiently funny to be a strong Ig Nobel candidate."
+    },
+    {
+      "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: citations: https://www.fueleconomy.gov/feg/atv.shtml is neither a registered DOI nor found by this run's research or in sources.json; https://www.fueleconomy.gov/feg/why.shtml is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 0",
+      "hypothesis": "Across cars in the mtcars dataset, greater vehicle weight is associated with lower fuel economy in miles per gallon.",
+      "model_total": 38.5,
+      "prior_work": [
+        {
+          "title": "The effect of automobile weight on gasoline costs",
+          "url": "https://doi.org/10.1002/er.4440110417"
+        },
+        {
+          "title": "The Trade-off between Automobile Acceleration Performance, Weight, and Fuel Consumption",
+          "url": "https://doi.org/10.4271/2008-01-1524"
+        },
+        {
+          "title": "How hybrid-electric vehicles are different from conventional vehicles: the effect of weight and power on fuel consumption",
+          "url": "https://doi.org/10.1088/1748-9326/2/1/014003"
+        },
+        {
+          "title": "Statistical Analysis Engine Capacity, Weight, and Torque on MPV Fuel Consumption Using Regression and Correlation Algorithms",
+          "url": "https://doi.org/10.22441/ijimeam.v6i3.28137"
+        },
+        {
+          "title": "Determination of Weight Elasticity of Fuel Economy for ICE, Hybrid and Fuel Cell Vehicles",
+          "url": "https://doi.org/10.4271/2007-01-0343"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research-status caveat: the registration and supplied study text are not treated as established findings or verified results.",
+        "Originality safeguard: substantial overlap appears likely with existing vehicle-weight and fuel-economy literature; no claim of novelty is warranted without verification.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even with a higher numerical score.",
+        "Historical benchmarking was not independently verified, per the prompt.",
+        "To improve Ig Nobel potential, the research would need a genuinely surprising twist, such as counterintuitive exceptions, odd human behavior around vehicle weight, or an absurd but rigorous experimental framing."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has a lightly funny title and a real scientific basis, but it does not strongly make people laugh and then think. The proposal is too conventional and predictable to embody the Ig Nobel philosophy well.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The topic is easy for the public to understand and could make a simple headline. Revised downward because it lacks the strangeness or surprise that usually makes Ig Nobel-style stories memorable.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The phrase 'heavier cars are thirstier' has mild comic anthropomorphism, but the underlying premise is ordinary and not especially absurd. Revised downward because the amusement comes mostly from wording, not from the research question itself.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The expected conclusion is unsurprising: heavier vehicles generally use more fuel. Revised downward because, unless reframed around an unexpected exception or behavioral consequence, it offers little beyond confirming common engineering intuition.",
+          "revised": 2
+        },
+        "originality": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The idea appears strongly derivative of well-known fuel-economy research and overlaps with supplied prior-work snippets on vehicle weight, fuel consumption, and tradeoffs. Without a more distinctive angle, it is closer to a classroom replication than a novel contribution.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "Vehicle weight versus fuel economy is scientifically testable and has a plausible physical mechanism involving acceleration energy and rolling resistance. A credible study would need multivariable controls because mtcars is small, old, and confounded by engine size, transmission, era, and vehicle class.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:4",
+      "title": "Are heavier cars thirstier at the pump?",
+      "total": 38.5,
+      "verdict": "Chief judge verdict: scientifically plausible but far too familiar and unsurprising to be a strong Ig Nobel candidate."
+    },
+    {
+      "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "classification": "Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns",
+      "hypothesis": "Across the 32 cars in the mtcars dataset, vehicle weight is negatively correlated with fuel economy.",
+      "model_total": 41.5,
+      "prior_work": [
+        {
+          "title": "Determination of Weight Elasticity of Fuel Economy for ICE, Hybrid and Fuel Cell Vehicles",
+          "url": "https://doi.org/10.4271/2007-01-0343"
+        },
+        {
+          "title": "The Trade-off between Automobile Acceleration Performance, Weight, and Fuel Consumption",
+          "url": "https://doi.org/10.4271/2008-01-1524"
+        },
+        {
+          "title": "Review of technical literature and trends related to automobile mass-reduction technology",
+          "url": "https://escholarship.org/uc/item/85p4x0jn.pdf;origin=repeccitec"
+        },
+        {
+          "title": "Effect of mass on multimodal fuel consumption in moving people and freight in the U.S.",
+          "url": "https://www.sciencedirect.com/science/article/abs/pii/S1361920918300956"
+        },
+        {
+          "title": "Energy Efficiency, Fuel Economy, and Policy Implications",
+          "url": "https://doi.org/10.1177/0361198105194100102"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research safeguard: the supplied registration is an untested/rejected analysis, not an established finding.",
+        "Originality safeguard: prior-work snippets suggest substantial overlap with existing research on vehicle weight, fuel economy, and efficiency trade-offs.",
+        "Scientific caveat: a stronger study would require a larger usable dataset and controls for drivetrain, engine efficiency, vehicle age, aerodynamics, and driving conditions.",
+        "Historical benchmarking was not independently verified, as requested."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has some everyday-science relevance but weakly fits the Ig Nobel spirit because it is more practical than laugh-then-think. Revised downward because absurdity and unexpected insight are both limited.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 6,
+          "initial": 6,
+          "reason": "The public can easily understand the question, and it connects to everyday costs and car choice. Its media appeal is limited by being unsurprising and not especially funny.",
+          "revised": 6
+        },
+        "humor": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The premise is familiar rather than absurd: heavier cars using more fuel is mildly relatable but not inherently comic. No score change because the idea lacks a surprising comic contradiction.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The research could illustrate trade-offs among weight, efficiency, performance, and policy, but the central insight is expected rather than surprising. Revised downward because the hypothesis is more confirmatory than thought-provoking.",
+          "revised": 4
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The question appears heavily overlapping with established vehicle fuel-economy and mass-efficiency literature. Revised downward because the proposal mostly restates a well-known relationship rather than adding a distinctive angle.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "The question is scientifically testable and supported by basic physics involving acceleration energy and rolling resistance. The supplied study is unperformed/rejected, and a credible design would need adequate sample size and controls for engine, age, drivetrain, and vehicle class.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:6",
+      "title": "Do heavier cars get fewer miles per gallon?",
+      "total": 41.5,
+      "verdict": "Scientifically plausible but too familiar and insufficiently funny to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: dataset unavailable: ValueError: needs at least 60 rows and 2 usable columns",
+      "hypothesis": "Across animal species, body mass is positively correlated with brain mass.",
+      "model_total": 37.5,
+      "prior_work": [
+        {
+          "title": "Co-evolutionary dynamics of mammalian brain and body size | Nature Ecology & Evolution",
+          "url": "https://www.nature.com/articles/s41559-024-02451-3"
+        },
+        {
+          "title": "Multivariate Meta-Analysis of Brain-Mass Correlations in Eutherian Mammals",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5043137/"
+        },
+        {
+          "title": "allometry of brain size in mammals | Journal of Mammalogy | Oxford Academic",
+          "url": "http://academic.oup.com/jmammal/article/100/2/276/5436908"
+        },
+        {
+          "title": "Macroevolutionary brain scaling is a microevolutionary metaphenomenon",
+          "url": "https://doi.org/10.1038/s41467-025-66843-0"
+        },
+        {
+          "title": "Larger Fish Have Larger Brains With More Neurons Across but Not Within Cohorts Raised in Different Growth Conditions - PMC",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12464356/"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research safeguard: the supplied registration is not treated as a demonstrated finding, and no correlation result is assumed.",
+        "Originality safeguard: substantial overlap likely exists with established brain-body allometry research; novelty would need a sharper, more surprising angle.",
+        "Scientific caveat: the supplied study outcome says the dataset was unavailable or inadequate under its criteria, so a credible version would need a larger usable comparative dataset, log-scale modeling, and phylogenetic controls.",
+        "Historical benchmarking was not independently verified, as requested."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has scientific curiosity but only weak Ig Nobel flavor because it does not strongly make people laugh before making them think. The proposal feels more like ordinary comparative biology than amusingly profound research.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 5,
+          "reason": "The idea is easy for the public to understand and can be communicated with memorable animal comparisons. However, it lacks a strikingly funny hook or counterintuitive headline.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The premise is plain rather than comic: bigger animals having bigger brains is intuitive, not absurd. Any humor would come mostly from animal outliers rather than the central question.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The general hypothesis could teach a useful lesson about scaling and relative encephalization, but the main expected result is not very surprising. Deeper insight would require explaining departures from the trend rather than merely confirming the positive correlation.",
+          "revised": 4
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "Brain-body allometry is a well-established comparative biology topic, and the supplied prior-work snippets strongly suggest substantial overlap. It could become more distinctive by focusing on surprising exceptions, clade-specific deviations, or methodological artifacts.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 6,
+          "initial": 8,
+          "reason": "The question is scientifically testable with comparative data, preferably log-scaled and phylogenetically controlled. The score is reduced because the supplied study attempt failed due to dataset usability/size constraints, so the current design needs a better dataset and methods.",
+          "revised": 6
+        }
+      },
+      "study_id": "study:7",
+      "title": "Do bigger-bodied animals also tend to have bigger brains?",
+      "total": 36.5,
+      "verdict": "Scientifically plausible but too obvious, derivative, and insufficiently funny to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "classification": "Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: citations: https://doi.org/10.1002/1097-0142(19840515)53:10%3C2002::AID-CNCR2820531004%3E3.0.CO;2-Y is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1",
+      "hypothesis": "Among advanced lung-cancer patients, higher physician-rated Karnofsky performance scores accompany higher patient-rated Karnofsky performance scores.",
+      "model_total": 46,
+      "prior_work": [
+        {
+          "title": "Comparison of subjective ratings of function with observed functional ability of frail older persons.",
+          "url": "https://doi.org/10.2105/ajph.81.9.1127"
+        },
+        {
+          "title": "Interrater reliability of the standardized Timed Up and Go Test when used in hospitalized and community‐dwelling older individuals",
+          "url": "https://doi.org/10.1002/pri.1769"
+        },
+        {
+          "title": "Frailty Measures and their Association with Post-Acute Rehabilitation Outcomes",
+          "url": "https://doi.org/10.25419/rcsi.14915205"
+        },
+        {
+          "title": "Older Home Health Care Patients and Their Physicians: Assessment of Functional Ability",
+          "url": "https://doi.org/10.1300/j027v17n02_02"
+        },
+        {
+          "title": "The Timed “Up & Go”: A Test of Basic Functional Mobility for Frail Elderly Persons",
+          "url": "https://doi.org/10.1111/j.1532-5415.1991.tb01616.x"
+        }
+      ],
+      "safeguards": [
+        "Weighted total calculation: humor 3×2=6, plausibility 7×2=14, originality 4×1.5=6, insight 5×2=10, appeal 4×1=4, alignment 4×1.5=6; total=46.",
+        "Hypothetical research safeguard: the supplied claims are treated as a proposal or dataset-based question, not as established findings; no correlation, significance, or replication result is assumed.",
+        "Originality safeguard: supplied prior-work snippets indicate likely overlap with existing literature on functional-status ratings, physician-patient agreement, and mobility assessment.",
+        "Scientific caveat: the apparent registration rejection and citation-verification issue weaken presentation credibility, though the core analysis remains methodologically feasible if citations, dataset provenance, and statistical plan are repaired.",
+        "Historical benchmarking was not independently verified, per the user's note."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 4,
+          "initial": 5,
+          "reason": "It has a small Ig Nobel flavor because a simple human question is measured formally, but it does not strongly make people laugh first. Its main value is conventional medical-methods insight rather than comic absurdity.",
+          "revised": 4
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The idea is understandable to the public, especially as 'do doctors and patients agree about how well patients can function?' But it lacks a vivid or surprising hook likely to generate broad media attention.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The 'get-up-and-go' phrasing is mildly amusing, but the underlying question is ordinary clinical agreement research. On review, the humor depends more on wording than on an inherently absurd premise.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The study could reveal clinically useful discrepancies between lived experience and medical judgment. However, a positive association between two ratings of functional capacity is expected, so the likely insight is practical rather than surprising.",
+          "revised": 5
+        },
+        "originality": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The question has some specificity in advanced lung-cancer patients, but supplied prior-work snippets suggest substantial overlap with existing research on patient, physician, and functional-status ratings. Novelty would require a sharper twist, such as systematic bias, disagreement patterns, or consequences for treatment decisions.",
+          "revised": 4
+        },
+        "plausibility": {
+          "final": 7,
+          "initial": 8,
+          "reason": "Comparing physician-rated and patient-rated Karnofsky scores is scientifically testable with correlation or agreement methods. The score is reduced because the supplied registration appears rejected for citation problems, and observational association would not prove true independent agreement or accuracy.",
+          "revised": 7
+        }
+      },
+      "study_id": "study:8",
+      "title": "Do doctors and patients independently rate patients' get-up-and-go similarly?",
+      "total": 46.0,
+      "verdict": "A scientifically plausible but only mildly amusing clinical-agreement study whose main weakness is limited absurdity and novelty."
+    },
+    {
+      "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "classification": "Very Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Writing-hand span is positively correlated with height among students in the MASS survey dataset.",
+      "model_total": 37.5,
+      "prior_work": [
+        {
+          "title": "Correlation of Human Height with Hand Dimensions: A Study among Medical students",
+          "url": "https://doi.org/10.47203/ijch.2022.v34i03.018"
+        },
+        {
+          "title": "Anthropometric Measurement of Hand Dimension and Their Correlation with Height in Undergraduate Students of a Medical College in Nepal",
+          "url": "https://doi.org/10.22502/jlmc.v8i1.301"
+        },
+        {
+          "title": "Exploring the anatomical dimensions of hand and its correlation with height – An observational study in context of Indian population",
+          "url": "https://doi.org/10.18231/j.ijcap.2020.005"
+        },
+        {
+          "title": "Anthropometric Correlation between Stature and Measurements of Hand & Finger Length",
+          "url": "https://doi.org/10.5958/0974-083x.2021.00003.0"
+        },
+        {
+          "title": "Correlation of Human Height with Hand Dimensions: A Study in Young Population of Central India",
+          "url": "https://doi.org/10.14302/issn.2577-2279.ijha-19-2609"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/reported-result safeguard: the supplied registration, rho, p-value, and replication language are not treated as independently verified established findings.",
+        "Originality safeguard: prior-work snippets suggest clear overlap with existing hand-dimension and height correlation studies, so the idea should not be described as unprecedented.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even with a higher raw score.",
+        "Historical benchmarking was not independently verified."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has some Ig Nobel adjacency because it uses an ordinary body measurement in a slightly amusing way, but it does not strongly make people laugh and then think. Weak novelty and limited surprise keep it from fitting the prize spirit well.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The concept is easy for the public to understand, but it lacks a vivid hook beyond 'bigger hands, taller people.' Media appeal would likely be limited unless framed with a more surprising behavioral or practical implication.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The premise has a faintly comic everyday quality—predicting height from writing-hand span—but it is mostly a straightforward body-size correlation. The revised score drops because the absurdity is weak and not especially memorable.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The idea could reinforce a modest forensic or anthropometric point about body proportionality, but the expected insight is unsurprising. The revised score reflects that it mainly confirms an intuitive relationship rather than making people think differently.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "Prior-work snippets indicate substantial overlap with existing studies correlating hand dimensions and stature. Using writing-hand span in a public student dataset is a minor variant rather than a distinctive research question.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "The question is scientifically testable with simple anthropometric measurements and a plausible shared-growth/body-size mechanism. The main limitation is that dataset claims and reported statistics are treated as unverified supplied material, not established findings.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:9",
+      "title": "Do students with wider writing hands also tend to be taller?",
+      "total": 37.5,
+      "verdict": "A scientifically plausible but highly familiar anthropometric correlation whose main weakness is the lack of humor, novelty, and unexpected insight."
+    },
+    {
+      "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "classification": "Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across chocolate-cake breakage measurements, oven temperature is positively correlated with breakage angle.",
+      "model_total": 41.5,
+      "prior_work": [
+        {
+          "title": "Correlation of Textural qualities in a pound cake to the mechanical behavior",
+          "url": "https://digitalcommons.wpi.edu/cgi/viewcontent.cgi?article=3136&context=iqp-all"
+        },
+        {
+          "title": "Effects of different operating conditions of air fryer and convection oven on the quality of moist chocolate cake",
+          "url": "http://psasir.upm.edu.my/id/eprint/84231/1/FK%202019%2097%20%20-%20ir.pdf"
+        },
+        {
+          "title": "Effect of oven temperature profile and different baking conditions on final cake quality",
+          "url": "https://doi.org/10.1111/ijfs.12679"
+        },
+        {
+          "title": "Baking of Sponge Cake: Experimental Characterization and Mathematical Modelling",
+          "url": "https://doi.org/10.1007/s11947-015-1660-3"
+        },
+        {
+          "title": "The Physics of Baking: An Experimental Investigation of Air Incorporation and Temperature on Cake Texture",
+          "url": "https://doi.org/10.21275/sr25904102818"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/reported secondary analysis caveat: the supplied correlation and replication claims are not treated as independently verified established findings.",
+        "Originality safeguard: prior-work snippets indicate overlap with existing studies on baking temperature, cake texture, rheology, and mechanical properties.",
+        "Scientific caveat: correlation in an existing public dataset does not demonstrate that temperature causes larger breakage angles; controlled experimental design would be needed.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate regardless of total score.",
+        "Historical benchmarking was not independently verified, per the user's instruction."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 4,
+          "initial": 5,
+          "reason": "It partially fits the Ig Nobel spirit by making a mundane dessert measurement sound oddly formal, but it currently lacks enough absurdity or unexpected intellectual payoff. The score was lowered because the proposal seems more like a small food-science correlation than a laugh-then-think candidate.",
+          "revised": 4
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 5,
+          "reason": "The idea is easy to explain and has some public-friendly appeal because cakes are familiar objects. However, the headline is less striking than classic Ig Nobel-style studies and may feel like routine baking science.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 4,
+          "initial": 5,
+          "reason": "Cake breakage angles and oven temperature have a mildly amusing, kitchen-physics oddity, but the joke is mostly a pun rather than a deeply funny premise. The score was lowered because the absurdity is gentle and not especially memorable.",
+          "revised": 4
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The possible insight is that oven temperature may affect a cake's mechanical breaking response, but that is broadly consistent with ordinary food science expectations. It needs a more surprising theoretical or practical implication to move beyond a modest descriptive association.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 3,
+          "initial": 4,
+          "reason": "Prior-work snippets suggest substantial overlap with established research on baking temperature, cake texture, expansion, rheology, and mechanical quality. The specific temperature-versus-breakage-angle framing is somewhat distinctive, but not enough to claim strong novelty without deeper literature verification.",
+          "revised": 3
+        },
+        "plausibility": {
+          "final": 6,
+          "initial": 7,
+          "reason": "The question is scientifically testable using baking conditions and mechanical breakage measurements, but a simple correlation in an existing dataset cannot establish causation or mechanism. A stronger study would control recipe, batch, moisture, crust formation, and repeated-measure structure prospectively.",
+          "revised": 6
+        }
+      },
+      "study_id": "study:10",
+      "title": "Do chocolate cakes baked at higher oven temperatures tend to break at a larger angle?",
+      "total": 41.5,
+      "verdict": "A mildly amusing and scientifically plausible cake-physics analysis, but too derivative and unsurprising to be a strong Ig Nobel candidate."
+    },
+    {
+      "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "classification": "Low Potential",
+      "committee": "score 0.1",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across domestic cats, body weight is positively correlated with heart weight.",
+      "model_total": 40.5,
+      "prior_work": [
+        {
+          "title": "Effect of Body Weight on Echocardiographic Measurements in 19,866 Pure-Bred Cats with or without Heart Disease",
+          "url": "https://doi.org/10.1111/jvim.14569"
+        },
+        {
+          "title": "Comparisons of morphometric measurements and serum insulin-like growth factor concentration in healthy cats and cats with hypertrophic cardiomyopathy",
+          "url": "https://doi.org/10.2460/ajvr.69.8.1061"
+        },
+        {
+          "title": "Reference intervals and allometric scaling of two-dimensional echocardiographic measurements in 150 healthy cats",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5709549/"
+        },
+        {
+          "title": "Influence of Signalment Variables on Body Weight-Normalized Echocardiographic Measurements of Heart Size in 56 169 Adult Unsedated Normal Pure-Bred Cats",
+          "url": "https://doi.org/10.1111/jvim.70146"
+        },
+        {
+          "title": "A mormophetric study of domestic carnivorous' heart",
+          "url": "https://ddd.uab.cat/record/174570"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/research-status caveat: the supplied registration, dataset analysis, and replication claims are treated as unverified study text, not established findings.",
+        "Originality safeguard: prior-work snippets indicate substantial overlap with feline echocardiographic scaling, body-weight normalization, and general organ allometry.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even if its numerical score were higher.",
+        "Historical benchmarking was not independently verified; no claim is made that this resembles or predicts any actual Ig Nobel winner.",
+        "No automatic winner rule: this score does not imply award eligibility or probability of winning."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has a small Ig Nobel flavor as a deadpan confirmation of the obvious, but it does not strongly make people laugh and then think. The scientific question is valid but too routine and unsurprising for strong alignment.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 5,
+          "reason": "Cats are publicly appealing and the headline is easy to understand. However, the public-interest value is limited because the answer feels immediately predictable.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The wording has mild comic charm because “bigger cats have bigger hearts” sounds like a sentimental punchline. On review, the underlying premise is an obvious body-size correlation rather than a truly absurd or memorable setup.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The likely insight is mainly that larger animals have larger organs, which is expected. It could support normalization of feline cardiac measures, but as framed it offers little surprising intellectual payoff.",
+          "revised": 2
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea overlaps strongly with established comparative physiology and prior work on body weight, heart size, and feline cardiac measurements. It should not be treated as novel without a more distinctive twist, such as abnormal scaling, breed-specific deviations, or diagnostic implications.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 9,
+          "initial": 9,
+          "reason": "The question is scientifically testable with measurable body and heart weights and a plausible allometric mechanism. A stronger study would control for age, sex, breed, health status, and sampling bias rather than relying only on a simple correlation.",
+          "revised": 9
+        }
+      },
+      "study_id": "study:11",
+      "title": "Do heavier cats carry heavier hearts?",
+      "total": 40.5,
+      "verdict": "A scientifically plausible but largely obvious cat-allometry study whose chief weakness is lack of surprise or novelty."
+    },
+    {
+      "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: citations: https://doi.org/10.1109/SCAMC.1988.117514 is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1",
+      "hypothesis": "Among women in the Pima.tr dataset, body mass index is positively correlated with triceps skinfold thickness.",
+      "model_total": 39.5,
+      "prior_work": [
+        {
+          "title": "The Impacts of Body Mass Index on Gestational Diabetes Pima Indian Heritage Women",
+          "url": "https://doi.org/10.33140/ijdmd.06.01.03"
+        },
+        {
+          "title": "Determinants of Diabetes Mellitus in the Pima Indian Mothers and Indian Medical Students",
+          "url": "https://doi.org/10.2174/1876524601407010005"
+        },
+        {
+          "title": "The Elucidation of Potential New Factors that Influence and Impact Type 2 Diabetes Mellitus Prevalence in Pima Indian populations",
+          "url": "http://hdl.handle.net/2286/R.I.56149"
+        },
+        {
+          "title": "Do Measures of Body Fat Distribution Provide Information on the Risk of Type 2 Diabetes in Addition to Measures of General Obesity?",
+          "url": "https://doi.org/10.2337/diacare.26.9.2556"
+        },
+        {
+          "title": "Analysis of Interacting Factors Contributing to the Onset of Diabetes Type 2 in the Female Pima Population: A Step towards Understanding the Links",
+          "url": "https://doi.org/10.1109/cibcb48159.2020.9277645"
+        }
+      ],
+      "safeguards": [
+        "This is evaluated as a hypothetical research proposal, not as an established finding; no correlation result, significance, or replication is assumed.",
+        "Originality is limited because BMI, skinfold thickness, adiposity, and Pima-related health datasets have substantial prior-work overlap.",
+        "Unexpected insight is below 4, so the idea could not qualify as an Exceptional Candidate under the safeguard.",
+        "Historical benchmarking was not independently verified, as requested.",
+        "To improve, the study would need a more surprising question, such as cases where BMI and skinfold measures disagree in an informative way, plus a clear, credible analysis plan."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has a mildly amusing bodily-measurement angle and a legitimate scientific basis, but it does not strongly make people laugh and then think. Revised down because the intellectual payoff is too predictable for strong Ig Nobel alignment.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 4,
+          "reason": "The question is easy to understand and could be communicated simply, but it lacks a strong headline hook. Public interest would likely be limited to health, obesity, or dataset-analysis audiences.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The phrase 'triceps pinch' and the bodily-measurement premise have mild comic awkwardness, but the core question is a routine adiposity correlation. Revised down because the humor depends more on wording than on a genuinely absurd scientific setup.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "A positive association could confirm that two adiposity measures track together, but that is not very surprising. Revised down because the result would likely be descriptive rather than thought-provoking unless it revealed an unexpected mismatch between BMI and subcutaneous fat.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea overlaps strongly with established work on BMI, skinfolds, adiposity, and Pima diabetes datasets. Revised down because the proposed relationship is expected rather than distinctive unless reframed with a novel methodological or population-specific question.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "BMI and triceps skinfold thickness are measurable variables, and a correlation analysis in a defined dataset is scientifically coherent. The main limitation is that it would be observational and dataset-specific, not a broad causal finding.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:12",
+      "title": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+      "total": 39.5,
+      "verdict": "Scientifically plausible but too expected and insufficiently funny or insightful to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "classification": "Very Low Potential",
+      "committee": "score 0.1",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across countries, beer servings per person are positively correlated with wine servings per person.",
+      "model_total": 36.5,
+      "prior_work": [
+        {
+          "title": "Structural Changes in the Consumption of Beer, Wine and Spirits in OECD Countries from 1961 to 2014",
+          "url": "https://doi.org/10.3390/beverages4010008"
+        },
+        {
+          "title": "Developments in the structure of alcohol consumption in OECD countries",
+          "url": "https://pure.au.dk/portal/en/publications/5ce50066-cba9-4bfd-93b6-6acff066a383"
+        },
+        {
+          "title": "Home Bias in Consumption: A Comparison between Wine and Beer",
+          "url": "https://doi.org/10.22004/ag.econ.199782"
+        },
+        {
+          "title": "Preference shifts in the demand for wine and beer",
+          "url": "https://research.rug.nl/en/publications/9e97e16e-2252-4e8a-a79a-90896b380365"
+        },
+        {
+          "title": "7 Beer‐Drinking Nations: The Determinants of Global Beer Consumption",
+          "url": "https://doi.org/10.1093/acprof:oso/9780199693801.003.0007"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/research-status caveat: the supplied rho, p-value, replication language, and committee text are treated as unverified study claims, not established findings.",
+        "Originality safeguard: prior-work snippets indicate substantial overlap with existing research on beer, wine, spirits, national drinking cultures, and alcohol-consumption structure.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not be an Exceptional Candidate even if other scores were higher.",
+        "Scientific limitation: the design can test association but not causation; stronger work would need preregistered controls, robustness checks, serving-standard validation, and a more distinctive theoretical question."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has a faint Ig Nobel flavor because alcohol statistics can sound amusing, but it lacks the surprising absurdity and deeper twist typical of strong candidates. Revised downward because it makes people think only a little and laugh even less.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The topic is easy to explain and could make a readable headline about beer countries also drinking wine. Revised downward because the result feels like a familiar data tidbit rather than a memorable public story.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The beer-and-wine national-comparison premise has mild pub-trivia amusement, but the actual question is straightforward rather than absurd. Revised downward because the joke largely disappears once framed as a simple consumption correlation.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It could modestly illustrate that countries may bundle alcohol consumption rather than specialize, but this is not very surprising. Revised downward because a positive correlation mostly reflects broad drinking propensity or wealth rather than a deep unexpected mechanism.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea overlaps strongly with existing alcohol-consumption structure research comparing beer, wine, spirits, national drinking cultures, and beverage substitution or complementarity. Without a sharper angle, it looks derivative rather than novel.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 7,
+          "initial": 8,
+          "reason": "The proposal is scientifically testable with country-level alcohol-consumption data and a clear correlation analysis. Revised downward because ecological confounding, income, availability, tourism, and serving-definition issues would limit causal or behavioral interpretation.",
+          "revised": 7
+        }
+      },
+      "study_id": "study:13",
+      "title": "Do countries that serve more beer also serve more wine?",
+      "total": 36.5,
+      "verdict": "A statistically plausible but unsurprising alcohol-consumption correlation with too little humor, novelty, or unexpected insight to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "classification": "Very Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across vehicles in the Cars93 dataset, vehicle weight is negatively correlated with city fuel economy.",
+      "model_total": 34,
+      "prior_work": [
+        {
+          "title": "Some evidence on determinants of fuel economy as a function of driving cycle and test type",
+          "url": "https://osti.gov/biblio/10183036"
+        },
+        {
+          "title": "The Measured Impact of",
+          "url": "https://www.osti.gov/servlets/purl/1089970"
+        },
+        {
+          "title": "Review of technical literature and trends related to automobile mass-reduction technology",
+          "url": "https://escholarship.org/uc/item/85p4x0jn.pdf;origin=repeccitec"
+        },
+        {
+          "title": "Automobiles on Steroids: Product Attribute Trade-Offs and Technological Progress in the Automobile Sector",
+          "url": "https://doi.org/10.1257/aer.101.7.3368"
+        },
+        {
+          "title": "The Trade-off between Automobile Acceleration Performance, Weight, and Fuel Consumption",
+          "url": "https://doi.org/10.4271/2008-01-1524"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/reported-status caveat: the supplied rho, p-value, and replication claims are treated as unverified reported analysis, not independently established findings.",
+        "Originality safeguard: prior-work snippets indicate substantial overlap with existing vehicle mass and fuel-economy research; no claim of novelty is warranted.",
+        "Scientific caveat: a Cars93 correlation can support an association but not clean causal inference without controls or experimental design.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even if its total were higher.",
+        "Historical benchmarking was not independently verified, per the prompt."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 2,
+          "initial": 3,
+          "reason": "Although it is clear and testable, it does not strongly make people laugh first and then think. It fits ordinary applied engineering or statistics better than the Ig Nobel spirit.",
+          "revised": 2
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The public can easily understand the question, and cars plus fuel economy are familiar topics. However, the result is so intuitive that it is unlikely to generate strong media interest or memorable public discussion.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The premise is ordinary rather than absurd: heavier cars using more fuel is expected, not comic. The wording may be mildly relatable, but it lacks an amusing contradiction or memorable weirdness.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea reinforces a textbook expectation rather than revealing a surprising or thought-provoking pattern. Any insight would mainly be educational, not unexpectedly transformative.",
+          "revised": 2
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "Prior-work snippets suggest substantial existing literature on vehicle mass and fuel economy, so the core question appears highly familiar. It could become more distinctive only by adding an unexpected behavioral, design, or measurement twist.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 9,
+          "reason": "The question is scientifically testable and has a clear physical mechanism involving acceleration energy, rolling resistance, and urban driving cycles. The score is reduced because a simple Cars93 correlation would be observational, confounded by vehicle class, engine size, aerodynamics, and era-specific design choices rather than a strong causal experiment.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:14",
+      "title": "Do heavier cars get fewer city miles per gallon?",
+      "total": 34.0,
+      "verdict": "Chief judge verdict: scientifically plausible but far too obvious, derivative, and unfunny to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "classification": "Very Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across mammal species in the msleep dataset, body weight is negatively correlated with total daily sleep time.",
+      "model_total": 36.5,
+      "prior_work": [
+        {
+          "title": "Decreasing sleep requirement with increasing numbers of neurons as a driver for bigger brains and bodies in mammalian evolution",
+          "url": "https://doi.org/10.1098/rspb.2015.1853"
+        },
+        {
+          "title": "A quantitative, theoretical framework for understanding mammalian sleep",
+          "url": "https://doi.org/10.1073/pnas.0610080104"
+        },
+        {
+          "title": "A Phylogenetic Analysis of Sleep Architecture in Mammals: The Integration of Anatomy, Physiology, and Ecology",
+          "url": "https://doi.org/10.1086/506973"
+        },
+        {
+          "title": "Relations between sleep duration, body weight and metabolic rate in mammals",
+          "url": "https://doi.org/10.1016/s0003-3472(05)81005-x"
+        },
+        {
+          "title": "Mammalian Sleep, Longevity, and Energy Metabolism; pp. 425–446",
+          "url": "https://doi.org/10.1159/000124330"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/reported-analysis caveat: the supplied rho, p-value, and replication language are treated as unverified study text, not independently established findings.",
+        "Originality safeguard: prior-work overlap appears substantial, including mammalian sleep studies relating sleep duration to body mass, metabolism, ecology, brain/body traits, and phylogeny.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even with stronger presentation.",
+        "Research improvement needed: use phylogenetic comparative methods, larger curated datasets, explicit controls for diet, ecological niche, captivity, metabolic rate, and measurement quality, and a more distinctive question than a simple bodyweight-sleep correlation.",
+        "Historical benchmarking was not independently verified here, as requested."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "It has some Ig Nobel-adjacent animal-behavior charm, but it does not strongly make people laugh and then think. The main weakness is that it feels like a conventional, previously explored comparative biology correlation.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 5,
+          "reason": "The public can easily understand a headline like 'bigger mammals sleep less,' and animal sleep facts have moderate popular appeal. However, the lack of strong absurdity or surprising novelty limits media memorability.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The premise that big animals may sleep less has mild fun-fact charm, but it is not inherently absurd or laugh-out-loud funny. The score was reduced because the idea reads more like a standard comparative biology result than an amusingly paradoxical Ig Nobel premise.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The question can point toward real biological tradeoffs involving body size, foraging, metabolism, and sleep, but the proposed analysis would mostly re-confirm a familiar pattern. Its intellectual payoff is limited unless it reveals a counterintuitive mechanism or exception.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea overlaps heavily with prior comparative mammalian sleep literature on body size, metabolism, ecology, and sleep duration. Without a sharper new angle, it appears mostly derivative rather than novel.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 6,
+          "initial": 7,
+          "reason": "A body-weight versus sleep-duration correlation can be tested quantitatively, but a simple cross-species correlation in a public dataset is vulnerable to phylogenetic non-independence, ecological confounding, measurement inconsistency, and sampling bias. Stronger work would need broader validated data and comparative methods controlling for taxonomy, diet, metabolism, captivity, and habitat.",
+          "revised": 6
+        }
+      },
+      "study_id": "study:15",
+      "title": "Do bigger-bodied mammals tend to get less total sleep each day?",
+      "total": 36.5,
+      "verdict": "A scientifically testable but highly derivative animal-sleep correlation with modest public charm and weak Ig Nobel spark."
+    },
+    {
+      "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "classification": "Very Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Body mass index is positively correlated with triceps skinfold thickness across women in the Pima.te dataset.",
+      "model_total": 33,
+      "prior_work": [
+        {
+          "title": "The Impacts of Body Mass Index on Gestational Diabetes Pima Indian Heritage Women",
+          "url": "https://doi.org/10.33140/ijdmd.06.01.03"
+        },
+        {
+          "title": "Do Measures of Body Fat Distribution Provide Information on the Risk of Type 2 Diabetes in Addition to Measures of General Obesity?",
+          "url": "https://doi.org/10.2337/diacare.26.9.2556"
+        },
+        {
+          "title": "Obesity in Pima Indians. Distribution characteristics and possible thresholds for genetic studies.",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/1337339"
+        },
+        {
+          "title": "Obesity in Pima Indians: Large increases among post‐World War II birth cohorts",
+          "url": "https://doi.org/10.1002/ajpa.1330920406"
+        },
+        {
+          "title": "Obesity in the Pima Indians: its magnitude and relationship with diabetes",
+          "url": "https://doi.org/10.1093/ajcn/53.6.1543s"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/secondary-analysis caveat: supplied study claims are not treated as established findings; this evaluates the idea as a testable proposal or reported analysis needing verification.",
+        "Originality safeguard: substantial apparent overlap exists with prior BMI, skinfold, obesity, and Pima diabetes research; no claim of unprecedented novelty is warranted.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even if other scores were higher.",
+        "Historical benchmarking was not independently verified, as requested; similarity to mundane confirmatory medical correlations would not by itself support Ig Nobel strength."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 2,
+          "initial": 3,
+          "reason": "It has methodological neatness but weak Ig Nobel spirit because it neither provokes much laughter nor leads to a surprising thought. The chief weakness is obviousness rather than lack of testability.",
+          "revised": 2
+        },
+        "appeal": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The idea is easy for the public to understand, but it lacks a surprising hook or memorable absurdity. Journalistic interest would likely be low because the conclusion sounds self-evident.",
+          "revised": 3
+        },
+        "humor": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The premise is medically ordinary: higher BMI going with thicker skinfold is expected rather than amusing. Any mild humor comes only from the anticlimax of formally testing something so obvious.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The result, if observed, would mostly confirm a textbook relationship between general adiposity and subcutaneous fat. It offers little unexpected conceptual payoff beyond validating that two related body-size measures move together.",
+          "revised": 2
+        },
+        "originality": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The idea strongly overlaps with existing obesity, BMI, skinfold, and Pima diabetes literature, so novelty appears very limited. It could become more distinctive only by asking a less obvious question about measurement bias, subgroup effects, prediction error, or fat-distribution anomalies.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "The question is scientifically testable with standard anthropometric variables and a simple correlation analysis. Limitations are that it is a narrow secondary-data association, not a causal or mechanistic experiment, and measurement details would need verification.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:16",
+      "title": "Among Pima women in the independent test cohort, does a higher BMI come with a thicker triceps skinfold pinch?",
+      "total": 33.0,
+      "verdict": "A scientifically plausible but highly unsurprising anthropometric correlation with too little humor, novelty, or unexpected insight for strong Ig Nobel potential."
+    },
+    {
+      "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "classification": "Very Low Potential",
+      "committee": "score 0.2",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Among Dutch schoolchildren, higher IQ scores are positively correlated with language-test scores.",
+      "model_total": 37.5,
+      "prior_work": [
+        {
+          "title": "Reconceptualizing Verbal Intelligence: Perspectives From Gifted and Talented Black Elementary Students and Teachers in Urban Schools - Monique T. Mills, Leslie C. Moore, \nDonna Y. Ford, 2026",
+          "url": "https://journals.sagepub.com/doi/10.1177/00420859261433984"
+        },
+        {
+          "title": "Does Rare Vocabulary Use Distinguish Giftedness From Typical Development? A Study of School-Age African American Narrators",
+          "url": "https://doi.org/10.1044/2016_ajslp-15-0157"
+        },
+        {
+          "title": "The effect of exploratory talk on the development of sentence structure in able writers",
+          "url": "https://doi.org/10.1111/j.1741-4369.2011.00572.x"
+        },
+        {
+          "title": "Class and sex differences in verbal facility of very bright children.",
+          "url": "https://doi.org/10.1037/h0040451"
+        },
+        {
+          "title": "Do gifted children without specific learning disabilities read more efficiently than typically developing children?",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11464429/"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/research-status caveat: the supplied rho, p-value, replication language, and committee comments are treated as unverified study text, not independently established findings.",
+        "Originality safeguard: prior-work snippets indicate substantial overlap with existing IQ-language and verbal-ability research, so no claim of novelty is warranted.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even if the numerical score were higher.",
+        "Historical benchmarking was not independently verified, per the user's instruction."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The proposal has some light headline potential, but it does not strongly make people laugh first and then think. It is scientifically plausible, yet too unsurprising and insufficiently absurd for strong Ig Nobel alignment.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The public can easily understand the question, but 'children with higher IQ scores also score higher on language tests' is unlikely to generate much fascination. Media appeal is limited unless reframed around a genuinely surprising educational implication.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The phrasing 'classroom whizz-kids have a way with words' is mildly playful, but the underlying premise is ordinary rather than absurd. The revised score drops because the idea lacks a memorable comic contradiction.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The study could reinforce a real psychometric relationship, but the expected positive association is not surprising. The revised score reflects that the likely takeaway is confirmatory rather than thought-provoking.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea overlaps strongly with long-standing research on intelligence, verbal ability, language development, and the positive manifold among cognitive tests. It would need a much more distinctive angle, such as an unexpected subgroup, mechanism, or paradoxical prediction, to become novel.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 8,
+          "initial": 8,
+          "reason": "A correlation between IQ scores and language-test scores in schoolchildren is scientifically measurable and methodologically plausible using existing educational data. The main limitation is that a simple correlation cannot establish causation and may reflect overlapping test content, schooling, socioeconomic factors, or measurement artifacts.",
+          "revised": 8
+        }
+      },
+      "study_id": "study:17",
+      "title": "Do classroom whizz-kids also have a way with words?",
+      "total": 37.5,
+      "verdict": "A credible but conventional educational-psychology correlation with little humor, novelty, or unexpected insight."
+    },
+    {
+      "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "classification": "Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: rho -0.698 (predicted 0.4), p 5.9e-10, n 60: significant but did not replicate",
+      "hypothesis": "Across measured cabbage heads, head weight is negatively correlated with vitamin C concentration.",
+      "model_total": 54,
+      "prior_work": [
+        {
+          "title": "Ways to Use Vegetables in Hawaii",
+          "url": "http://hdl.handle.net/10125/16544"
+        },
+        {
+          "title": "Comparison of chemical composition of fresh and fermented cabbage juice",
+          "url": "https://doi.org/10.22616/foodbalt.2019.028"
+        },
+        {
+          "title": "PENETAPAN KADAR VITAMIN C PADA KUBIS (Brassicae oleracea var. capitata L.) BERDASARKAN UKURAN KECIL BESAR DAN SEDANG SECARA SPEKTROFOTOMETRI UV KARYA TULIS ILMIAH",
+          "url": "http://repository.setiabudi.ac.id/284"
+        },
+        {
+          "title": "Comparative study of vitamin C of cabbage cultivars (Brassica oleraceae L., var. capitata L.), before and after their processing in sauerkraut",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/6625831"
+        },
+        {
+          "title": "Determination of essential and toxic elements, ascorbic acid content and color of different leaves in two cabbage varieties",
+          "url": "https://doi.org/10.2478/auoc-2018-0016"
+        }
+      ],
+      "safeguards": [
+        "Weighted calculation: humor 5×2 + plausibility 6×2 + originality 4×1.5 + insight 5×2 + appeal 7×1 + alignment 6×1.5 = 54.",
+        "The supplied dataset correlation and registration text are treated as unverified exploratory information, not as an established finding.",
+        "Scientific improvement would require preregistered sampling across cultivars, harvest dates, growing conditions, cabbage sizes, and standardized vitamin C assays.",
+        "Originality is constrained by apparent prior work on cabbage vitamin C variation by cultivar, processing, leaves, and size-related factors.",
+        "Historical benchmarking was not independently verified, as requested."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 6,
+          "initial": 6,
+          "reason": "It fits the Ig Nobel spirit moderately well by turning an ordinary cabbage-shopping question into a testable nutritional puzzle. It lacks the stronger absurdity or surprising philosophical twist typical of the best candidates.",
+          "revised": 6
+        },
+        "appeal": {
+          "final": 7,
+          "initial": 7,
+          "reason": "The concept is easy to explain and headline-friendly: heavier cabbages may offer less vitamin C per unit mass. Its everyday grocery relevance gives it stronger public appeal than its scientific depth alone would suggest.",
+          "revised": 7
+        },
+        "humor": {
+          "final": 5,
+          "initial": 5,
+          "reason": "The idea has a mildly funny consumer premise: large cabbages may be nutritionally stingier. The humor is understandable but not especially bizarre or laugh-out-loud memorable.",
+          "revised": 5
+        },
+        "insight": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The study could make people think about nutrient concentration versus vegetable size and the misleading intuition that bigger means better. However, the likely insight is modest unless confounding is controlled and the result generalizes beyond one dataset.",
+          "revised": 5
+        },
+        "originality": {
+          "final": 4,
+          "initial": 5,
+          "reason": "The weight-versus-vitamin framing is somewhat distinctive, but prior-work snippets suggest cabbage vitamin C variation by cultivar, leaf position, processing, and size is already a known research area. It would need a sharper angle, such as consumer purchase decisions or nutrient dilution across standardized cultivars, to feel more novel.",
+          "revised": 4
+        },
+        "plausibility": {
+          "final": 6,
+          "initial": 7,
+          "reason": "The question is scientifically testable, and dilution by water or structural tissue is a plausible mechanism. The score is reduced because the supplied evidence appears observational, small, confounded by cultivar or harvest factors, and the split result described as non-replicating weakens confidence.",
+          "revised": 6
+        }
+      },
+      "study_id": "study:18",
+      "title": "Do heavier cabbages shortchange you on vitamin C?",
+      "total": 54.0,
+      "verdict": "A charming and testable cabbage-shopping question, but its Ig Nobel potential is limited by modest novelty and unresolved observational confounding."
+    },
+    {
+      "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: dataset unavailable: HTTPError: HTTP Error 404: Not Found",
+      "hypothesis": "Across phoneme recordings, the log-periodogram value in the first frequency bin is positively correlated with the value in the adjacent second bin.",
+      "model_total": 33,
+      "prior_work": [
+        {
+          "title": "Distribution of sound levels for consonants and vowels within individual frequency bands",
+          "url": "https://doi.org/10.1121/1.406021"
+        },
+        {
+          "title": "USES OF THE PITCH-SCALED HARMONIC FILTER IN SPEECH PROCESSING",
+          "url": "https://doi.org/10.25144/21812"
+        },
+        {
+          "title": "Basic auditory processes involved in the analysis of speech sounds",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2606789/"
+        },
+        {
+          "title": "Fixed-Point ICA based Speech Signal Separation and Enhancement with Generalized Gaussian Model",
+          "url": "https://doi.org/10.34413/dr.00460"
+        },
+        {
+          "title": "On Speech Audiometry: Spectrographic Studies of Single Sounds and of Test Words",
+          "url": "https://doi.org/10.3109/00016485809134773"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research safeguard: this is an untested prediction, not an established finding; no correlation, significance, or replication should be inferred from the supplied text.",
+        "Dataset caveat: the supplied study text reports rejection because the dataset URL was unavailable, so a credible version would need accessible data and a reproducible analysis plan.",
+        "Originality safeguard: prior-work snippets suggest substantial overlap with known speech-acoustics findings about vowel energy, spectral structure, and frequency-band distributions; novelty is not assumed.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not be an Exceptional Candidate even if other scores were higher.",
+        "Historical benchmarking was not independently verified, as requested; no comparison to actual Ig Nobel winners is used here."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 3,
+          "reason": "It has some Ig Nobel-compatible odd specificity, but it does not strongly make people laugh and then think. The scientific question is plausible but too expected and too technical to embody the prize’s spirit strongly.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The idea is hard to communicate to a general audience because it concerns log-periodogram bins rather than an intuitive everyday phenomenon. It lacks a memorable image or headline beyond a technical speech-processing claim.",
+          "revised": 2
+        },
+        "humor": {
+          "final": 2,
+          "initial": 2,
+          "reason": "The premise of adjacent speech-spectrum bins correlating is technically dry and not inherently comic. It has mild absurdity only in treating a tiny spectral adjacency as a prize-worthy question.",
+          "revised": 2
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "A positive adjacent-bin correlation would be expected from smooth spectral envelopes and recording-level variation, so the likely insight is modest. Stronger value would require showing a surprising exception, diagnostic use, or implication for how acoustic representations encode speech.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The idea overlaps with established speech-acoustics knowledge that neighboring frequency components and spectral envelopes are structured rather than independent. It could become more distinctive by tying adjacency correlations to a novel perceptual, linguistic, or signal-processing consequence.",
+          "revised": 3
+        },
+        "plausibility": {
+          "final": 6,
+          "initial": 7,
+          "reason": "The hypothesis is scientifically testable with phoneme periodogram data and a correlation analysis, but the supplied dataset is reported unavailable and the design would need a verified dataset, preprocessing details, and controls for speaker, gain, phoneme class, and smoothing artifacts.",
+          "revised": 6
+        }
+      },
+      "study_id": "study:19",
+      "title": "Do speech sounds that are intense in the first frequency bin also tend to be intense in the very next bin?",
+      "total": 33.0,
+      "verdict": "Chief judge verdict: scientifically testable but too technical, expected, and unfunny to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: dataset unavailable: ValueError: host is not an open-data host and the URL is not cited in the research log",
+      "hypothesis": "Across voice recordings in the Parkinson's voice dataset, average vocal fundamental frequency is positively correlated with maximum vocal fundamental frequency.",
+      "model_total": 39,
+      "prior_work": [
+        {
+          "title": "Standardization of pitch-range settings in voice acoustic analysis",
+          "url": "https://doi.org/10.3758/brm.41.2.318"
+        },
+        {
+          "title": "The importance of optimal parameter setting for pitch extraction.",
+          "url": "https://doi.org/10.1121/1.3508047"
+        },
+        {
+          "title": "Exploring Pitch",
+          "url": "https://doi.org/10.4324/9781003361114-8"
+        },
+        {
+          "title": "The Cambridge Handbook of Phonetics",
+          "url": "https://doi.org/10.1017/9781108644198"
+        },
+        {
+          "title": "Cross-language differences in fundamental frequency range: A comparison of English and German",
+          "url": "https://doi.org/10.1121/1.3681950"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research safeguard: the supplied study is an untested prediction/rejected run, not an experimentally demonstrated finding.",
+        "Originality safeguard: prior-work snippets indicate overlap with established pitch-range and pitch-extraction research; novelty would need a more distinctive behavioral, clinical, or methodological twist.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not qualify as an Exceptional Candidate even if the raw score were higher.",
+        "Scientific caveat: using MDVP:Fo and MDVP:Fhi from the same Parkinson's voice dataset may produce a technically measurable correlation, but interpretation would need controls for pitch-extraction artifacts, outliers, disease-specific sampling, and whether maximum pitch is independent of average pitch.",
+        "Historical benchmarking was not independently verified, as specified by the user."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The idea has a faint Ig Nobel flavor because it asks a simple-sounding question about voices and ceilings, but it does not strongly make people laugh and then think. The score was reduced because the scientific question is plausible yet too unsurprising and not sufficiently whimsical.",
+          "revised": 3
+        },
+        "appeal": {
+          "final": 4,
+          "initial": 4,
+          "reason": "The idea is easy to explain to non-specialists, especially with the 'pitch ceiling' wording, but it lacks a vivid everyday hook or memorable absurdity. Public appeal remains narrow unless reframed around singing, voice identity, or diagnostic misuse.",
+          "revised": 4
+        },
+        "humor": {
+          "final": 3,
+          "initial": 3,
+          "reason": "The phrase 'pitch ceiling' gives the idea a mildly amusing double meaning, but the core hypothesis is a straightforward acoustic correlation rather than an absurd or comic premise. No score change after review because the humor is mostly linguistic, not conceptual.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "If tested well, it could modestly inform how average pitch relates to usable vocal range, but the expected positive correlation is not very surprising. The score was reduced because the result may mostly confirm that related pitch measurements move together, offering limited deeper insight.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 3,
+          "initial": 4,
+          "reason": "Voice pitch range, pitch floors/ceilings, and parameter settings appear to have substantial prior-work overlap, and correlations among acoustic voice features are not inherently novel. The score was reduced because the proposal seems more like a basic validation or feature relationship than a distinctive research question.",
+          "revised": 3
+        },
+        "plausibility": {
+          "final": 7,
+          "initial": 8,
+          "reason": "The relationship between average fundamental frequency and maximum fundamental frequency is measurable and biologically plausible, but the proposed dataset and variables may make the result partly tautological or artifact-prone. The score was reduced because Parkinson's voice recordings, pitch-extraction settings, and shared measurement pipelines could confound the interpretation.",
+          "revised": 7
+        }
+      },
+      "study_id": "study:20",
+      "title": "Do voices with a higher average pitch also have a higher pitch ceiling?",
+      "total": 39.0,
+      "verdict": "Chief judge verdict: scientifically testable but too expected, derivative, and only mildly amusing to be a strong Ig Nobel-style candidate."
+    },
+    {
+      "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "classification": "Very Low Potential",
+      "committee": "not judged",
+      "error": null,
+      "gate": "rejected: dataset unavailable: HTTPError: HTTP Error 404: Not Found",
+      "hypothesis": "Across vowel recordings, x.1 is positively correlated with x.2.",
+      "model_total": 26,
+      "prior_work": [
+        {
+          "title": "Acoustics of the Vowel",
+          "url": "https://doi.org/10.3726/978-3-0343-2391-8"
+        },
+        {
+          "title": "Spectral characteristics and formant bandwidths of English vowels produced by American males with different speaking styles",
+          "url": "https://doi.org/10.1121/1.4933887"
+        },
+        {
+          "title": "Effects of speaking rate, focal stress, and sentence position on spectral characteristics and vowel duration",
+          "url": "https://doi.org/10.1121/1.407568"
+        },
+        {
+          "title": "Acoustic Markers of Suicidal Risk in Adolescents: Task- and Vowel-Specific Variations in Voice and Speech Parameters",
+          "url": "https://doi.org/10.1016/j.jvoice.2025.10.039"
+        },
+        {
+          "title": "Static Measurements of Vowel Formant Frequencies and Bandwidths: A Review",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6002811/"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical research safeguard: the registration-style text is treated only as an unconfirmed proposal, not as an established finding or successful replication.",
+        "Dataset caveat: the supplied study reports rejection due to dataset unavailability, so any credible version would need an accessible dataset or newly collected vowel recordings.",
+        "Originality safeguard: the idea appears to overlap with existing speech-acoustics work on vowel spectra, formants, spectral envelopes, and neighboring frequency-bin relationships.",
+        "Unexpected insight safeguard: final insight score is below 4, so the idea could not be an Exceptional Candidate even if its numerical score were higher.",
+        "Historical benchmarking was not independently verified, as requested."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 2,
+          "initial": 3,
+          "reason": "It has some curiosity value as a small study of vowel acoustics, but it does not strongly make people laugh first and then think; the premise feels methodologically ordinary rather than Ig Nobel-like.",
+          "revised": 2
+        },
+        "appeal": {
+          "final": 2,
+          "initial": 3,
+          "reason": "The public can understand the broad idea of vowel sounds having neighboring energy patterns, but the x.1/x.2 log-periodogram framing is too technical and lacks a memorable hook.",
+          "revised": 2
+        },
+        "humor": {
+          "final": 1,
+          "initial": 2,
+          "reason": "The premise has only a faint comic contrast between human vowels and dry feature columns; on review, it is mostly a routine acoustics correlation question rather than inherently funny or absurd.",
+          "revised": 1
+        },
+        "insight": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The likely insight is that nearby acoustic features covary because spectra are smooth and share energy, which is plausible but not very surprising; stronger value would require showing an unexpected implication for vowel perception, speaker classification, or acoustic measurement.",
+          "revised": 3
+        },
+        "originality": {
+          "final": 2,
+          "initial": 3,
+          "reason": "Adjacent spectral-feature correlation overlaps strongly with standard speech-acoustics and formant/spectral-envelope analysis; without verification, it should not be treated as novel, and it would need a more distinctive question to stand out.",
+          "revised": 2
+        },
+        "plausibility": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The hypothesis is scientifically testable because adjacent spectral features in vowel recordings can be correlated, but the specific dataset is reported unavailable and the proposal needs clearer feature definitions, preprocessing, normalization, and controls for shared recording energy and vowel identity.",
+          "revised": 5
+        }
+      },
+      "study_id": "study:21",
+      "title": "Do vowel recordings with more energy in the first spectral feature also have more energy in the second?",
+      "total": 26.0,
+      "verdict": "A scientifically testable but dry and derivative acoustics correlation, whose main weakness is that it lacks humor, novelty, and surprising intellectual payoff."
+    },
+    {
+      "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "classification": "Low Potential",
+      "committee": "score 0.1",
+      "error": null,
+      "gate": "passed",
+      "hypothesis": "Across resident fish encounters, aggression per second of observation is negatively correlated with the distance between the resident shell and the simulated joiner's shell.",
+      "model_total": 47,
+      "prior_work": [
+        {
+          "title": "Societies of the shell-dwelling cichlid Neolamprologus multifasciatus",
+          "url": "https://doi.org/10.1016/j.anbehav.2025.123407"
+        },
+        {
+          "title": "Spatial patterns in animal territoriality : competitive behaviour in a shell dwelling cichlid",
+          "url": "https://stud.epsilon.slu.se/19119"
+        },
+        {
+          "title": "Social and spatial conflict drive resident aggression toward outsiders in a group-living fish | Behavioral Ecology | Oxford Academic",
+          "url": "https://academic.oup.com/beheco/advance-article/doi/10.1093/beheco/arab045/6283829"
+        },
+        {
+          "title": "Resource partitioning among ecologically similar, but socially distinct, shell-dwelling cichlids",
+          "url": "https://doi.org/10.17605/osf.io/cjrtd"
+        },
+        {
+          "title": "Studying the evolution of social behaviour in one of Darwin’s Dreamponds: a case for the Lamprologine shell-dwelling cichlids",
+          "url": "https://doi.org/10.1007/s10750-020-04473-x"
+        }
+      ],
+      "safeguards": [
+        "Hypothetical/research-status caveat: the supplied registration, dataset claims, p-values, and replication labels are treated as unverified user-provided material, not established findings.",
+        "Originality safeguard: prior-work snippets suggest substantial overlap with shell-dwelling cichlid aggression, spatial conflict, and broader shelter-defense studies.",
+        "Scientific improvement needed: use controlled shell-distance manipulation, standardized observation time, and controls for body size, sex, resident status, shell quality, group position, and prior social context.",
+        "No automatic winner rule: this score estimates Ig Nobel-style potential only and does not imply award likelihood."
+      ],
+      "scores": {
+        "alignment": {
+          "final": 5,
+          "initial": 5,
+          "reason": "It has some Ig Nobel flavor because it frames territorial conflict as tiny aquatic housing disputes. Still, it leans more toward conventional animal behavior research than a laugh-then-think Ig Nobel-style revelation.",
+          "revised": 5
+        },
+        "appeal": {
+          "final": 5,
+          "initial": 5,
+          "reason": "The idea is easy to explain and has a charming headline about fish fighting over nearby shells. Its public appeal is moderate because the finding sounds expected rather than delightfully bizarre.",
+          "revised": 5
+        },
+        "humor": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The image of tiny shell-dwelling fish treating nearby shells like disputed real estate is mildly amusing. On review, the premise is more straightforward territorial behavior than genuinely funny, so the score was lowered.",
+          "revised": 3
+        },
+        "insight": {
+          "final": 5,
+          "initial": 6,
+          "reason": "The study could modestly illuminate how animals scale aggression to spatial threat and resource proximity. However, the central expectation that closer rivals provoke more aggression is intuitive, so the intellectual surprise is limited.",
+          "revised": 5
+        },
+        "originality": {
+          "final": 3,
+          "initial": 4,
+          "reason": "The idea overlaps strongly with known animal territoriality, shelter defense, and prior shell-dwelling cichlid work on spatial conflict and aggression. It could become more distinctive by testing a counterintuitive mechanism, such as social-neighbor tolerance thresholds or misperception of shell ownership.",
+          "revised": 3
+        },
+        "plausibility": {
+          "final": 7,
+          "initial": 8,
+          "reason": "The question is scientifically testable through behavioral observation or controlled manipulation of shell distance and aggression rates. The score is limited by likely confounds such as sex, size, dominance, shell quality, prior residency, and whether distance is manipulated rather than merely correlated.",
+          "revised": 7
+        }
+      },
+      "study_id": "study:22",
+      "title": "Do shell-dwelling fish become more aggressive when an outsider's shell is closer to their own?",
+      "total": 47.0,
+      "verdict": "A scientifically credible but only mildly funny and fairly derivative animal-behavior idea whose main weakness is that the expected result is too unsurprising."
+    }
+  ],
+  "leaderboard": [
+    {
+      "rank": 1,
+      "study_id": "study:1",
+      "total": 58.5
+    },
+    {
+      "rank": 2,
+      "study_id": "study:18",
+      "total": 54.0
+    },
+    {
+      "rank": 3,
+      "study_id": "study:22",
+      "total": 47.0
+    },
+    {
+      "rank": 4,
+      "study_id": "study:8",
+      "total": 46.0
+    },
+    {
+      "rank": 5,
+      "study_id": "study:2",
+      "total": 42.0
+    },
+    {
+      "rank": 6,
+      "study_id": "study:10",
+      "total": 41.5
+    },
+    {
+      "rank": 7,
+      "study_id": "study:6",
+      "total": 41.5
+    },
+    {
+      "rank": 8,
+      "study_id": "study:11",
+      "total": 40.5
+    },
+    {
+      "rank": 9,
+      "study_id": "study:12",
+      "total": 39.5
+    },
+    {
+      "rank": 10,
+      "study_id": "study:20",
+      "total": 39.0
+    },
+    {
+      "rank": 11,
+      "study_id": "study:4",
+      "total": 38.5
+    },
+    {
+      "rank": 12,
+      "study_id": "study:17",
+      "total": 37.5
+    },
+    {
+      "rank": 13,
+      "study_id": "study:9",
+      "total": 37.5
+    },
+    {
+      "rank": 14,
+      "study_id": "study:13",
+      "total": 36.5
+    },
+    {
+      "rank": 15,
+      "study_id": "study:15",
+      "total": 36.5
+    },
+    {
+      "rank": 16,
+      "study_id": "study:7",
+      "total": 36.5
+    },
+    {
+      "rank": 17,
+      "study_id": "study:14",
+      "total": 34.0
+    },
+    {
+      "rank": 18,
+      "study_id": "study:16",
+      "total": 33.0
+    },
+    {
+      "rank": 19,
+      "study_id": "study:19",
+      "total": 33.0
+    },
+    {
+      "rank": 20,
+      "study_id": "study:3",
+      "total": 32.0
+    },
+    {
+      "rank": 21,
+      "study_id": "study:21",
+      "total": 26.0
+    }
+  ],
+  "model": "gpt-5.5",
+  "prompt_sha256": "045355b84b2efe52347e4178f7f6d7e2f761017887ed0a2dccd5c4804d5ff529",
+  "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+  "schema": "igjudge/v1",
+  "winner": "study:1"
+}
