@@ -8,6 +8,7 @@ import {sortedRecordings,recordingCopy,swarmConnectionLabel,playbackContinues,re
 import {boredomColor,boredomPercent,boredomComponents,regimeLabel,latestBoredom} from './engine/boredom';
 import {agentIdentity,humanizeActivity,humanizeRole,eventCaption,eventLabel,teamRoster,meaningfulMessage,agentDescriptor,descriptorText,whosWho} from './engine/agentIdentity';
 import {openingTick,reloadTick,following,liveButton,eventsAfter} from './engine/liveFollow';
+import {prefersReducedMotion} from './engine/affect';
 import {momentsBetween,type Moment} from './engine/moments';
 import {scoreSeries,scoreChartSvg,type ResultRow} from './engine/scoreChart';
 import {runStatus,taskTitle,metricLabel,publishWarning,pickerOptions} from './engine/runInfo';
@@ -28,6 +29,7 @@ let recordingManifests:RecordingManifest[]=[];
 let tick=0,playing=false,walking=false,pace=1,currentDrawer:string|null=null,selectedAgent='',nearAgent='',loadGeneration=0;
 let yaw=0,pitch=0,drag=false,lastPointer={x:0,y:0},toastTimer:ReturnType<typeof setTimeout>,momentTimer:ReturnType<typeof setTimeout>,announcedTick=0;
 let displayAliases=new Map<string,string>();
+const reducedMotion=prefersReducedMotion();
 function aliasText(value:string){return anonymizeExcerpt(value,displayAliases);}
 /** Agents keep their manifest names; an older recording's aliasMap is the only rename. */
 function prepareAliases(data:Recording){displayAliases=new Map<string,string>(Object.entries(data.manifest.aliasMap||{}));}
@@ -38,6 +40,8 @@ type ArchivedAgent=AgentView&{type?:string;family?:string;familySource?:string;a
 function identityOf(a:ArchivedAgent){return agentIdentity(a,recording?.manifest.agents?.find(m=>m.agent_id===a.id));}
 function avatar(a:ArchivedAgent){const id=identityOf(a);return `<span class="agent-avatar" data-family="${id.familyKey}"${id.color?` style="--agent-color:${id.color}"`:''}>${esc(id.initial)}</span>`;}
 function agentLine(a:ArchivedAgent){const id=identityOf(a),d=recording&&!id.staff?descriptorText(agentDescriptor(recording.events,a.id,tick),id.familyLabel):'';return [id.familyLabel,id.staff?'':d||(a.role!==a.type?humanizeRole(a.role):''),a.standby?'standing by':humanizeActivity(a.activity||a.state)].filter(Boolean).map(v=>rawEsc(v)).join(' · ');}
+/** Always-visible boredom meter for a roster row. */
+function rowMeter(a:ArchivedAgent){if(identityOf(a).staff)return '';const b=a.boredom==null?null:boredomPercent(a.boredom),r=regimeLabel(a.boredomSpectrum?.regime);return `<span class="row-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i><b>${b==null?'not measured':`bored ${Math.round(b)}%`}</b>${r.label?`<em class="regime-chip" data-tone="${r.tone}">${esc(r.label)}</em>`:''}</span>`;}
 function renderWhosWho(){const rows=whosWho(recording?.manifest.agents||[]);$('whos-who').hidden=!rows.length;$('whos-who').innerHTML=rows.length?`<summary>Who's who</summary><dl>${rows.map(r=>`<dt>${rawEsc(r.title)}<small>${esc(r.names.join(', '))}</small></dt><dd>${rawEsc(r.does)}</dd>`).join('')}</dl>`:'';}
 /** Live runs never call their events recorded. */
 function said(){return recording?.manifest.live?'Published':'Recorded';}
@@ -67,7 +71,7 @@ function renderRunMeta(){if(!recording)return;const m=recording.manifest,status=
 function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();}
 function renderHUD(){
  $('agent-count').textContent=`${people().length} AGENTS`;
- $('agent-list').innerHTML=teamRoster(snapshot?.agents as ArchivedAgent[]||[],people()).map(a=>`<button class="agent-row" data-agent="${esc(a.id)}"${a.standby?' disabled data-standby="true"':''}>${avatar(a)}<span><strong>${esc(a.name)}</strong><small>${agentLine(a)}</small></span><i></i></button>`).join('')||'<p class="empty">No researchers active at this moment.</p>';
+ $('agent-list').innerHTML=teamRoster(snapshot?.agents as ArchivedAgent[]||[],people()).map(a=>`<button class="agent-row" data-agent="${esc(a.id)}"${a.standby?' disabled data-standby="true"':''}>${avatar(a)}<span><strong>${esc(a.name)}</strong><small>${agentLine(a)}</small>${rowMeter(a)}</span><i></i></button>`).join('')||'<p class="empty">No researchers active at this moment.</p>';
  $('run-label').textContent=snapshot?`ROUND ${snapshot.round}${snapshot.config.rounds?` / ${snapshot.config.rounds}`:''} · BEST ${snapshot.metric.name.replaceAll('_',' ')} ${snapshot.value==null?'—':snapshot.value.toFixed(4)} · ${metricLabel(snapshot.metric).split(' ').slice(-3).join(' ')}`:'Waiting for the first events';
 }
 function graph(){if(!recording||!snapshot)return '<p>No measurements yet.</p>';const counted=recording.manifest.swarm==='ignobel'&&snapshot.metric.name==='replicated_findings';return scoreChartSvg(scoreSeries(snapshot.results as ResultRow[],recording.frames,tick,!counted),snapshot.metric,tick,esc);}
@@ -142,7 +146,7 @@ try{
   const camera=world.camera;
   if(!walking&&!modal()&&!conversation.open)labControls.update(dt,pressed);
   if(walking&&!modal()){({yaw,pitch}=keyboardLook(yaw,pitch,dt,pressed));const forward=Number(pressed.has('KeyW'))-Number(pressed.has('KeyS')),side=Number(pressed.has('KeyD'))-Number(pressed.has('KeyA'));if(forward||side){const speed=((pressed.has('ShiftLeft')||pressed.has('ShiftRight'))?5.6:3.5)*dt/Math.hypot(forward,side),dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;if(!blocked(camera.position.x+dx,camera.position.z))camera.position.x+=dx;if(!blocked(camera.position.x,camera.position.z+dz))camera.position.z+=dz;}camera.rotation.set(pitch,yaw,0,'YXZ');}
-  const positions=posesAt(),present=people(),captions=discussionAt(recording?.events||[],tick,present,aliasText,100);world.update(tick*(recording?.manifest.tickDurationMs||700)/1000,{progress:snapshot?.progress||0,boredom:0,running:playing,replay:true,agents:present.map(a=>({...a,state:positions.get(a.id)?.atLab?'working':a.state,stationId:positions.get(a.id)?.atTable?'culture':replayStation({...a,state:'working',activity:'experimenting'}),discussionBrief:positions.get(a.id)?.atTable?captions.get(a.id)?.brief:undefined,discussionPeers:captions.get(a.id)?.peers,ideaBrief:ideaBrief(aliasText(a.lastIdea||a.lastQuestion||a.lastObservation||'')),position:positions.get(a.id)}))});
+  const positions=posesAt(),present=people(),captions=discussionAt(recording?.events||[],tick,present,aliasText,100);world.update(tick*(recording?.manifest.tickDurationMs||700)/1000,{progress:snapshot?.progress||0,boredom:0,running:playing,replay:true,reducedMotion:reducedMotion,agents:present.map(a=>({...a,boredom:a.boredom==null?null:boredomPercent(a.boredom),regime:a.boredomSpectrum?.regime,state:positions.get(a.id)?.atLab?'working':a.state,stationId:positions.get(a.id)?.atTable?'culture':replayStation({...a,state:'working',activity:'experimenting'}),discussionBrief:positions.get(a.id)?.atTable?captions.get(a.id)?.brief:undefined,discussionPeers:captions.get(a.id)?.peers,ideaBrief:ideaBrief(aliasText(a.lastIdea||a.lastQuestion||a.lastObservation||'')),position:positions.get(a.id)}))});
   nearAgent='';if(walking&&!modal()){camera.getWorldDirection(direction);direction.y=0;direction.normalize();let closest=3;for(const a of world.agentPositions?.()||[]){const delta=a.position.clone().sub(camera.position);delta.y=0;const d=delta.length();if(d<closest&&delta.normalize().dot(direction)>.35){closest=d;nearAgent=a.id;}}}$('proximity').hidden=!nearAgent;if(nearAgent){$('agent-name').textContent=people().find(a=>a.id===nearAgent)?.name||'';$('proximity-kicker').textContent=recording?.manifest.live?'RESEARCHER · LIVE RUN':'ARCHIVED RESEARCHER';}renderer.render(world.scene,camera);positionConversation();
  }
  renderHUD();frame();$('loading').hidden=true;loadRecordings();
