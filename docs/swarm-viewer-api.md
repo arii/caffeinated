@@ -57,6 +57,11 @@ only an event suffix, preserves keyframes and refuses non-prefix histories.
 Files are replaced atomically one at a time, not as a directory transaction.
 Publish errors are logged without stopping research. Terminal publication adds
 run.finished and sets live=false. Visibility is round-level rather than worker-log tailing.
+While live, manifest.json carries heartbeat_ts (UTC ISO-8601) and heartbeat_interval_s;
+the conductor refreshes heartbeat_ts at least every 30 seconds, so a live manifest whose
+heartbeat is several intervals old belongs to a writer that died (for example SIGKILL).
+The viewer run id is fixed in run.json (viewer_run_id), so a resumed run keeps
+appending to the same recording.
 
 ### Contract differences and access boundary
 

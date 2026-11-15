@@ -9,6 +9,7 @@ Read-only on the source dir; output is deterministic for the same input.
 import argparse
 import bisect
 import csv
+import gzip
 import json
 import os
 import re
@@ -86,10 +87,16 @@ def uid(namespace, name):
 
 
 def read_jsonl(path):
+    """Rows of a JSONL file, or of its `.gz` archive (the arm branch keeps only that)."""
     rows = []
-    if not path.exists():
+    if path.exists():
+        text = path.read_text(encoding="utf-8")
+    elif path.with_name(path.name + ".gz").exists():
+        with gzip.open(path.with_name(path.name + ".gz"), "rt", encoding="utf-8") as archive:
+            text = archive.read()
+    else:
         return rows
-    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -525,7 +532,9 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         if record.get("ts")
     )
     first_ts = all_ts[0] if all_ts else native_run
-    run_id = uid(NS_CAFFEINATED, f"autoresearch:{arm}:{out_dir.name}:{first_ts}")
+    run_id = run_artifact.get("viewer_run_id") or uid(
+        NS_CAFFEINATED, f"autoresearch:{arm}:{out_dir.name}:{first_ts}"
+    )
     run = Run("autoresearch", run_id)
     named = task_config(run_artifact.get("task")).get("agents") or {}
 
@@ -2023,6 +2032,40 @@ def _logged_recoveries(out_dir):
     }
 
 
+HEARTBEAT_INTERVAL_S = 30
+
+
+def autoresearch_run_id(arm, native_run_id):
+    """Viewer run id that stays fixed across --resume and archiving of the out dir."""
+    return uid(NS_CAFFEINATED, f"autoresearch:{arm}:{native_run_id}")
+
+
+def _manifest_bytes(manifest):
+    return (json.dumps(manifest, indent=1, sort_keys=True, ensure_ascii=False) + "\n").encode()
+
+
+def _with_heartbeat(manifest):
+    return {
+        **manifest,
+        "heartbeat_ts": datetime.now(timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z"),
+        "heartbeat_interval_s": HEARTBEAT_INTERVAL_S,
+    }
+
+
+def heartbeat(dest, run_id):
+    """Refresh heartbeat_ts in a live published manifest so readers can spot a dead writer."""
+    path = Path(dest) / run_id / "manifest.json"
+    if not path.exists():
+        return False
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if not manifest.get("live"):
+        return False
+    _atomic_write(path, _manifest_bytes(_with_heartbeat(manifest)))
+    return True
+
+
 def publish(out_dir, dest, *, final=False, status=None):
     out_dir, dest = Path(out_dir), Path(dest)
     final_status = status if status in {"finished", "stopped"} else "finished"
@@ -2132,8 +2175,11 @@ def publish(out_dir, dest, *, final=False, status=None):
                     target / "artifacts" / source.relative_to(fresh_dir / "artifacts"),
                     source.read_bytes(),
                 )
-        for name in ("manifest.json", "timeline.json"):
-            _atomic_write(target / name, (fresh_dir / name).read_bytes())
+        manifest_data = (fresh_dir / "manifest.json").read_bytes()
+        if not final:
+            manifest_data = _manifest_bytes(_with_heartbeat(json.loads(manifest_data)))
+        _atomic_write(target / "manifest.json", manifest_data)
+        _atomic_write(target / "timeline.json", (fresh_dir / "timeline.json").read_bytes())
         _atomic_write(index_path, index_data)
         return target
 

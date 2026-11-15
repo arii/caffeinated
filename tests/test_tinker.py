@@ -150,7 +150,7 @@ class TinkerTests(unittest.TestCase):
         )
         with (
             patch("llm.urlopen", side_effect=error),
-            self.assertRaisesRegex(RuntimeError, "HTTP 400.*not supported"),
+            self.assertRaisesRegex(llm.LLMError, "HTTP 400.*not supported"),
         ):
             self.call(self.client())
 

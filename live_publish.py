@@ -51,8 +51,11 @@ def changed(path):
 
 
 class Publisher:
-    def __init__(self, callback, interval=3.0, settle=0.0):
+    def __init__(self, callback, interval=3.0, settle=0.0, heartbeat=None, on_heartbeat=None):
         self.callback = callback
+        self.heartbeat = heartbeat
+        self.on_heartbeat = on_heartbeat if heartbeat else None
+        self.last_beat = time.monotonic()
         self.interval = interval
         self.condition = threading.Condition()
         self.publish_lock = threading.Lock()
@@ -82,19 +85,43 @@ class Publisher:
                 f"live publish failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True
             )
         finally:
-            self.last = time.monotonic()
+            self.last = self.last_beat = time.monotonic()
+
+    def _beat(self):
+        with self.publish_lock:
+            try:
+                self.on_heartbeat()
+            except Exception:
+                pass
+            finally:
+                self.last_beat = time.monotonic()
+
+    def _idle_wait(self):
+        """Wait for work; True when a heartbeat is due instead."""
+        while not self.closed and not self.dirty:
+            if self.on_heartbeat is None:
+                self.condition.wait()
+                continue
+            remaining = self.last_beat + self.heartbeat - time.monotonic()
+            if remaining <= 0:
+                return True
+            self.condition.wait(remaining)
+        return False
 
     def _work(self):
         while True:
             with self.condition:
-                while not self.closed and not self.dirty:
-                    self.condition.wait()
+                beat = self._idle_wait()
                 if self.closed:
                     return
-                delay = self.last + self.interval - time.monotonic()
-                if delay > 0:
-                    self.condition.wait(delay)
-                    continue
+                if not beat:
+                    delay = self.last + self.interval - time.monotonic()
+                    if delay > 0:
+                        self.condition.wait(delay)
+                        continue
+            if beat:
+                self._beat()
+                continue
             with self.publish_lock:
                 with self.condition:
                     if self.closed or not self.dirty:
