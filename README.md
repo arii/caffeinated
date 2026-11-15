@@ -4,6 +4,13 @@ A first-person lab for walking through recorded research. The Pages site replays
 
 Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
+## Team
+
+**Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)**, built by Team caffeinated: Ariel Anders, Jialin Feng, Neeraj Shah and Masha Baidachna.
+
+- Live demo: https://arii.github.io/caffeinated
+- Repository: https://github.com/arii/caffeinated
+
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
