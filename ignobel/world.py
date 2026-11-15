@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import random
+import uuid
 import re
 from pathlib import Path
 
@@ -39,6 +40,7 @@ class World:
         self.exchange = exchange
         self.memory_backend = memory_backend
         self.shared = memory.SharedMemory() if memory_backend == "shared" else None
+        self.pastdev = self._pastdev_run() if memory_backend == "pastdev" else None
         self.agents = [self._make_agent(s) for s in specs]
         self.by_name = {a.name: a for a in self.agents}
         self.mothers = mothers or []
@@ -47,9 +49,26 @@ class World:
         self.founders = founders
         self.round_done = -1
 
+    def _pastdev_run(self):
+        """One past.dev tag per run directory, so a resumed run keeps its identities and audiences."""
+        f = self.out / "pastdev.json"
+        tag = json.loads(f.read_text())["tag"] if f.exists() else f"{self.arm}-s{self.seed}-{uuid.uuid4().hex[:6]}"
+        f.write_text(json.dumps({"tag": tag}))
+        return memory.PastDevRun(tag, self.out)
+
     def _make_agent(self, spec):
-        return agents_mod.Agent(spec, memory.make_memory(self.memory_backend, spec.name, self.shared),
-                                self.cfg, self.seed)
+        mem = memory.make_memory(self.memory_backend, spec.name, self.shared, pastdev=self.pastdev)
+        return agents_mod.Agent(spec, mem, self.cfg, self.seed)
+
+    def _hypothesis(self, a, idea, status: str) -> None:
+        """past.dev only: one stable record per idea; the study result supersedes the proposal."""
+        if self.pastdev is None or idea is None:
+            return
+        p = idea.prediction
+        a.memory.write(Item(id=f"{a.name}-{idea.idea_id}-hyp", kind="hypothesis", source_agent=a.name,
+                            text=f"Hypothesis {idea.idea_id} by lab {a.name}: {idea.title}. {idea.hypothesis} "
+                                 f"Predicted {p.direction} effect {p.effect_size}. Status: {status}",
+                            meta={"idea_id": idea.idea_id}))
 
     def _add_agent(self, spec):
         a = self._make_agent(spec)
@@ -119,6 +138,7 @@ class World:
                                                 "method": idea.method, "source_urls": idea.source_urls},
                         tokens=res.tokens, latency_ms=res.latency_ms)
         self.log.append(round, a.name, "prediction", {"idea_id": idea.idea_id, **idea.prediction.model_dump()})
+        self._hypothesis(a, idea, f"proposed in round {round}, a guess, not tested yet.")
 
     def _encounters(self, acting: list, wanderers: set[str]) -> list[tuple]:
         """Chance meetings. Each wanderer bumps into a random free colleague from any department;
@@ -192,6 +212,9 @@ class World:
         a.memory.write(Item(id=f"{a.name}-{study_id}", kind="result" if verdict["replicated"] else "failure",
                             text=abstract or f"{study_id}: {verdict['reason']}", source_agent=a.name,
                             meta={"study_id": study_id, **info}))
+        self._hypothesis(a, idea, f"tested in round {round} ({study_id}): "
+                                  + (f"replicated, effect {info['effect_size']}, p={info['p']}." if info["replicated"]
+                                     else f"not replicated ({verdict['reason']})."))
         evidence = {}
         if a.spec.family:  # what this result rests on: real datasets (with DOI/URL) and sources the agent really has
             known = a.known_sources()
@@ -446,3 +469,5 @@ class World:
             await self.round(r)
             self.round_done = r
             self.save_state()
+        if self.pastdev is not None:
+            self.pastdev.flush()

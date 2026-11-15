@@ -40,24 +40,62 @@ def test_shared_memory_is_one_store():
     assert b.search("hello", 1)[0].source_agent == "a"
 
 
-def test_pastdev_mock_is_local():
-    m = PastDevMemory("a")
-    assert not m.live
-    m.write(Item(id="x", kind="idea", text="hello", source_agent="a"))
-    assert m.search("hello", 1)[0].id == "x"
+class _FakePast:
+    """Stands in for the past.dev API: audiences decide who reads which ingested data point."""
+
+    def __init__(self):
+        self.calls, self.points, self.members = [], {}, {}
+
+    def __call__(self, method, path, body=None, key=None):
+        self.calls.append((method, path, body))
+        if path.startswith("/audiences/"):
+            self.members[path.split("/")[-1]] = {(c["trait"], c["values"][0]) for c in body["rule"]["conditions"]}
+        elif path.startswith("/identities/"):
+            self.members.setdefault("traits", {})[path.split("/")[-1]] = set(body["traits"].items())
+        elif path == "/ingest":
+            self.points[body["id"]] = body
+            return {"ingestionId": "i-" + body["id"], "status": "queued"}
+        elif path.startswith("/ingest/"):
+            return {"status": "completed"}
+        elif path == "/recall":
+            traits = self.members["traits"].get(body["identity"], set())
+            hits = [p for p in self.points.values() if self.members.get(p["audience"], set()) & traits]
+            return {"results": [{"content": p["content"], "sources": [{"sourceId": p["id"]}]} for p in hits]}
+        return {}
 
 
-def test_pastdev_live_recall_goes_through_share(monkeypatch):
-    s = PastDevMemory("s")
-    s.live = True
-    monkeypatch.setattr(s, "_post", lambda path, payload: {"results": [
-        {"id": "r1", "content": "toast lands butter side down", "author": "quill"},
-        {"text": "birds sing louder near roads"}]})
-    r = LocalMemory()
-    _fill(r, "r", ["toast lands butter side down"])
+def _past_run(monkeypatch, tmp_path):
+    fake = _FakePast()
+    monkeypatch.setattr(memory, "_api", fake)
+    return fake, memory.PastDevRun("t", tmp_path, api_key="k")
+
+
+def test_pastdev_labs_are_independent_until_share(monkeypatch, tmp_path):
+    fake, run = _past_run(monkeypatch, tmp_path)
+    s, r = PastDevMemory("s", run), PastDevMemory("r", run)
+    s.write(Item(id="s-i1", kind="idea", text="toast lands butter side down", source_agent="s"))
+    run.flush()
+    assert not [it for it in r.search("toast", 3) if it.text == "toast lands butter side down"]
     out = share("s", s, "r", r, topic="toast")
-    assert out["offered"] == ["r1", "s-recall-1"]
-    assert [r.items[-1].text] == ["birds sing louder near roads"] and len(out["kept"]) == 1
+    run.flush()
+    assert out["kept"]
+    assert fake.points["fam-t-" + r.items[-1].id]["audience"] == "fam-t-inbox-r"
+    assert fake.points["fam-t-" + r.items[-1].id]["identity"] == "fam-t-s"
+    assert [it.source_agent for it in r.search("toast", 3)] == ["s"]
+    outsider = run.recall("outsider", "toast", 3)
+    assert outsider == []
+
+
+def test_pastdev_hypothesis_keeps_one_local_version_and_papers_stay_local(monkeypatch, tmp_path):
+    fake, run = _past_run(monkeypatch, tmp_path)
+    m = PastDevMemory("a", run)
+    m.write(Item(id="a-h", kind="hypothesis", text="Status: proposed", source_agent="a"))
+    m.write(Item(id="a-h", kind="hypothesis", text="Status: replicated", source_agent="a"))
+    m.write(Item(id="a-p", kind="library", text="a paper", source_agent="a"))
+    run.flush()
+    assert [it.text for it in m.items if it.id == "a-h"] == ["Status: replicated"]
+    assert set(fake.points) == {"fam-t-a-h"}
+    assert fake.points["fam-t-a-h"]["content"] == "Status: replicated"
 
 
 def test_load_specs_and_statistician():

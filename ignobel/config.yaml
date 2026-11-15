@@ -5,9 +5,9 @@ random_snap_prob: 0.30       # random_policy snaps with this probability, ignori
 tell_prize: true             # whether the agent prompt mentions that a prize exists
 teams_enabled: false         # teams.py is a stub; leave false
 roster: families             # families = mothers (families.yaml) found daughter labs; flat = agents.yaml
-spawn_threshold: 0.40        # a mother spawns a daughter when its daughters' mean B reaches this
-spawn_cooldown: 2            # rounds between two spawns by the same mother
-max_daughters: 5             # per mother
+spawn_threshold: 0.25        # a mother spawns a daughter when its daughters' mean B reaches this
+spawn_cooldown: 1            # rounds between two spawns by the same mother
+max_daughters: 8             # per mother
 initial_daughters: 2         # labs each mother founds after the opening meeting
 mother_talk_rounds: 2        # each mother speaks this many times in the opening meeting
 research_steps: 2            # research steps a daughter may choose per round (papers, read, datasets, load)
