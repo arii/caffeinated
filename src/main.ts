@@ -18,7 +18,7 @@ import {openingTick,reloadTick,following,liveButton,eventsAfter} from './engine/
 import {prefersReducedMotion} from './engine/affect';
 import {momentsBetween,formatValue,type Moment} from './engine/moments';
 import {scoreSeries,scoreChartSvg,outcomeOf,type ResultRow} from './engine/scoreChart';
-import {runStatus,taskTitle,metricLabel,publishWarning,pickerOptions,compactDock,evidenceMetricLabel} from './engine/runInfo';
+import {runStatus,taskTitle,metricLabel,publishWarning,pickerOptions,compactDock,evidenceMetricLabel,metricValueLabel} from './engine/runInfo';
 import type {RunSnapshot} from './engine/contract';
 import type {LabWorld,AgentView} from './engine/types';
 import {buildReplayPoses,type PoseFrame} from './engine/replayMotion';
@@ -234,7 +234,8 @@ $('start-swarm').onclick=startExperience;
 $('coach-mark').onclick=e=>{if((e.target as Element).closest('[data-coach-dismiss]'))finishCoach(coachId);};
 function graph(){if(!recording||!snapshot)return '<p>No measurements yet.</p>';const counted=recording.manifest.swarm==='ignobel'&&snapshot.metric.name==='replicated_findings';return scoreChartSvg(scoreSeries(snapshot.results as ResultRow[],recording.frames,tick,!counted),snapshot.metric,tick,esc);}
 function resultMeasurement(r:{value:number|null;effectSize?:number|null;pValue?:number|null;reward?:number|null},metricName=evidenceMetricLabel(snapshot?.metric)){
- const fields=[r.effectSize==null?'':`Effect ${esc(r.effectSize)}`,r.pValue==null?'':`p = ${esc(r.pValue)}`,r.reward==null?'':`${esc(metricName)} ${esc(r.reward)}`].filter(Boolean);
+ const metricValue=metricValueLabel(r.value,r.reward,metricName,formatValue);
+ const fields=[r.effectSize==null?'':`Effect ${esc(r.effectSize)}`,r.pValue==null?'':`p = ${esc(r.pValue)}`,metricValue?esc(metricValue):''].filter(Boolean);
  return fields.length?fields.join('<br>'):esc(r.value??'—');
 }
 function renderEvidence(){
