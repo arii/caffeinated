@@ -92,9 +92,9 @@ def test_truncated_reply_is_flagged_not_cached(monkeypatch, tmp_path):
     monkeypatch.setattr(llm, "_openai_call", fake_call)
     r = llm.chat_json("m", "s", "u", kind="propose", max_tokens=900)
     assert r.data["_truncated"] and r.data["_parse_error"]
-    assert seen == [2900]
+    assert seen == [2900, 5800]  # retried once with double the budget
     llm.chat_json("m", "s", "u", kind="propose", max_tokens=900)
-    assert len(seen) == 2  # not served from the cache
+    assert len(seen) == 4  # not served from the cache
 
 
 def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):

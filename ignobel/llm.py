@@ -99,25 +99,32 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
         return LLMResult(**cached, cached=True)
 
     t0 = time.monotonic()
-    resp = _openai_call(lambda client: client.chat.completions.create(
-        model=model,
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        response_format={"type": "json_object"},
-        max_completion_tokens=max_tokens,
-        seed=seed,
-    ))
+    tokens = 0
+    budget = max_tokens
+    for _ in range(2):  # a cut-off reply is retried once with double the budget
+        resp = _openai_call(lambda client: client.chat.completions.create(
+            model=model,
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            response_format={"type": "json_object"},
+            max_completion_tokens=budget,
+            seed=seed,
+        ))
+        used = resp.usage.total_tokens if resp.usage else 0
+        tokens += used
+        _charge(used)
+        choice = resp.choices[0]
+        truncated = choice.finish_reason == "length"
+        if not truncated:
+            break
+        budget *= 2
     latency_ms = int((time.monotonic() - t0) * 1000)
-    choice = resp.choices[0]
     text = choice.message.content or ""
     try:
         data = json.loads(text)
     except json.JSONDecodeError:
         data = {"_raw": text, "_parse_error": True}
-    truncated = choice.finish_reason == "length"
     if truncated:
         data["_truncated"] = True
-    tokens = resp.usage.total_tokens if resp.usage else 0
-    _charge(tokens)
     result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
     if truncated:  # don't cache a cut-off reply; a rerun with more REASONING_TOKENS should retry it
         return result
