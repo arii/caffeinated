@@ -35,6 +35,8 @@ docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
 python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
 ```
 
+For live research, run `make setup && . .venv/bin/activate` (or `pip install -r requirements.txt` in any Python 3.10+ venv; no PyTorch is needed), put `TINKER_API_KEY`, `EXA_API_KEY` and `PAST_API_KEY` in `.env` (see `.env.example`), then `python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker`. Missing keys or a missing sandbox image are reported before any worktree is created. Details: [quickstart](docs/autoresearch-backend.md#quickstart).
+
 Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. The picker refreshes every four seconds, including while viewing finished recordings. Live recordings also reload when changed, preserving the playhead. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
@@ -78,7 +80,5 @@ npm run build
 ```
 
 Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The research swarm has its own checks (`make setup && make check`); see [the backend guide](docs/autoresearch-backend.md) and `testcases/README.md`.
-
-To run the research swarm from a fresh clone: `make setup && . .venv/bin/activate`, put `TINKER_API_KEY`, `EXA_API_KEY` and `PAST_API_KEY` in `.env` (see `.env.example`), build the sandbox image once (`docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases`), then `python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker`. `pip install -r requirements.txt` in any Python 3.10+ venv also works; no PyTorch is needed. Details: [quickstart](docs/autoresearch-backend.md#quickstart).
 
 The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.
