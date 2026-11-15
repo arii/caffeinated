@@ -130,6 +130,33 @@ class CollectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 ab.run_experiment(args)
 
+    def test_convergence_pads_budget_and_duplicates_are_not_evaluations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            settings = {"task": "hadamard19", "seed": 1, "arm": "B", "rounds": 5,
+                        "workers": 4, "llm": "fake", "model": "fake", "exa": "off", "memory_backend": "local"}
+            (out / "run.json").write_text(json.dumps({**settings, "status": "finished", "run_id": "id", "converged": True}))
+            (out / "boredom_profile.json").write_text('{"eps": 0.005}')
+            (out / "converged.json").write_text('{"round":2, "best_loss":0.6}')
+            (out / "assignments.jsonl").write_text('{"round":1,"regime":"EXPLOIT"}\n')
+            candidate = {"kind": "candidate", "round": 1, "descriptor": {"mechanism": "search", "method": "seed"}}
+            ledger = [{"kind": "baseline", "score": 1.0},
+                      {**candidate, "status": "keep", "score": 0.6, "commit": "a", "critic_rerun": "skipped (deterministic)"},
+                      {**candidate, "status": "duplicate", "score": 0.6},
+                      {**candidate, "status": "duplicate", "score": 0.6},
+                      {**candidate, "status": "reject"},
+                      {"kind": "critic", "round": 1, "commit": "a"}]
+            (out / "ledger.jsonl").write_text("".join(json.dumps(r) + "\n" for r in ledger))
+            row = ab.summarize(out, settings)
+            self.assertEqual(json.loads(row["loss_by_round"]), [1, 0.6, 0.6, 0.6, 0.6, 0.6])
+            self.assertEqual((row["evaluated"], row["duplicates"], row["rejected"]), (1, 2, 1))
+            self.assertEqual((row["rounds_completed"], row["candidate_attempts"]), (1, 4))
+            self.assertEqual((row["critic_confirmations"], row["critic_evaluated"]), (1, 0))
+            self.assertTrue(row["converged"])
+            (out / "converged.json").unlink()
+            with self.assertRaisesRegex(ValueError, "rounds"):
+                ab.summarize(out, settings)
+
     def test_driver_isolates_clones_and_matches_all_budgets(self):
         with tempfile.TemporaryDirectory() as tmp:
             args = ab.build_parser().parse_args(["--repo", tmp, "--out", str(Path(tmp) / "out"), "--tasks", "hadamard19", "--seeds", "11", "22"])
@@ -166,6 +193,13 @@ class CollectionTests(unittest.TestCase):
 
 
 class SeedAndControlTests(unittest.TestCase):
+    def test_fake_continues_after_an_edit_is_kept(self):
+        values = {"candidate_source": "a = 2\nb = 1\n", "agent": "worker-1", "fake_edits": [
+            {"old": "a = 1", "new": "a = 2", "descriptor": {}},
+            {"old": "b = 1", "new": "b = 2", "descriptor": {}},
+        ]}
+        self.assertEqual(llm.fake_response("WORKER_PROPOSE", values)["edits"], [{"old": "b = 1", "new": "b = 2"}])
+
     def test_all_task_fake_proposals_use_their_profile_vocab(self):
         for task in ab.TASKS:
             directory = swarm.ROOT / "testcases" / task

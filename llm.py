@@ -137,7 +137,18 @@ def fake_response(role, values):
                 else 0
             )
             target_index = (target_index + values.get("fake_offset", 0)) % len(fake_edits)
-            target = fake_edits[target_index]
+            # A previous kept edit may have consumed this exact old text.
+            # Select the next applicable canned edit rather than aborting a run.
+            for offset in range(len(fake_edits)):
+                index = (target_index + offset) % len(fake_edits)
+                target = fake_edits[index]
+                if (isinstance(target.get("old"), str) and target["old"]
+                        and candidate_source.count(target["old"]) == 1
+                        and target["old"] != target.get("new")):
+                    target_index = index
+                    break
+            else:
+                raise ValueError("fake worker could not find a unique task edit")
             old = target["old"]
             new = target["new"]
             if not isinstance(old, str) or not isinstance(new, str):
@@ -296,7 +307,7 @@ class LLMClient:
             # the common random numbers for later matched calls.
             key = f"{self.seed}:{role}:{agent}:{round_num}"
             self.sampling_seed = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % (2**31)
-            prompt_values["fake_offset"] = (self.seed + round_num - 1) % 4
+            prompt_values["fake_offset"] = self.seed + round_num - 1
         prompt = render_prompt(role, prompt_values, self.prompt_dir)
         digest = prompt_sha(prompt)
         started = time.monotonic()

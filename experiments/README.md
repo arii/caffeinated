@@ -45,8 +45,10 @@ retrieved content, not merely post-filtered citations.
 Both arms use the same rounds, four workers, model, Exa switch and maximum
 call count, memory backend, evaluator, and starting candidate. Candidate
 rejections and different scout allocations can change actual call and
-evaluation counts; the treatment includes allocation and gating. Equal
-opportunity budgets do not imply identical realized dollar spend. The driver
+evaluation counts; the treatment includes allocation and gating. A converged
+B run can stop early; its final loss is carried forward through the planned
+round budget for AUC, and `rounds_completed` records its actual allocations.
+Equal opportunity budgets do not imply identical realized dollar spend. The driver
 clears inherited replay and ablation switches and sets `PYTHONHASHSEED`.
 The manifest records settings and randomized within-pair execution order.
 
@@ -63,15 +65,20 @@ unpaired rows. Start a new output directory for a clean rerun.
 
 One row is emitted per task/seed/arm. `best_loss` is the confirmed kept
 incumbent (mean of candidate and critic replication when present), including
-the baseline. `best_observed_loss` also includes discarded scored candidates.
+the baseline. For deterministic tasks, critic confirmation reuses the score
+rather than running a replication. `best_observed_loss` also includes
+discarded scored candidates.
 `loss_by_round` is a JSON array of incumbent loss at rounds 0 through R;
 `rounds_to_best` is the first index attaining the final best (0 if unchanged).
 `auc` is trapezoidal area under that curve in loss-rounds. Lower is better.
 
 `keeps` and `evaluated` count candidate proposals only, excluding the baseline
 and critic reruns. Evaluated includes crashed evaluations but excludes gate
-rejections. `critic_evaluated` is separate. `distinct_cells` counts
-mechanism/method cells among evaluated candidates. `regime_counts` counts
+rejections and cached/same-round duplicates. `candidate_attempts`, `duplicates`,
+and `rejected` make this accounting explicit. `critic_confirmations` counts
+critic decisions; `critic_evaluated` counts only actual reruns. `distinct_cells`
+counts mechanism/method cells among non-rejected attempts, including duplicates;
+`distinct_evaluated_cells` counts only evaluated cells. `regime_counts` counts
 round allocations, and `converged` means an active allocation or status reached
 CONVERGED; A's meter is shadow-only and cannot actively converge.
 
