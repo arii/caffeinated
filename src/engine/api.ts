@@ -1,7 +1,7 @@
 import {STATIC_SITE,staticPath} from './staticSite.ts';
 import {SnapshotSchema,type RunSnapshot,type Capabilities,type RunConfig} from './contract';
 export async function request<T>(path:string,options?:RequestInit):Promise<T>{
-  if(STATIC_SITE){const file=staticPath(path);if(!file)throw new Error('Not available in the static replay');const r=await fetch(file);if(!r.ok)throw new Error(`Request failed (${r.status})`);return r.json();}
+  if(STATIC_SITE){const file=staticPath(path);if(!file)throw new Error('Not available in the static replay');const r=await fetch(file);if(!r.ok)throw new Error(`Request failed (${r.status})`);if(file.endsWith('.json.gz')){if(!r.body)throw new Error('Compressed recording body is unavailable');return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json();}return r.json();}
   const r=await fetch('/api'+path,{...options,headers:{'Content-Type':'application/json',...options?.headers}});
   if(!r.ok){let message=`Request failed (${r.status})`;try{const e=await r.json();message=typeof e.detail==='string'?e.detail:message;}catch{}throw new Error(message);}return r.json();
 }

@@ -18,6 +18,7 @@ export function metricLabel(metric?:{name?:string;direction?:string;unit?:string
 /** Live recordings degrade to "stale" when the producer stops publishing (heartbeat or server flag). */
 export function runStatus(m:RecordingManifest,now=Date.now(),staleMs=90_000):{status:RunStatus;label:string;detail:string}{
  if(m.sample!==false)return {status:'sample',label:'RECORDED SAMPLE',detail:'Bundled recording'};
+ if(m.status==='stopped')return {status:'stopped',label:'STOPPED',detail:'The run ended before finishing'};
  const beat=Date.parse(m.heartbeat_ts||m.updated_at||'');
  const quiet=Number.isFinite(beat)?now-beat:NaN;
  if(m.live||m.stale||m.status==='stale'){

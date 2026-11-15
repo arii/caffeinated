@@ -1,0 +1,6737 @@
+[
+ {
+  "agent_id": null,
+  "id": "observation:D10_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D10_1"
+  ],
+  "round": 10,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 1141
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D10_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D10_2"
+  ],
+  "round": 10,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 1142
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D10_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D10_3"
+  ],
+  "round": 10,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 1143
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D10_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D10_4"
+  ],
+  "round": 10,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 1144
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D11_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D11_1"
+  ],
+  "round": 11,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 1265
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D11_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D11_2"
+  ],
+  "round": 11,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 1266
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D11_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D11_3"
+  ],
+  "round": 11,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 1267
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D11_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D11_4"
+  ],
+  "round": 11,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 1268
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D12_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D12_1"
+  ],
+  "round": 12,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 1389
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D12_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D12_2"
+  ],
+  "round": 12,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 1390
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D12_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D12_3"
+  ],
+  "round": 12,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 1391
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D12_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D12_4"
+  ],
+  "round": 12,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 1392
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D13_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D13_1"
+  ],
+  "round": 13,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 1485
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D13_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D13_2"
+  ],
+  "round": 13,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 1486
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D13_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D13_3"
+  ],
+  "round": 13,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 1487
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D13_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D13_4"
+  ],
+  "round": 13,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 1488
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D1_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D1_1"
+  ],
+  "round": 1,
+  "summary": "SPASS dataset: A synthetic polyphonic dataset with spatiotemporal labels of sound sources",
+  "tick": 19
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D1_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D1_2"
+  ],
+  "round": 1,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 20
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D2_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D2_1"
+  ],
+  "round": 2,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 144
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D3_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D3_1"
+  ],
+  "round": 3,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 260
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D4_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D4_1"
+  ],
+  "round": 4,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 376
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D5_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D5_1"
+  ],
+  "round": 5,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 492
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D6_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D6_1"
+  ],
+  "round": 6,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 637
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D6_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D6_2"
+  ],
+  "round": 6,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 638
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D6_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D6_3"
+  ],
+  "round": 6,
+  "summary": "Social and spatial conflict drive resident aggression towards outsiders in a group-living fish",
+  "tick": 639
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D7_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D7_1"
+  ],
+  "round": 7,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 764
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D7_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D7_2"
+  ],
+  "round": 7,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 765
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D7_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D7_3"
+  ],
+  "round": 7,
+  "summary": "Social and spatial conflict drive resident aggression towards outsiders in a group-living fish",
+  "tick": 766
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D8_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D8_1"
+  ],
+  "round": 8,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 891
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D8_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D8_2"
+  ],
+  "round": 8,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 892
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D8_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D8_3"
+  ],
+  "round": 8,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 893
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D8_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D8_4"
+  ],
+  "round": 8,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 894
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D9_1",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D9_1"
+  ],
+  "round": 9,
+  "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+  "tick": 1017
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D9_2",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D9_2"
+  ],
+  "round": 9,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+  "tick": 1018
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D9_3",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D9_3"
+  ],
+  "round": 9,
+  "summary": "Gym Use Behavioral Economics Experiment",
+  "tick": 1019
+ },
+ {
+  "agent_id": null,
+  "id": "observation:D9_4",
+  "kind": "sources",
+  "question_id": "question:None",
+  "refs": [
+   "source:D9_4"
+  ],
+  "round": 9,
+  "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+  "tick": 1020
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S1",
+  "kind": "sources",
+  "question_id": "question:Q1",
+  "refs": [
+   "source:S1"
+  ],
+  "round": 1,
+  "summary": "Snack samples.",
+  "tick": 25
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S10",
+  "kind": "sources",
+  "question_id": "question:Q5",
+  "refs": [
+   "source:S10"
+  ],
+  "round": 1,
+  "summary": "Numerical simulations of the sound propagation in non rectilinear streets",
+  "tick": 49
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S100",
+  "kind": "sources",
+  "question_id": "question:Q39",
+  "refs": [
+   "source:S100"
+  ],
+  "round": 5,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 541
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S101",
+  "kind": "sources",
+  "question_id": "question:Q39",
+  "refs": [
+   "source:S101"
+  ],
+  "round": 5,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 542
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S102",
+  "kind": "sources",
+  "question_id": "question:Q39",
+  "refs": [
+   "source:S102"
+  ],
+  "round": 5,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 543
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S103",
+  "kind": "sources",
+  "question_id": "question:Q40",
+  "refs": [
+   "source:S103"
+  ],
+  "round": 5,
+  "summary": "A tail of evolution: evaluating body length, weight and locomotion as potential drivers of tail length scaling in Australian marsupial mammals",
+  "tick": 546
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S104",
+  "kind": "sources",
+  "question_id": "question:Q40",
+  "refs": [
+   "source:S104"
+  ],
+  "round": 5,
+  "summary": "Morphological Variation Among Populations of the Mountain Brushtail Possum, Trichosurus-Caninus Ogilby (Phalangeridae, Marsupialia)",
+  "tick": 547
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S105",
+  "kind": "sources",
+  "question_id": "question:Q40",
+  "refs": [
+   "source:S105"
+  ],
+  "round": 5,
+  "summary": "Divergence of a mammal along a habitat gradient: a study of the coppery brushtail possum, Trichosurus vulpecula johnsonii",
+  "tick": 548
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S106",
+  "kind": "sources",
+  "question_id": "question:Q41",
+  "refs": [
+   "source:S106"
+  ],
+  "round": 5,
+  "summary": "Distribution of sound levels for consonants and vowels within individual frequency bands",
+  "tick": 554
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S107",
+  "kind": "sources",
+  "question_id": "question:Q41",
+  "refs": [
+   "source:S107"
+  ],
+  "round": 5,
+  "summary": "Effects of intensity on the categorical perception of stop consonants and isolated second formant transitions",
+  "tick": 555
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S108",
+  "kind": "sources",
+  "question_id": "question:Q41",
+  "refs": [
+   "source:S108"
+  ],
+  "round": 5,
+  "summary": "Basic auditory processes involved in the analysis of speech sounds",
+  "tick": 556
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S109",
+  "kind": "sources",
+  "question_id": "question:Q42",
+  "refs": [
+   "source:S109"
+  ],
+  "round": 5,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 567
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S11",
+  "kind": "sources",
+  "question_id": "question:Q5",
+  "refs": [
+   "source:S11"
+  ],
+  "round": 1,
+  "summary": "Experimental study of sound propagation in a street",
+  "tick": 50
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S110",
+  "kind": "sources",
+  "question_id": "question:Q42",
+  "refs": [
+   "source:S110"
+  ],
+  "round": 5,
+  "summary": "Pre-Registration A: Voice Actors - May 8, 2026",
+  "tick": 568
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S111",
+  "kind": "sources",
+  "question_id": "question:Q42",
+  "refs": [
+   "source:S111"
+  ],
+  "round": 5,
+  "summary": "Evaluation of Psychoacoustic Machine Learning Assessment Method for Predicting Occupant Well-Being",
+  "tick": 569
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S112",
+  "kind": "sources",
+  "question_id": "question:Q43",
+  "refs": [
+   "source:S112"
+  ],
+  "round": 5,
+  "summary": "Standardization of pitch-range settings in voice acoustic analysis",
+  "tick": 572
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S113",
+  "kind": "sources",
+  "question_id": "question:Q43",
+  "refs": [
+   "source:S113"
+  ],
+  "round": 5,
+  "summary": "The importance of optimal parameter setting for pitch extraction.",
+  "tick": 573
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S114",
+  "kind": "sources",
+  "question_id": "question:Q43",
+  "refs": [
+   "source:S114"
+  ],
+  "round": 5,
+  "summary": "Measuring Speech. Fundamental frequency and pitch.",
+  "tick": 574
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S115",
+  "kind": "sources",
+  "question_id": "question:Q44",
+  "refs": [
+   "source:S115"
+  ],
+  "round": 5,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 585
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S116",
+  "kind": "sources",
+  "question_id": "question:Q44",
+  "refs": [
+   "source:S116"
+  ],
+  "round": 5,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 586
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S117",
+  "kind": "sources",
+  "question_id": "question:Q44",
+  "refs": [
+   "source:S117"
+  ],
+  "round": 5,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 587
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S118",
+  "kind": "sources",
+  "question_id": "question:Q45",
+  "refs": [
+   "source:S118"
+  ],
+  "round": 5,
+  "summary": "Morphological characterization of  Iris hymenospatha  and  Iris histrio  populations in Iran: implications for conservation and breeding",
+  "tick": 590
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S119",
+  "kind": "sources",
+  "question_id": "question:Q45",
+  "refs": [
+   "source:S119"
+  ],
+  "round": 5,
+  "summary": "Phenotypic variations of naturally grown Iris persica L. accessions as revealed using multivariate analytical methods | PLOS One",
+  "tick": 591
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S12",
+  "kind": "sources",
+  "question_id": "question:Q5",
+  "refs": [
+   "source:S12"
+  ],
+  "round": 1,
+  "summary": "Sound field modeling in a street canyon with a diffusion equation",
+  "tick": 51
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S120",
+  "kind": "sources",
+  "question_id": "question:Q45",
+  "refs": [
+   "source:S120"
+  ],
+  "round": 5,
+  "summary": "Biometric studies, I. Floral characters in six North American species of Iris",
+  "tick": 592
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S121",
+  "kind": "sources",
+  "question_id": "question:Q46",
+  "refs": [
+   "source:S121"
+  ],
+  "round": 6,
+  "summary": "Listening to Temperature: A Novel Temperature Measurement for Flowing Water Using Audio Recognition Techniques",
+  "tick": 644
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S122",
+  "kind": "sources",
+  "question_id": "question:Q46",
+  "refs": [
+   "source:S122"
+  ],
+  "round": 6,
+  "summary": "Why do hot and cold water sound different when poured?",
+  "tick": 645
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S123",
+  "kind": "sources",
+  "question_id": "question:Q46",
+  "refs": [
+   "source:S123"
+  ],
+  "round": 6,
+  "summary": "The Sound of Water: Inferring Physical Properties from Pouring Liquids",
+  "tick": 646
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S124",
+  "kind": "sources",
+  "question_id": "question:Q47",
+  "refs": [
+   "source:S124"
+  ],
+  "round": 6,
+  "summary": "simiyutin/aqua-fourier-temp",
+  "tick": 648
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S125",
+  "kind": "sources",
+  "question_id": "question:Q47",
+  "refs": [
+   "source:S125"
+  ],
+  "round": 6,
+  "summary": "smaticka/Learned-Volume-Prediction",
+  "tick": 649
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S126",
+  "kind": "sources",
+  "question_id": "question:Q47",
+  "refs": [
+   "source:S126"
+  ],
+  "round": 6,
+  "summary": "Dryad | Data: Data for: Nonintrusive heat flux quantification using acoustic emissions during pool boiling",
+  "tick": 650
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S127",
+  "kind": "sources",
+  "question_id": "question:Q49",
+  "refs": [
+   "source:S127"
+  ],
+  "round": 6,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 662
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S128",
+  "kind": "sources",
+  "question_id": "question:Q49",
+  "refs": [
+   "source:S128"
+  ],
+  "round": 6,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 663
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S129",
+  "kind": "sources",
+  "question_id": "question:Q49",
+  "refs": [
+   "source:S129"
+  ],
+  "round": 6,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 664
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S13",
+  "kind": "sources",
+  "question_id": "question:Q6",
+  "refs": [
+   "source:S13"
+  ],
+  "round": 1,
+  "summary": "Correlation and Path Analysis of Morphological Traits to Body Weight of Pteria Penguin from Meiji Reef",
+  "tick": 63
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S130",
+  "kind": "sources",
+  "question_id": "question:Q50",
+  "refs": [
+   "source:S130"
+  ],
+  "round": 6,
+  "summary": "Female-biased immigration and male peace-keeping in groups of the shell-dwelling cichlid fish  Neolamprologus multifasciatus",
+  "tick": 667
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S131",
+  "kind": "sources",
+  "question_id": "question:Q50",
+  "refs": [
+   "source:S131"
+  ],
+  "round": 6,
+  "summary": "Societies of the shell-dwelling cichlid Neolamprologus multifasciatus",
+  "tick": 668
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S132",
+  "kind": "sources",
+  "question_id": "question:Q50",
+  "refs": [
+   "source:S132"
+  ],
+  "round": 6,
+  "summary": "Spatial patterns in animal territoriality : competitive behaviour in a shell dwelling cichlid",
+  "tick": 669
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S133",
+  "kind": "sources",
+  "question_id": "question:Q51",
+  "refs": [
+   "source:S133"
+  ],
+  "round": 6,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 681
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S134",
+  "kind": "sources",
+  "question_id": "question:Q51",
+  "refs": [
+   "source:S134"
+  ],
+  "round": 6,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 682
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S135",
+  "kind": "sources",
+  "question_id": "question:Q51",
+  "refs": [
+   "source:S135"
+  ],
+  "round": 6,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 683
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S136",
+  "kind": "sources",
+  "question_id": "question:Q52",
+  "refs": [
+   "source:S136"
+  ],
+  "round": 6,
+  "summary": "Helping effort increases with relatedness in bell miners, but ‘unrelated’ helpers of both sexes still provide substantial care",
+  "tick": 686
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S137",
+  "kind": "sources",
+  "question_id": "question:Q52",
+  "refs": [
+   "source:S137"
+  ],
+  "round": 6,
+  "summary": "Direct benefits explain interspecific variation in helping behaviour among cooperatively breeding birds",
+  "tick": 687
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S138",
+  "kind": "sources",
+  "question_id": "question:Q52",
+  "refs": [
+   "source:S138"
+  ],
+  "round": 6,
+  "summary": "Offspring provisioning is affected by begging and hatch order but not relatedness in a communally breeding bird",
+  "tick": 688
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S139",
+  "kind": "sources",
+  "question_id": "question:Q53",
+  "refs": [
+   "source:S139"
+  ],
+  "round": 6,
+  "summary": "Talking more and fighting less? Conflict management through acoustic signals in a cooperatively breeding species",
+  "tick": 700
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S14",
+  "kind": "sources",
+  "question_id": "question:Q6",
+  "refs": [
+   "source:S14"
+  ],
+  "round": 1,
+  "summary": "Phenotypic selection on morphology at independence in the Chinstrap penguin Pygoscelis antarctica",
+  "tick": 64
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S140",
+  "kind": "sources",
+  "question_id": "question:Q53",
+  "refs": [
+   "source:S140"
+  ],
+  "round": 6,
+  "summary": "Dwarf mongooses pre-emptively alter their behaviour relative to the threat posed by different rival groups | Nature Ecology & Evolution",
+  "tick": 701
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S141",
+  "kind": "sources",
+  "question_id": "question:Q53",
+  "refs": [
+   "source:S141"
+  ],
+  "round": 6,
+  "summary": "Compensation of labour by non-competitive individuals mitigates costs of aggressive succession contest in a tropical social wasp",
+  "tick": 702
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S142",
+  "kind": "sources",
+  "question_id": "question:Q54",
+  "refs": [
+   "source:S142"
+  ],
+  "round": 6,
+  "summary": "Morphological Variation Among Populations of the Mountain Brushtail Possum, Trichosurus-Caninus Ogilby (Phalangeridae, Marsupialia)",
+  "tick": 705
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S143",
+  "kind": "sources",
+  "question_id": "question:Q54",
+  "refs": [
+   "source:S143"
+  ],
+  "round": 6,
+  "summary": "Geographic dimorphism in the mountain brushtail possum ( Trichosurus caninus ): the case for a new species",
+  "tick": 706
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S144",
+  "kind": "sources",
+  "question_id": "question:Q54",
+  "refs": [
+   "source:S144"
+  ],
+  "round": 6,
+  "summary": "Trichosurus cunningham Lindenmayer, Dubach & Viggers 2002",
+  "tick": 707
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S145",
+  "kind": "sources",
+  "question_id": "question:Q55",
+  "refs": [
+   "source:S145"
+  ],
+  "round": 6,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 719
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S146",
+  "kind": "sources",
+  "question_id": "question:Q55",
+  "refs": [
+   "source:S146"
+  ],
+  "round": 6,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 720
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S147",
+  "kind": "sources",
+  "question_id": "question:Q55",
+  "refs": [
+   "source:S147"
+  ],
+  "round": 6,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 721
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S148",
+  "kind": "sources",
+  "question_id": "question:Q56",
+  "refs": [
+   "source:S148"
+  ],
+  "round": 6,
+  "summary": "Effects of the prominence of first harmonic on the perception of breathiness and vowel identity.",
+  "tick": 724
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S149",
+  "kind": "sources",
+  "question_id": "question:Q56",
+  "refs": [
+   "source:S149"
+  ],
+  "round": 6,
+  "summary": "The influence of spectral prominence on perceived vowel quality",
+  "tick": 725
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S15",
+  "kind": "sources",
+  "question_id": "question:Q6",
+  "refs": [
+   "source:S15"
+  ],
+  "round": 1,
+  "summary": "Morphometric patterns in Recent and fossil penguins (Aves, Sphenisciformes)",
+  "tick": 65
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S150",
+  "kind": "sources",
+  "question_id": "question:Q56",
+  "refs": [
+   "source:S150"
+  ],
+  "round": 6,
+  "summary": "Acoustics of the Vowel",
+  "tick": 726
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S151",
+  "kind": "sources",
+  "question_id": "question:Q57",
+  "refs": [
+   "source:S151"
+  ],
+  "round": 7,
+  "summary": "food measurement data and sensory evaluation data",
+  "tick": 771
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S152",
+  "kind": "sources",
+  "question_id": "question:Q57",
+  "refs": [
+   "source:S152"
+  ],
+  "round": 7,
+  "summary": "Normative ratings for the Kitchen and Food Sounds (KFS) database | Behavior Research Methods | Springer Nature Link",
+  "tick": 772
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S153",
+  "kind": "sources",
+  "question_id": "question:Q57",
+  "refs": [
+   "source:S153"
+  ],
+  "round": 7,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 773
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S154",
+  "kind": "sources",
+  "question_id": "question:Q58",
+  "refs": [
+   "source:S154"
+  ],
+  "round": 7,
+  "summary": "Concurrent categorical scaling of sound quality measures (CCSM) – Database of psychoacoustic measures roughness, sharpness, tonality, loudness and annoyance of artificial and real sounds | Zenodo",
+  "tick": 775
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S155",
+  "kind": "sources",
+  "question_id": "question:Q58",
+  "refs": [
+   "source:S155"
+  ],
+  "round": 7,
+  "summary": "Multimodal Dataset for Music-Taste Correspondences: Cross-Modal Features, Food Chemistry Vectors, and Perceptual Ratings | Zenodo",
+  "tick": 776
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S156",
+  "kind": "sources",
+  "question_id": "question:Q58",
+  "refs": [
+   "source:S156"
+  ],
+  "round": 7,
+  "summary": "swallowing acoustics.csv",
+  "tick": 777
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S157",
+  "kind": "sources",
+  "question_id": "question:Q60",
+  "refs": [
+   "source:S157"
+  ],
+  "round": 7,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 789
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S158",
+  "kind": "sources",
+  "question_id": "question:Q60",
+  "refs": [
+   "source:S158"
+  ],
+  "round": 7,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 790
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S159",
+  "kind": "sources",
+  "question_id": "question:Q60",
+  "refs": [
+   "source:S159"
+  ],
+  "round": 7,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 791
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S16",
+  "kind": "sources",
+  "question_id": "question:Q7",
+  "refs": [
+   "source:S16"
+  ],
+  "round": 1,
+  "summary": "Sleep restriction may lead to disruption in physiological attention and reaction time",
+  "tick": 77
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S160",
+  "kind": "sources",
+  "question_id": "question:Q61",
+  "refs": [
+   "source:S160"
+  ],
+  "round": 7,
+  "summary": "Provisioning rules in tree swallows",
+  "tick": 794
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S161",
+  "kind": "sources",
+  "question_id": "question:Q61",
+  "refs": [
+   "source:S161"
+  ],
+  "round": 7,
+  "summary": "Fledgling begging and parental responsiveness in American dippers (Cinclus mexicanus)",
+  "tick": 795
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S162",
+  "kind": "sources",
+  "question_id": "question:Q61",
+  "refs": [
+   "source:S162"
+  ],
+  "round": 7,
+  "summary": "How Do Female Red-winged Blackbirds Allocate Food within Broods?",
+  "tick": 796
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S163",
+  "kind": "sources",
+  "question_id": "question:Q62",
+  "refs": [
+   "source:S163"
+  ],
+  "round": 7,
+  "summary": "Talking more and fighting less? Conflict management through acoustic signals in a cooperatively breeding species",
+  "tick": 808
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S164",
+  "kind": "sources",
+  "question_id": "question:Q62",
+  "refs": [
+   "source:S164"
+  ],
+  "round": 7,
+  "summary": "Dwarf mongooses pre-emptively alter their behaviour relative to the threat posed by different rival groups | Nature Ecology & Evolution",
+  "tick": 809
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S165",
+  "kind": "sources",
+  "question_id": "question:Q62",
+  "refs": [
+   "source:S165"
+  ],
+  "round": 7,
+  "summary": "Compensation of labour by non-competitive individuals mitigates costs of aggressive succession contest in a tropical social wasp",
+  "tick": 810
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S166",
+  "kind": "sources",
+  "question_id": "question:Q63",
+  "refs": [
+   "source:S166"
+  ],
+  "round": 7,
+  "summary": "Societies of the shell-dwelling cichlid Neolamprologus multifasciatus",
+  "tick": 813
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S167",
+  "kind": "sources",
+  "question_id": "question:Q63",
+  "refs": [
+   "source:S167"
+  ],
+  "round": 7,
+  "summary": "Spatial patterns in animal territoriality : competitive behaviour in a shell dwelling cichlid",
+  "tick": 814
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S168",
+  "kind": "sources",
+  "question_id": "question:Q63",
+  "refs": [
+   "source:S168"
+  ],
+  "round": 7,
+  "summary": "Social and spatial conflict drive resident aggression toward outsiders in a group-living fish | Behavioral Ecology | Oxford Academic",
+  "tick": 815
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S169",
+  "kind": "sources",
+  "question_id": "question:Q64",
+  "refs": [
+   "source:S169"
+  ],
+  "round": 7,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 826
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S17",
+  "kind": "sources",
+  "question_id": "question:Q7",
+  "refs": [
+   "source:S17"
+  ],
+  "round": 1,
+  "summary": "Sleep deprivation, vigilant attention, and brain function: a review",
+  "tick": 78
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S170",
+  "kind": "sources",
+  "question_id": "question:Q64",
+  "refs": [
+   "source:S170"
+  ],
+  "round": 7,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 827
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S171",
+  "kind": "sources",
+  "question_id": "question:Q64",
+  "refs": [
+   "source:S171"
+  ],
+  "round": 7,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 828
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S172",
+  "kind": "sources",
+  "question_id": "question:Q65",
+  "refs": [
+   "source:S172"
+  ],
+  "round": 7,
+  "summary": "Size- and sex-related aspects of the ecology of the hermit crab Clibanarius digueti Bouvier (Decapoda: Anomura: Diogenidae)",
+  "tick": 831
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S173",
+  "kind": "sources",
+  "question_id": "question:Q65",
+  "refs": [
+   "source:S173"
+  ],
+  "round": 7,
+  "summary": "Mechanisms causing size differences of the land hermit crab Coenobita rugosus among eco-islands in Southern Taiwan",
+  "tick": 832
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S174",
+  "kind": "sources",
+  "question_id": "question:Q65",
+  "refs": [
+   "source:S174"
+  ],
+  "round": 7,
+  "summary": "Utilization of Shell Resources by the Hermit Crabs Calcinus Latens and Calcinus Gaimardii at Kenting, Southern Taiwan",
+  "tick": 833
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S175",
+  "kind": "sources",
+  "question_id": "question:Q66",
+  "refs": [
+   "source:S175"
+  ],
+  "round": 7,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 845
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S176",
+  "kind": "sources",
+  "question_id": "question:Q66",
+  "refs": [
+   "source:S176"
+  ],
+  "round": 7,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 846
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S177",
+  "kind": "sources",
+  "question_id": "question:Q66",
+  "refs": [
+   "source:S177"
+  ],
+  "round": 7,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 847
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S178",
+  "kind": "sources",
+  "question_id": "question:Q67",
+  "refs": [
+   "source:S178"
+  ],
+  "round": 7,
+  "summary": "Conveying more (or less) than we realize: The role of impression-management in feedback-seeking",
+  "tick": 850
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S179",
+  "kind": "sources",
+  "question_id": "question:Q67",
+  "refs": [
+   "source:S179"
+  ],
+  "round": 7,
+  "summary": "How Auditors’ Approach to Client Inquiry May Affect Skeptical Judgment: A Mixed-method Examination of Client Inquiry and Note Taking",
+  "tick": 851
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S18",
+  "kind": "sources",
+  "question_id": "question:Q7",
+  "refs": [
+   "source:S18"
+  ],
+  "round": 1,
+  "summary": "Sleepiness and Performance in Response to Repeated Sleep Restriction and Subsequent Recovery during Semi‐Laboratory Conditions",
+  "tick": 79
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S180",
+  "kind": "sources",
+  "question_id": "question:Q67",
+  "refs": [
+   "source:S180"
+  ],
+  "round": 7,
+  "summary": "What do conscientious people do? Development and validation of the Behavioral Indicators of Conscientiousness (BIC)",
+  "tick": 852
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S181",
+  "kind": "sources",
+  "question_id": "question:Q68",
+  "refs": [
+   "source:S181"
+  ],
+  "round": 8,
+  "summary": "Sound amplitude of discrete bubbles entrained by a breaking wave",
+  "tick": 899
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S182",
+  "kind": "sources",
+  "question_id": "question:Q68",
+  "refs": [
+   "source:S182"
+  ],
+  "round": 8,
+  "summary": "Sound amplitude of discrete bubbles entrained by an impacting water stream",
+  "tick": 900
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S183",
+  "kind": "sources",
+  "question_id": "question:Q68",
+  "refs": [
+   "source:S183"
+  ],
+  "round": 8,
+  "summary": "BUBBLE ACOUSTICS FROM WHALES TO OTHER WORLDS",
+  "tick": 901
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S184",
+  "kind": "sources",
+  "question_id": "question:Q69",
+  "refs": [
+   "source:S184"
+  ],
+  "round": 8,
+  "summary": "adejonghm/air-bubble-acoustic-frequency-identifier",
+  "tick": 903
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S185",
+  "kind": "sources",
+  "question_id": "question:Q69",
+  "refs": [
+   "source:S185"
+  ],
+  "round": 8,
+  "summary": "Dryad | Data: Evaporation induced acoustic emissions in microfluidic vessels",
+  "tick": 904
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S186",
+  "kind": "sources",
+  "question_id": "question:Q69",
+  "refs": [
+   "source:S186"
+  ],
+  "round": 8,
+  "summary": "APECSS (v1.7) : Testcases for acoustic interactions of cavitation bubbles | Zenodo",
+  "tick": 905
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S187",
+  "kind": "sources",
+  "question_id": "question:Q71",
+  "refs": [
+   "source:S187"
+  ],
+  "round": 8,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 917
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S188",
+  "kind": "sources",
+  "question_id": "question:Q71",
+  "refs": [
+   "source:S188"
+  ],
+  "round": 8,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 918
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S189",
+  "kind": "sources",
+  "question_id": "question:Q71",
+  "refs": [
+   "source:S189"
+  ],
+  "round": 8,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 919
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S19",
+  "kind": "sources",
+  "question_id": "question:Q8",
+  "refs": [
+   "source:S19"
+  ],
+  "round": 1,
+  "summary": "Investigation of the effects on car weight on fuel consumption -measurements on 11 cars on the dynamic roller test stand",
+  "tick": 91
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S190",
+  "kind": "sources",
+  "question_id": "question:Q72",
+  "refs": [
+   "source:S190"
+  ],
+  "round": 8,
+  "summary": "Brood provisioning rate and food allocation rules according to nestling begging in a clutch-adjusting species, the Rufous-tailed Scrub-robin Cercotrichas galactotes",
+  "tick": 922
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S191",
+  "kind": "sources",
+  "question_id": "question:Q72",
+  "refs": [
+   "source:S191"
+  ],
+  "round": 8,
+  "summary": "Fledgling begging and parental responsiveness in American dippers (Cinclus mexicanus)",
+  "tick": 923
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S192",
+  "kind": "sources",
+  "question_id": "question:Q72",
+  "refs": [
+   "source:S192"
+  ],
+  "round": 8,
+  "summary": "How Do Female Red-winged Blackbirds Allocate Food within Broods?",
+  "tick": 924
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S193",
+  "kind": "sources",
+  "question_id": "question:Q73",
+  "refs": [
+   "source:S193"
+  ],
+  "round": 8,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 936
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S194",
+  "kind": "sources",
+  "question_id": "question:Q73",
+  "refs": [
+   "source:S194"
+  ],
+  "round": 8,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 937
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S195",
+  "kind": "sources",
+  "question_id": "question:Q73",
+  "refs": [
+   "source:S195"
+  ],
+  "round": 8,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 938
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S196",
+  "kind": "sources",
+  "question_id": "question:Q74",
+  "refs": [
+   "source:S196"
+  ],
+  "round": 8,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially breeding bird",
+  "tick": 941
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S197",
+  "kind": "sources",
+  "question_id": "question:Q74",
+  "refs": [
+   "source:S197"
+  ],
+  "round": 8,
+  "summary": "Adult helpers increase the recruitment of closely related offspring in the cooperatively breeding rifleman",
+  "tick": 942
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S198",
+  "kind": "sources",
+  "question_id": "question:Q74",
+  "refs": [
+   "source:S198"
+  ],
+  "round": 8,
+  "summary": "Influence of kinship on helping behavior in Gal�pagos mockingbirds",
+  "tick": 943
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S199",
+  "kind": "sources",
+  "question_id": "question:Q75",
+  "refs": [
+   "source:S199"
+  ],
+  "round": 8,
+  "summary": "A preregistered replication of an attraction-effect experiment in the footbridge dilemma",
+  "tick": 955
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S2",
+  "kind": "sources",
+  "question_id": "question:Q1",
+  "refs": [
+   "source:S2"
+  ],
+  "round": 1,
+  "summary": "Evaluation of Chewing Sound of Potato Chips Using Loudness Spectrum and Sharpness",
+  "tick": 26
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S20",
+  "kind": "sources",
+  "question_id": "question:Q8",
+  "refs": [
+   "source:S20"
+  ],
+  "round": 1,
+  "summary": "Some evidence on determinants of fuel economy as a function of driving cycle and test type",
+  "tick": 92
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S200",
+  "kind": "sources",
+  "question_id": "question:Q75",
+  "refs": [
+   "source:S200"
+  ],
+  "round": 8,
+  "summary": "Do agent-discovered models of reference resolution predict new people better than the models they started from? A pre-registered prospective test.",
+  "tick": 956
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S201",
+  "kind": "sources",
+  "question_id": "question:Q75",
+  "refs": [
+   "source:S201"
+  ],
+  "round": 8,
+  "summary": "General Social Agents",
+  "tick": 957
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S202",
+  "kind": "sources",
+  "question_id": "question:Q76",
+  "refs": [
+   "source:S202"
+  ],
+  "round": 8,
+  "summary": "Naiveté, Projection Bias, and Habit Formation in Gym Attendance",
+  "tick": 960
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S203",
+  "kind": "sources",
+  "question_id": "question:Q76",
+  "refs": [
+   "source:S203"
+  ],
+  "round": 8,
+  "summary": "The Efficacy of Incentives to Motivate Continued Fitness-Center Attendance in College First-Year Students: A Randomized Controlled Trial",
+  "tick": 961
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S204",
+  "kind": "sources",
+  "question_id": "question:Q76",
+  "refs": [
+   "source:S204"
+  ],
+  "round": 8,
+  "summary": "Habit Formation and Naivet e in Gym Attendance: Evidence from a Field Experiment",
+  "tick": 962
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S205",
+  "kind": "sources",
+  "question_id": "question:Q77",
+  "refs": [
+   "source:S205"
+  ],
+  "round": 8,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 974
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S206",
+  "kind": "sources",
+  "question_id": "question:Q77",
+  "refs": [
+   "source:S206"
+  ],
+  "round": 8,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 975
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S207",
+  "kind": "sources",
+  "question_id": "question:Q77",
+  "refs": [
+   "source:S207"
+  ],
+  "round": 8,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 976
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S208",
+  "kind": "sources",
+  "question_id": "question:Q78",
+  "refs": [
+   "source:S208"
+  ],
+  "round": 8,
+  "summary": "Some evidence on determinants of fuel economy as a function of driving cycle and test type",
+  "tick": 979
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S209",
+  "kind": "sources",
+  "question_id": "question:Q78",
+  "refs": [
+   "source:S209"
+  ],
+  "round": 8,
+  "summary": "Analytic Model of Powertrain Drive Cycle Efficiency, with Application to the US New Vehicle Fleet",
+  "tick": 980
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S21",
+  "kind": "sources",
+  "question_id": "question:Q8",
+  "refs": [
+   "source:S21"
+  ],
+  "round": 1,
+  "summary": "The effect of automobile weight on gasoline costs",
+  "tick": 93
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S210",
+  "kind": "sources",
+  "question_id": "question:Q78",
+  "refs": [
+   "source:S210"
+  ],
+  "round": 8,
+  "summary": "Fuel for thought: Powertrain efficiencies of British vehicles",
+  "tick": 981
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S211",
+  "kind": "sources",
+  "question_id": "question:Q79",
+  "refs": [
+   "source:S211"
+  ],
+  "round": 9,
+  "summary": "food measurement data and sensory evaluation data",
+  "tick": 1025
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S212",
+  "kind": "sources",
+  "question_id": "question:Q79",
+  "refs": [
+   "source:S212"
+  ],
+  "round": 9,
+  "summary": "Snack samples.",
+  "tick": 1026
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S213",
+  "kind": "sources",
+  "question_id": "question:Q79",
+  "refs": [
+   "source:S213"
+  ],
+  "round": 9,
+  "summary": "Analysis of Food Fracture Process by Acoustic Emission Measurement for Reliability Improvement of Food Texture Evaluation",
+  "tick": 1027
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S214",
+  "kind": "sources",
+  "question_id": "question:Q80",
+  "refs": [
+   "source:S214"
+  ],
+  "round": 9,
+  "summary": "swallowing acoustics.csv",
+  "tick": 1029
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S215",
+  "kind": "sources",
+  "question_id": "question:Q80",
+  "refs": [
+   "source:S215"
+  ],
+  "round": 9,
+  "summary": "jsjm/EatingSoundClassification",
+  "tick": 1030
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S216",
+  "kind": "sources",
+  "question_id": "question:Q80",
+  "refs": [
+   "source:S216"
+  ],
+  "round": 9,
+  "summary": "Supplementary material: Fantastic squeaks and where to find them: producing and analysing audible acoustics from leipäjuusto | Zenodo",
+  "tick": 1031
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S217",
+  "kind": "sources",
+  "question_id": "question:Q82",
+  "refs": [
+   "source:S217"
+  ],
+  "round": 9,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1043
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S218",
+  "kind": "sources",
+  "question_id": "question:Q82",
+  "refs": [
+   "source:S218"
+  ],
+  "round": 9,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1044
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S219",
+  "kind": "sources",
+  "question_id": "question:Q82",
+  "refs": [
+   "source:S219"
+  ],
+  "round": 9,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 1045
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S22",
+  "kind": "sources",
+  "question_id": "question:Q9",
+  "refs": [
+   "source:S22"
+  ],
+  "round": 2,
+  "summary": "Effects of sensory combination on crispness and prediction of sensory evaluation value by Gaussian process regression",
+  "tick": 149
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S220",
+  "kind": "sources",
+  "question_id": "question:Q83",
+  "refs": [
+   "source:S220"
+  ],
+  "round": 9,
+  "summary": "Determinants of Nestling Feeding Rates and Parental Investment in the Mountain Chickadee",
+  "tick": 1048
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S221",
+  "kind": "sources",
+  "question_id": "question:Q83",
+  "refs": [
+   "source:S221"
+  ],
+  "round": 9,
+  "summary": "The dynamics of parental care in Choughs (Pyrrhocorax pyrrhocorax)",
+  "tick": 1049
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S222",
+  "kind": "sources",
+  "question_id": "question:Q83",
+  "refs": [
+   "source:S222"
+  ],
+  "round": 9,
+  "summary": "Consequences of variation in brood size on the allocation of parental care in common terns (Sterna hirundo)",
+  "tick": 1050
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S223",
+  "kind": "sources",
+  "question_id": "question:Q84",
+  "refs": [
+   "source:S223"
+  ],
+  "round": 9,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 1062
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S224",
+  "kind": "sources",
+  "question_id": "question:Q84",
+  "refs": [
+   "source:S224"
+  ],
+  "round": 9,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 1063
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S225",
+  "kind": "sources",
+  "question_id": "question:Q84",
+  "refs": [
+   "source:S225"
+  ],
+  "round": 9,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 1064
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S226",
+  "kind": "sources",
+  "question_id": "question:Q85",
+  "refs": [
+   "source:S226"
+  ],
+  "round": 9,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially breeding bird",
+  "tick": 1067
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S227",
+  "kind": "sources",
+  "question_id": "question:Q85",
+  "refs": [
+   "source:S227"
+  ],
+  "round": 9,
+  "summary": "Direct benefits explain interspecific variation in helping behaviour among cooperatively breeding birds",
+  "tick": 1068
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S228",
+  "kind": "sources",
+  "question_id": "question:Q85",
+  "refs": [
+   "source:S228"
+  ],
+  "round": 9,
+  "summary": "Great Spotted Cuckoo Fledglings Often Receive Feedings from Other Magpie Adults than Their Foster Parents: Which Magpies Accept to Feed Foreign Cuckoo Fledglings? | PLOS One",
+  "tick": 1069
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S229",
+  "kind": "sources",
+  "question_id": "question:Q86",
+  "refs": [
+   "source:S229"
+  ],
+  "round": 9,
+  "summary": "A preregistered replication of an attraction-effect experiment in the footbridge dilemma",
+  "tick": 1081
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S23",
+  "kind": "sources",
+  "question_id": "question:Q9",
+  "refs": [
+   "source:S23"
+  ],
+  "round": 2,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 150
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S230",
+  "kind": "sources",
+  "question_id": "question:Q86",
+  "refs": [
+   "source:S230"
+  ],
+  "round": 9,
+  "summary": "Do agent-discovered models of reference resolution predict new people better than the models they started from? A pre-registered prospective test.",
+  "tick": 1082
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S231",
+  "kind": "sources",
+  "question_id": "question:Q86",
+  "refs": [
+   "source:S231"
+  ],
+  "round": 9,
+  "summary": "A pre-registration template for transparent choice experiment research",
+  "tick": 1083
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S232",
+  "kind": "sources",
+  "question_id": "question:Q87",
+  "refs": [
+   "source:S232"
+  ],
+  "round": 9,
+  "summary": "Naiveté, Projection Bias, and Habit Formation in Gym Attendance",
+  "tick": 1086
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S233",
+  "kind": "sources",
+  "question_id": "question:Q87",
+  "refs": [
+   "source:S233"
+  ],
+  "round": 9,
+  "summary": "The Efficacy of Incentives to Motivate Continued Fitness-Center Attendance in College First-Year Students: A Randomized Controlled Trial",
+  "tick": 1087
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S234",
+  "kind": "sources",
+  "question_id": "question:Q87",
+  "refs": [
+   "source:S234"
+  ],
+  "round": 9,
+  "summary": "Habit Formation and Naivet e in Gym Attendance: Evidence from a Field Experiment",
+  "tick": 1088
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S235",
+  "kind": "sources",
+  "question_id": "question:Q88",
+  "refs": [
+   "source:S235"
+  ],
+  "round": 9,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1098
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S236",
+  "kind": "sources",
+  "question_id": "question:Q88",
+  "refs": [
+   "source:S236"
+  ],
+  "round": 9,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1099
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S237",
+  "kind": "sources",
+  "question_id": "question:Q88",
+  "refs": [
+   "source:S237"
+  ],
+  "round": 9,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 1100
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S238",
+  "kind": "sources",
+  "question_id": "question:Q89",
+  "refs": [
+   "source:S238"
+  ],
+  "round": 9,
+  "summary": "Frontiers | Prediction of attendance at fitness center: a comparison between the theory of planned behavior, the social cognitive theory, and the physical activity maintenance theory",
+  "tick": 1103
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S239",
+  "kind": "sources",
+  "question_id": "question:Q89",
+  "refs": [
+   "source:S239"
+  ],
+  "round": 9,
+  "summary": "Can Financial Incentives Help People Trying to Establish New Habits? Experimental Evidence with New Gym Members",
+  "tick": 1104
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S24",
+  "kind": "sources",
+  "question_id": "question:Q9",
+  "refs": [
+   "source:S24"
+  ],
+  "round": 2,
+  "summary": "Correlation between acoustic characteristics and sensory evaluation of puffed‐grain food based on energy analysis",
+  "tick": 151
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S240",
+  "kind": "sources",
+  "question_id": "question:Q89",
+  "refs": [
+   "source:S240"
+  ],
+  "round": 9,
+  "summary": "Frontiers | (How) Does Affect Influence the Formation of Habits in Exercise?",
+  "tick": 1105
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S241",
+  "kind": "sources",
+  "question_id": "question:Q90",
+  "refs": [
+   "source:S241"
+  ],
+  "round": 10,
+  "summary": "Evaluation of Chewing Sound of Potato Chips Using Loudness Spectrum and Sharpness",
+  "tick": 1149
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S242",
+  "kind": "sources",
+  "question_id": "question:Q90",
+  "refs": [
+   "source:S242"
+  ],
+  "round": 10,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 1150
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S243",
+  "kind": "sources",
+  "question_id": "question:Q90",
+  "refs": [
+   "source:S243"
+  ],
+  "round": 10,
+  "summary": "Normative ratings for the Kitchen and Food Sounds (KFS) database | Behavior Research Methods | Springer Nature Link",
+  "tick": 1151
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S244",
+  "kind": "sources",
+  "question_id": "question:Q91",
+  "refs": [
+   "source:S244"
+  ],
+  "round": 10,
+  "summary": "Ansar857/Pepsico-Potato-Chips-Quality-Predictor",
+  "tick": 1153
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S245",
+  "kind": "sources",
+  "question_id": "question:Q91",
+  "refs": [
+   "source:S245"
+  ],
+  "round": 10,
+  "summary": "Dataset of a study evaluated the effect of organic acids on the stabilization of color of third-generation potato snacks. Descriptive and affective sensory analyses were conducted  using trained and consumer panels as well. Study published in the manuscript with DOI: doi.org/10.1016/j.lwt.2025.117460 | Zenodo",
+  "tick": 1154
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S246",
+  "kind": "sources",
+  "question_id": "question:Q91",
+  "refs": [
+   "source:S246"
+  ],
+  "round": 10,
+  "summary": "nayana142/Amazon_Food_Review",
+  "tick": 1155
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S247",
+  "kind": "sources",
+  "question_id": "question:Q93",
+  "refs": [
+   "source:S247"
+  ],
+  "round": 10,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1167
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S248",
+  "kind": "sources",
+  "question_id": "question:Q93",
+  "refs": [
+   "source:S248"
+  ],
+  "round": 10,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1168
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S249",
+  "kind": "sources",
+  "question_id": "question:Q93",
+  "refs": [
+   "source:S249"
+  ],
+  "round": 10,
+  "summary": "Multi-Source Evidence Fusion for Audio Question Answering",
+  "tick": 1169
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S25",
+  "kind": "sources",
+  "question_id": "question:Q10",
+  "refs": [
+   "source:S25"
+  ],
+  "round": 2,
+  "summary": "aniket-chakraborty2001/Food_Texture",
+  "tick": 153
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S250",
+  "kind": "sources",
+  "question_id": "question:Q94",
+  "refs": [
+   "source:S250"
+  ],
+  "round": 10,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially breeding bird",
+  "tick": 1172
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S251",
+  "kind": "sources",
+  "question_id": "question:Q94",
+  "refs": [
+   "source:S251"
+  ],
+  "round": 10,
+  "summary": "Great Spotted Cuckoo Fledglings Often Receive Feedings from Other Magpie Adults than Their Foster Parents: Which Magpies Accept to Feed Foreign Cuckoo Fledglings? | PLOS One",
+  "tick": 1173
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S252",
+  "kind": "sources",
+  "question_id": "question:Q94",
+  "refs": [
+   "source:S252"
+  ],
+  "round": 10,
+  "summary": "A case of alloparental care in the South Island Robin ( Petroica australis ): Accidental adoption or kin selection?",
+  "tick": 1174
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S253",
+  "kind": "sources",
+  "question_id": "question:Q95",
+  "refs": [
+   "source:S253"
+  ],
+  "round": 10,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 1186
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S254",
+  "kind": "sources",
+  "question_id": "question:Q95",
+  "refs": [
+   "source:S254"
+  ],
+  "round": 10,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 1187
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S255",
+  "kind": "sources",
+  "question_id": "question:Q95",
+  "refs": [
+   "source:S255"
+  ],
+  "round": 10,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 1188
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S256",
+  "kind": "sources",
+  "question_id": "question:Q96",
+  "refs": [
+   "source:S256"
+  ],
+  "round": 10,
+  "summary": "Sex roles, parental care and offspring growth in two contrasting coucal species",
+  "tick": 1191
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S257",
+  "kind": "sources",
+  "question_id": "question:Q96",
+  "refs": [
+   "source:S257"
+  ],
+  "round": 10,
+  "summary": "Consequences of variation in brood size on the allocation of parental care in common terns (Sterna hirundo)",
+  "tick": 1192
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S258",
+  "kind": "sources",
+  "question_id": "question:Q96",
+  "refs": [
+   "source:S258"
+  ],
+  "round": 10,
+  "summary": "Intersexual variation and factors affecting parental care in Western Bluebirds: a comparison of nestling and fledgling periods",
+  "tick": 1193
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S259",
+  "kind": "sources",
+  "question_id": "question:Q97",
+  "refs": [
+   "source:S259"
+  ],
+  "round": 10,
+  "summary": "A preregistered replication of an attraction-effect experiment in the footbridge dilemma",
+  "tick": 1205
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S26",
+  "kind": "sources",
+  "question_id": "question:Q10",
+  "refs": [
+   "source:S26"
+  ],
+  "round": 2,
+  "summary": "swallowing acoustics.csv",
+  "tick": 154
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S260",
+  "kind": "sources",
+  "question_id": "question:Q97",
+  "refs": [
+   "source:S260"
+  ],
+  "round": 10,
+  "summary": "Do agent-discovered models of reference resolution predict new people better than the models they started from? A pre-registered prospective test.",
+  "tick": 1206
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S261",
+  "kind": "sources",
+  "question_id": "question:Q97",
+  "refs": [
+   "source:S261"
+  ],
+  "round": 10,
+  "summary": "A pre-registration template for transparent choice experiment research",
+  "tick": 1207
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S262",
+  "kind": "sources",
+  "question_id": "question:Q98",
+  "refs": [
+   "source:S262"
+  ],
+  "round": 10,
+  "summary": "Naiveté, Projection Bias, and Habit Formation in Gym Attendance",
+  "tick": 1210
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S263",
+  "kind": "sources",
+  "question_id": "question:Q98",
+  "refs": [
+   "source:S263"
+  ],
+  "round": 10,
+  "summary": "The Efficacy of Incentives to Motivate Continued Fitness-Center Attendance in College First-Year Students: A Randomized Controlled Trial",
+  "tick": 1211
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S264",
+  "kind": "sources",
+  "question_id": "question:Q98",
+  "refs": [
+   "source:S264"
+  ],
+  "round": 10,
+  "summary": "Habit Formation and Naivet e in Gym Attendance: Evidence from a Field Experiment",
+  "tick": 1212
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S265",
+  "kind": "sources",
+  "question_id": "question:Q99",
+  "refs": [
+   "source:S265"
+  ],
+  "round": 10,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1221
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S266",
+  "kind": "sources",
+  "question_id": "question:Q99",
+  "refs": [
+   "source:S266"
+  ],
+  "round": 10,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1222
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S267",
+  "kind": "sources",
+  "question_id": "question:Q99",
+  "refs": [
+   "source:S267"
+  ],
+  "round": 10,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 1223
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S268",
+  "kind": "sources",
+  "question_id": "question:Q100",
+  "refs": [
+   "source:S268"
+  ],
+  "round": 10,
+  "summary": "Understanding Diamond Pricing Using Unconditional Quantile Regressions",
+  "tick": 1226
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S269",
+  "kind": "sources",
+  "question_id": "question:Q100",
+  "refs": [
+   "source:S269"
+  ],
+  "round": 10,
+  "summary": "Diamond Price Prediction Using Machine Learning Algorithms",
+  "tick": 1227
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S27",
+  "kind": "sources",
+  "question_id": "question:Q10",
+  "refs": [
+   "source:S27"
+  ],
+  "round": 2,
+  "summary": "CSCPadova/music-flavor-analysis",
+  "tick": 155
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S270",
+  "kind": "sources",
+  "question_id": "question:Q100",
+  "refs": [
+   "source:S270"
+  ],
+  "round": 10,
+  "summary": "Subjectivity of Diamond Prices in Online Retail: Insights from a Data Mining Study",
+  "tick": 1228
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S271",
+  "kind": "sources",
+  "question_id": "question:Q101",
+  "refs": [
+   "source:S271"
+  ],
+  "round": 11,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 1273
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S272",
+  "kind": "sources",
+  "question_id": "question:Q101",
+  "refs": [
+   "source:S272"
+  ],
+  "round": 11,
+  "summary": "Effects of sensory combination on crispness and prediction of sensory evaluation value by Gaussian process regression",
+  "tick": 1274
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S273",
+  "kind": "sources",
+  "question_id": "question:Q101",
+  "refs": [
+   "source:S273"
+  ],
+  "round": 11,
+  "summary": "Methodology of Chewing’s sound acquisition by different detectors for dry food in terms of crispness and crunchiness",
+  "tick": 1275
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S274",
+  "kind": "sources",
+  "question_id": "question:Q102",
+  "refs": [
+   "source:S274"
+  ],
+  "round": 11,
+  "summary": "Supplementary material: Fantastic squeaks and where to find them: producing and analysing audible acoustics from leipäjuusto | Zenodo",
+  "tick": 1277
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S275",
+  "kind": "sources",
+  "question_id": "question:Q102",
+  "refs": [
+   "source:S275"
+  ],
+  "round": 11,
+  "summary": "swallowing acoustics.csv",
+  "tick": 1278
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S276",
+  "kind": "sources",
+  "question_id": "question:Q102",
+  "refs": [
+   "source:S276"
+  ],
+  "round": 11,
+  "summary": "OSF | Software and Benchmark: The Crunchometer: A Low-Cost, Open-Source Acoustic Analysis of Feeding Microstructure",
+  "tick": 1279
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S277",
+  "kind": "sources",
+  "question_id": "question:Q104",
+  "refs": [
+   "source:S277"
+  ],
+  "round": 11,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1291
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S278",
+  "kind": "sources",
+  "question_id": "question:Q104",
+  "refs": [
+   "source:S278"
+  ],
+  "round": 11,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1292
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S279",
+  "kind": "sources",
+  "question_id": "question:Q104",
+  "refs": [
+   "source:S279"
+  ],
+  "round": 11,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 1293
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S28",
+  "kind": "sources",
+  "question_id": "question:Q12",
+  "refs": [
+   "source:S28"
+  ],
+  "round": 2,
+  "summary": "OSF | Higher Pitch, Slower Tempo, and Greater Stability in Singing than in Conversation among Mandarin speakers in Auckland: A Registered Report Replicating Ozaki et al. (2024)",
+  "tick": 167
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S280",
+  "kind": "sources",
+  "question_id": "question:Q105",
+  "refs": [
+   "source:S280"
+  ],
+  "round": 11,
+  "summary": "Drivers of alloparental provisioning of fledglings in a colonially breeding bird",
+  "tick": 1296
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S281",
+  "kind": "sources",
+  "question_id": "question:Q105",
+  "refs": [
+   "source:S281"
+  ],
+  "round": 11,
+  "summary": "",
+  "tick": 1297
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S282",
+  "kind": "sources",
+  "question_id": "question:Q105",
+  "refs": [
+   "source:S282"
+  ],
+  "round": 11,
+  "summary": "Helping effort increases with relatedness in bell miners, but ‘unrelated’ helpers of both sexes still provide substantial care",
+  "tick": 1298
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S283",
+  "kind": "sources",
+  "question_id": "question:Q106",
+  "refs": [
+   "source:S283"
+  ],
+  "round": 11,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 1310
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S284",
+  "kind": "sources",
+  "question_id": "question:Q106",
+  "refs": [
+   "source:S284"
+  ],
+  "round": 11,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 1311
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S285",
+  "kind": "sources",
+  "question_id": "question:Q106",
+  "refs": [
+   "source:S285"
+  ],
+  "round": 11,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 1312
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S286",
+  "kind": "sources",
+  "question_id": "question:Q107",
+  "refs": [
+   "source:S286"
+  ],
+  "round": 11,
+  "summary": "Post-fledging brood and care division in the roseate tern ( Sterna dougallii )",
+  "tick": 1315
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S287",
+  "kind": "sources",
+  "question_id": "question:Q107",
+  "refs": [
+   "source:S287"
+  ],
+  "round": 11,
+  "summary": "Consequences of variation in brood size on the allocation of parental care in common terns (Sterna hirundo)",
+  "tick": 1316
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S288",
+  "kind": "sources",
+  "question_id": "question:Q107",
+  "refs": [
+   "source:S288"
+  ],
+  "round": 11,
+  "summary": "Sex-specific parental care during postfledging in common ravens",
+  "tick": 1317
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S289",
+  "kind": "sources",
+  "question_id": "question:Q108",
+  "refs": [
+   "source:S289"
+  ],
+  "round": 11,
+  "summary": "Personality predictors of negotiation performance: Evidence from repeated bargaining and expert forecasts",
+  "tick": 1329
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S29",
+  "kind": "sources",
+  "question_id": "question:Q12",
+  "refs": [
+   "source:S29"
+  ],
+  "round": 2,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 168
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S290",
+  "kind": "sources",
+  "question_id": "question:Q108",
+  "refs": [
+   "source:S290"
+  ],
+  "round": 11,
+  "summary": "Playing it safe: Negotiators avoid uncertainty and reach safer, but less integrative agreements",
+  "tick": 1330
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S291",
+  "kind": "sources",
+  "question_id": "question:Q108",
+  "refs": [
+   "source:S291"
+  ],
+  "round": 11,
+  "summary": "PACTA (WP3): A confirmatory study of incentive-compatible commitment protocols for language-model crisis-bargaining agents",
+  "tick": 1331
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S292",
+  "kind": "sources",
+  "question_id": "question:Q109",
+  "refs": [
+   "source:S292"
+  ],
+  "round": 11,
+  "summary": "Naiveté, Projection Bias, and Habit Formation in Gym Attendance",
+  "tick": 1334
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S293",
+  "kind": "sources",
+  "question_id": "question:Q109",
+  "refs": [
+   "source:S293"
+  ],
+  "round": 11,
+  "summary": "The Efficacy of Incentives to Motivate Continued Fitness-Center Attendance in College First-Year Students: A Randomized Controlled Trial",
+  "tick": 1335
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S294",
+  "kind": "sources",
+  "question_id": "question:Q109",
+  "refs": [
+   "source:S294"
+  ],
+  "round": 11,
+  "summary": "Habit Formation and Naivet e in Gym Attendance: Evidence from a Field Experiment",
+  "tick": 1336
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S295",
+  "kind": "sources",
+  "question_id": "question:Q110",
+  "refs": [
+   "source:S295"
+  ],
+  "round": 11,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1346
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S296",
+  "kind": "sources",
+  "question_id": "question:Q110",
+  "refs": [
+   "source:S296"
+  ],
+  "round": 11,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1347
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S297",
+  "kind": "sources",
+  "question_id": "question:Q110",
+  "refs": [
+   "source:S297"
+  ],
+  "round": 11,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 1348
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S298",
+  "kind": "sources",
+  "question_id": "question:Q111",
+  "refs": [
+   "source:S298"
+  ],
+  "round": 11,
+  "summary": "Not only a mild winter: German consumers change their behavior to save natural gas",
+  "tick": 1351
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S299",
+  "kind": "sources",
+  "question_id": "question:Q111",
+  "refs": [
+   "source:S299"
+  ],
+  "round": 11,
+  "summary": "Relations between Temperature and Residential Natural Gas Consumption in the Central and Eastern United States",
+  "tick": 1352
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S3",
+  "kind": "sources",
+  "question_id": "question:Q1",
+  "refs": [
+   "source:S3"
+  ],
+  "round": 1,
+  "summary": "Normative ratings for the Kitchen and Food Sounds (KFS) database | Behavior Research Methods | Springer Nature Link",
+  "tick": 27
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S30",
+  "kind": "sources",
+  "question_id": "question:Q12",
+  "refs": [
+   "source:S30"
+  ],
+  "round": 2,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 169
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S300",
+  "kind": "sources",
+  "question_id": "question:Q111",
+  "refs": [
+   "source:S300"
+  ],
+  "round": 11,
+  "summary": "Realtime temperature-adjusted natural gas savings of European private households: A study on the German gas market in 2022",
+  "tick": 1353
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S301",
+  "kind": "sources",
+  "question_id": "question:Q112",
+  "refs": [
+   "source:S301"
+  ],
+  "round": 12,
+  "summary": "food measurement data and sensory evaluation data",
+  "tick": 1397
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S302",
+  "kind": "sources",
+  "question_id": "question:Q112",
+  "refs": [
+   "source:S302"
+  ],
+  "round": 12,
+  "summary": "Normative ratings for the Kitchen and Food Sounds (KFS) database | Behavior Research Methods | Springer Nature Link",
+  "tick": 1398
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S303",
+  "kind": "sources",
+  "question_id": "question:Q112",
+  "refs": [
+   "source:S303"
+  ],
+  "round": 12,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 1399
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S304",
+  "kind": "sources",
+  "question_id": "question:Q113",
+  "refs": [
+   "source:S304"
+  ],
+  "round": 12,
+  "summary": "Dataset of a study evaluated the effect of organic acids on the stabilization of color of third-generation potato snacks. Descriptive and affective sensory analyses were conducted  using trained and consumer panels as well. Study published in the manuscript with DOI: doi.org/10.1016/j.lwt.2025.117460 | Zenodo",
+  "tick": 1401
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S305",
+  "kind": "sources",
+  "question_id": "question:Q113",
+  "refs": [
+   "source:S305"
+  ],
+  "round": 12,
+  "summary": "Dataset for the article: Critical assessment of the quality and safety of vacuum fried sweet potato (Ipomoea batatas) crisps | Zenodo",
+  "tick": 1402
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S306",
+  "kind": "sources",
+  "question_id": "question:Q113",
+  "refs": [
+   "source:S306"
+  ],
+  "round": 12,
+  "summary": "Consumer Assessment Dataset",
+  "tick": 1403
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S307",
+  "kind": "sources",
+  "question_id": "question:Q115",
+  "refs": [
+   "source:S307"
+  ],
+  "round": 12,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1415
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S308",
+  "kind": "sources",
+  "question_id": "question:Q115",
+  "refs": [
+   "source:S308"
+  ],
+  "round": 12,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1416
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S309",
+  "kind": "sources",
+  "question_id": "question:Q115",
+  "refs": [
+   "source:S309"
+  ],
+  "round": 12,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 1417
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S31",
+  "kind": "sources",
+  "question_id": "question:Q13",
+  "refs": [
+   "source:S31"
+  ],
+  "round": 2,
+  "summary": "Decoupling Vehicle Work from Powertrain Properties in Vehicle Fuel Consumption",
+  "tick": 172
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S310",
+  "kind": "sources",
+  "question_id": "question:Q116",
+  "refs": [
+   "source:S310"
+  ],
+  "round": 12,
+  "summary": "Pressure on the boiling point",
+  "tick": 1420
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S311",
+  "kind": "sources",
+  "question_id": "question:Q116",
+  "refs": [
+   "source:S311"
+  ],
+  "round": 12,
+  "summary": "The direct relation between altitude and boiling point",
+  "tick": 1421
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S312",
+  "kind": "sources",
+  "question_id": "question:Q116",
+  "refs": [
+   "source:S312"
+  ],
+  "round": 12,
+  "summary": "Barometric formulas: various derivations and comparisons to environmentally relevant observations | ChemTexts | Springer Nature Link",
+  "tick": 1422
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S313",
+  "kind": "sources",
+  "question_id": "question:Q117",
+  "refs": [
+   "source:S313"
+  ],
+  "round": 12,
+  "summary": "Do dogs rationally infer the causes of failed actions? | PLOS One",
+  "tick": 1434
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S314",
+  "kind": "sources",
+  "question_id": "question:Q117",
+  "refs": [
+   "source:S314"
+  ],
+  "round": 12,
+  "summary": "External validation of history-structured forecasting across longitudinal animal decision tasks",
+  "tick": 1435
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S315",
+  "kind": "sources",
+  "question_id": "question:Q117",
+  "refs": [
+   "source:S315"
+  ],
+  "round": 12,
+  "summary": "Monkey hear, monkey do what? An application of Automated Behavioural Response systems for hypothesis testing in the world’s smallest monkey",
+  "tick": 1436
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S316",
+  "kind": "sources",
+  "question_id": "question:Q118",
+  "refs": [
+   "source:S316"
+  ],
+  "round": 12,
+  "summary": "Personality predictors of negotiation performance: Evidence from repeated bargaining and expert forecasts",
+  "tick": 1444
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S317",
+  "kind": "sources",
+  "question_id": "question:Q118",
+  "refs": [
+   "source:S317"
+  ],
+  "round": 12,
+  "summary": "Playing it safe: Negotiators avoid uncertainty and reach safer, but less integrative agreements",
+  "tick": 1445
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S318",
+  "kind": "sources",
+  "question_id": "question:Q118",
+  "refs": [
+   "source:S318"
+  ],
+  "round": 12,
+  "summary": "PACTA (WP3): A confirmatory study of incentive-compatible commitment protocols for language-model crisis-bargaining agents",
+  "tick": 1446
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S319",
+  "kind": "sources",
+  "question_id": "question:Q119",
+  "refs": [
+   "source:S319"
+  ],
+  "round": 12,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 1454
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S32",
+  "kind": "sources",
+  "question_id": "question:Q13",
+  "refs": [
+   "source:S32"
+  ],
+  "round": 2,
+  "summary": "The Measured Impact of",
+  "tick": 173
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S320",
+  "kind": "sources",
+  "question_id": "question:Q119",
+  "refs": [
+   "source:S320"
+  ],
+  "round": 12,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 1455
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S321",
+  "kind": "sources",
+  "question_id": "question:Q119",
+  "refs": [
+   "source:S321"
+  ],
+  "round": 12,
+  "summary": "DEAF: A Benchmark for Diagnostic Evaluation of Acoustic Faithfulness in Audio Language Models",
+  "tick": 1456
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S33",
+  "kind": "sources",
+  "question_id": "question:Q13",
+  "refs": [
+   "source:S33"
+  ],
+  "round": 2,
+  "summary": "The Measured Impact of Vehicle Mass on Road Load Forces and Energy Consumption for a BEV, HEV, and ICE Vehicle",
+  "tick": 174
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S34",
+  "kind": "sources",
+  "question_id": "question:Q14",
+  "refs": [
+   "source:S34"
+  ],
+  "round": 2,
+  "summary": "Larger Fish Have Larger Brains With More Neurons Across but Not Within Cohorts Raised in Different Growth Conditions - PMC",
+  "tick": 186
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S35",
+  "kind": "sources",
+  "question_id": "question:Q14",
+  "refs": [
+   "source:S35"
+  ],
+  "round": 2,
+  "summary": "Co-evolutionary dynamics of mammalian brain and body size | Nature Ecology & Evolution",
+  "tick": 187
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S36",
+  "kind": "sources",
+  "question_id": "question:Q14",
+  "refs": [
+   "source:S36"
+  ],
+  "round": 2,
+  "summary": "Brain Allometry in Bumblebee and Honey Bee Workers",
+  "tick": 188
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S37",
+  "kind": "sources",
+  "question_id": "question:Q15",
+  "refs": [
+   "source:S37"
+  ],
+  "round": 2,
+  "summary": "Comparison of subjective ratings of function with observed functional ability of frail older persons.",
+  "tick": 200
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S38",
+  "kind": "sources",
+  "question_id": "question:Q15",
+  "refs": [
+   "source:S38"
+  ],
+  "round": 2,
+  "summary": "Frailty Measures and their Association with Post-Acute Rehabilitation Outcomes",
+  "tick": 201
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S39",
+  "kind": "sources",
+  "question_id": "question:Q15",
+  "refs": [
+   "source:S39"
+  ],
+  "round": 2,
+  "summary": "Older Home Health Care Patients and Their Physicians: Assessment of Functional Ability",
+  "tick": 202
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S4",
+  "kind": "sources",
+  "question_id": "question:Q2",
+  "refs": [
+   "source:S4"
+  ],
+  "round": 1,
+  "summary": "Concurrent categorical scaling of sound quality measures (CCSM) – Database of psychoacoustic measures roughness, sharpness, tonality, loudness and annoyance of artificial and real sounds | Zenodo",
+  "tick": 29
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S40",
+  "kind": "sources",
+  "question_id": "question:Q16",
+  "refs": [
+   "source:S40"
+  ],
+  "round": 2,
+  "summary": "Correlation of Human Height with Hand Dimensions: A Study among Medical students",
+  "tick": 214
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S41",
+  "kind": "sources",
+  "question_id": "question:Q16",
+  "refs": [
+   "source:S41"
+  ],
+  "round": 2,
+  "summary": "Anthropometric Measurement of Hand Dimension and Their Correlation with Height in Undergraduate Students of a Medical College in Nepal",
+  "tick": 215
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S42",
+  "kind": "sources",
+  "question_id": "question:Q16",
+  "refs": [
+   "source:S42"
+  ],
+  "round": 2,
+  "summary": "Hand Anthropometric Data for Saudi Arabia Engineering Students of Aged 20-26 Years at King Khalid University",
+  "tick": 216
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S43",
+  "kind": "sources",
+  "question_id": "question:Q17",
+  "refs": [
+   "source:S43"
+  ],
+  "round": 3,
+  "summary": "swallowing acoustics.csv",
+  "tick": 265
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S44",
+  "kind": "sources",
+  "question_id": "question:Q17",
+  "refs": [
+   "source:S44"
+  ],
+  "round": 3,
+  "summary": "Simultaneous Speech and Eating Behavior Recognition Using Data Augmentation and Two-Stage Fine-Tuning",
+  "tick": 266
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S45",
+  "kind": "sources",
+  "question_id": "question:Q17",
+  "refs": [
+   "source:S45"
+  ],
+  "round": 3,
+  "summary": "SSL-based Chewing and Swallowing Detection Using Multiple Skin-contact Microphones",
+  "tick": 267
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S46",
+  "kind": "sources",
+  "question_id": "question:Q18",
+  "refs": [
+   "source:S46"
+  ],
+  "round": 3,
+  "summary": "swallowing acoustics.csv",
+  "tick": 269
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S47",
+  "kind": "sources",
+  "question_id": "question:Q18",
+  "refs": [
+   "source:S47"
+  ],
+  "round": 3,
+  "summary": "Item - A Multimodal Healthy Swallowing Dataset of Synchronous Swallowing Sounds and Surface Electromyography for Reproducible Research - King's College London - Figshare",
+  "tick": 270
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S48",
+  "kind": "sources",
+  "question_id": "question:Q18",
+  "refs": [
+   "source:S48"
+  ],
+  "round": 3,
+  "summary": "Electromyogram and Sound of Swallowing Events",
+  "tick": 271
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S49",
+  "kind": "sources",
+  "question_id": "question:Q20",
+  "refs": [
+   "source:S49"
+  ],
+  "round": 3,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 283
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S5",
+  "kind": "sources",
+  "question_id": "question:Q2",
+  "refs": [
+   "source:S5"
+  ],
+  "round": 1,
+  "summary": "Fraunhofer-IIS/ODAQ",
+  "tick": 30
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S50",
+  "kind": "sources",
+  "question_id": "question:Q20",
+  "refs": [
+   "source:S50"
+  ],
+  "round": 3,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 284
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S51",
+  "kind": "sources",
+  "question_id": "question:Q20",
+  "refs": [
+   "source:S51"
+  ],
+  "round": 3,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 285
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S52",
+  "kind": "sources",
+  "question_id": "question:Q21",
+  "refs": [
+   "source:S52"
+  ],
+  "round": 3,
+  "summary": "Effects of different operating conditions of air fryer and convection oven on the quality of moist chocolate cake",
+  "tick": 288
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S53",
+  "kind": "sources",
+  "question_id": "question:Q21",
+  "refs": [
+   "source:S53"
+  ],
+  "round": 3,
+  "summary": "Effect of oven temperature profile and different baking conditions on final cake quality",
+  "tick": 289
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S54",
+  "kind": "sources",
+  "question_id": "question:Q21",
+  "refs": [
+   "source:S54"
+  ],
+  "round": 3,
+  "summary": "Baking of Sponge Cake: Experimental Characterization and Mathematical Modelling",
+  "tick": 290
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S55",
+  "kind": "sources",
+  "question_id": "question:Q22",
+  "refs": [
+   "source:S55"
+  ],
+  "round": 3,
+  "summary": "Heart weight as a function of body weight in mammals",
+  "tick": 302
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S56",
+  "kind": "sources",
+  "question_id": "question:Q22",
+  "refs": [
+   "source:S56"
+  ],
+  "round": 3,
+  "summary": "A mormophetric study of domestic carnivorous' heart",
+  "tick": 303
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S57",
+  "kind": "sources",
+  "question_id": "question:Q22",
+  "refs": [
+   "source:S57"
+  ],
+  "round": 3,
+  "summary": "THE RATIO BETWEEN THE HEART-WEIGHT AND BODY-WEIGHT IN VARIOUS ANIMALS",
+  "tick": 304
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S58",
+  "kind": "sources",
+  "question_id": "question:Q23",
+  "refs": [
+   "source:S58"
+  ],
+  "round": 3,
+  "summary": "The Impacts of Body Mass Index on Gestational Diabetes Pima Indian Heritage Women",
+  "tick": 316
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S59",
+  "kind": "sources",
+  "question_id": "question:Q23",
+  "refs": [
+   "source:S59"
+  ],
+  "round": 3,
+  "summary": "Do Measures of Body Fat Distribution Provide Information on the Risk of Type 2 Diabetes in Addition to Measures of General Obesity?",
+  "tick": 317
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S6",
+  "kind": "sources",
+  "question_id": "question:Q2",
+  "refs": [
+   "source:S6"
+  ],
+  "round": 1,
+  "summary": "carlthome/pmqd",
+  "tick": 31
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S60",
+  "kind": "sources",
+  "question_id": "question:Q23",
+  "refs": [
+   "source:S60"
+  ],
+  "round": 3,
+  "summary": "Prediction of Pima Indians Diabetes with Machine Learning Algorithms",
+  "tick": 318
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S61",
+  "kind": "sources",
+  "question_id": "question:Q24",
+  "refs": [
+   "source:S61"
+  ],
+  "round": 3,
+  "summary": "Structural Changes in the Consumption of Beer, Wine and Spirits in OECD Countries from 1961 to 2014",
+  "tick": 330
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S62",
+  "kind": "sources",
+  "question_id": "question:Q24",
+  "refs": [
+   "source:S62"
+  ],
+  "round": 3,
+  "summary": "Developments in the structure of alcohol consumption in OECD countries",
+  "tick": 331
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S63",
+  "kind": "sources",
+  "question_id": "question:Q24",
+  "refs": [
+   "source:S63"
+  ],
+  "round": 3,
+  "summary": "Convergence in National Alcohol Consumption Patterns: New Global Indicators* | Journal of Wine Economics | Cambridge Core",
+  "tick": 332
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S64",
+  "kind": "sources",
+  "question_id": "question:Q25",
+  "refs": [
+   "source:S64"
+  ],
+  "round": 4,
+  "summary": "food measurement data and sensory evaluation data",
+  "tick": 381
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S65",
+  "kind": "sources",
+  "question_id": "question:Q25",
+  "refs": [
+   "source:S65"
+  ],
+  "round": 4,
+  "summary": "Machine Learning Models of Sounds to Predict Textural Attributes of Snack Chips",
+  "tick": 382
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S66",
+  "kind": "sources",
+  "question_id": "question:Q25",
+  "refs": [
+   "source:S66"
+  ],
+  "round": 4,
+  "summary": "Snack samples.",
+  "tick": 383
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S67",
+  "kind": "sources",
+  "question_id": "question:Q26",
+  "refs": [
+   "source:S67"
+  ],
+  "round": 4,
+  "summary": "swallowing acoustics.csv",
+  "tick": 385
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S68",
+  "kind": "sources",
+  "question_id": "question:Q26",
+  "refs": [
+   "source:S68"
+  ],
+  "round": 4,
+  "summary": "Supplementary material: Fantastic squeaks and where to find them: producing and analysing audible acoustics from leipäjuusto | Zenodo",
+  "tick": 386
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S69",
+  "kind": "sources",
+  "question_id": "question:Q26",
+  "refs": [
+   "source:S69"
+  ],
+  "round": 4,
+  "summary": "Concurrent categorical scaling of sound quality measures (CCSM) – Database of psychoacoustic measures roughness, sharpness, tonality, loudness and annoyance of artificial and real sounds | Zenodo",
+  "tick": 387
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S7",
+  "kind": "sources",
+  "question_id": "question:Q4",
+  "refs": [
+   "source:S7"
+  ],
+  "round": 1,
+  "summary": "Practical Assessment of Agentic Systems in Acoustics",
+  "tick": 43
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S70",
+  "kind": "sources",
+  "question_id": "question:Q28",
+  "refs": [
+   "source:S70"
+  ],
+  "round": 4,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 399
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S71",
+  "kind": "sources",
+  "question_id": "question:Q28",
+  "refs": [
+   "source:S71"
+  ],
+  "round": 4,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 400
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S72",
+  "kind": "sources",
+  "question_id": "question:Q28",
+  "refs": [
+   "source:S72"
+  ],
+  "round": 4,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 401
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S73",
+  "kind": "sources",
+  "question_id": "question:Q29",
+  "refs": [
+   "source:S73"
+  ],
+  "round": 4,
+  "summary": "Some evidence on determinants of fuel economy as a function of driving cycle and test type",
+  "tick": 404
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S74",
+  "kind": "sources",
+  "question_id": "question:Q29",
+  "refs": [
+   "source:S74"
+  ],
+  "round": 4,
+  "summary": "Influence of Kinematic Parameters on Fuel Consumption in Cars",
+  "tick": 405
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S75",
+  "kind": "sources",
+  "question_id": "question:Q29",
+  "refs": [
+   "source:S75"
+  ],
+  "round": 4,
+  "summary": "Mileage efficiency and relative emission of automotive vehicles",
+  "tick": 406
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S76",
+  "kind": "sources",
+  "question_id": "question:Q30",
+  "refs": [
+   "source:S76"
+  ],
+  "round": 4,
+  "summary": "Sleep function: an evolutionary perspective",
+  "tick": 418
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S77",
+  "kind": "sources",
+  "question_id": "question:Q30",
+  "refs": [
+   "source:S77"
+  ],
+  "round": 4,
+  "summary": "Relations between sleep duration, body weight and metabolic rate in mammals",
+  "tick": 419
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:S78",
+  "kind": "sources",
+  "question_id": "question:Q30",
+  "refs": [
+   "source:S78"
+  ],
+  "round": 4,
+  "summary": "PHYLOGENETIC ANALYSIS OF THE ECOLOGY AND EVOLUTION OF MAMMALIAN SLEEP",
+  "tick": 420
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S79",
+  "kind": "sources",
+  "question_id": "question:Q31",
+  "refs": [
+   "source:S79"
+  ],
+  "round": 4,
+  "summary": "Comparison of Body Size Measurements as Predictors of NIDDM in Pima Indians",
+  "tick": 432
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S8",
+  "kind": "sources",
+  "question_id": "question:Q4",
+  "refs": [
+   "source:S8"
+  ],
+  "round": 1,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 44
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S80",
+  "kind": "sources",
+  "question_id": "question:Q31",
+  "refs": [
+   "source:S80"
+  ],
+  "round": 4,
+  "summary": "Analysis of Interacting Factors Contributing to the Onset of Diabetes Type 2 in the Female Pima Population: A Step towards Understanding the Links",
+  "tick": 433
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:S81",
+  "kind": "sources",
+  "question_id": "question:Q31",
+  "refs": [
+   "source:S81"
+  ],
+  "round": 4,
+  "summary": "Significance of Health Related Predictors of Diabetes in Pima Indians Women",
+  "tick": 434
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S82",
+  "kind": "sources",
+  "question_id": "question:Q32",
+  "refs": [
+   "source:S82"
+  ],
+  "round": 4,
+  "summary": "The Test of Adolescent Language (TOAL) and WISC-R IQ Scores",
+  "tick": 446
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S83",
+  "kind": "sources",
+  "question_id": "question:Q32",
+  "refs": [
+   "source:S83"
+  ],
+  "round": 4,
+  "summary": "HABILIDADES LINGUISTICAS Y RENDIMIENTO ACADÉMICO EN ESCOLARES TALENTOSOS (Language skills and school achievement in talented)",
+  "tick": 447
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S84",
+  "kind": "sources",
+  "question_id": "question:Q32",
+  "refs": [
+   "source:S84"
+  ],
+  "round": 4,
+  "summary": "Do gifted children without specific learning disabilities read more efficiently than typically developing children?",
+  "tick": 448
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S85",
+  "kind": "sources",
+  "question_id": "question:Q33",
+  "refs": [
+   "source:S85"
+  ],
+  "round": 5,
+  "summary": "Evaluation of Chewing Sound of Potato Chips Using Loudness Spectrum and Sharpness",
+  "tick": 497
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S86",
+  "kind": "sources",
+  "question_id": "question:Q33",
+  "refs": [
+   "source:S86"
+  ],
+  "round": 5,
+  "summary": "Normative ratings for the Kitchen and Food Sounds (KFS) database | Behavior Research Methods | Springer Nature Link",
+  "tick": 498
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S87",
+  "kind": "sources",
+  "question_id": "question:Q33",
+  "refs": [
+   "source:S87"
+  ],
+  "round": 5,
+  "summary": "Multisensory Shitsukan perception",
+  "tick": 499
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S88",
+  "kind": "sources",
+  "question_id": "question:Q34",
+  "refs": [
+   "source:S88"
+  ],
+  "round": 5,
+  "summary": "Concurrent categorical scaling of sound quality measures (CCSM) – Database of psychoacoustic measures roughness, sharpness, tonality, loudness and annoyance of artificial and real sounds | Zenodo",
+  "tick": 501
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S89",
+  "kind": "sources",
+  "question_id": "question:Q34",
+  "refs": [
+   "source:S89"
+  ],
+  "round": 5,
+  "summary": "ODAQ: OPEN DATASET OF AUDIO QUALITY | Zenodo",
+  "tick": 502
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S9",
+  "kind": "sources",
+  "question_id": "question:Q4",
+  "refs": [
+   "source:S9"
+  ],
+  "round": 1,
+  "summary": "Statistical validation and full-sphere extension of a Bayesian model for human static sound localisation",
+  "tick": 45
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:S90",
+  "kind": "sources",
+  "question_id": "question:Q34",
+  "refs": [
+   "source:S90"
+  ],
+  "round": 5,
+  "summary": "Supplementary material: Fantastic squeaks and where to find them: producing and analysing audible acoustics from leipäjuusto | Zenodo",
+  "tick": 503
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S91",
+  "kind": "sources",
+  "question_id": "question:Q36",
+  "refs": [
+   "source:S91"
+  ],
+  "round": 5,
+  "summary": "Pre-Registration: Inferring Self-Reported Preference Certainty from Vocal Cues",
+  "tick": 515
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S92",
+  "kind": "sources",
+  "question_id": "question:Q36",
+  "refs": [
+   "source:S92"
+  ],
+  "round": 5,
+  "summary": "Preregistered Discovery and Replication of Trigger Motifs in Orca Vocalizations",
+  "tick": 516
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S93",
+  "kind": "sources",
+  "question_id": "question:Q36",
+  "refs": [
+   "source:S93"
+  ],
+  "round": 5,
+  "summary": "Replication Data for: Modeling monophthongal versus diphthongal /aɪ/ in sung vocal performance with interpretable machine learning",
+  "tick": 517
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S94",
+  "kind": "sources",
+  "question_id": "question:Q37",
+  "refs": [
+   "source:S94"
+  ],
+  "round": 5,
+  "summary": "Model for the eruption of the Old Faithful geyser, Yellowstone National Park",
+  "tick": 520
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S95",
+  "kind": "sources",
+  "question_id": "question:Q37",
+  "refs": [
+   "source:S95"
+  ],
+  "round": 5,
+  "summary": "Eruptions of the Old Faithful geyser",
+  "tick": 521
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S96",
+  "kind": "sources",
+  "question_id": "question:Q37",
+  "refs": [
+   "source:S96"
+  ],
+  "round": 5,
+  "summary": "Look at Some Data on the Old Faithful Geyser | Journal of the Royal Statistical Society Series C: Applied Statistics | Oxford Academic",
+  "tick": 522
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S97",
+  "kind": "sources",
+  "question_id": "question:Q38",
+  "refs": [
+   "source:S97"
+  ],
+  "round": 5,
+  "summary": "Ways to Use Vegetables in Hawaii",
+  "tick": 528
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S98",
+  "kind": "sources",
+  "question_id": "question:Q38",
+  "refs": [
+   "source:S98"
+  ],
+  "round": 5,
+  "summary": "Comparison of chemical composition of fresh and fermented cabbage juice",
+  "tick": 529
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:S99",
+  "kind": "sources",
+  "question_id": "question:Q38",
+  "refs": [
+   "source:S99"
+  ],
+  "round": 5,
+  "summary": "PENETAPAN KADAR VITAMIN C PADA KUBIS (Brassicae oleracea var. capitata L.) BERDASARKAN UKURAN KECIL BESAR DAN SEDANG SECARA SPEKTROFOTOMETRI UV KARYA TULIS ILMIAH",
+  "tick": 530
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-10",
+  "kind": "memories",
+  "question_id": "question:recall-10",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "3 memories from worker-1, conductor",
+  "tick": 60
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-100",
+  "kind": "memories",
+  "question_id": "question:recall-100",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "4 memories from worker-4, worker-1, worker-3",
+  "tick": 511
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-101",
+  "kind": "memories",
+  "question_id": "question:recall-101",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:claim-B-r4-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-1-a1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 513
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-104",
+  "kind": "memories",
+  "question_id": "question:recall-104",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 535
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-105",
+  "kind": "memories",
+  "question_id": "question:recall-105",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "4 memories from worker-4, worker-1, worker-3",
+  "tick": 537
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-106",
+  "kind": "memories",
+  "question_id": "question:recall-106",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-1-a1@065dd413fd17",
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:claim-B-r4-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-2-a1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-1, worker-4, worker-2",
+  "tick": 539
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-109",
+  "kind": "memories",
+  "question_id": "question:recall-109",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 561
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-110",
+  "kind": "memories",
+  "question_id": "question:recall-110",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 563
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-111",
+  "kind": "memories",
+  "question_id": "question:recall-111",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-1-a1@065dd413fd17",
+   "memory:lead-B-5-worker-4@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 565
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-113",
+  "kind": "memories",
+  "question_id": "question:recall-113",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 579
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-114",
+  "kind": "memories",
+  "question_id": "question:recall-114",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 581
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-115",
+  "kind": "memories",
+  "question_id": "question:recall-115",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-1-a1@065dd413fd17",
+   "memory:lead-B-5-worker-4@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 583
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-12",
+  "kind": "memories",
+  "question_id": "question:recall-12",
+  "refs": [
+   "memory:claim-B-r1-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 1,
+  "summary": "5 memories from worker-2, worker-1, worker-4",
+  "tick": 70
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-122",
+  "kind": "memories",
+  "question_id": "question:recall-122",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-4, worker-2, worker-3",
+  "tick": 641
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-124",
+  "kind": "memories",
+  "question_id": "question:recall-124",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 656
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-125",
+  "kind": "memories",
+  "question_id": "question:recall-125",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 658
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-126",
+  "kind": "memories",
+  "question_id": "question:recall-126",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-1-a1@065dd413fd17",
+   "memory:lead-B-5-worker-4@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 660
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-128",
+  "kind": "memories",
+  "question_id": "question:recall-128",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 675
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-129",
+  "kind": "memories",
+  "question_id": "question:recall-129",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 677
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-13",
+  "kind": "memories",
+  "question_id": "question:recall-13",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "1 memories from worker-1",
+  "tick": 72
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-130",
+  "kind": "memories",
+  "question_id": "question:recall-130",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r6-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-1-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 679
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-132",
+  "kind": "memories",
+  "question_id": "question:recall-132",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 694
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-133",
+  "kind": "memories",
+  "question_id": "question:recall-133",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 696
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-134",
+  "kind": "memories",
+  "question_id": "question:recall-134",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r6-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r6-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 698
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-136",
+  "kind": "memories",
+  "question_id": "question:recall-136",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 713
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-137",
+  "kind": "memories",
+  "question_id": "question:recall-137",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 715
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-138",
+  "kind": "memories",
+  "question_id": "question:recall-138",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r6-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r6-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r6-worker-1-a1@065dd413fd17"
+  ],
+  "round": 6,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 717
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-14",
+  "kind": "memories",
+  "question_id": "question:recall-14",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17",
+   "memory:claim-B-r1-worker-2-a1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "4 memories from worker-1, conductor, worker-2",
+  "tick": 74
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-145",
+  "kind": "memories",
+  "question_id": "question:recall-145",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-4, worker-2, worker-3",
+  "tick": 768
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-147",
+  "kind": "memories",
+  "question_id": "question:recall-147",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 783
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-148",
+  "kind": "memories",
+  "question_id": "question:recall-148",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 785
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-149",
+  "kind": "memories",
+  "question_id": "question:recall-149",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lead-B-7-worker-1@065dd413fd17",
+   "memory:claim-B-r6-worker-4-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 787
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-151",
+  "kind": "memories",
+  "question_id": "question:recall-151",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 802
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-152",
+  "kind": "memories",
+  "question_id": "question:recall-152",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 804
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-153",
+  "kind": "memories",
+  "question_id": "question:recall-153",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:claim-B-r7-worker-1-a1@065dd413fd17",
+   "memory:lead-B-7-worker-1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 806
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-155",
+  "kind": "memories",
+  "question_id": "question:recall-155",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 820
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-156",
+  "kind": "memories",
+  "question_id": "question:recall-156",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 822
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-157",
+  "kind": "memories",
+  "question_id": "question:recall-157",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:claim-B-r7-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-1-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 824
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-159",
+  "kind": "memories",
+  "question_id": "question:recall-159",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 839
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-16",
+  "kind": "memories",
+  "question_id": "question:recall-16",
+  "refs": [
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 1,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 84
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-160",
+  "kind": "memories",
+  "question_id": "question:recall-160",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 841
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-161",
+  "kind": "memories",
+  "question_id": "question:recall-161",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:claim-B-r7-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-1-a1@065dd413fd17"
+  ],
+  "round": 7,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 843
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-168",
+  "kind": "memories",
+  "question_id": "question:recall-168",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-4, worker-2, worker-3",
+  "tick": 896
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-17",
+  "kind": "memories",
+  "question_id": "question:recall-17",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "1 memories from worker-1",
+  "tick": 86
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-170",
+  "kind": "memories",
+  "question_id": "question:recall-170",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 911
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-171",
+  "kind": "memories",
+  "question_id": "question:recall-171",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 913
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-172",
+  "kind": "memories",
+  "question_id": "question:recall-172",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 915
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-174",
+  "kind": "memories",
+  "question_id": "question:recall-174",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 930
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-175",
+  "kind": "memories",
+  "question_id": "question:recall-175",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 932
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-176",
+  "kind": "memories",
+  "question_id": "question:recall-176",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 934
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-178",
+  "kind": "memories",
+  "question_id": "question:recall-178",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 949
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-179",
+  "kind": "memories",
+  "question_id": "question:recall-179",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 951
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-18",
+  "kind": "memories",
+  "question_id": "question:recall-18",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-2-a1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "5 memories from worker-1, conductor, worker-3, worker-2",
+  "tick": 88
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-180",
+  "kind": "memories",
+  "question_id": "question:recall-180",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 953
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-182",
+  "kind": "memories",
+  "question_id": "question:recall-182",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 968
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-183",
+  "kind": "memories",
+  "question_id": "question:recall-183",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 970
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-184",
+  "kind": "memories",
+  "question_id": "question:recall-184",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 8,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 972
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-191",
+  "kind": "memories",
+  "question_id": "question:recall-191",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-4, worker-2, worker-1, worker-3",
+  "tick": 1022
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-193",
+  "kind": "memories",
+  "question_id": "question:recall-193",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1037
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-194",
+  "kind": "memories",
+  "question_id": "question:recall-194",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1039
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-195",
+  "kind": "memories",
+  "question_id": "question:recall-195",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 1041
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-197",
+  "kind": "memories",
+  "question_id": "question:recall-197",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1056
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-198",
+  "kind": "memories",
+  "question_id": "question:recall-198",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1058
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-199",
+  "kind": "memories",
+  "question_id": "question:recall-199",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 1060
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-2",
+  "kind": "memories",
+  "question_id": "question:recall-2",
+  "refs": [
+   "memory:assignment-B-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "1 memories from conductor",
+  "tick": 22
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-201",
+  "kind": "memories",
+  "question_id": "question:recall-201",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1075
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-202",
+  "kind": "memories",
+  "question_id": "question:recall-202",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1077
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-203",
+  "kind": "memories",
+  "question_id": "question:recall-203",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-3, worker-4, worker-2, worker-1",
+  "tick": 1079
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-205",
+  "kind": "memories",
+  "question_id": "question:recall-205",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1092
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-206",
+  "kind": "memories",
+  "question_id": "question:recall-206",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1094
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-207",
+  "kind": "memories",
+  "question_id": "question:recall-207",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17"
+  ],
+  "round": 9,
+  "summary": "5 memories from worker-3, worker-4, worker-2",
+  "tick": 1096
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-214",
+  "kind": "memories",
+  "question_id": "question:recall-214",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:lead-B-9-worker-1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-4, worker-1, worker-2, worker-3",
+  "tick": 1146
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-216",
+  "kind": "memories",
+  "question_id": "question:recall-216",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1161
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-217",
+  "kind": "memories",
+  "question_id": "question:recall-217",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1163
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-218",
+  "kind": "memories",
+  "question_id": "question:recall-218",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-3, worker-4",
+  "tick": 1165
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-220",
+  "kind": "memories",
+  "question_id": "question:recall-220",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1180
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-221",
+  "kind": "memories",
+  "question_id": "question:recall-221",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1182
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-222",
+  "kind": "memories",
+  "question_id": "question:recall-222",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-3, worker-4",
+  "tick": 1184
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-224",
+  "kind": "memories",
+  "question_id": "question:recall-224",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1199
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-225",
+  "kind": "memories",
+  "question_id": "question:recall-225",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1201
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-226",
+  "kind": "memories",
+  "question_id": "question:recall-226",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-3, worker-4",
+  "tick": 1203
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-228",
+  "kind": "memories",
+  "question_id": "question:recall-228",
+  "refs": [
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-1, worker-3, worker-2, worker-4",
+  "tick": 1215
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-229",
+  "kind": "memories",
+  "question_id": "question:recall-229",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r7-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1217
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-230",
+  "kind": "memories",
+  "question_id": "question:recall-230",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r10-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r9-worker-4-a1@065dd413fd17"
+  ],
+  "round": 10,
+  "summary": "5 memories from worker-3, worker-1, worker-4",
+  "tick": 1219
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-237",
+  "kind": "memories",
+  "question_id": "question:recall-237",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r10-worker-1-a1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-4, worker-1, worker-3, worker-2",
+  "tick": 1270
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-239",
+  "kind": "memories",
+  "question_id": "question:recall-239",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1285
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-240",
+  "kind": "memories",
+  "question_id": "question:recall-240",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1287
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-241",
+  "kind": "memories",
+  "question_id": "question:recall-241",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1289
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-243",
+  "kind": "memories",
+  "question_id": "question:recall-243",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1304
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-244",
+  "kind": "memories",
+  "question_id": "question:recall-244",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1306
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-245",
+  "kind": "memories",
+  "question_id": "question:recall-245",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1308
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-247",
+  "kind": "memories",
+  "question_id": "question:recall-247",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1323
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-248",
+  "kind": "memories",
+  "question_id": "question:recall-248",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1325
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-249",
+  "kind": "memories",
+  "question_id": "question:recall-249",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1327
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-251",
+  "kind": "memories",
+  "question_id": "question:recall-251",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1340
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-252",
+  "kind": "memories",
+  "question_id": "question:recall-252",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1342
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-253",
+  "kind": "memories",
+  "question_id": "question:recall-253",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 11,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1344
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-260",
+  "kind": "memories",
+  "question_id": "question:recall-260",
+  "refs": [
+   "memory:claim-B-r10-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-1, worker-4, worker-3",
+  "tick": 1394
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-262",
+  "kind": "memories",
+  "question_id": "question:recall-262",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1409
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-263",
+  "kind": "memories",
+  "question_id": "question:recall-263",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r8-worker-1-a1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1411
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-264",
+  "kind": "memories",
+  "question_id": "question:recall-264",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1413
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-266",
+  "kind": "memories",
+  "question_id": "question:recall-266",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1428
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-267",
+  "kind": "memories",
+  "question_id": "question:recall-267",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r12-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1430
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-268",
+  "kind": "memories",
+  "question_id": "question:recall-268",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1432
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-269",
+  "kind": "memories",
+  "question_id": "question:recall-269",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1438
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-270",
+  "kind": "memories",
+  "question_id": "question:recall-270",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r12-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1440
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-271",
+  "kind": "memories",
+  "question_id": "question:recall-271",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1442
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-272",
+  "kind": "memories",
+  "question_id": "question:recall-272",
+  "refs": [
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-1, worker-3, worker-4",
+  "tick": 1448
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-273",
+  "kind": "memories",
+  "question_id": "question:recall-273",
+  "refs": [
+   "memory:lead-B-5-worker-4@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r12-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r10-worker-4-a1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-4, worker-1, worker-2",
+  "tick": 1450
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-274",
+  "kind": "memories",
+  "question_id": "question:recall-274",
+  "refs": [
+   "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-10-worker-1@065dd413fd17",
+   "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 12,
+  "summary": "5 memories from worker-3, worker-1, worker-2",
+  "tick": 1452
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-28",
+  "kind": "memories",
+  "question_id": "question:recall-28",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:assignment-B-2@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-4, worker-3, worker-1, conductor",
+  "tick": 146
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-280",
+  "kind": "memories",
+  "question_id": "question:recall-280",
+  "refs": [
+   "memory:claim-B-r10-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:lead-B-11-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:lead-B-8-worker-1@065dd413fd17"
+  ],
+  "round": 13,
+  "summary": "5 memories from worker-1, worker-4, worker-3",
+  "tick": 1490
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-30",
+  "kind": "memories",
+  "question_id": "question:recall-30",
+  "refs": [
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f:critic:r1",
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "memory:verdict-B-1-worker-1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 2,
+  "summary": "5 memories from critic, worker-1, worker-4",
+  "tick": 161
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-31",
+  "kind": "memories",
+  "question_id": "question:recall-31",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "1 memories from worker-1",
+  "tick": 163
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-32",
+  "kind": "memories",
+  "question_id": "question:recall-32",
+  "refs": [
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lesson-B-structured-spatial-associations@065dd413fd17",
+   "memory:verdict-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-1, critic",
+  "tick": 165
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-34",
+  "kind": "memories",
+  "question_id": "question:recall-34",
+  "refs": [
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f:critic:r1",
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "memory:verdict-B-1-worker-1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 2,
+  "summary": "5 memories from critic, worker-1, worker-4",
+  "tick": 179
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-35",
+  "kind": "memories",
+  "question_id": "question:recall-35",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "1 memories from worker-1",
+  "tick": 181
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-36",
+  "kind": "memories",
+  "question_id": "question:recall-36",
+  "refs": [
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lesson-B-structured-spatial-associations@065dd413fd17",
+   "memory:verdict-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-1, critic",
+  "tick": 183
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-38",
+  "kind": "memories",
+  "question_id": "question:recall-38",
+  "refs": [
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f:critic:r1",
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-2, critic, worker-1, worker-4",
+  "tick": 193
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-39",
+  "kind": "memories",
+  "question_id": "question:recall-39",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "1 memories from worker-1",
+  "tick": 195
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-4",
+  "kind": "memories",
+  "question_id": "question:recall-4",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 1,
+  "summary": "4 memories from worker-1, conductor, worker-4",
+  "tick": 37
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-40",
+  "kind": "memories",
+  "question_id": "question:recall-40",
+  "refs": [
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lesson-B-structured-spatial-associations@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-2, worker-1, critic",
+  "tick": 197
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-42",
+  "kind": "memories",
+  "question_id": "question:recall-42",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f:critic:r1",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-3, worker-2, critic, worker-1, worker-4",
+  "tick": 207
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-43",
+  "kind": "memories",
+  "question_id": "question:recall-43",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "2 memories from worker-3, worker-1",
+  "tick": 209
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-44",
+  "kind": "memories",
+  "question_id": "question:recall-44",
+  "refs": [
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 2,
+  "summary": "5 memories from worker-2, worker-1, worker-3",
+  "tick": 211
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-5",
+  "kind": "memories",
+  "question_id": "question:recall-5",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "1 memories from worker-1",
+  "tick": 39
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-51",
+  "kind": "memories",
+  "question_id": "question:recall-51",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-2, worker-4, worker-1",
+  "tick": 262
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-53",
+  "kind": "memories",
+  "question_id": "question:recall-53",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 277
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-54",
+  "kind": "memories",
+  "question_id": "question:recall-54",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "2 memories from worker-3, worker-1",
+  "tick": 279
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-55",
+  "kind": "memories",
+  "question_id": "question:recall-55",
+  "refs": [
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:claim-B-r2-worker-1-a1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-2, worker-1",
+  "tick": 281
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-57",
+  "kind": "memories",
+  "question_id": "question:recall-57",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 295
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-58",
+  "kind": "memories",
+  "question_id": "question:recall-58",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 297
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-59",
+  "kind": "memories",
+  "question_id": "question:recall-59",
+  "refs": [
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-1, worker-2",
+  "tick": 299
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-6",
+  "kind": "memories",
+  "question_id": "question:recall-6",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "2 memories from worker-1, conductor",
+  "tick": 41
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-61",
+  "kind": "memories",
+  "question_id": "question:recall-61",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 309
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-62",
+  "kind": "memories",
+  "question_id": "question:recall-62",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 311
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-63",
+  "kind": "memories",
+  "question_id": "question:recall-63",
+  "refs": [
+   "memory:claim-B-r3-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-2, worker-1",
+  "tick": 313
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-65",
+  "kind": "memories",
+  "question_id": "question:recall-65",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:7b66c07bf68c50101453237ae91cd21865f3d5ba",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 323
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-66",
+  "kind": "memories",
+  "question_id": "question:recall-66",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 325
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-67",
+  "kind": "memories",
+  "question_id": "question:recall-67",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:lead-B-2-worker-1@065dd413fd17"
+  ],
+  "round": 3,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 327
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-74",
+  "kind": "memories",
+  "question_id": "question:recall-74",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-4, worker-3, worker-2",
+  "tick": 378
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-76",
+  "kind": "memories",
+  "question_id": "question:recall-76",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 393
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-77",
+  "kind": "memories",
+  "question_id": "question:recall-77",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 395
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-78",
+  "kind": "memories",
+  "question_id": "question:recall-78",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:lead-B-4-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-1, worker-4, worker-2",
+  "tick": 397
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-8",
+  "kind": "memories",
+  "question_id": "question:recall-8",
+  "refs": [
+   "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:assignment-B-1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 1,
+  "summary": "5 memories from worker-1, conductor, worker-4",
+  "tick": 56
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-80",
+  "kind": "memories",
+  "question_id": "question:recall-80",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 411
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-81",
+  "kind": "memories",
+  "question_id": "question:recall-81",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 413
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-82",
+  "kind": "memories",
+  "question_id": "question:recall-82",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-1-a1@065dd413fd17",
+   "memory:lead-B-4-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-2-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-1, worker-4, worker-2",
+  "tick": 415
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-84",
+  "kind": "memories",
+  "question_id": "question:recall-84",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 425
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-85",
+  "kind": "memories",
+  "question_id": "question:recall-85",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 427
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "id": "observation:recall-86",
+  "kind": "memories",
+  "question_id": "question:recall-86",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-1-a1@065dd413fd17",
+   "memory:lead-B-4-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-2, worker-1, worker-4",
+  "tick": 429
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-88",
+  "kind": "memories",
+  "question_id": "question:recall-88",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 439
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-89",
+  "kind": "memories",
+  "question_id": "question:recall-89",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17",
+   "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "3 memories from worker-1, worker-3",
+  "tick": 441
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "id": "observation:recall-9",
+  "kind": "memories",
+  "question_id": "question:recall-9",
+  "refs": [
+   "memory:lead-B-1-worker-1@065dd413fd17"
+  ],
+  "round": 1,
+  "summary": "1 memories from worker-1",
+  "tick": 58
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-90",
+  "kind": "memories",
+  "question_id": "question:recall-90",
+  "refs": [
+   "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-1-a1@065dd413fd17",
+   "memory:lead-B-4-worker-1@065dd413fd17"
+  ],
+  "round": 4,
+  "summary": "5 memories from worker-3, worker-2, worker-1",
+  "tick": 443
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "id": "observation:recall-97",
+  "kind": "memories",
+  "question_id": "question:recall-97",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+   "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r4-worker-3-a1@065dd413fd17"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-4, worker-3, worker-2",
+  "tick": 494
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "id": "observation:recall-99",
+  "kind": "memories",
+  "question_id": "question:recall-99",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+   "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+   "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+   "memory:run:B:79bd514d3bca4ab752f5d5df57680d342a8af3be",
+   "memory:run:B:e5f846d2f4b0c88daf5d7df230d61a20a28e93ec"
+  ],
+  "round": 5,
+  "summary": "5 memories from worker-3, worker-4, worker-1",
+  "tick": 509
+ }
+]

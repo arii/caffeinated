@@ -31,3 +31,12 @@ test('static lab shell copy carries no replay or recording wording',()=>{
  const visible=html.replace(/<[^>]+>/g,' ');
  assert.doesNotMatch(visible,REPLAY);
 });
+test('the first-run shell and empty states name the artificial scientist swarm',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8'),app=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(html,/<title>Artificial Scientist Swarm/);
+ assert.match(html,/<meta name="description" content="[^"]*artificial scientist swarm/i);
+ assert.match(html,/An artificial scientist swarm at work/);
+ assert.match(app,/No artificial scientists are active in the artificial scientist swarm/);
+ assert.match(app,/Waiting for the first events from the artificial scientist swarm/);
+ assert.match(app,/No artificial scientist swarm recordings available/);
+});

@@ -674,7 +674,11 @@ class RecordingCatalog:
                 if file == path / "manifest.json":
                     continue
                 signature.append(
-                    (file.relative_to(path).as_posix(), stat.st_size, stat.st_mtime_ns)
+                    (
+                        file.relative_to(path).as_posix(),
+                        stat.st_size,
+                        hashlib.sha256(file.read_bytes()).hexdigest(),
+                    )
                 )
         return signature
 
@@ -697,8 +701,8 @@ class RecordingCatalog:
             )
             log = path.parent.parent / PUBLISH_LOG
             if "publish_errors" not in manifest and log.is_file():
-                stat = log.stat()
-                signature.append((PUBLISH_LOG, stat.st_size, stat.st_mtime_ns))
+                content = log.read_bytes()
+                signature.append((PUBLISH_LOG, len(content), hashlib.sha256(content).hexdigest()))
             info, stale = liveness(manifest, path, self.clock(), self.stale_after)
         else:
             stat = (path / "manifest.json").stat()

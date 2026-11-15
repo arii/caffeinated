@@ -5,8 +5,7 @@
 # Existing docs/*.md files are never touched.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if [ -x .venv/bin/python ]; then DEFAULT_PY=.venv/bin/python; else DEFAULT_PY=python3; fi
-PY=${PYTHON:-$DEFAULT_PY}
+PY=${PYTHON:-python3}
 if [ "$#" -gt 0 ]; then
   rm -rf data/pages/viewer && mkdir -p data/pages/viewer
   for dir in "$@"; do

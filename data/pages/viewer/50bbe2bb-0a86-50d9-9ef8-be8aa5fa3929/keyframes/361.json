@@ -1,0 +1,880 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 259,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 246,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.09,
+    "components": {
+     "diversity": 0.5,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.2,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 251,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 3,
+    "keeps": 1,
+    "memory_writes": 9,
+    "observations": 48,
+    "questions": 27,
+    "tokens": 50932
+   },
+   "diary_head": {
+    "diary_id": "diary:26",
+    "excerpt": "The acoustic leads concern preregistration and replication practice but provide no verified downloadable acoustic CSV, so this is a materially different kitchen-physics test on an unused 270-row dataset with confirmed numeric headers. Oven "
+   },
+   "focus": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "hypothesis_id": "hypothesis:26",
+    "question_id": "question:Q21"
+   },
+   "last_observation_id": "observation:S54",
+   "last_question_id": "question:Q21",
+   "last_reward": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "metric_value": 0.0,
+    "reward_id": "reward:11",
+    "status": "discard",
+    "tick": 350,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 357,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.2675,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.5,
+     "frustration": 0.0,
+     "novelty": 0.916667,
+     "overload": 0.5,
+     "stagnation": 0.4,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 252,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 3,
+    "keeps": 0,
+    "memory_writes": 6,
+    "observations": 18,
+    "questions": 12,
+    "tokens": 19775
+   },
+   "diary_head": {
+    "diary_id": "diary:27",
+    "excerpt": "This preserves the current best's robust monotonic-association design while moving to an unused dataset with exact numeric headers and ample rows. Heart mass must scale with body mass because larger bodies require greater circulatory capaci"
+   },
+   "focus": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "hypothesis_id": "hypothesis:27",
+    "question_id": "question:Q22"
+   },
+   "last_observation_id": "observation:S57",
+   "last_question_id": "question:Q22",
+   "last_reward": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "metric_value": 0.0,
+    "reward_id": "reward:12",
+    "status": "discard",
+    "tick": 352,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 358,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.18,
+    "components": {
+     "diversity": 0.5,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.4,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 253,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 3,
+    "keeps": 0,
+    "memory_writes": 6,
+    "observations": 18,
+    "questions": 12,
+    "tokens": 19264
+   },
+   "diary_head": {
+    "diary_id": "diary:28",
+    "excerpt": "This preserves the successful strong-monotonic-association design on an unused 200-row medical dataset with exact numeric headers. BMI and triceps skinfold thickness both reflect adiposity: greater overall body mass generally accompanies mo"
+   },
+   "focus": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "hypothesis_id": "hypothesis:28",
+    "question_id": "question:Q23"
+   },
+   "last_observation_id": "observation:S60",
+   "last_question_id": "question:Q23",
+   "last_reward": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "metric_value": 1.0,
+    "reward_id": "reward:13",
+    "status": "discard",
+    "tick": 354,
+    "value": -100.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 359,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.18,
+    "components": {
+     "diversity": 0.5,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.4,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 254,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 3,
+    "keeps": 0,
+    "memory_writes": 6,
+    "observations": 18,
+    "questions": 12,
+    "tokens": 20887
+   },
+   "diary_head": {
+    "diary_id": "diary:29",
+    "excerpt": "This preserves the current best's strong monotonic-association design on an unused 193-row public CSV with confirmed numeric headers. Weber et al. establish that risk behavior is patterned across domains, while Petry and Oncken document co-"
+   },
+   "focus": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "hypothesis_id": "hypothesis:29",
+    "question_id": "question:Q24"
+   },
+   "last_observation_id": "observation:S63",
+   "last_question_id": "question:Q24",
+   "last_reward": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "metric_value": 0.0,
+    "reward_id": "reward:14",
+    "status": "discard",
+    "tick": 356,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 360,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 12555
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 246,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "445221d5-c96a-5a7d-bbe5-00d9e6d6d97b",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the cake data (vincentarelbundock.github.io), higher \"temperature\" goes with higher \"angle\"",
+    "n": 270,
+    "p": 8.067227752933403e-10,
+    "predicted_rho": 0.65,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.3627577699850905,
+    "text": "rho 0.363 (predicted 0.65), p 8.1e-10, n 270: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "study_id": "study:10"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 10,
+    "native_type": "study"
+   },
+   "tick": 342,
+   "ts": "2026-11-15T08:20:46.454406Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "449557a1-02c7-5353-a1ca-978d91637a7c",
+   "payload": {
+    "field": "comparative_physiology",
+    "predicted_rho": 0.8,
+    "question": "Do heavier cats carry heavier hearts?",
+    "text": "Preregistered: Do heavier cats carry heavier hearts? (Bwt vs Hwt)",
+    "x": "Bwt",
+    "y": "Hwt"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "study_id": "study:11"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 11,
+    "native_type": "study"
+   },
+   "tick": 343,
+   "ts": "2026-11-15T08:20:46.880585Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "9527a1e3-7873-5697-9c63-15daced1701d",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the cats data (vincentarelbundock.github.io), higher \"Bwt\" goes with higher \"Hwt\"",
+    "n": 144,
+    "p": 4.423953331693384e-32,
+    "predicted_rho": 0.8,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.7908427439891929,
+    "text": "rho 0.791 (predicted 0.8), p 4.4e-32, n 144: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "study_id": "study:11"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 11,
+    "native_type": "study"
+   },
+   "tick": 344,
+   "ts": "2026-11-15T08:20:46.880585Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "5faa9525-fe1e-506e-8952-77f241755d28",
+   "payload": {
+    "field": "medicine",
+    "predicted_rho": 0.65,
+    "question": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+    "text": "Preregistered: Does a higher BMI come with a thicker triceps pinch among Pima women? (bmi vs skin)",
+    "x": "bmi",
+    "y": "skin"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "study_id": "study:12"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 12,
+    "native_type": "study"
+   },
+   "tick": 345,
+   "ts": "2026-11-15T08:20:47.773759Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "0f57b78b-99ff-55ba-983c-a527af1bad1b",
+   "payload": {
+    "confirmed": false,
+    "headline": null,
+    "n": null,
+    "p": null,
+    "predicted_rho": null,
+    "rejected": "citations: https://doi.org/10.1109/SCAMC.1988.117514 is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1",
+    "replicated": null,
+    "rho": null,
+    "text": "Rejected: citations: https://doi.org/10.1109/SCAMC.1988.117514 is neither a registered DOI nor found by this run's research or in sources.json; needs at least 2 distinct verified citations, got 1"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "study_id": "study:12"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 12,
+    "native_type": "study"
+   },
+   "tick": 346,
+   "ts": "2026-11-15T08:20:47.773759Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "1cc8671c-fe1d-54fa-8fdb-c20f81769a5b",
+   "payload": {
+    "field": "behavioral_economics",
+    "predicted_rho": 0.5,
+    "question": "Do countries that serve more beer also serve more wine?",
+    "text": "Preregistered: Do countries that serve more beer also serve more wine? (beer_servings vs wine_servings)",
+    "x": "beer_servings",
+    "y": "wine_servings"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "study_id": "study:13"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 13,
+    "native_type": "study"
+   },
+   "tick": 347,
+   "ts": "2026-11-15T08:20:47.897547Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "c1e68e48-7d8b-5822-a20e-2ca65d60369d",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the drinks data (raw.githubusercontent.com), higher \"beer_servings\" goes with higher \"wine_servings\"",
+    "n": 193,
+    "p": 1.143880473411529e-31,
+    "predicted_rho": 0.5,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.716275424269424,
+    "text": "rho 0.716 (predicted 0.5), p 1.1e-31, n 193: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "study_id": "study:13"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 13,
+    "native_type": "study"
+   },
+   "tick": 348,
+   "ts": "2026-11-15T08:20:47.897547Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "37e1ff41-6915-506d-9828-9cee8524538b",
+   "payload": {
+    "description": "Do chocolate cakes baked at higher oven temperatures tend to break at a larger a",
+    "role": "divergent",
+    "text": "Testing: Do chocolate cakes baked at higher oven temperatures tend to break at a larger a"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "hypothesis_id": "hypothesis:26"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 11,
+    "native_type": "candidate"
+   },
+   "tick": 349,
+   "ts": "2026-11-15T08:20:47.897743Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "2637c30e-6c03-5542-870f-d8deae9b66f0",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "reward_id": "reward:11"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 11,
+    "native_type": "candidate"
+   },
+   "tick": 350,
+   "ts": "2026-11-15T08:20:47.897743Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "63d53355-57bc-569f-bb01-e8bea37551e8",
+   "payload": {
+    "description": "Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a",
+    "role": "exploit",
+    "text": "Testing: Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "hypothesis_id": "hypothesis:27"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 12,
+    "native_type": "candidate"
+   },
+   "tick": 351,
+   "ts": "2026-11-15T08:20:48.243899Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "78790eaf-21eb-5511-a928-9f949e4a9955",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "reward_id": "reward:12"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 12,
+    "native_type": "candidate"
+   },
+   "tick": 352,
+   "ts": "2026-11-15T08:20:48.243899Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "7d024904-cb64-5c43-94b3-e9dca16cab7b",
+   "payload": {
+    "description": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+    "role": "exploit",
+    "text": "Testing: Does a higher BMI come with a thicker triceps pinch among Pima women?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "hypothesis_id": "hypothesis:28"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 13,
+    "native_type": "candidate"
+   },
+   "tick": 353,
+   "ts": "2026-11-15T08:20:48.622705Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "0b4fa626-72e0-533c-9708-542bc18f4543",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": -100.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 1, reward -100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401",
+    "reward_id": "reward:13"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 13,
+    "native_type": "candidate"
+   },
+   "tick": 354,
+   "ts": "2026-11-15T08:20:48.622705Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "4d3d53c1-1f6b-53f3-8629-20e4a0c28db5",
+   "payload": {
+    "description": "Do countries that serve more beer also serve more wine? Test whether national dr",
+    "role": "exploit",
+    "text": "Testing: Do countries that serve more beer also serve more wine? Test whether national dr"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "hypothesis_id": "hypothesis:29"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 14,
+    "native_type": "candidate"
+   },
+   "tick": 355,
+   "ts": "2026-11-15T08:20:49.158017Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "55f134bb-f408-5488-960b-ccc9daf0005e",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "reward_id": "reward:14"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 14,
+    "native_type": "candidate"
+   },
+   "tick": 356,
+   "ts": "2026-11-15T08:20:49.158017Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "a1ff2dfb-690a-59dc-8888-713161207bc0",
+   "payload": {
+    "excerpt": "autoresearch B round 3 by worker-1\nIdea: [EXPLOIT] Do chocolate cakes baked at higher oven temperatures tend to break at a larger a\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "text": "autoresearch B round 3 by worker-1\nIdea: [EXPLOIT] Do chocolate cakes baked at higher oven temperatures tend to break at a larger a\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"everyday_physics\", \"method\": \"untested_predictio",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:5d7a7536b9179dff75fa4e41fade219c473aa5e4"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 30,
+    "native_type": "result"
+   },
+   "tick": 357,
+   "ts": "2026-11-15T08:20:48.243550Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "1cc09b41-e178-585a-aa5a-b7086ae061ff",
+   "payload": {
+    "excerpt": "autoresearch B round 3 by worker-2\nIdea: [EXPLOIT] Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"other\", \"method\": \"comparative_physiology\"}",
+    "text": "autoresearch B round 3 by worker-2\nIdea: [EXPLOIT] Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"other\", \"method\": \"comparative_physiology\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 31,
+    "native_type": "result"
+   },
+   "tick": 358,
+   "ts": "2026-11-15T08:20:48.622389Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "d6b40e3e-064b-59e6-9482-2e37c52ff435",
+   "payload": {
+    "excerpt": "autoresearch B round 3 by worker-3\nIdea: [EXPLOIT] Does a higher BMI come with a thicker triceps pinch among Pima women?\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 3 by worker-3\nIdea: [EXPLOIT] Does a higher BMI come with a thicker triceps pinch among Pima women?\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"medicine\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:cdc6fe46bb05d4ea7270f7473a2f758a64a8c401"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 32,
+    "native_type": "result"
+   },
+   "tick": 359,
+   "ts": "2026-11-15T08:20:49.157736Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "6ba934a0-2a41-505e-9834-0a4e1a07ce41",
+   "payload": {
+    "excerpt": "autoresearch B round 3 by worker-4\nIdea: [EXPLOIT] Do countries that serve more beer also serve more wine? Test whether national dr\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"behavioral_economics\", \"method\": \"new_population",
+    "text": "autoresearch B round 3 by worker-4\nIdea: [EXPLOIT] Do countries that serve more beer also serve more wine? Test whether national dr\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"behavioral_economics\", \"method\": \"new_population",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5"
+   },
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 33,
+    "native_type": "result"
+   },
+   "tick": 360,
+   "ts": "2026-11-15T08:20:49.474867Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "8d5e8cbf-a7f0-54b1-b056-92904f52fecf",
+   "payload": {
+    "B": 0.565,
+    "best_metric": 0.0,
+    "directive": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "frontier_stall": 11,
+    "frustration": 0.0,
+    "regime": "EXPLOIT",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.56 (EXPLOIT)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 3,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 15,
+    "native_type": "status"
+   },
+   "tick": 361,
+   "ts": "2026-11-15T08:20:49.475895Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 3,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.565,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 11,
+  "regime": "EXPLOIT"
+ },
+ "tick": 361,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 13,
+  "memory_items": 33,
+  "questions": 63,
+  "sources": 67,
+  "tokens": 123413
+ },
+ "ts": "2026-11-15T08:20:49.475895Z"
+}

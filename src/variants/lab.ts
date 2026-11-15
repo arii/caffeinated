@@ -6,6 +6,7 @@ import {findPath} from '../engine/navigation.ts';
 import {ROUNDTABLE,stationGoal} from '../engine/labLayout.ts';
 import {affect} from '../engine/affect.ts';
 import {boredomColor,regimeLabel} from '../engine/boredom.ts';
+import {growSchedule} from '../engine/introProgress.ts';
 
 /** Lab Environment: Daylight instruments and cheerful robot researchers in a warm modular commons. */
 export function createWorld(): LabWorld {
@@ -247,6 +248,7 @@ export function createWorld(): LabWorld {
   const zzzTexture=(()=>{const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const c=canvas.getContext('2d')!;c.fillStyle='#e9e4f4';c.strokeStyle='#31434b';c.lineWidth=6;c.font='700 40px sans-serif';for(const [t,x,y,s] of [['z',30,98,30],['z',58,70,40],['Z',86,38,52]] as [string,number,number,number][]){c.font=`700 ${s}px sans-serif`;c.fillStyle='#31434b';c.fillText(t,x+3,y+3);c.fillStyle='#e9e4f4';c.fillText(t,x,y);}const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;return t;})();
   const turnToward=(from:number,to:number,rate:number)=>{const d=Math.atan2(Math.sin(to-from),Math.cos(to-from));return Math.abs(d)<rate?to:from+Math.sign(d)*rate;};
   const workers=new Map<string,Worker>();
+  let growthProgress=1;
   function researcher(x:number,z:number,rotation:number,name:string,station:string,id:string){
     const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
     // Six deterministic toy-robot variations, inspired by the supplied happy researcher reference.
@@ -358,7 +360,7 @@ export function createWorld(): LabWorld {
         w.ideaText=bubbleKey;
         if(brief){w.idea=speechBubble(a.name,brief,a.discussionPeers||[]);w.idea.name='recorded-discussion-bubble';scene.add(w.idea);}
       }
-      if(w.idea){w.idea.visible=a.stationId==='culture'&&!a.position?.moving&&(!!a.discussionBrief||a.state==='thinking'||a.state==='reviewing');w.idea.position.set(w.group.position.x,3.05,w.group.position.z);w.idea.lookAt(camera.position);}
+      if(w.idea){w.idea.visible=growthProgress>=.98&&a.stationId==='culture'&&!a.position?.moving&&(!!a.discussionBrief||a.state==='thinking'||a.state==='reviewing');w.idea.position.set(w.group.position.x,3.05,w.group.position.z);w.idea.lookAt(camera.position);}
 
       if(w.activityState!==a.state){w.activityState=a.state;const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.font='80px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a.state==='thinking'?'💡':a.state==='working'?'🫧':'📈',64,64);w.activity.material.map?.dispose();w.activity.material.map=new THREE.CanvasTexture(canvas);w.activity.material.needsUpdate=true;}
       const working=(state.replay||state.running)&&(a.state==='working'||a.state==='thinking');
@@ -389,5 +391,21 @@ export function createWorld(): LabWorld {
     }
   }
 
-  return {scene,camera,colliders,stations,bounds:{minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05},update,setOverview:(_overview:boolean)=>{roof.visible=true;},agentPositions:()=>[...workers.values()].map(w=>({id:w.id,position:w.group.position.clone()})),exposure:1.0};
+  const roomGroup=new THREE.Group();scene.add(roomGroup);
+  const agentObjects=new Set<THREE.Object3D>([...workers.values()].flatMap(w=>[w.group,w.sign,w.activity,w.meter,w.zzz]));
+  for(const child of [...scene.children])if(child!==roomGroup&&!agentObjects.has(child))roomGroup.add(child);
+  function grow(progress:number){
+    growthProgress=THREE.MathUtils.clamp(progress,0,1);
+    const schedule=growSchedule(growthProgress,workers.size);
+    roomGroup.scale.setScalar(schedule.room);
+    [...workers.values()].forEach((worker,index)=>{
+      const value=schedule.agents[index]??1,bounce=value<.88?value/.88*1.08:1.08-(value-.88)/.12*.08;
+      worker.group.scale.setScalar(bounce);
+      worker.sign.scale.setScalar(bounce);
+      worker.activity.scale.set(.8*bounce,.8*bounce,1);
+      worker.meter.scale.set(.86*bounce,.215*bounce,1);
+      worker.zzz.scale.set(.5*bounce,.5*bounce,1);
+    });
+  }
+  return {scene,camera,colliders,stations,bounds:{minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05},update,grow,setOverview:(_overview:boolean)=>{roof.visible=true;},agentPositions:()=>[...workers.values()].map(w=>({id:w.id,position:w.group.position.clone()})),exposure:1.0};
 }

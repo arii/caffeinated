@@ -42,7 +42,7 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 ## Explore a recording
 
-- Use **Archive** in the sidebar to choose any of the four supplied recordings. These are temporary replay inputs, not the selected future research problems.
+- Use **Archive** in the sidebar to choose a bundled local replay; the Pages site contains one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory.
 - Press **Play**, drag the timeline, or change the playback pace. Drag to change the camera angle from your current viewpoint, use WASD to glide around, and Q/E to change height—even while playback runs. These controls adapt the camera rig from History in 3D. Research unfolds from an elevated camera inside the room.
 - Pause and choose **Walk inside**. Use WASD, Shift, mouse/drag or arrow keys to explore the paused world. Approach a researcher and press E, or select them from **Team**.
 - Agent conversations appear as speech popups above the selected character and quote recorded statements and results available at the current tick. Boredom appears only when interacting with that agent.
@@ -51,11 +51,11 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.
 
-The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample is an offline `swarm.py --task ignobel` run (fake LLM) whose prior-art sources come from keyless OpenAlex/arXiv/PubMed search; its supplied provenance is not proof of live scientific validation.
+The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Pages recording’s supplied provenance is not proof of live scientific validation.
 
 ## Data and future integration
 
-The source bundle is `data/replays/swarm-viewer-sample-runs.zip`. It contains three autoresearch histories and one Ig Nobel sample, with manifests, ordered events, entities, and sparse keyframes. No candidate executables or plot images are included.
+The source bundle is `data/replays/swarm-viewer-sample-runs.zip` for local replay; Pages exports one real Kimi/Tinker Ig Nobel run with Exa and past.dev memory. The bundle contains three autoresearch histories and one Ig Nobel sample, with manifests, ordered events, entities, and sparse keyframes. No candidate executables or plot images are included.
 
 `backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts replicated findings. Agent details use the event prefix, rather than reading later fields from final entities.
 

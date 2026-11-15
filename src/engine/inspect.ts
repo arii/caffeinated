@@ -63,15 +63,15 @@ export function sourceCards(recording:Source|null|undefined,tick:number):SourceC
   return [{id,title:text(s.title)||text(e?.payload?.summary)||text(s.url)||id,url:text(s.url)||text(e?.payload?.url),highlight:(highlights[0] as string|undefined)||text(s.highlight)||text(s.extract)||text(e?.payload?.text),agentId:text(s.agent_id)||e?.agentId||null,tick:e?.tick??t!,citedBy}];});
 }
 
-export interface StudyCheck{rho:number|null;p:number|null;n:number|null;halves:{rho:number|null;p:number|null;n:number|null}[];significant:boolean|null;replicated:boolean|null;confirmed:boolean|null}
+export interface StudyCheck{rho:number|null;p:number|null;n:number|null;halves:{rho:number|null;p:number|null;n:number|null;problem?:unknown}[];significant:boolean|null;replicated:boolean|null;confirmed:boolean|null}
 export interface StudyJudge{laugh:number|null;think:number|null;reason:string|null;model:string|null}
 export interface PriorWork{title:string;url:string;snippet:string}
 export interface StudyCommittee{available:boolean;score:number|null;rejected:boolean;judges:Record<string,StudyJudge>;priorWork:PriorWork[];priorWorkAvailable:boolean}
-export interface StudyCard{id:string;agentId:string|null;experimentId:string|null;round:number|null;field:string|null;question:string|null;hypothesis:string|null;mechanism:string|null;
+export interface StudyCard{id:string;agentId:string|null;experimentId:string|null;round:number|null;field:string|null;direction:string|null;question:string|null;hypothesis:string|null;mechanism:string|null;
  dataset:{url:string|null;x:string|null;y:string|null;xLevel:string|null;yLevel:string|null;id:string|null};predictedRho:number|null;result:(StudyCheck&{headline:string|null;rejected:string|null;text:string|null})|null;
  citations:string[];replications:StudyCheck[];committee:StudyCommittee|null;award:{award:string|null;score:number|null;rejected:string|null;headline:string|null;verdicts:string[];text:string|null}|null;registeredTick:number}
 
-const halves=(v:unknown)=>Array.isArray(v)?v.map(h=>({rho:num(h?.rho),p:num(h?.p),n:num(h?.n)})):[];
+const halves=(v:unknown)=>Array.isArray(v)?v.map(h=>({rho:num(h?.rho),p:num(h?.p),n:num(h?.n),problem:h?.problem})):[];
 const check=(r:Row):StudyCheck=>({rho:num(r.rho),p:num(r.p),n:num(r.n),halves:halves(r.halves),significant:bool(r.significant),replicated:bool(r.replicated),confirmed:bool(r.confirmed)});
 function verdictLines(v:unknown):string[]{
  if(!v)return [];if(typeof v==='string')return [v];if(Array.isArray(v))return v.flatMap(verdictLines);
@@ -93,7 +93,7 @@ function committeeSummary(v:unknown):StudyCommittee|null{
 export function studyCards(recording:Source|null|undefined,tick:number):StudyCard[]{
  if(!recording)return [];const events=reached(recording.events,tick).filter(e=>/^study\.|^award\.issued$/.test(e.type)),entities=byId(entityRows(recording,'studies')),cards=new Map<string,StudyCard>();
  for(const e of events){const sid=e.refs?.study_id;if(!sid)continue;const id=String(sid),s=entities.get(id)||{},p=e.payload||{};
-  if(e.type==='study.registered'){const d=s.dataset&&typeof s.dataset==='object'?s.dataset:{};cards.set(id,{id,agentId:text(s.agent_id)||e.agentId||null,experimentId:text(s.experiment_id)||text(e.refs?.experiment_id),round:num(s.round)??num(e.round),field:text(p.field)||text(s.field),question:text(p.question)||text(s.question),hypothesis:text(s.hypothesis),mechanism:text(s.mechanism),
+  if(e.type==='study.registered'){const d=s.dataset&&typeof s.dataset==='object'?s.dataset:{};cards.set(id,{id,agentId:text(s.agent_id)||e.agentId||null,experimentId:text(s.experiment_id)||text(e.refs?.experiment_id),round:num(s.round)??num(e.round),field:text(p.field)||text(s.field),direction:text(s.direction),question:text(p.question)||text(s.question),hypothesis:text(s.hypothesis),mechanism:text(s.mechanism),
    dataset:{url:text(d.url),x:text(p.x)||text(d.x),y:text(p.y)||text(d.y),xLevel:text(d.x_level),yLevel:text(d.y_level),id:text(s.dataset_id)},predictedRho:num(p.predicted_rho)??num(s.predicted_rho),citations:(Array.isArray(s.citations)?s.citations:[]).map(String),result:null,replications:[],committee:null,award:null,registeredTick:e.tick});continue;}
   const card=cards.get(id);if(!card)continue;
   if(e.type==='study.result'){card.result={...check({...s,...p,halves:p.halves??s.halves,significant:p.significant??s.significant}),headline:text(p.headline)||text(s.headline),rejected:text(p.rejected),text:text(p.text)||text(e.message)};card.committee=committeeSummary(p.committee??s.committee);}

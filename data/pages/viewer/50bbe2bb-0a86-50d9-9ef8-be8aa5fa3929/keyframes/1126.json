@@ -1,0 +1,887 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 9,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 1016,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 1003,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.49,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.8,
+     "overload": 0.4,
+     "stagnation": 0.8,
+     "trivial_rate": 0.4
+    },
+    "measured_tick": 1008,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 9,
+    "keeps": 1,
+    "memory_writes": 26,
+    "observations": 133,
+    "questions": 74,
+    "tokens": 161435
+   },
+   "diary_head": {
+    "diary_id": "diary:88",
+    "excerpt": "The acoustic conflict lead still lacks a verified direct CSV and exact headers, so this diverges to an unused public provisioning dataset with confirmed numeric columns. Attending genetic offspring creates proximity and feeding opportunitie"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-35",
+    "hypothesis_id": "hypothesis:88",
+    "question_id": "question:Q83"
+   },
+   "last_observation_id": "observation:S222",
+   "last_question_id": "question:Q83",
+   "last_reward": {
+    "experiment_id": "experiment:seq-35",
+    "metric_value": null,
+    "reward_id": "reward:35",
+    "status": "reject",
+    "tick": 1115,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 1122,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.605,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.7,
+     "overload": 0.2,
+     "stagnation": 1.0,
+     "trivial_rate": 0.2
+    },
+    "measured_tick": 1009,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 9,
+    "keeps": 0,
+    "memory_writes": 19,
+    "observations": 72,
+    "questions": 42,
+    "tokens": 91883
+   },
+   "diary_head": {
+    "diary_id": "diary:89",
+    "excerpt": "This uses the unused alloparental-provisioning CSV and is complementary to worker-1's own-offspring study. Attendance creates proximity and feeding opportunities, while both measures may reflect alloparental motivation, so a substantial pos"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-36",
+    "hypothesis_id": "hypothesis:89",
+    "question_id": "question:Q85"
+   },
+   "last_observation_id": "observation:S228",
+   "last_question_id": "question:Q85",
+   "last_reward": {
+    "experiment_id": "experiment:seq-36",
+    "metric_value": null,
+    "reward_id": "reward:36",
+    "status": "reject",
+    "tick": 1117,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 1123,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.645,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.7,
+     "overload": 0.6,
+     "stagnation": 1.0,
+     "trivial_rate": 0.6
+    },
+    "measured_tick": 1010,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 9,
+    "keeps": 0,
+    "memory_writes": 18,
+    "observations": 69,
+    "questions": 41,
+    "tokens": 92803
+   },
+   "diary_head": {
+    "diary_id": "diary:80",
+    "excerpt": "This exploits the successful strong-monotonic design on an unused behavioral dataset while testing a published gym-attendance experiment rather than repeating a nearby acoustic idea. Pre-experiment attendance captures established exercise h"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-37",
+    "hypothesis_id": "hypothesis:80",
+    "question_id": "question:Q87"
+   },
+   "last_observation_id": "observation:S234",
+   "last_question_id": "question:Q87",
+   "last_reward": {
+    "experiment_id": "experiment:seq-37",
+    "metric_value": null,
+    "reward_id": "reward:37",
+    "status": "reject",
+    "tick": 1119,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 1124,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.495,
+    "components": {
+     "diversity": 0.8,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.9,
+     "overload": 0.0,
+     "stagnation": 1.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 1011,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 9,
+    "keeps": 0,
+    "memory_writes": 20,
+    "observations": 83,
+    "questions": 49,
+    "tokens": 113769
+   },
+   "diary_head": {
+    "diary_id": "diary:91",
+    "excerpt": "This diverges from the exhausted acoustic coordinate design to an unused behavioral-economics dataset with exact numeric headers. It also avoids worker-3's claimed pre-versus-experimental attendance pair by comparing two distinct interventi"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-38",
+    "hypothesis_id": "hypothesis:91",
+    "question_id": "question:Q89"
+   },
+   "last_observation_id": "observation:S240",
+   "last_question_id": "question:Q89",
+   "last_reward": {
+    "experiment_id": "experiment:seq-38",
+    "metric_value": null,
+    "reward_id": "reward:38",
+    "status": "reject",
+    "tick": 1121,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 1125,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 22736
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 1003,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "79c23cdb-e863-5ed1-b4fa-8ed05681bb70",
+   "payload": {
+    "rationale": "This diverges from the exhausted acoustic coordinate design to an unused behavioral-economics dataset with exact numeric headers. It also avoids worker-3's claimed pre-versus-experimental attendance pair by comparing two distinct intervention weeks. Early attendance reveals established routines, motivation, scheduling fit, and habit formation; these persistent individual differences should produce a substantial positive association six weeks later. Published gym-incentive research explicitly uses repeated attendance to study habit formation, making this a registered, mechanism-backed persistence test rather than a demographic comparison.",
+    "text": "Do students who attend the gym more often in week 1 also attend more often in we"
+   },
+   "phase": "propose",
+   "refs": {
+    "hypothesis_id": "hypothesis:91",
+    "memory_id": "memory:claim-B-r9-worker-4-a1@065dd413fd17"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 91,
+    "native_type": "claim"
+   },
+   "tick": 1107,
+   "ts": "2026-11-15T08:42:03.000484Z",
+   "type": "hypothesis.proposed"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "15529fd1-a4ba-5d37-a26d-08df2565dfa0",
+   "payload": {
+    "excerpt": "This diverges from the exhausted acoustic coordinate design to an unused behavioral-economics dataset with exact numeric headers. It also avoids worker-3's claimed pre-versus-experimental attendance pair by comparing two distinct interventi",
+    "kind": "rationale",
+    "text": "This diverges from the exhausted acoustic coordinate design to an unused behavioral-economics dataset with exact numeric headers. It also avoids worker-3's claimed pre-versus-experimental attendance pair by comparing two distinct interventi"
+   },
+   "phase": "propose",
+   "refs": {
+    "diary_id": "diary:91"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 91,
+    "native_type": "claim"
+   },
+   "tick": 1108,
+   "ts": "2026-11-15T08:42:03.000484Z",
+   "type": "diary.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "016f2b2f-5217-5ad8-9852-cb5d357f640e",
+   "payload": {
+    "latency_ms": 21404,
+    "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "prompt_sha": "1f6d59d48b0778b198db55fa408de2531ff383824e4f6cb44858f5540e87c31c",
+    "role": "WORKER_REPAIR",
+    "text": "Asked the WORKER_REPAIR model (moonshotai/Kimi-K3.1-Pro:peft:262144, 6415 tokens)",
+    "tokens": 6415
+   },
+   "phase": "propose",
+   "refs": {
+    "llm_call_id": "llm_call:89"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "llm_log.jsonl",
+    "line": 89,
+    "native_type": "WORKER_REPAIR"
+   },
+   "tick": 1109,
+   "ts": "2026-11-15T08:42:24.430342Z",
+   "type": "llm.called"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "78beef46-0a17-5467-b640-a8daded65800",
+   "payload": {
+    "candidate_commit": "d280b93a813d992075b47cdc06ece8af045894e3",
+    "descriptor": {
+     "mechanism": "animal_behavior",
+     "method": "untested_prediction"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 0.5,
+    "pass": false,
+    "prior_art": [
+     "S220",
+     "S221",
+     "S222"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 43,
+    "native_type": "gate"
+   },
+   "tick": 1110,
+   "ts": "2026-11-15T08:40:16.449644+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "87af3969-ba7b-5a75-9d2c-2b8e8e0ca441",
+   "payload": {
+    "candidate_commit": "a6ee3049f3b2e7f1369ee331723fd449dc941b20",
+    "descriptor": {
+     "mechanism": "animal_behavior",
+     "method": "untested_prediction"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 0.5,
+    "pass": false,
+    "prior_art": [
+     "S226",
+     "S227",
+     "S228"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 44,
+    "native_type": "gate"
+   },
+   "tick": 1111,
+   "ts": "2026-11-15T08:40:53.533729+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "9b1c2472-6b4d-5a9b-a78f-3d38896255bd",
+   "payload": {
+    "candidate_commit": "1d1dae51645bab073a691511a226d5c1952af66b",
+    "descriptor": {
+     "mechanism": "behavioral_economics",
+     "method": "replicate_published"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 1.0,
+    "pass": false,
+    "prior_art": [
+     "S232",
+     "S233",
+     "S234"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 45,
+    "native_type": "gate"
+   },
+   "tick": 1112,
+   "ts": "2026-11-15T08:41:20.298950+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "e86e0ed2-e751-517d-9592-0f616ed5904d",
+   "payload": {
+    "candidate_commit": "e31678018e88080bb48d9997eb324f8a991ecefc",
+    "descriptor": {
+     "mechanism": "behavioral_economics",
+     "method": "replicate_published"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.5,
+    "min_recent_dist": 1.0,
+    "pass": false,
+    "prior_art": [
+     "S238",
+     "S239",
+     "S240"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 46,
+    "native_type": "gate"
+   },
+   "tick": 1113,
+   "ts": "2026-11-15T08:42:03.024206+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "4b06ec0b-bd94-5766-b30f-84eb36c20b34",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "divergent",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-35",
+    "hypothesis_id": "hypothesis:88"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 35,
+    "native_type": "candidate"
+   },
+   "tick": 1114,
+   "ts": "2026-11-15T08:42:24.452628Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "ab6684c0-eb34-56c1-ab1a-7a1d43513a21",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-35",
+    "reward_id": "reward:35"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 35,
+    "native_type": "candidate"
+   },
+   "tick": 1115,
+   "ts": "2026-11-15T08:42:24.452628Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "e3bbcdfa-5fa9-515f-bc37-3a2014b99074",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "divergent",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-36",
+    "hypothesis_id": "hypothesis:89"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 36,
+    "native_type": "candidate"
+   },
+   "tick": 1116,
+   "ts": "2026-11-15T08:42:24.955786Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "7685aaf1-c73e-5c90-9897-8e0bd5096b89",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-36",
+    "reward_id": "reward:36"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 36,
+    "native_type": "candidate"
+   },
+   "tick": 1117,
+   "ts": "2026-11-15T08:42:24.955786Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "d01531c9-f9b8-50c6-8896-517e710f8ff1",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "exploit",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-37",
+    "hypothesis_id": "hypothesis:80"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 37,
+    "native_type": "candidate"
+   },
+   "tick": 1118,
+   "ts": "2026-11-15T08:42:25.351421Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "2aa9619c-6a1b-5b09-a247-1a081b8ec6f3",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-37",
+    "reward_id": "reward:37"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 37,
+    "native_type": "candidate"
+   },
+   "tick": 1119,
+   "ts": "2026-11-15T08:42:25.351421Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "a77be690-12ea-5e7c-b52c-e85d52ce7348",
+   "payload": {
+    "description": "proposal rejected after repair",
+    "role": "divergent",
+    "text": "Testing: proposal rejected after repair"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-38",
+    "hypothesis_id": "hypothesis:91"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 38,
+    "native_type": "candidate"
+   },
+   "tick": 1120,
+   "ts": "2026-11-15T08:42:25.722440Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "e3d8bbe5-790a-5b5d-bed8-49b1b0549d82",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-38",
+    "reward_id": "reward:38"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 38,
+    "native_type": "candidate"
+   },
+   "tick": 1121,
+   "ts": "2026-11-15T08:42:25.722440Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "aefd8c73-a5c3-5ddb-ac77-54121bb544a6",
+   "payload": {
+    "excerpt": "autoresearch B round 9 by worker-1\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 9 by worker-1\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r9-worker-1@065dd413fd17"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 92,
+    "native_type": "result"
+   },
+   "tick": 1122,
+   "ts": "2026-11-15T08:42:24.955544Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "a4d07525-f5ee-5cf7-b039-760abb3a7d0f",
+   "payload": {
+    "excerpt": "autoresearch B round 9 by worker-2\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 9 by worker-2\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r9-worker-2@065dd413fd17"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 93,
+    "native_type": "result"
+   },
+   "tick": 1123,
+   "ts": "2026-11-15T08:42:25.351144Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "5835ce8e-9729-5ef0-b8d9-91db25a027ac",
+   "payload": {
+    "excerpt": "autoresearch B round 9 by worker-3\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 9 by worker-3\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r9-worker-3@065dd413fd17"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 94,
+    "native_type": "result"
+   },
+   "tick": 1124,
+   "ts": "2026-11-15T08:42:25.722152Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "35f32204-5d07-5f31-a5c2-5e9bd5def7c9",
+   "payload": {
+    "excerpt": "autoresearch B round 9 by worker-4\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "text": "autoresearch B round 9 by worker-4\nIdea: [SNAP] proposal rejected after repair\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"baseline\", \"method\": \"none\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r9-worker-4@065dd413fd17"
+   },
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 95,
+    "native_type": "result"
+   },
+   "tick": 1125,
+   "ts": "2026-11-15T08:42:26.130702Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "ecd66ab2-de59-5f00-9545-8c483c85b600",
+   "payload": {
+    "B": 0.62,
+    "best_metric": 0.0,
+    "directive": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "frontier_stall": 20,
+    "frustration": 0.0,
+    "regime": "BOREDOM_SNAP",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.62 (BOREDOM_SNAP)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 9,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 47,
+    "native_type": "status"
+   },
+   "tick": 1126,
+   "ts": "2026-11-15T08:42:26.132193Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 9,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.62,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 20,
+  "regime": "BOREDOM_SNAP"
+ },
+ "tick": 1126,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 37,
+  "memory_items": 95,
+  "questions": 206,
+  "sources": 260,
+  "tokens": 482626
+ },
+ "ts": "2026-11-15T08:42:26.132193Z"
+}

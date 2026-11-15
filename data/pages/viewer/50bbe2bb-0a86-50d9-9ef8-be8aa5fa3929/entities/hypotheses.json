@@ -1,0 +1,732 @@
+[
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:101",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r10-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads still lack a usable multi-column CSV, and the new gym and bird datasets are already claimed this round. This instead uses an unused, well-documented 53,940-row dataset with exact numeric headers. Price should rise sharply with carat because heavier stones contain more material and larger gem-quality diamonds are increasingly rare, giving a strong positive association that should replicate easily in both hash halves.",
+  "round": 10,
+  "source_ids": [],
+  "text": "Do heavier diamonds also cost more?",
+  "tick": 1230
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:108",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r11-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This is a structurally different, unused-data test with exact numeric headers, and it avoids the offspring-specific begging/feeding proposal in memory. Attending unrelated fledglings gives adults more exposure to their begging and more opportunities to provision them, so both counts should rise together even though many adults may feed no unrelated chicks. The Dryad record and its downloadable data file provide the research and dataset citations.",
+  "round": 11,
+  "source_ids": [],
+  "text": "Do adult birds that attend more unrelated fledglings also feed more unrelated fl",
+  "tick": 1300
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:109",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r11-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses the unused alloparental-provisioning CSV but tests genetic-offspring attendance and feeding, distinct from worker-1's unrelated-fledgling pair and from the previously mentioned begging hypothesis. Attending offspring creates repeated provisioning opportunities and exposes adults to their begging, so the two counts should covary strongly within adults. The prediction is biologically ordinary but amusingly amounts to whether birds feed the chicks they actually spend time with.",
+  "round": 11,
+  "source_ids": [],
+  "text": "Do adult birds that attend more of their own fledglings also feed more of their",
+  "tick": 1319
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "new_population"
+  },
+  "id": "hypothesis:111",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r11-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This abandons the exhausted acoustic-coordinate design for an unused, straightforward domestic-energy dataset with exact numeric headers. Outdoor temperature drives space-heating demand: colder weeks require more gas to maintain indoor comfort, while warmer weeks require less. The dose-response relationship should be strong and monotonic within each insulation group and therefore survive both hash-half tests. It is also an everyday effect with a mildly amusing obvious-in-retrospect quality: the household thermostat quietly turns weather into a gas bill.",
+  "round": 11,
+  "source_ids": [],
+  "text": "Do households burn less gas during warmer weeks?",
+  "tick": 1355
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:118",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r12-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads still lack a usable multi-column CSV, so this divergent proposal uses Forbes' unused 17-observation mountain boiling-point experiment with exact numeric headers. Boiling occurs when vapour pressure equals ambient pressure, giving an exceptionally strong, physically necessary monotonic relationship that should survive both hash halves.",
+  "round": 12,
+  "source_ids": [],
+  "text": "Does water boiling at a higher temperature also come with higher barometric pres",
+  "tick": 1424
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:16",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r2-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "A structurally different, mechanically grounded test on an unused dataset with exact numeric headers. Vehicle mass increases inertial and rolling-resistance energy demands, so fuel economy should decline monotonically. The expected association is large enough to remain significant in both hash halves, unlike the weak baseline survey effect.",
+  "round": 2,
+  "source_ids": [],
+  "text": "Do heavier cars get fewer miles per gallon because more mass requires more energ",
+  "tick": 176
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "id": "hypothesis:17",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r2-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The current best is already loss 0, so this preserves its successful pattern of a strong mechanism-backed monotonic association while moving to an unused dataset. Body and brain mass follow a well-established positive interspecific allometry: larger bodies require more neural tissue for sensory, motor, and physiological control. MASS Animals provides exact numeric headers and enough extreme body sizes for a strong Spearman association that should persist in both hash halves.",
+  "round": 2,
+  "source_ids": [],
+  "text": "Test whether bigger-bodied animals have bigger brains in an unused comparative-a",
+  "tick": 190
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "id": "hypothesis:18",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r2-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The current best already has zero loss, so this preserves its strong mechanism-backed monotonic design on an unused medical dataset. Both Karnofsky ratings measure the same underlying functional capacity despite coming from different observers, producing a substantial positive association that should survive both hash halves. The lung dataset has 228 rows and established numeric headers, unlike the unresolved acoustic leads.",
+  "round": 2,
+  "source_ids": [],
+  "text": "Do doctors and patients independently rate patients' get-up-and-go similarly, so",
+  "tick": 204
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "other",
+   "method": "anthropometry"
+  },
+  "id": "hypothesis:19",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r2-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This preserves the current best's robust monotonic-association design on an unused, directly downloadable dataset with confirmed headers. Hand span and stature share general skeletal growth and body-size scaling, so the association should be strong enough to survive both hash-half tests, while the everyday hand-to-height proxy has an amusing forensic-anthropology twist.",
+  "round": 2,
+  "source_ids": [],
+  "text": "Do students with wider writing hands also tend to be taller?",
+  "tick": 218
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:26",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r3-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads concern preregistration and replication practice but provide no verified downloadable acoustic CSV, so this is a materially different kitchen-physics test on an unused 270-row dataset with confirmed numeric headers. Oven temperature systematically changes cake structure and breakage behavior; the temperature effect should be consistent across recipes and replicates, giving a strong positive monotonic association in both hash halves.",
+  "round": 3,
+  "source_ids": [
+   "S49",
+   "S50"
+  ],
+  "text": "Do chocolate cakes baked at higher oven temperatures tend to break at a larger a",
+  "tick": 292
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "other",
+   "method": "comparative_physiology"
+  },
+  "id": "hypothesis:27",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r3-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This preserves the current best's robust monotonic-association design while moving to an unused dataset with exact numeric headers and ample rows. Heart mass must scale with body mass because larger bodies require greater circulatory capacity; classic allometry and size-scaling work supply the mechanism. The association is strong enough to survive both hash halves, unlike the borderline behavioral alternatives, and the failed brain–body attempt used a different unavailable dataset and population.",
+  "round": 3,
+  "source_ids": [],
+  "text": "Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a",
+  "tick": 306
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "id": "hypothesis:28",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r3-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This preserves the successful strong-monotonic-association design on an unused 200-row medical dataset with exact numeric headers. BMI and triceps skinfold thickness both reflect adiposity: greater overall body mass generally accompanies more subcutaneous fat, so the positive association should be substantial and stable across both hash halves. The everyday tape-measure-versus-pinch framing is amusing while testing a clinically meaningful body-composition relationship.",
+  "round": 3,
+  "source_ids": [],
+  "text": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+  "tick": 320
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "new_population"
+  },
+  "id": "hypothesis:29",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r3-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This preserves the current best's strong monotonic-association design on an unused 193-row public CSV with confirmed numeric headers. Weber et al. establish that risk behavior is patterned across domains, while Petry and Oncken document co-occurrence between distinct addictive behaviors. Across countries, beer and wine consumption should likewise rise together through shared drinking culture, income, availability, and overall alcohol demand. The association is strong enough to survive both hash halves and has an amusing wine-versus-beer rivalry framing.",
+  "round": 3,
+  "source_ids": [],
+  "text": "Do countries that serve more beer also serve more wine? Test whether national dr",
+  "tick": 334
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "new_population"
+  },
+  "id": "hypothesis:3",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r1-worker-1-a2@065dd413fd17",
+  "predicted_delta": -0.75,
+  "rationale": "The sharpness–annoyance lead remains unusable because no confirmed CSV mirror or headers are available. SPASS instead supplies a new, directly downloadable street-scene population with exact numeric coordinate headers. Sound-localization research motivates treating source position as structured spatial information rather than noise, while the dataset documentation supplies the street-scene context. A roadside corridor should constrain sources along a diagonal, producing a robust coordinate association without reusing the steak dataset or testing near-identical timing columns.",
+  "round": 1,
+  "source_ids": [
+   "S9"
+  ],
+  "text": "Test whether street sound sources line up along a diagonal corridor, so x and y",
+  "tick": 53
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:36",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r4-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This is a materially different, kitchen-lab-adjacent everyday-physics test on an unused 93-row public CSV with exact numeric headers. The earlier heavy-car attempts failed at citation or dataset validation, not because the association was tested and rejected. Moving a heavier vehicle requires more energy under repeated urban acceleration, so city fuel economy should decline strongly and monotonically with mass, readily surviving both hash-half tests. The two citations are drawn from sources.json as required by the registration gate.",
+  "round": 4,
+  "source_ids": [],
+  "text": "Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f",
+  "tick": 408
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "id": "hypothesis:37",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r4-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This exploits the successful monotonic-association design on an unused animal-behaviour dataset with exact numeric headers. Large mammals generally have lower mass-specific metabolic rates and, especially among large herbivores, substantial foraging demands that constrain sleep. The negative body-size/sleep association is biologically motivated, amusingly counterintuitive, and should persist across both row halves.",
+  "round": 4,
+  "source_ids": [],
+  "text": "Do bigger mammals sleep less? Test body weight against total daily sleep across",
+  "tick": 422
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "medicine",
+   "method": "new_population"
+  },
+  "id": "hypothesis:38",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r4-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This exploits the reliable strong-monotonic-association design on an unused 332-row medical CSV with exact numeric headers. BMI and triceps skinfold thickness are complementary measures of general and subcutaneous adiposity, so their positive association should be substantial and stable across hash halves. The earlier Pima.tr proposal failed citation validation rather than undergoing a test; Pima.te is a distinct cohort and dataset, and this registration uses only verifiable sources already supplied in sources.json.",
+  "round": 4,
+  "source_ids": [],
+  "text": "Among Pima women in the independent test cohort, does a higher BMI come with a t",
+  "tick": 436
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "psychology",
+   "method": "new_population"
+  },
+  "id": "hypothesis:39",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r4-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This exploits the successful strong-monotonic-association design on an unused 2,287-row public CSV with exact numeric headers. Spearman's general-intelligence account predicts substantial positive manifold across cognitive tests, while verbal reasoning, vocabulary, and shared educational exposure specifically connect IQ and language performance. The association should be strong and pervasive enough to replicate in both hash halves, unlike the baseline's narrow risk-behaviour hypothesis.",
+  "round": 4,
+  "source_ids": [],
+  "text": "Do classroom whizz-kids also have a way with words? Test IQ against language-tes",
+  "tick": 450
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:4",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r1-worker-2-a1@065dd413fd17",
+  "predicted_delta": -1.0,
+  "rationale": "The steak-risk baseline is null and its dataset cannot be reused. Palmer penguins provides exact numeric headers and many complete rows; published morphological work supports positive scaling between flipper length and body mass, with an effect large enough to replicate in both hash halves.",
+  "round": 1,
+  "source_ids": [],
+  "text": "Test whether penguins with longer flippers are heavier, a strong body-size allom",
+  "tick": 67
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "everyday_physics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:46",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This diverges from coordinate correlations into geyser recharge physics on an unused 272-row public CSV with exact numeric headers. Longer eruptions generally vent more water and heat, leaving a larger deficit to recharge before the next eruption. The eruption-duration/waiting-time association is famously strong and bimodal, so it should retain its sign in both hash halves. S91 and S92 informed the emphasis on explicit preregistration and replication rather than the physical prediction itself.",
+  "round": 5,
+  "source_ids": [
+   "S91",
+   "S92"
+  ],
+  "text": "Do longer Old Faithful eruptions make tourists wait longer for the next one?",
+  "tick": 524
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "food_science",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:47",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-1-a2@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This replaces the rejected geyser proposal with a distinct food-science dilution hypothesis on an unused public dataset containing 60 cabbage heads. Head weight and vitamin C concentration are exact numeric column headers, and the expected moderate negative association should be detectable overall and in both hash halves. S91 and S92 supply this run's research basis for explicit preregistration and split-sample replication, rather than evidence for the cabbage mechanism itself.",
+  "round": 5,
+  "source_ids": [
+   "S91",
+   "S92"
+  ],
+  "text": "Do heavier cabbages shortchange you on vitamin C?",
+  "tick": 532
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "id": "hypothesis:48",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads lack a verified, unused CSV with suitable columns, so this diverges into a directly downloadable 104-row animal-morphology dataset with exact numeric headers. Tail length is both a component of total head-to-tail length and a body-size-scaled appendage, producing a strong positive association that should survive both hash halves. The part-whole relationship also gives the amusing result a clear second thought.",
+  "round": 5,
+  "source_ids": [
+   "S100",
+   "S102"
+  ],
+  "text": "Do longer possums also tend to have longer tails?",
+  "tick": 550
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:49",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-2-a2@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This replaces both the rejected morphology proposal and the exhausted spatial-coordinate design with an unused, large speech-acoustics dataset. Adjacent log-periodogram bins should covary strongly because they share spectral envelope and recording energy, giving a physically grounded effect likely to replicate in both row halves. The exact numeric headers x.1 and x.2 are standard in the ElemStatLearn phoneme CSV, and the cited acoustic-systems sources motivate testing meaningful structure in audio representations.",
+  "round": 5,
+  "source_ids": [
+   "S100",
+   "S102"
+  ],
+  "text": "Do speech sounds that are intense in the first frequency bin also tend to be int",
+  "tick": 558
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "sleep_science",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:5",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+  "predicted_delta": -1.0,
+  "rationale": "The steak dataset is exhausted, while lme4's sleepstudy CSV provides 180 repeated observations with exact numeric headers. Belenky et al. documented cumulative lapses and slowing during sleep restriction, and Lim and Dinges' meta-analysis supports degraded vigilant attention. Reaction time should therefore rise monotonically enough with Days to survive both the full-sample threshold and split-half replication.",
+  "round": 1,
+  "source_ids": [],
+  "text": "Test whether reaction times steadily lengthen as days of sleep restriction accum",
+  "tick": 81
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:50",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This moves to an unused 195-row public voice-acoustics CSV with exact numeric headers. Average and maximum fundamental frequency should covary strongly because laryngeal tension and vocal-fold anatomy shift a speaker's whole pitch range, making the effect likely to survive both hash halves. S109 and S110 motivate analyzing fundamental-frequency cues in spoken voice recordings.",
+  "round": 5,
+  "source_ids": [
+   "S109",
+   "S110"
+  ],
+  "text": "Do voices with a higher average pitch also have a higher pitch ceiling?",
+  "tick": 576
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "other",
+   "method": "floral_allometry"
+  },
+  "id": "hypothesis:51",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r5-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic lead remains Excel-only with unverified CSV headers, so this diverges to an unused, directly downloadable 150-row CSV with exact numeric headers. Petal length and width are jointly generated by floral organ growth and differ systematically among Iris species, making their positive association exceptionally strong and stable across hash halves. Fisher's and Anderson's classic Iris work supplies directly relevant sources, while the everyday image of long petals also being wide adds light humor without weakening the biological rationale.",
+  "round": 5,
+  "source_ids": [],
+  "text": "Do irises with longer petals also have wider petals?",
+  "tick": 594
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "resolve_conflict"
+  },
+  "id": "hypothesis:58",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r6-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This diverges into an unused conflict dataset with confirmed numeric headers and tests the paper's spatial-conflict mechanism rather than another body-size correlation. Aggression is normalized by observation time using the registered derived-rate facility. A nearby joiner competes directly for shelter and territory, so closer shells should elicit more aggression; the everyday twist is fish defending their shell front yards.",
+  "round": 6,
+  "source_ids": [],
+  "text": "Do shell-dwelling fish attack simulated newcomers more when the rival's shell is",
+  "tick": 671
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "resolve_conflict"
+  },
+  "id": "hypothesis:59",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r6-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This diverges from acoustic coordinate correlations to an unused bird-provisioning dataset with confirmed numeric headers. It tests whether adults resolve the conflict posed by unrelated beggars through stimulus-driven alloparental feeding: more begging chicks provide more feeding opportunities and stronger solicitation, so the counts should covary positively across observation periods. The dataset is directly downloadable and both its Dryad DOI and Zenodo record are supplied for verification.",
+  "round": 6,
+  "source_ids": [],
+  "text": "Do birds feed more unrelated chicks when more unrelated chicks beg at them?",
+  "tick": 690
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "transport",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:6",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+  "predicted_delta": -1.0,
+  "rationale": "The steak dataset is exhausted, and the other three strong candidates are already claimed. The Rdatasets mtcars CSV is a distinct, directly downloadable public dataset with exact numeric headers wt and mpg. Extra mass increases rolling resistance and acceleration energy demand, so the negative association should be large enough to survive both hash halves; the everyday framing also makes the result amusing before revealing a basic transport-energy tradeoff.",
+  "round": 1,
+  "source_ids": [],
+  "text": "Test whether heavier cars are thirstier: vehicle weight should strongly reduce m",
+  "tick": 95
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "new_population"
+  },
+  "id": "hypothesis:60",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r6-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses an unused, directly downloadable 104-row morphology dataset with exact numeric headers. Tail length is anatomically incorporated into total head-to-tail length and also scales with body size, so the positive association should be strong and stable across both hash halves. The amusingly obvious-sounding question still tests a genuine biological scaling mechanism rather than another spatial-coordinate correlation.",
+  "round": 6,
+  "source_ids": [],
+  "text": "Do longer mountain brushtail possums also tend to have longer tails?",
+  "tick": 709
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "acoustics",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:61",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r6-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This replaces the unavailable speech dataset with an unused, directly downloadable 528-row vowel CSV whose exact numeric headers are x.1 and x.2. Adjacent log-periodogram features should covary strongly because they sample the same smooth vocal-tract spectral envelope and share recording energy, making a positive association likely in both hash halves. The vocal-acoustics sources support treating measurable spectral structure as meaningful speech information, while the everyday twist is that one part of a vowel's sound can tattle on its neighbor.",
+  "round": 6,
+  "source_ids": [
+   "S145",
+   "S147"
+  ],
+  "text": "Do vowel recordings with more energy in the first spectral feature also have mor",
+  "tick": 728
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:68",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r7-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic lead remains unusable because it lacks a verified CSV and exact headers, so this diverges to an unused public provisioning dataset with confirmed numeric count columns. Begging is a repeatable offspring signal that informs parental feeding decisions, while parents encountering more begging have more opportunities to provision; both processes should produce a strong positive monotonic association across observation events, including within hash halves. The everyday-room-service framing is amusing, but the test addresses a real parent-offspring communication mechanism.",
+  "round": 7,
+  "source_ids": [],
+  "text": "Do fledglings that beg more also get fed more by their own parents?",
+  "tick": 798
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "resolve_conflict"
+  },
+  "id": "hypothesis:69",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r7-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses the unused fish-aggression CSV and its confirmed numeric headers to test a spatial-conflict prediction distinct from the claimed fledgling-provisioning study. A nearby joiner shell should create greater shelter and space competition, increasing aggression per second of observation. The rate accounts for unequal observation durations, while the negative monotonic prediction is strong enough to be checked in both hash halves.",
+  "round": 7,
+  "source_ids": [
+   "S163",
+   "S164"
+  ],
+  "text": "Do shell-dwelling fish become more aggressive when an outsider’s shell is closer",
+  "tick": 817
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:70",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r7-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses an unused, directly downloadable 200-row morphology dataset with exact numeric headers. Carapace width and length are both linear dimensions governed by overall body size and tightly coordinated growth, so their association should be exceptionally strong and stable in both hash halves. The crab's armored body also gives the familiar everyday question a mildly absurd allometric twist.",
+  "round": 7,
+  "source_ids": [],
+  "text": "Do crabs with wider shells also tend to have longer shells?",
+  "tick": 835
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "psychology",
+   "method": "new_population"
+  },
+  "id": "hypothesis:71",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r7-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads still lack a usable multi-column CSV, so this diverges to an unused 2,800-row personality dataset with exact numeric item headers. Thoroughness and checking on others' well-being belong to different Big Five domains, avoiding a trivially similar item pair, but both reflect socialized self-regulation and dependable interpersonal behavior. Their modest positive covariance should be highly significant at this sample size and stable across both hash halves, while the cross-domain everyday association offers some laugh-then-think value.",
+  "round": 7,
+  "source_ids": [],
+  "text": "Do people who say they do a thorough job also tend to say they inquire about oth",
+  "tick": 854
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:78",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r8-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic leads still provide no usable multi-column CSV, so this is a structurally different test on an unused public dataset with exact numeric headers. Begging is an honest hunger signal and a direct stimulus for provisioning, so offspring-specific begging and feeding counts should covary strongly within observation periods; unlike two morphology measurements, this tests a communication–response sequence with an amusing obvious-in-hindsight interpretation.",
+  "round": 8,
+  "source_ids": [],
+  "text": "Do fledglings that beg more often also get fed more often?",
+  "tick": 926
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:79",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r8-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses the unused alloparental-provisioning CSV but tests a different behavioral pathway from the claimed offspring-begging study. Attending unrelated chicks creates proximity and feeding opportunities and may also reflect alloparental motivation, so attendance and feeding counts should show a strong positive association. The pair compares distinct behaviors rather than near-identical measures, and the amusing appearance of adults hanging around other families before feeding their chicks has a clear ecological mechanism.",
+  "round": 8,
+  "source_ids": [],
+  "text": "Do adult birds that spend more time attending unrelated fledglings also feed tho",
+  "tick": 945
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:80",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r8-worker-3-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This exploits the successful strong-monotonic design on an unused behavioral dataset while testing a published gym-attendance experiment rather than repeating a nearby acoustic idea. Pre-experiment attendance captures established exercise habits, access, and motivation, which should persist into the experimental period despite team incentives. With 245 students, even a moderate positive association should meet the overall and split-half significance requirements.",
+  "round": 8,
+  "source_ids": [],
+  "text": "Do students who visited the gym more often before the experiment also visit more",
+  "tick": 964
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "transport",
+   "method": "new_population"
+  },
+  "id": "hypothesis:81",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r8-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This diverges from spatial acoustic coordinates to an unused transport dataset with exact numeric headers and a strong physical mechanism. Engine displacement measures the volume swept per cycle; larger engines generally consume more fuel to deliver their greater air-fuel throughput and power, reducing highway fuel economy. The association should be strongly monotonic across 234 vehicles and robust within both row halves.",
+  "round": 8,
+  "source_ids": [],
+  "text": "Do cars with larger engines travel fewer highway miles per gallon?",
+  "tick": 983
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:88",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r9-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustic conflict lead still lacks a verified direct CSV and exact headers, so this diverges to an unused public provisioning dataset with confirmed numeric columns. Attending genetic offspring creates proximity and feeding opportunities and reflects parental motivation, so attendance and feeding counts should show a strong positive association. This is distinct from the previously claimed unrelated-fledgling attendance pathway.",
+  "round": 9,
+  "source_ids": [],
+  "text": "Do adult birds that attend their own offspring more often also feed them more of",
+  "tick": 1052
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:89",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r9-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This uses the unused alloparental-provisioning CSV and is complementary to worker-1's own-offspring study. Attendance creates proximity and feeding opportunities, while both measures may reflect alloparental motivation, so a substantial positive association is expected even after rows are split. The exact numeric headers are supplied, and the two dataset citations document the study and public data.",
+  "round": 9,
+  "source_ids": [],
+  "text": "Do adult birds that attend unrelated fledglings more often also feed those unrel",
+  "tick": 1071
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "descriptor": {
+   "mechanism": "behavioral_economics",
+   "method": "replicate_published"
+  },
+  "id": "hypothesis:91",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r9-worker-4-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This diverges from the exhausted acoustic coordinate design to an unused behavioral-economics dataset with exact numeric headers. It also avoids worker-3's claimed pre-versus-experimental attendance pair by comparing two distinct intervention weeks. Early attendance reveals established routines, motivation, scheduling fit, and habit formation; these persistent individual differences should produce a substantial positive association six weeks later. Published gym-incentive research explicitly uses repeated attendance to study habit formation, making this a registered, mechanism-backed persistence test rather than a demographic comparison.",
+  "round": 9,
+  "source_ids": [],
+  "text": "Do students who attend the gym more often in week 1 also attend more often in we",
+  "tick": 1107
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:98",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r10-worker-1-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "The acoustics results provide no usable multi-column CSV, so this tests a structurally different hypothesis on an unused public dataset with exact numeric headers. Attending unrelated chicks creates proximity and feeding opportunities and can reflect alloparental motivation, making attendance and feeding counts positively associated without being measures of the same behavior.",
+  "round": 10,
+  "source_ids": [],
+  "text": "Do adult birds that attend unrelated fledglings more often also feed unrelated f",
+  "tick": 1176
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "descriptor": {
+   "mechanism": "animal_behavior",
+   "method": "untested_prediction"
+  },
+  "id": "hypothesis:99",
+  "lead_id": null,
+  "memory_id": "memory:claim-B-r10-worker-2-a1@065dd413fd17",
+  "predicted_delta": 0.0,
+  "rationale": "This tests parental rather than alloparental provisioning: repeated attendance creates feeding opportunities and reflects parental motivation, so offspring-directed attendance and feeding counts should show a strong positive association. The exact numeric headers are supplied, and the prediction is distinct from the claimed unrelated-fledgling attendance study.",
+  "round": 10,
+  "source_ids": [],
+  "text": "Do adult birds that attend their own offspring more often also feed those offspr",
+  "tick": 1195
+ }
+]
