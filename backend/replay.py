@@ -16,7 +16,7 @@ import zipfile
 
 from backend.ingest import number, spectrum_color
 
-COLLECTIONS=('experiments','llm_calls','memory','sources','questions','observations','discoveries','rewards','diary','hypotheses')
+COLLECTIONS=('experiments','llm_calls','memory','sources','questions','observations','discoveries','rewards','diary','hypotheses','studies')
 ACTIVITY={
     'agent.assigned':('assigned','working','notebook'),
     'hypothesis.proposed':('proposing','thinking','notebook'),
@@ -267,6 +267,15 @@ class RecordingCatalog:
             self.cache[rid]=build_recording(self.manifests[rid],events,entities)
             self.cache[rid]['manifest']['contentVersion']=self.content_version
         return self.cache[rid]
+    def artifact(self, rid, relative):
+        """Return an exported artifact file confined to a directory run's artifacts/ folder."""
+        self._scan()
+        if rid not in self.directory_runs:return None
+        root=(self.directory_runs[rid][0]/'artifacts').resolve()
+        try:path=(root/relative).resolve()
+        except (OSError,RuntimeError,ValueError):return None
+        if not path.is_relative_to(root) or not path.is_file():return None
+        return path
     def list(self):
         self._scan();items=[]
         for rid in sorted(self.manifests.keys()|self.directory_runs.keys()):
