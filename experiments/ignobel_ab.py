@@ -15,8 +15,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import analyze_ab
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from experiments import analyze_ab  # noqa: E402
 
 METRICS = ("registered", "datasets", "confirmed_findings", "top_committee")
 

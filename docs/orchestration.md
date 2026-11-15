@@ -94,9 +94,10 @@ reproducible.
 | B | on | on | past.dev |
 | C | on | off | past.dev |
 | D | on | on | local file |
+| S | off (1 worker; no scouts or critic) | on | past.dev |
 
 All arms share the task evaluator and budget, so A vs B isolates the meter.
-Every arm calls the LLM critic for provisional improvements. Deterministic tasks
+Arms A-D call the LLM critic for provisional improvements. Deterministic tasks
 reuse the first evaluation score, making the second run a confirmation rather
 than an independent replicate. A `contradicted` verdict vetoes numeric
 acceptance. `--critic-model` selects the critic (including novelty) model;

@@ -62,7 +62,7 @@ min_confidence = 60
 ignore_decorators = ["@app.get", "@app.exception_handler", "@app.middleware"]
 
 [tool.deptry]
-known_first_party = ["meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
+known_first_party = ["experiments", "meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
 # testcases/ candidate and evaluator code runs inside the Docker sandbox image, whose deps live in testcases/Dockerfile.
 exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees", "backend", "node_modules", "docs/backend-integration.md"]
 optional_dependencies_dev_groups = ["dev"]

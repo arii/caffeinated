@@ -22,6 +22,7 @@ from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini import evaluate as bixbench_evaluate
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
+from testcases.bixbench_numeric import evaluate as bixbench_numeric_evaluate
 from testcases.ignobel import evaluate as ignobel
 from testcases.ignobel import round_context as ignobel_round_context
 from testcases.ignobel import score_run as ignobel_score_run
@@ -161,6 +162,21 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(
             bixbench_evaluate.answer_literal_qids("answer = 0.8 + 0.0034\n", key, "{}"),
             ["answer"],
+        )
+
+    def test_bixbench_numeric_reuses_the_shared_literal_guard(self):
+        self.assertIs(
+            bixbench_numeric_evaluate.answer_literal_qids, bixbench_evaluate.answer_literal_qids
+        )
+        key = {
+            "power": {"mode": "range", "lo": 0.799, "hi": 0.801},
+            "quantile": {"mode": "range", "lo": 0.97, "hi": 0.98},
+            "answer": {"mode": "exact", "value": 0.8034},
+        }
+        source = "power = 0.8\ncritical = stats.t.ppf(0.975, df)\nanswer = 0.8 + 0.0034\n"
+
+        self.assertEqual(
+            bixbench_numeric_evaluate.answer_literal_qids(source, key, "{}"), ["answer"]
         )
 
     def test_bixbench_folded_answers_keep_small_and_public_number_exemptions(self):

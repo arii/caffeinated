@@ -18,8 +18,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FINAL_EVAL = ROOT / "testcases" / "bixbench_numeric" / "final_eval.py"
-sys.path.insert(0, str(ROOT / "experiments"))
-import ab  # noqa: E402
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from experiments import ab  # noqa: E402
 
 ERROR = re.compile(r"^error: ([a-z_]+):", re.M)
 RESUMED_AT = re.compile(r"resuming run \S+ at round (\d+)")

@@ -53,10 +53,6 @@ EXCLUDE = ("deseq", "lfc", "enrich", "gsea", "clusterprofiler", "edger", "limma"
 HELDOUT_FRACTION = 0.3
 
 
-def data_files():
-    return [f"data/{sid}/{name}" for sid, (_, names) in CAPSULES.items() for name in names]
-
-
 def heldout(question_id):
     digest = hashlib.sha256(f"bixbench_numeric:{question_id}".encode()).digest()
     return int.from_bytes(digest[:8], "big") / 2**64 < HELDOUT_FRACTION

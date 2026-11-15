@@ -11,61 +11,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from testcases import sandbox
-from testcases.bixbench_mini.evaluate import _numeric_literals, _question_numbers
+from testcases.bixbench_mini.evaluate import answer_literal_qids
 
 HERE = Path(__file__).resolve().parent
 ANSWERS = ".cache/answers.json"
 TIMEOUT_S = 120
-
-
-# Conventional significance, power, quantile and confidence levels; they fall inside some gold
-# ranges (e.g. 0.88-1.0) but are not answers, so they must not trip the literal guard.
-STAT_CONSTANTS = frozenset(
-    {
-        0.001,
-        0.005,
-        0.01,
-        0.025,
-        0.05,
-        0.1,
-        0.2,
-        0.25,
-        0.5,
-        0.75,
-        0.8,
-        0.9,
-        0.95,
-        0.975,
-        0.99,
-        0.995,
-        0.999,
-        1.0,
-    }
-)
-
-
-def answer_literal_qids(source, key, questions_text):
-    """Question ids whose gold answer appears in source as a numeric literal."""
-    public_numbers = _question_numbers(questions_text)
-    flagged = set()
-    for literal in _numeric_literals(source):
-        if type(literal) is int and abs(literal) <= 10:
-            continue
-        try:
-            value = float(literal)
-        except OverflowError:
-            continue
-        if not math.isfinite(value) or value in public_numbers or value in STAT_CONSTANTS:
-            continue
-        for qid, expected in key.items():
-            if expected["mode"] == "range":
-                matches = expected["lo"] <= value <= expected["hi"]
-            else:
-                target = expected["value"]
-                matches = abs(value - target) <= 1e-9 * max(1.0, abs(target))
-            if matches:
-                flagged.add(qid)
-    return [qid for qid in key if qid in flagged]
 
 
 def grade(key, answers):
