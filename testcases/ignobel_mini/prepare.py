@@ -176,7 +176,8 @@ def build(name, spec):
             if len(members) > 1:
                 answered = [any(keep[m][2][r] for m in members) for r in range(len(rows))]
             else:
-                answered = [any(k[2][r] for k in keep) for r in range(len(rows))]
+                neighbours = [keep[i][2] for i in (position - 1, position + 1) if 0 <= i < len(keep)]
+                answered = [any(n[r] for n in neighbours) for r in range(len(rows))]
             values = [v or ("(not selected)" if answered[r] else "") for r, v in enumerate(values)]
             distinct = sorted(set(v for v in values if v))
         variables[vid] = {
