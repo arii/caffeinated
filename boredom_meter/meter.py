@@ -302,8 +302,9 @@ def fold(profile, events, agent=None):
         coverage_complete = required_cells.issubset(set(cell_hist))
         if improved_sig:
             regime = "EXPLOIT"
-        elif regime == "CONVERGED" or (
-            best is not None and stall >= 3 * patience and coverage_complete
+        elif not profile.get("open_ended") and (
+            regime == "CONVERGED"
+            or (best is not None and stall >= 3 * patience and coverage_complete)
         ):
             regime = "CONVERGED"
         elif n < profile["min_attempts"]:

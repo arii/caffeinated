@@ -124,8 +124,14 @@ def render_prompt(role, values, prompt_dir=DEFAULT_PROMPT_DIR):
     }
     common = (prompt_dir / "common.md").read_text(encoding="utf-8")
     common = fill_placeholders(common, values)
-    role_filename = "pi_steer.md" if role.upper() == "PI" else f"{role.casefold()}.md"
-    role_file = prompt_dir / role_filename
+    template_role = (
+        "worker_execute"
+        if values.get("supervisor_instruction") and role.upper().startswith("WORKER_")
+        else "pi_steer"
+        if role.upper() == "PI"
+        else role.casefold()
+    )
+    role_file = prompt_dir / f"{template_role}.md"
     role_template = role_file.read_text(encoding="utf-8")
     role_template = role_template.replace("{common}", common)
     return fill_placeholders(role_template, values)
@@ -344,7 +350,7 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
 
 
 class LLMError(RuntimeError):
-    """A model request failed after its retries; the caller may record it and go on."""
+    """A model request failed; the caller may record it and go on."""
 
 
 class LLMClient:
@@ -359,8 +365,18 @@ class LLMClient:
         replay=False,
         seed=None,
         fake_delay=0.0,
+        worker_tokens=600,
+        supervisor_tokens=4096,
+        max_cost_usd=1.0,
     ):
+        self.max_cost_usd = max_cost_usd
         self.mode = mode.casefold()
+        self.worker_tokens = worker_tokens
+        self.supervisor_tokens = supervisor_tokens
+        self.supervised = bool((role_models or {}).get("SUPERVISOR"))
+        self.worker_calls = {}
+        if not 128 <= worker_tokens <= 4096 or not 256 <= supervisor_tokens <= 8192:
+            raise ValueError("invalid worker/supervisor token limit")
         self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
@@ -407,6 +423,11 @@ class LLMClient:
             raise ValueError("LLM mode must be openai, tinker, or fake")
 
     def call(self, role, *, agent, round_num, values):
+        if self.supervised and role.upper().startswith("WORKER_") and not self.replay:
+            key = (agent, round_num)
+            if self.worker_calls.get(key, 0) >= 2:
+                raise LLMError(f"{agent}: worker call budget reached (one execution + one repair)")
+            self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
         self.last_call_id = call_id
@@ -454,6 +475,10 @@ class LLMClient:
                         role=role,
                         allow_json_retry=role.upper() != "PI",
                     )
+                elif self.supervised:
+                    import openai_live
+
+                    response, usage = openai_live.request(self, prompt, model=model, role=role)
                 else:
                     response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
@@ -471,6 +496,33 @@ class LLMClient:
                         "attempts": self.request_attempts,
                     },
                 )
+                if self.mode == "openai" and self.supervised:
+                    record = {
+                        "ts": timestamp(),
+                        "call_id": call_id,
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                        "model": model,
+                        "prompt_sha": digest,
+                        "prompt": prompt,
+                        "response": None,
+                        "error": str(error),
+                        "latency_ms": int((time.monotonic() - started) * 1000),
+                        "usage": self.request_attempts[-1].get("usage")
+                        if self.request_attempts
+                        else None,
+                        "attempts": self.request_attempts,
+                    }
+                    append_log(self.log_path, record)
+                    self.records.append(record)
+                    self.call_ids.append(call_id)
+                    self.call_metadata[call_id] = {
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                    }
+                    self.last_call_id = call_id
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
             raise LLMError(f"LLM role {role} response must be a JSON object")

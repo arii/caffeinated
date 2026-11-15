@@ -5,6 +5,7 @@ import hashlib
 import json
 import shutil
 import sys
+import zipfile
 from copy import deepcopy
 from pathlib import Path
 
@@ -213,16 +214,25 @@ def _is_gate_only_ignobel(recording):
     return not _has_committee_data(in_run)
 
 
-def export(viewer_dir, out_dir):
+def _attach_igjudge(recording, rid, igjudge_dir):
+    path = Path(igjudge_dir) / f"{rid}.json"
+    if path.is_file():
+        recording["igjudge"] = json.loads(path.read_text(encoding="utf-8"))
+
+
+def export(viewer_dir, out_dir, igjudge_dir=None, replay_archive=None):
+    """IgJudge final-pass results in <viewer_dir>/../igjudge/<run-id>.json ride along with the recording."""
+    igjudge_dir = Path(viewer_dir).parent / "igjudge" if igjudge_dir is None else igjudge_dir
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     catalog = RecordingCatalog(
-        ROOT / "missing-sample-archive.zip", [Path(viewer_dir)], repo_root=None
+        replay_archive or ROOT / "missing-sample-archive.zip", [Path(viewer_dir)], repo_root=None
     )
     items = []
     for manifest in catalog.list():
         rid = manifest["id"]
         recording = catalog.get(rid)
+        _attach_igjudge(recording, rid, igjudge_dir)
         for key in ("proxy_note", "metric"):
             if key not in manifest and key in recording["manifest"]:
                 manifest[key] = recording["manifest"][key]
@@ -263,6 +273,17 @@ def export(viewer_dir, out_dir):
         artifacts = Path(viewer_dir) / rid / "artifacts"
         if artifacts.is_dir():
             shutil.copytree(artifacts, out / rid / "artifacts", dirs_exist_ok=True)
+        elif replay_archive:
+            prefix = f"runs/{rid}/artifacts/"
+            with zipfile.ZipFile(replay_archive) as bundle:
+                for name in bundle.namelist():
+                    if name.startswith(prefix) and not name.endswith("/"):
+                        relative = Path(name[len(prefix) :])
+                        if relative.is_absolute() or ".." in relative.parts:
+                            raise ValueError("Invalid archive artifact path")
+                        target = out / rid / "artifacts" / relative
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_bytes(bundle.read(name))
         items.append(manifest)
     (out / "index.json").write_text(
         json.dumps(items, sort_keys=True, separators=(",", ":")), encoding="utf-8"
@@ -271,4 +292,5 @@ def export(viewer_dir, out_dir):
 
 
 if __name__ == "__main__":
-    print(f"exported {len(export(sys.argv[1], sys.argv[2]))} recording(s)")
+    archive = ROOT / "data" / "replays" / "ignobel-real-runs.zip"
+    print(f"exported {len(export(sys.argv[1], sys.argv[2], replay_archive=archive))} recording(s)")

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {sortedRecordings,recordingCopy,frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
+import {initialRecordingId,DEFAULT_REPLAY_ID,sortedRecordings,recordingCopy,frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
 test('recording preference uses live, completed swarm, then sample, newest first',()=>{
  const rows=[{id:'sample',sample:true},{id:'old',sample:false,time:{ts_start:'2025-01-01'}},{id:'new',sample:false,time:{ts_start:'2026-01-01'}},{id:'live',sample:false,live:true}];
  assert.deepEqual(sortedRecordings(rows).map(m=>m.id),['live','new','old','sample']);
@@ -98,4 +98,13 @@ test('history-style lab camera looks around in place, then glides without touchi
  for(let i=0;i<200;i++)rig.update(.1,new Set(['KeyE','KeyW']));
  assert.ok(camera.position.y<=4.4&&camera.position.z>=-12.3&&camera.position.x>=-10.9);
  rig.reset();assert.ok(camera.position.equals(position));assert.equal(rig.freeMode,false);
+});
+
+test('ZIP run 3 is the default, explicit links override it, missing archives fall back',()=>{
+ const rows=[{id:'live',live:true},{id:DEFAULT_REPLAY_ID},{id:'other'}];
+ assert.equal(initialRecordingId(rows,null),DEFAULT_REPLAY_ID);
+ assert.equal(initialRecordingId(rows,'other'),'other');
+ assert.equal(initialRecordingId(rows,'missing'),DEFAULT_REPLAY_ID);
+ assert.equal(initialRecordingId([{id:'fallback'}],null),'fallback');
+ assert.equal(initialRecordingId([],null),undefined);
 });

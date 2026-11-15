@@ -20,6 +20,9 @@ HERE = Path(__file__).resolve().parent
 COMMIT = "4c1ff5e3aef1816ae04af63218015066e186c147"
 BASE = f"https://raw.githubusercontent.com/fivethirtyeight/data/{COMMIT}"
 MAX_LEVELS = 25
+VERSION = 2  # bump when cleaning rules change so cached codebooks rebuild
+MISSING = {"na", "n/a", "nan", "null", "none", ".", "?", "-", "--", "#n/a"}
+NUMBER = re.compile(r"[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
 MAX_BYTES = 5_000_000
 DROP = re.compile(
     r"^(RespondentID|StartDate|EndDate|page_id|name|urlslug|FIRST APPEARANCE|EPISODE|TITLE)$"
@@ -170,7 +173,12 @@ def build(name, spec):
         present = [v for v in values if v]
         if not present:
             continue
-        numeric = all(re.fullmatch(r"-?\d+(\.\d+)?", v) for v in present)
+        numeric = all(NUMBER.fullmatch(v) or v.casefold() in MISSING for v in present) and any(
+            NUMBER.fullmatch(v) for v in present
+        )
+        if numeric:
+            values = [v if NUMBER.fullmatch(v) else "" for v in values]
+            present = [v for v in values if v]
         distinct = sorted(set(present))
         if not numeric and len(distinct) > MAX_LEVELS:
             continue

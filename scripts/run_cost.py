@@ -167,6 +167,32 @@ def _transport_attempt_count(records):
     )
 
 
+def _error_records_without_logged_calls(llm_records, error_records, field=None):
+    logged_calls = set()
+    for record in llm_records:
+        call_id = record.get("call_id")
+        if isinstance(call_id, str) and call_id:
+            group = None
+            if field:
+                raw_key = record.get(field)
+                group = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+            logged_calls.add((group, call_id))
+
+    unmatched = []
+    for record in error_records:
+        call_id = record.get("call_id")
+        if not isinstance(call_id, str) or not call_id:
+            unmatched.append(record)
+            continue
+        group = None
+        if field:
+            raw_key = record.get(field)
+            group = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+        if (group, call_id) not in logged_calls:
+            unmatched.append(record)
+    return unmatched
+
+
 def _group_attempt_counts(groups, llm_records, error_records, field):
     def group_for(record):
         raw_key = record.get(field)
@@ -181,6 +207,8 @@ def _group_attempt_counts(groups, llm_records, error_records, field):
     for record in error_records:
         group = group_for(record)
         group["failed_calls"] = group.get("failed_calls", 0) + 1
+    for record in _error_records_without_logged_calls(llm_records, error_records, field):
+        group = group_for(record)
         group["transport_retries"] = group.get("transport_retries", 0) + _transport_attempt_count(
             [record]
         )
@@ -313,7 +341,7 @@ def build_report(run_dir, prices=None):
         model_usage["calls"] += 1
         model_usage["prompt_tokens"] += values["input_tokens"]
         model_usage["completion_tokens"] += values["output_tokens"]
-        for field in ("cached_tokens", "reasoning_tokens"):
+        for field in TOKEN_FIELDS:
             model_usage[field] += values[field]
 
     total_calls = sum(model["calls"] for model in calls_by_model.values())
@@ -359,7 +387,9 @@ def build_report(run_dir, prices=None):
             "output_tokens": usage_totals["output_tokens"],
             "reasoning_tokens": usage_totals["reasoning_tokens"],
             "failed_calls": len(llm_errors),
-            "transport_retries": _transport_attempt_count(llm_records + llm_errors),
+            "transport_retries": _transport_attempt_count(
+                llm_records + _error_records_without_logged_calls(llm_records, llm_errors)
+            ),
             "by_role": by_role,
             "by_round": by_round,
             "by_agent": by_agent,

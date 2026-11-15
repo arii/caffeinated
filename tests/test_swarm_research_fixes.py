@@ -8,7 +8,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import boredom
 import llm
@@ -41,6 +41,70 @@ def task_values(task):
         }
     )
     return values
+
+
+class SupervisedRepairTests(unittest.TestCase):
+    def test_repair_keeps_leads_and_source_context(self):
+        swarm.configure_task(SimpleNamespace(task="hadamard19"))
+        profile = meter.load_profile(swarm.TASK["profile"])
+        client = SimpleNamespace(
+            supervised=True,
+            call_ids=[],
+            call=Mock(
+                side_effect=[
+                    {},
+                    {
+                        "status": "reject",
+                        "reason": "Cannot execute this assignment",
+                    },
+                ]
+            ),
+        )
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "git", return_value=SimpleNamespace(stdout="source text")),
+            patch.object(swarm, "render_leads_for_prompt", return_value="lead-1 cites S1"),
+            patch.object(
+                swarm, "validate_proposal", side_effect=ValueError("invalid test proposal")
+            ),
+        ):
+            root = Path(tmp)
+            swarm.worker_attempts(
+                agent="worker-1",
+                round_num=1,
+                arm="B",
+                role="exploit",
+                agent_b=0,
+                status={
+                    "regime": "EXPLOIT",
+                    "swarm_B": 0,
+                    "supervisor_tasks": {"worker-1": "Change the seed"},
+                },
+                best_commit="abc",
+                best_val=1,
+                profile=profile,
+                profile_path=swarm.TASK["profile"],
+                events=[],
+                out_dir=root,
+                repo=root,
+                agents_root=root,
+                base_commit="abc",
+                llm_client=client,
+                backend="local",
+                mirror=root / "memory.jsonl",
+                memory_log=root / "memory_log.jsonl",
+                lead=None,
+                all_leads=[],
+                claims=[],
+                replay=False,
+            )
+        self.assertEqual(client.call.call_count, 2)
+        repair = client.call.call_args.kwargs["values"]
+        self.assertEqual(repair["recalled_leads"], "lead-1 cites S1")
+        self.assertEqual(repair["candidate_source"], "source text")
+        rendered = llm.render_prompt("WORKER_REPAIR", repair)
+        self.assertIn("lead-1 cites S1", rendered)
+        self.assertNotIn("{recalled_leads}", rendered)
 
 
 class TaskInputTests(unittest.TestCase):
@@ -666,6 +730,21 @@ class PISteeringTests(unittest.TestCase):
             lead_records=lead_records,
         )
 
+    def test_supervised_run_skips_extra_pi_even_when_stuck(self):
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory") as recall,
+        ):
+            steers = self.run_pi(
+                client=SimpleNamespace(
+                    supervised=True,
+                    call=lambda *args, **kwargs: self.fail("duplicate supervisor call"),
+                ),
+                out_dir=tmp,
+            )
+        self.assertEqual(steers, {})
+        recall.assert_not_called()
+
     def test_no_stuck_agent_skips_the_pi_call(self):
         with (
             tempfile.TemporaryDirectory() as tmp,
@@ -1206,6 +1285,37 @@ class LiveToolGuardTests(unittest.TestCase):
         self.assertEqual(stored, spend)
         self.assertIn("round 4 spend: calls=2", console.getvalue())
         self.assertIn("failed_calls=1 transport_retries=4", console.getvalue())
+
+    def test_round_spend_deduplicates_supervised_failed_call_retries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            attempts = [
+                {"transport_error": "TimeoutError: read timed out", "usage": None} for _ in range(3)
+            ]
+            failed_call = {
+                "round": 2,
+                "call_id": "WORKER_EXECUTE-r2-worker-1-1",
+                "role": "WORKER_EXECUTE",
+                "agent": "worker-1",
+                "response": None,
+                "attempts": attempts,
+            }
+            (output / "llm_log.jsonl").write_text(json.dumps(failed_call) + "\n", encoding="utf-8")
+            (output / "llm_errors.jsonl").write_text(
+                json.dumps({**failed_call, "error": "request timed out"}) + "\n",
+                encoding="utf-8",
+            )
+
+            spend = swarm.record_round_spend(
+                output,
+                2,
+                0,
+                0,
+                {"exa_searches": 0, "pastdev_recalls": 0, "pastdev_writes": 0},
+            )
+
+        self.assertEqual(spend["failed_calls"], 1)
+        self.assertEqual(spend["transport_retries"], 3)
 
 
 class LLMCallLinkTests(unittest.TestCase):

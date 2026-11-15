@@ -352,6 +352,20 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
     return path, None
 
 
+def open_ended():
+    return bool((TASK or {}).get("open_ended"))
+
+
+def acceptance_reference(best_val, baseline_val):
+    """Open-ended tasks accept every confirmed finding that beats the baseline, not only new bests."""
+    return baseline_val if open_ended() and baseline_val is not None else best_val
+
+
+def known_result(candidate):
+    """Open-ended hunts skip findings the novelty critic matched to prior art (textbook results)."""
+    return open_ended() and candidate.get("prior_art_pass") is False
+
+
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm in METER_OFF_ARMS else swarm_status["regime"]
@@ -375,9 +389,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         scout = agents[0]
         roles[scout] = "divergent"
         scouts = [scout] if exa_enabled else []
-        rationale = (
-            "Arm A fixes three exploit slots and one divergent slot; it scouts when Exa is enabled."
-        )
+        rationale = f"Arm A fixes {len(agents) - 1} exploit slots and one divergent slot; it scouts when Exa is enabled."
     elif regime == "BOREDOM_SNAP":
         if exa_enabled:
             scout_count = min(2, 1 + len(bored))
@@ -392,13 +404,13 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         for agent in scouts:
             roles[agent] = "divergent"
         non_scouts = [agent for agent in agents if agent not in scouts]
-        remaining_divergent = 3 - len(scouts)
+        remaining_divergent = max(0, len(agents) - 1 - len(scouts))
         for agent in sorted(non_scouts, key=lambda agent: (per_agent[agent], agent))[
             :remaining_divergent
         ]:
             roles[agent] = "divergent"
         rationale = (
-            f"SNAP assigns one exploit and three divergent slots; "
+            f"SNAP assigns one exploit and {len(agents) - 1} divergent slots; "
             f"{len(scouts)} divergent workers scout."
         )
     elif regime == "PARADIGM_BREAKOUT":
@@ -411,14 +423,14 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
                 )
                 scouts.extend(remaining[: 2 - len(scouts)])
         roles = dict.fromkeys(agents, "divergent")
-        rationale = f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
+        rationale = f"BREAKOUT assigns {len(agents)} divergent slots and {len(scouts)} scouts."
     else:
         roles = dict.fromkeys(agents, "exploit")
         divergent_agent = divergent_worker()
         if exa_enabled:
             scouts = [divergent_agent]
         roles[divergent_agent] = "divergent"
-        rationale = "EXPLOIT assigns three exploit slots and one divergent slot."
+        rationale = f"EXPLOIT assigns {len(agents) - 1} exploit slots and one divergent slot."
 
     return {
         "swarm_B": swarm_status["B"],
@@ -1615,6 +1627,14 @@ def record_score_cache(repo, out_dir, results):
     path.write_text(json.dumps(cache, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def registration_problems(repo, commit):
+    """Task-specific checks a committed candidate must pass before it is scored."""
+    if not TASK:
+        return []
+    source = git(repo, "show", f"{commit}:{TARGET_FILE}", check=False)
+    return sandbox.preflight_task(TASK["dir"], source.stdout) if source.returncode == 0 else []
+
+
 def source_union(*groups):
     return list(dict.fromkeys(source for group in groups for source in group))
 
@@ -1788,7 +1808,8 @@ def run_pi_steering(
     research_start,
     lead_records=None,
 ):
-    if not enabled:
+    # A supervised round already buys one Sol plan; never add a second PI call.
+    if not enabled or getattr(llm_client, "supervised", False):
         return {}
     stuck_agents = pi_stuck_agents(events, agents, round_num)
     if not stuck_agents:
@@ -2115,8 +2136,10 @@ def worker_attempts(
             log=memory_log,
             arm=arm,
         )
-        for query in memory_queries
+        for query in (memory_queries if not getattr(llm_client, "supervised", False) else [])
     ]
+    if not recalls:
+        recalls = [{"results": []} for _ in range(3)]
     recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
     worker_leads = list(all_leads)
     if isinstance(pi_lead, dict):
@@ -2139,7 +2162,11 @@ def worker_attempts(
         out_dir=out_dir,
     )
     common["pi_steer"] = pi_steer
-    search_cell = worker_search_cell(agent, role, status)
+    search_cell = (
+        None
+        if getattr(llm_client, "supervised", False)
+        else worker_search_cell(agent, role, status)
+    )
     worker_sources = []
     searches_used = 0
     if search_cell:
@@ -2162,10 +2189,17 @@ def worker_attempts(
             "reasons": "none",
             "assigned_cell": "none",
             "candidate_source": candidate_source,
+            "recalled_results": recalled_results,
+            "recalled_leads": recalled_leads,
             "fake_targets": TASK.get("fake_targets", []),
             "fake_edits": TASK.get("fake_edits", []),
         }
     )
+    if getattr(llm_client, "supervised", False):
+        common["supervisor_instruction"] = status["supervisor_tasks"][agent]
+        common["vocab"] = json.dumps(vocab_with_extensions(profile, out_dir), sort_keys=True)
+        common["problem"] = "none"
+        common["proposal"] = "none"
     proposal = llm_client.call(
         "WORKER_PROPOSE",
         agent=agent,
@@ -2183,6 +2217,7 @@ def worker_attempts(
     attempts = []
     precheck_failures = {}
     current_proposal = proposal
+    preflight_repaired = False
     for attempt in (1, 2, 3):
         normalized = []
         try:
@@ -2512,6 +2547,30 @@ def worker_attempts(
                 }
             )
 
+        problems = registration_problems(repo, committed["commit"])
+        if problems and not preflight_repaired and attempt < 3:
+            preflight_repaired = True
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "commit": committed["commit"],
+                    "pass": False,
+                    "reasons": problems,
+                }
+            )
+            current_proposal = llm_client.call(
+                "WORKER_REPAIR",
+                agent=agent,
+                round_num=round_num,
+                values={
+                    **common,
+                    "problem": "Registration check failed before the test ran: "
+                    + "; ".join(problems),
+                    "proposal": json.dumps(current_proposal, sort_keys=True),
+                },
+            )
+            continue
+
         gate_pass, gate_record = gate_candidate(
             repo=repo,
             out_dir=out_dir,
@@ -2710,7 +2769,7 @@ def set_task_context(task_context):
 
 
 def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
-    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
+    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when its judges have a key.
 
     on_start is called just before the scorer starts. Returns True when the scorer ran
     successfully (its output should be recorded).
@@ -2718,10 +2777,10 @@ def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
     hook = (TASK or {}).get("post_run")
     if not hook:
         return False
-    if replay or llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
+    judge_key = os.environ.get("IGNOBEL_JUDGE_API_KEY_ENV") or "TINKER_API_KEY"
+    if replay or llm_mode == "fake" or not os.environ.get(judge_key):
         print(
-            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
-            "not --replay)",
+            f"[post_run] {hook} skipped (needs {judge_key}, a real LLM and no --replay)",
             flush=True,
         )
         return False
@@ -3244,10 +3303,22 @@ def _token_count(value):
         return 0
 
 
-def _transport_retry_count(records):
+def _transport_retry_count(llm_records, error_records):
+    llm_call_ids = {
+        record["call_id"]
+        for record in llm_records
+        if isinstance(record.get("call_id"), str) and record["call_id"]
+    }
+    unmatched_errors = [
+        record
+        for record in error_records
+        if not isinstance(record.get("call_id"), str)
+        or not record["call_id"]
+        or record["call_id"] not in llm_call_ids
+    ]
     return sum(
         1
-        for record in records
+        for record in llm_records + unmatched_errors
         for attempt in (record.get("attempts") if isinstance(record.get("attempts"), list) else [])
         if isinstance(attempt, dict) and attempt.get("transport_error")
     )
@@ -3288,7 +3359,7 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
         **usage,
         "wasted_calls": wasted_calls,
         "failed_calls": len(errors),
-        "transport_retries": _transport_retry_count(llm_records + errors),
+        "transport_retries": _transport_retry_count(llm_records, errors),
         "exa_searches": tool_counts["exa_searches"],
         "pastdev_recalls": tool_counts["pastdev_recalls"],
         "pastdev_writes": tool_counts["pastdev_writes"],
@@ -3361,6 +3432,7 @@ CHECKPOINT_SKIP = {
     "viewer_frontier.json",
     "viewer_publish_log.jsonl",
     "held_out_test.json",
+    "openai_budget.jsonl",  # paid OpenAI requests stay reserved across --resume
 }
 
 
@@ -3641,12 +3713,27 @@ RESUMED_SETTINGS = (
     "llm",
     "model",
     "critic_model",
+    "workers",
+    "supervisor_model",
+    "worker_tokens",
+    "supervisor_tokens",
+    "max_cost_usd",
     "exa",
     "literature",
     "memory_backend",
     "pi",
 )
-RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on", "pi": "on"}
+RUN_DEFAULTS = {
+    "arm": "B",
+    "pi": "on",
+    "rounds": 10,
+    "llm": "openai",
+    "exa": "on",
+    "workers": 4,
+    "worker_tokens": 600,
+    "supervisor_tokens": 4096,
+    "max_cost_usd": 1.0,
+}
 
 
 def resolve_run_args(args):
@@ -3717,6 +3804,98 @@ def resolve_run_args(args):
     return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
 
 
+DEFAULT_SUPERVISOR_STRATEGY = (
+    "Prefer single-line changes to existing tunable constants. Give exact old/new parameter "
+    "values and an allowed mechanism/method pair to report. Do not reference functions or "
+    "parameters absent from the source. Choose modest bounded values so each test stays fast. "
+    "Different values of the same parameter are acceptable for this pilot."
+)
+
+
+def plan_supervised_workers(
+    client,
+    agents,
+    round_num,
+    profile,
+    status,
+    base_commit,
+    best_val,
+    repo,
+    out_dir,
+    backend,
+    mirror,
+    memory_log,
+    arm,
+    leads=(),
+):
+    recalled = recall_memory(
+        "prior experiments, failures and promising directions for " + TASK.get("brief", "")[:200],
+        "conductor",
+        backend=backend,
+        mirror=mirror,
+        log=memory_log,
+        arm=arm,
+        limit=8,
+    )
+    values = {
+        "task_brief": TASK.get("brief", ""),
+        "agents": json.dumps(list(agents)),
+        "source": git(repo, "show", f"{base_commit}:{TARGET_FILE}").stdout,
+        "vocab": json.dumps(vocab_with_extensions(profile, out_dir)),
+        "task_inputs": TASK.get("prompt_values", {}).get("task_context", "none"),
+        "history": memory_text(recalled),
+        "best_loss": best_val,
+        "regime": status["regime"],
+        "strategy": TASK.get("supervisor_strategy") or DEFAULT_SUPERVISOR_STRATEGY,
+        "leads": "\n".join(
+            json.dumps(
+                {key: lead.get(key) for key in ("id", "source_ids", "recipe", "claimed_effect")},
+                sort_keys=True,
+            )
+            for lead in leads
+        )
+        or "none",
+    }
+    result = client.call("SUPERVISOR", agent="conductor", round_num=round_num, values=values)
+    tasks = result.get("tasks")
+    if not isinstance(tasks, list) or len(tasks) != len(agents):
+        raise ValueError("Supervisor must assign exactly one task to each worker")
+    assignments = {}
+    for task in tasks:
+        if not isinstance(task, dict):
+            raise ValueError("Invalid supervisor task")
+        agent, instruction = task.get("agent"), task.get("instruction")
+        if agent not in agents or agent in assignments:
+            raise ValueError("Supervisor returned an unknown or duplicate worker")
+        if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1600:
+            raise ValueError("Supervisor instruction must be 1-1600 characters")
+        assignments[agent] = instruction
+    if len(set(assignments.values())) != len(agents):
+        raise ValueError("Supervisor assigned identical work to multiple workers")
+    append_jsonl(
+        out_dir / "supervisor_plans.jsonl",
+        {
+            "ts": timestamp(),
+            "round": round_num,
+            "model": client.role_models["SUPERVISOR"],
+            "tasks": tasks,
+            "llm_call_id": client.last_call_id,
+        },
+    )
+    write_memory_item(
+        "assignment",
+        f"supervisor-{arm}-{round_num}",
+        json.dumps(tasks),
+        "conductor",
+        {"round": round_num},
+        backend=backend,
+        mirror=mirror,
+        log=memory_log,
+        arm=arm,
+    )
+    return assignments
+
+
 def llm_failure_candidate(agent, role, error):
     return {
         "agent": agent,
@@ -3742,7 +3921,14 @@ def _orchestrate(args, publish_state, cleanup):
     prompt_dir = configure_task(args)
     if args.arm not in {"A", "B", "C", "D", "S"}:
         raise ValueError("--arm must be A, B, C, D, or S")
-    agents = AGENTS[:1] if args.arm == "S" else AGENTS
+    worker_count = getattr(args, "workers", None) or 4
+    if not 1 <= worker_count <= 12:
+        raise ValueError("--workers must be between 1 and 12")
+    if getattr(args, "supervisor_model", None) and args.llm != "openai":
+        raise ValueError("--supervisor-model requires --llm openai")
+    agents = (
+        AGENTS[:1] if args.arm == "S" else tuple(f"worker-{n}" for n in range(1, worker_count + 1))
+    )
     repo = Path(args.repo).resolve()
     git_text(repo, "rev-parse", "--show-toplevel")
     profile_path = TASK["profile"].resolve()
@@ -3893,13 +4079,23 @@ def _orchestrate(args, publish_state, cleanup):
         role_models={
             "CRITIC": args.critic_model,
             "CRITIC_NOVELTY": args.critic_model,
+            "SUPERVISOR": getattr(args, "supervisor_model", None),
         },
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
         seed=args.seed,
         fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
+        worker_tokens=args.worker_tokens or 600,
+        supervisor_tokens=args.supervisor_tokens or 4096,
+        max_cost_usd=args.max_cost_usd,
     )
+    if llm_client.mode == "openai" and llm_client.supervised and not args.replay:
+        # In-run judge calls (Ig Nobel committee) share the run's OpenAI ledger and ceiling.
+        os.environ["OPENAI_BUDGET_LEDGER"] = str(
+            llm_client.log_path.with_name("openai_budget.jsonl")
+        )
+        os.environ["OPENAI_MAX_COST_USD"] = str(args.max_cost_usd)
     critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
     provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
     run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
@@ -3908,6 +4104,10 @@ def _orchestrate(args, publish_state, cleanup):
             "model": llm_client.model,
             "critic_model": critic_model,
             "memory_backend": memory_backend,
+            "supervisor_model": getattr(args, "supervisor_model", None),
+            "worker_tokens": args.worker_tokens or 600,
+            "supervisor_tokens": args.supervisor_tokens or 4096,
+            "max_cost_usd": args.max_cost_usd,
         }
     )
     _write_run_artifact(out_dir, run_artifact)
@@ -4044,7 +4244,7 @@ def _orchestrate(args, publish_state, cleanup):
                 live_publish.watch(out_dir, publisher.request)
                 publisher.request()
             leads = run_scouts(
-                allocation["scouts"],
+                allocation["scouts"] if not llm_client.supervised or TASK.get("scout") else [],
                 profile=profile,
                 events=events_for_scouts,
                 status=status,
@@ -4086,6 +4286,23 @@ def _orchestrate(args, publish_state, cleanup):
             claims = []
             assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
+            if llm_client.supervised:
+                status["supervisor_tasks"] = plan_supervised_workers(
+                    llm_client,
+                    agents,
+                    round_num,
+                    profile,
+                    status,
+                    base_commit,
+                    best_val,
+                    conductor,
+                    out_dir,
+                    memory_backend,
+                    memory_mirror,
+                    memory_log,
+                    args.arm,
+                    leads=all_leads,
+                )
             for agent in agents:
                 role = allocation["roles"][agent]
                 lead = lead_for_agent(agent, leads, all_leads)
@@ -4171,7 +4388,10 @@ def _orchestrate(args, publish_state, cleanup):
                 if (
                     candidate["evaluation_status"] == "ok"
                     and candidate["score"] is not None
-                    and candidate_is_provisional(profile, candidate["score"], best_val)
+                    and not known_result(candidate)
+                    and candidate_is_provisional(
+                        profile, candidate["score"], acceptance_reference(best_val, baseline_val)
+                    )
                 ):
                     provisional.append(candidate)
             provisional_best = (
@@ -4205,7 +4425,7 @@ def _orchestrate(args, publish_state, cleanup):
                     profile,
                     first_score,
                     second_score,
-                    previous_best_val,
+                    acceptance_reference(previous_best_val, baseline_val),
                     critic_result.get("status"),
                 )
                 critic_record = {
@@ -4293,7 +4513,7 @@ def _orchestrate(args, publish_state, cleanup):
                 }
                 if accepted:
                     provisional_best["status"] = "keep"
-                    best_val = (first_score + float(second_score)) / 2
+                    best_val = min(best_val, (first_score + float(second_score)) / 2)
                     best_metric_commit = provisional_best["commit"]
                     latest_candidate = provisional_best
 
@@ -4561,6 +4781,19 @@ def build_parser():
         help="CPU benchmark to run with its sandboxed evaluator",
     )
     parser.add_argument("--model")
+    parser.add_argument(
+        "--workers", type=int, help="worker identities (1-12, default 4); calls are queued"
+    )
+    parser.add_argument(
+        "--max-cost-usd", type=float, help="Supervised OpenAI run ceiling, default $1"
+    )
+    parser.add_argument("--supervisor-model", help="Planning model; one plan per round")
+    parser.add_argument("--worker-tokens", type=int, help="Worker output cap (default 600)")
+    parser.add_argument(
+        "--supervisor-tokens",
+        type=int,
+        help="Supervisor planning cap including thought (default 4096)",
+    )
     parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--pi", choices=("on", "off"), help="PI steering (default on)")
