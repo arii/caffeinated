@@ -504,10 +504,12 @@ class LLMClient:
                     continue
                 detail = error.read().decode("utf-8", "replace")[:300]
                 raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
-            except URLError as error:
+            except (URLError, TimeoutError) as error:
                 if attempt < 2:
                     time.sleep(5 * (attempt + 1))
                     continue
+                if isinstance(error, TimeoutError):
+                    raise RuntimeError("Tinker request timed out") from error
                 raise RuntimeError(f"Tinker request failed: {error.reason}") from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("Tinker returned invalid JSON") from error
@@ -596,15 +598,22 @@ class LLMClient:
             },
             method="POST",
         )
-        try:
-            with urlopen(request, timeout=60) as http_response:
-                response = json.loads(http_response.read().decode("utf-8"))
-        except HTTPError as error:
-            raise RuntimeError(f"OpenAI returned HTTP {error.code}") from error
-        except URLError as error:
-            raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
-        except json.JSONDecodeError as error:
-            raise RuntimeError("OpenAI returned invalid JSON") from error
+        for attempt in range(3):
+            try:
+                with urlopen(request, timeout=60) as http_response:
+                    response = json.loads(http_response.read().decode("utf-8"))
+                break
+            except HTTPError as error:
+                raise RuntimeError(f"OpenAI returned HTTP {error.code}") from error
+            except (URLError, TimeoutError) as error:
+                if attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                if isinstance(error, TimeoutError):
+                    raise RuntimeError("OpenAI request timed out") from error
+                raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
+            except json.JSONDecodeError as error:
+                raise RuntimeError("OpenAI returned invalid JSON") from error
         try:
             message = response["choices"][0]["message"]
             content = message["content"]

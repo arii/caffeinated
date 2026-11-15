@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 from urllib.error import HTTPError
 
 import llm
@@ -157,6 +157,54 @@ class TinkerTests(unittest.TestCase):
         response = MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(body).encode()
         return response
+
+    def timeout_response(self):
+        response = MagicMock()
+        response.__enter__.return_value.read.side_effect = TimeoutError("read timed out")
+        return response
+
+    def client_for_mode(self, mode):
+        if mode == "tinker":
+            return self.client()
+        return llm.LLMClient(mode="openai", model="stub-openai-model", log_path=self.log_path)
+
+    def test_read_timeouts_retry_and_raise_llm_error(self):
+        for mode in ("tinker", "openai"):
+            with (
+                self.subTest(mode=mode),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
+            ):
+                client = self.client_for_mode(mode)
+                with (
+                    patch(
+                        "llm.urlopen",
+                        side_effect=[self.timeout_response() for _ in range(3)],
+                    ) as urlopen,
+                    patch("llm.time.sleep") as sleep,
+                    self.assertRaisesRegex(llm.LLMError, "request timed out"),
+                ):
+                    self.call(client)
+                self.assertEqual(urlopen.call_count, 3)
+                sleep.assert_has_calls([call(5), call(10)])
+
+    def test_read_timeout_retries_once_then_succeeds(self):
+        body = {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
+        for mode in ("tinker", "openai"):
+            with (
+                self.subTest(mode=mode),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
+            ):
+                client = self.client_for_mode(mode)
+                with (
+                    patch(
+                        "llm.urlopen",
+                        side_effect=[self.timeout_response(), self.http_response(body)],
+                    ) as urlopen,
+                    patch("llm.time.sleep") as sleep,
+                ):
+                    self.assertEqual(self.call(client), {"ok": True})
+                self.assertEqual(urlopen.call_count, 2)
+                sleep.assert_called_once_with(5)
 
     def test_openai_compatible_request_uses_final_content_not_reasoning(self):
         body = {
