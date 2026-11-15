@@ -16,14 +16,18 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
+import held_out
 import llm
 import swarm
 from boredom import descriptor_meter as meter
 from testcases import sandbox
+from testcases.bixbench_mini import evaluate as bixbench_evaluate
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.ignobel import evaluate as ignobel
 from testcases.ignobel import round_context as ignobel_round_context
 from testcases.ignobel import score_run as ignobel_score_run
+from testcases.playworld_mini import env as playworld_env
+from testcases.playworld_mini import evaluate as playworld_evaluate
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +63,100 @@ def task_evaluation(task, source, **kwargs):
 
 
 class EvaluatorTests(unittest.TestCase):
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_bixbench_dev_and_test_splits_grade_only_their_questions(self):
+        source = "print('{}')\n"
+        dev = task_evaluation("bixbench_mini", source, split="dev")
+        test = task_evaluation("bixbench_mini", source, split="test")
+
+        self.assertEqual(dev["status"], "ok", dev["stderr"])
+        self.assertEqual(test["status"], "ok", test["stderr"])
+        self.assertEqual((dev["split"], dev["n_items"]), ("dev", 10))
+        self.assertEqual((test["split"], test["n_items"]), ("test", 7))
+        self.assertIn("split: dev", dev["stdout"])
+        self.assertIn("n_items: 10", dev["stdout"])
+        self.assertNotIn("beats_reference:", dev["stdout"])
+        self.assertIn("beats_reference:", test["stdout"])
+        self.assertTrue(all(qid not in dev["stdout"] for qid in bixbench_evaluate.TEST_QIDS))
+        test_qids = re.findall(r"^(bix-\d+-q\d+):", test["stdout"], re.M)
+        self.assertCountEqual(test_qids, bixbench_evaluate.TEST_QIDS)
+        key = json.loads(
+            (TESTCASES / "bixbench_mini" / ".cache" / "answers.json").read_text(encoding="utf-8")
+        )
+        test_qid = bixbench_evaluate.TEST_QIDS[0]
+        test_answer = key[test_qid].get("value")
+        if test_answer is None:
+            test_answer = (key[test_qid]["lo"] + key[test_qid]["hi"]) / 2
+        with_test_literal = f"candidate_answer = {test_answer!r}\nprint('{{}}')\n"
+        dev_with_test_literal = task_evaluation("bixbench_mini", with_test_literal, split="dev")
+        self.assertNotIn(test_qid, dev_with_test_literal["stdout"])
+
+    def test_evaluators_reject_unknown_splits(self):
+        with self.assertRaises(ValueError):
+            bixbench_evaluate.evaluate_source("", split="other")
+        with self.assertRaises(ValueError):
+            playworld_evaluate.evaluate_source("", split="other")
+
+    def test_playworld_train_dev_and_test_seeds_are_disjoint(self):
+        train = set(playworld_env.TRAIN_SEEDS)
+        dev = set(playworld_evaluate.EVAL_SEEDS)
+        test = set(playworld_evaluate.TEST_SEEDS)
+
+        self.assertEqual(len(train), 500)
+        self.assertEqual(len(dev), 200)
+        self.assertEqual(len(test), 200)
+        self.assertTrue(train.isdisjoint(dev))
+        self.assertTrue(train.isdisjoint(test))
+        self.assertTrue(dev.isdisjoint(test))
+
+    def test_bixbench_answer_literal_scanner_handles_exemptions_and_negatives(self):
+        key = {
+            "small": {"mode": "exact", "value": 7},
+            "public": {"mode": "exact", "value": 42},
+            "range": {"mode": "range", "lo": 20, "hi": 30},
+            "negative": {"mode": "exact", "value": -25},
+        }
+        questions = json.dumps({"q": {"question": "The public example is 42."}})
+        source = "small = 7\npublic = 42\nrange_answer = 25\nnegative_answer = -25\n"
+
+        self.assertEqual(
+            bixbench_evaluate.answer_literal_qids(source, key, questions), ["range", "negative"]
+        )
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_bixbench_rejects_answer_literals_without_flagging_data_computation(self):
+        task_dir = TESTCASES / "bixbench_mini"
+        config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+        sandbox.prepare_task(
+            task_dir,
+            config.get("context_files", []),
+            required_files=(".cache/answers.json",),
+        )
+        key = json.loads((task_dir / ".cache" / "answers.json").read_text(encoding="utf-8"))
+        value = key["bix-19-q1"]["value"]
+        source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+        result = bixbench_evaluate.evaluate_source(
+            source + f"\nHARDCODED_ANSWER = {value!r}\n", split="dev"
+        )
+
+        self.assertEqual(result["status"], "crash")
+        self.assertEqual(result["reason"], "answer_literal")
+        self.assertEqual(result["loss"], 1.0)
+        literal_line = next(
+            line for line in result["stdout"].splitlines() if line.startswith("answer_literal:")
+        )
+        self.assertIn("bix-19-q1", literal_line)
+        self.assertNotIn(str(value), literal_line)
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_bixbench_source_computing_answers_from_data_passes_literal_guard(self):
+        task_dir = TESTCASES / "bixbench_mini"
+        config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+        source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+        result = bixbench_evaluate.evaluate_source(source, split="dev")
+
+        self.assertEqual(result["status"], "ok", result["stderr"])
+
     def test_bixbench_candidate_answers_must_be_finite_numbers(self):
         key = {"q1": {"mode": "exact", "value": 1.0}}
         self.assertTrue(grade_bixbench(key, {"q1": 1})["q1"])
@@ -96,6 +194,7 @@ class EvaluatorTests(unittest.TestCase):
                 eps = meter.load_profile(task_dir / "boredom_profile.json")["eps"]
                 source = (task_dir / config["editable"]).read_text(encoding="utf-8")
                 previous = sandbox.evaluate_task(task_dir, source)["loss"]
+                initial = previous
                 for index, edit in enumerate(config["fake_edits"]):
                     for pair in llm.fake_edit_pairs(edit, source):
                         source = source.replace(pair["old"], pair["new"], 1)
@@ -103,8 +202,9 @@ class EvaluatorTests(unittest.TestCase):
                     self.assertFalse(any(llm.fake_edit_pairs(done, source) for done in applied))
                     result = sandbox.evaluate_task(task_dir, source)
                     self.assertEqual(result["status"], "ok", edit["idea"])
-                    self.assertLess(result["loss"], previous - eps, edit["idea"])
+                    self.assertLessEqual(result["loss"], previous + 1e-12, edit["idea"])
                     previous = result["loss"]
+                self.assertLess(previous, initial - eps)
                 self.assertLessEqual(previous, final_loss)
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
@@ -141,8 +241,10 @@ class EvaluatorTests(unittest.TestCase):
         result = evaluate("bixbench_mini")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertAlmostEqual(float(values["score"]), 0.118, places=3)
-        self.assertAlmostEqual(float(values["loss"]), 1 - 2 / 17, places=5)
+        self.assertEqual(values["split"], "dev")
+        self.assertEqual(values["n_items"], "10")
+        self.assertAlmostEqual(float(values["score"]), 0.1, places=3)
+        self.assertAlmostEqual(float(values["loss"]), 0.9, places=5)
         self.assertEqual(values["network_isolated"], "true")
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
@@ -971,12 +1073,13 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
                 ).returncode
                 == 0
             ),
+            out_dir,
         )
 
     def test_fake_runs_keep_critic_and_merge(self):
         for task_name in ("hadamard19", "bixbench_mini", "playworld_mini", "ignobel"):
             with self.subTest(task=task_name), tempfile.TemporaryDirectory() as directory:
-                ledger, on_branch = self.run_fake_swarm(task_name, directory)
+                ledger, on_branch, out_dir = self.run_fake_swarm(task_name, directory)
                 baseline = next(event for event in ledger if event.get("kind") == "baseline")
                 keeps = [
                     event
@@ -991,6 +1094,29 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
                 self.assertTrue(accepted)
                 self.assertTrue(all(on_branch(event["commit"]) for event in accepted))
                 self.assertLess(min(event["score"] for event in keeps), baseline["score"])
+                config = json.loads((TESTCASES / task_name / "task.json").read_text())
+                artifact_path = out_dir / "held_out_test.json"
+                if config.get("held_out_test"):
+                    artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+                    self.assertEqual(artifact["task"], task_name)
+                    self.assertEqual(artifact["split"], "test")
+                    self.assertEqual(artifact["baseline"]["status"], "ok")
+                    self.assertEqual(artifact["best"]["status"], "ok")
+                    self.assertEqual(
+                        artifact["n_items"], 7 if task_name == "bixbench_mini" else 200
+                    )
+                    run = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
+                    manifest = json.loads(
+                        (out_dir / "viewer" / run["viewer_run_id"] / "manifest.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    self.assertEqual(manifest["held_out_test"], artifact)
+                    self.assertEqual(held_out.held_out_test(task_name, out_dir), artifact)
+                    if task_name == "playworld_mini":
+                        self.assertIsInstance(artifact["reference_test_loss"], float)
+                else:
+                    self.assertFalse(artifact_path.exists())
 
 
 if __name__ == "__main__":

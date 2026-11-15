@@ -1,7 +1,9 @@
+import io
 import json
 import os
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from datetime import date
 from pathlib import Path
 from unittest.mock import patch
@@ -239,6 +241,69 @@ class ResearchSourceTests(unittest.TestCase):
             self.assertEqual(swarm.resolve_research_source(fake), "off")
             fake.literature = "keyless"
             self.assertEqual(swarm.resolve_research_source(fake), "keyless")
+
+    def test_bixbench_task_policy_forces_research_off_over_cli_flags(self):
+        args = swarm.build_parser().parse_args(
+            [
+                "--task",
+                "bixbench_mini",
+                "--llm",
+                "tinker",
+                "--exa",
+                "on",
+                "--literature",
+                "keyless",
+            ]
+        )
+        log = io.StringIO()
+        with redirect_stderr(log):
+            swarm.resolve_run_args(args)
+
+        self.assertEqual(args.exa, "off")
+        self.assertEqual(args.literature, "off")
+        self.assertIn(
+            "task bixbench_mini sets research=off; forcing Exa and keyless literature off",
+            log.getvalue(),
+        )
+        with (
+            patch.object(swarm, "TASK", None),
+            patch.dict(os.environ, {"EXA_API_KEY": "configured"}, clear=True),
+        ):
+            self.assertEqual(swarm.resolve_research_source(args), "off")
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            run = {
+                "task": "bixbench_mini",
+                "arm": "B",
+                "llm": "fake",
+                "exa": "on",
+                "literature": "keyless",
+                "repo": "/repo",
+                "branch": "swarm-B-test",
+                "status": "running",
+                "rounds": 2,
+            }
+            (out / "run.json").write_text(json.dumps(run), encoding="utf-8")
+            swarm.write_checkpoint(
+                out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+            )
+            resumed = swarm.build_parser().parse_args(
+                ["--resume", str(out), "--exa", "on", "--literature", "keyless"]
+            )
+            with redirect_stderr(io.StringIO()):
+                swarm.resolve_run_args(resumed)
+            self.assertEqual((resumed.exa, resumed.literature), ("off", "off"))
+            held_out = out / "held_out_test.json"
+            held_out.write_text("{}", encoding="utf-8")
+            checkpoint = swarm.read_checkpoint(out)
+            swarm.restore_checkpoint(out, checkpoint)
+            self.assertTrue(held_out.exists())
+            extended = swarm.build_parser().parse_args(["--resume", str(out), "--rounds", "3"])
+            with (
+                redirect_stderr(io.StringIO()),
+                self.assertRaisesRegex(ValueError, "cannot extend a run"),
+            ):
+                swarm.resolve_run_args(extended)
 
     def test_resume_keeps_the_runs_literature_setting(self):
         with tempfile.TemporaryDirectory() as tmp:

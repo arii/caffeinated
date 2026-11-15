@@ -31,7 +31,7 @@ round's assignment (`role`: exploit, divergent, scout).
              invalid JSON or edit → one repair attempt
 5. gate      boredom gate (regime rules) + prior-art check (Exa) → rejected proposals are logged
 6. commit    one git commit per candidate with Descriptor/Source/Prior-art trailers
-7. evaluate  task evaluator in a network-less Docker sandbox → loss
+7. evaluate  task evaluator in a network-less Docker sandbox → dev loss
 8. critic    if a candidate beats best − accept_margin: second-seed run;
              accept iff mean(run1, run2) < best − accept_margin → verdict + lesson
 9. record    ledger.jsonl, results.tsv, critic.tsv, memory writes, round tags
@@ -40,6 +40,23 @@ round's assignment (`role`: exploit, divergent, scout).
 Rejected, crashed and discarded attempts stay in the ledger; they are what
 drives `fail_rate`, `trivial_rate` and the gate's "too close to a failure"
 rule.
+
+## Evaluation splits and research policy
+
+For BixBench and Playworld, every round and critic evaluation uses the `dev`
+split. BixBench still exposes all question text and public data, but grades 10
+of 17 questions during the run; Playworld uses development seeds
+100,000–100,199 and test seeds 300,000–300,199. At completion, `held_out.py`
+grades the baseline and best accepted commit once on the separate test split and writes
+`held_out_test.json`. Playworld also reports the local reference model's test
+loss when its source is available. `export_viewer.py` adds this object to the
+viewer manifest as `held_out_test`, without changing published events.
+
+BixBench's `task.json` sets `"research": "off"`, which overrides `--exa` and
+`--literature` and disables both Exa and keyless search. Its host evaluator
+also rejects source code containing numeric literals matching gold answers
+(for the current split, except small integers and numbers stated in public
+questions); it reports the question ID, not the answer value.
 
 ## Role allocation
 

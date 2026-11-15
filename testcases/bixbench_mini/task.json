@@ -1,8 +1,10 @@
 {
  "editable": "analysis.py",
  "deterministic": true,
+ "held_out_test": true,
+ "research": "off",
  "search_topic": "answering bioinformatics data analysis questions (BixBench) with pandas and scipy statistics",
- "brief": "an analysis script (`analysis.py`) that answers 17 BixBench questions (question text and dataset previews are under Task inputs) from 3 raw datasets in data/ and prints {question_id: number}; loss = 1 - accuracy, and the record to beat is BixBench's best published accuracy 0.523 (loss 0.477). The sandbox has numpy, pandas, scipy, statsmodels, openpyxl (no network)",
+ "brief": "an analysis script (`analysis.py`) that answers 17 BixBench questions (question text and dataset previews are under Task inputs) from 3 raw datasets in data/ and prints {question_id: number}; loss = 1 - accuracy. Round-by-round feedback grades 10 development questions; the remaining 7 are reserved for one final held-out test. BixBench's published full-benchmark accuracy of 0.523 is reference context, not directly comparable to this split. The sandbox has numpy, pandas, scipy, statsmodels, openpyxl (no network)",
  "fake_edits": [
   {
    "idea": "Report the standard error, not the SD, for bix-18-q4",

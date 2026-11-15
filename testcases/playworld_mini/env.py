@@ -14,6 +14,7 @@ FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)
 MOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}  # up, down, left, right
 INVERSE = {0: 1, 1: 0, 2: 3, 3: 2}
 CONTEXT = 10
+TRAIN_SEEDS = range(500)
 BLOCKING = (WALL, LAMP_OFF, LAMP_ON, OOB)
 
 
@@ -76,5 +77,5 @@ def episode(seed):
 
 if __name__ == "__main__" and sys.argv[1:] == ["--make-public-data"]:
     with open("data/train.jsonl", "w") as f:
-        for seed in range(500):
+        for seed in TRAIN_SEEDS:
             f.write(json.dumps(episode(seed)) + "\n")

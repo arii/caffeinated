@@ -44,8 +44,8 @@ flowchart TB
 | Research | `research.py` | Exa search/contents, prior-art checks, cache, budget |
 | Memory | `memory.py` | past.dev or local store, writes and recalls with authorship |
 | LLM | `llm.py`, `prompts/` | prompt rendering, Tinker/OpenAI/fake clients, call log |
-| Evaluation | `testcases/sandbox.py`, `testcases/*/evaluate.py` | candidate runs in a network-less container; the host computes the loss |
-| Viewer data | `export_viewer.py` | normalized events, UUIDs, ticks, entities, keyframes |
+| Evaluation | `testcases/sandbox.py`, `testcases/*/evaluate.py`, `held_out.py` | candidates run in a network-less container; the host grades dev feedback and the one-shot held-out test |
+| Viewer data | `export_viewer.py` | normalized events, UUIDs, ticks, entities, keyframes, held-out result in the manifest |
 | API | `viewer/app.py` | read-only `/api/v1` over the exports, SSE stream |
 
 ## Trust boundaries
@@ -53,6 +53,10 @@ flowchart TB
 - **Candidates are untrusted.** The host never imports candidate code. Only
   the editable file and public inputs enter the container; hidden answers and
   secrets stay on the host.
+- **Held-out scores are not feedback.** BixBench and Playworld rounds use
+  development splits; `held_out.py` grades baseline and best accepted commits
+  once at run completion. BixBench also disables task research and rejects
+  answer-valued source literals using the host-side gold key.
 - **The meter cannot be gamed by a model.** B is recomputed from the ledger
   and profile; responses carry `ledger_sha256` / `profile_sha256`.
 - **Claims are checked twice.** A new best must survive a second-seed critic
@@ -78,6 +82,10 @@ Raw run files stay the source of truth. `export_viewer.py` derives the
 
 The static export layout mirrors the API, so the frontend can switch between
 files and HTTP without code changes.
+
+For held-out tasks, the run writes `held_out_test.json`; the parsed object is
+exposed as `manifest.held_out_test`. It is manifest-only, so publishing it does
+not alter the event stream.
 
 ## Vendors
 

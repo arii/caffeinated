@@ -17,6 +17,7 @@ if str(HERE) not in sys.path:
 import env
 
 EVAL_SEEDS = range(100_000, 100_200)
+TEST_SEEDS = range(300_000, 300_200)
 RECORD = 0.3598
 TIMEOUT_S = 120
 
@@ -34,7 +35,9 @@ def valid_frame(frame):
     )
 
 
-def evaluate_source(source, task_dir=HERE, timeout_s=None):
+def evaluate_source(source, task_dir=HERE, timeout_s=None, split="dev"):
+    if split not in {"dev", "test"}:
+        raise ValueError(f"unknown split: {split}")
     task_dir = Path(task_dir).resolve()
     started = time.time()
     score = 0.0
@@ -43,10 +46,12 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
     network_isolated = False
     diagnostics = ""
     candidate_stderr = ""
+    episodes = []
     try:
         config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
         sandbox.prepare_task(task_dir, config.get("context_files", []))
-        episodes = [env.episode(seed) for seed in EVAL_SEEDS]
+        seeds = EVAL_SEEDS if split == "dev" else TEST_SEEDS
+        episodes = [env.episode(seed) for seed in seeds]
         inputs = [
             {
                 "context_frames": episode["context_frames"],
@@ -104,14 +109,17 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
     loss = 1 - score
     config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
     lines = [
+        f"split: {split}",
+        f"n_items: {len(episodes)}",
         f"score: {score:.6f}",
         f"loss: {loss:.6f}",
         f"record: {RECORD:.6f}",
-        f"beats_reference: {str(score > RECORD).lower()}",
         f"proxy_note: {config.get('proxy_note', '')}",
         f"network_isolated: {str(network_isolated).lower()}",
         f"seconds: {time.time() - started:.1f}",
     ]
+    if split == "test":
+        lines.append(f"beats_reference: {str(score > RECORD).lower()}")
     stderr = ""
     if status != "ok":
         stderr = f"error: {reason}: {diagnostics}\n"
@@ -122,6 +130,8 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
     return {
         "score": score,
         "loss": loss,
+        "split": split,
+        "n_items": len(episodes),
         "status": status,
         "reason": reason,
         "stdout": "\n".join(lines) + "\n",
