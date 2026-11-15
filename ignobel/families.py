@@ -89,13 +89,18 @@ class Mother:
         return _to_daughter(res.data, self, taken), res
 
 
+def _items(x) -> list:
+    return x if isinstance(x, list) else []
+
+
 def _to_daughter(data: dict, mother: Mother, taken: set[str]) -> DaughterDef:
+    data = data if isinstance(data, dict) else {}
     k = mother.spawned + 1
     name = re.sub(r"[^a-z0-9]+", "", str(data.get("name", "")).lower())[:20] or f"{mother.name}{k}"
     while name in taken:
         name = f"{name}{k}"
     cols = []
-    for raw in data.get("instruments") or []:
+    for raw in _items(data.get("instruments")):
         try:
             c = Column(**raw) if isinstance(raw, dict) else None
         except (TypeError, ValueError):
@@ -107,10 +112,10 @@ def _to_daughter(data: dict, mother: Mother, taken: set[str]) -> DaughterDef:
                 Column(name="response", description="measured response", mean=10, sd=3,
                        depends_on={"treatment": 0.3}),
                 Column(name="nuisance", description="an unrelated reading", mean=0, sd=1)]
-    queries = [str(q) for q in (data.get("seed_queries") or []) if str(q).strip()][:3]
+    queries = [str(q) for q in _items(data.get("seed_queries")) if str(q).strip()][:3]
     field = str(data.get("field") or f"{mother.field} ({name})")
     return DaughterDef(name=name, field=field, seed_queries=queries or [f"funny {field} research"],
-                       methods=[str(m) for m in (data.get("methods") or [])][:4], instruments=cols[:4])
+                       methods=[str(m) for m in _items(data.get("methods"))][:4], instruments=cols[:4])
 
 
 def load(path: str | Path = HERE / "families.yaml") -> list[Mother]:
