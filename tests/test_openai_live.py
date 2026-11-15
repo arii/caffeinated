@@ -1,4 +1,3 @@
-import contextlib
 import io
 import json
 import tempfile
@@ -129,7 +128,8 @@ class IgNobelCommitteeOpenAITests(unittest.TestCase):
         committee = importlib.import_module("committee")
         sent = []
 
-        def fake_urlopen(req, **_kwargs):
+        def fake_urlopen(req, timeout=0):
+            self.assertEqual(timeout, 300)
             sent.append(json.loads(req.data))
             return io.BytesIO(
                 json.dumps(
@@ -149,7 +149,6 @@ class IgNobelCommitteeOpenAITests(unittest.TestCase):
             with (
                 patch.dict(os.environ, env),
                 patch("urllib.request.urlopen", fake_urlopen),
-                contextlib.suppress(Exception),
             ):
                 committee._complete("gpt-6.1-sol", "system", "user")
             self.assertTrue(sent)
