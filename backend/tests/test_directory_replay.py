@@ -173,6 +173,14 @@ class DirectoryReplayTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             catalog.get("../run-1")
 
+    def test_non_object_event_lines_do_not_hide_the_recording(self):
+        path = self.run_dir()
+        with (path / "events.ndjson").open("a") as stream:
+            stream.write("[]\nnull\n42\n{partial")
+        catalog = RecordingCatalog(self.root / "none", [self.root / "viewer"])
+        recording = catalog.get("run-1")
+        self.assertEqual([event["event_id"] for event in recording["events"]], ["event-0"])
+
     def test_empty_catalog_and_empty_live_run(self):
         catalog = RecordingCatalog(self.root / "none", [self.root / "viewer"])
         self.assertEqual(catalog.list(), [])

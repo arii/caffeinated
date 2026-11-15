@@ -76,3 +76,20 @@ test('play is a no-op when no recording is attached',()=>{
  const h=playHarness(true,0);h.context.recording=null;h.click();
  assert.equal(h.context.playing,false);assert.deepEqual(h.seeks,[]);
 });
+
+test('finale opens results once; closing with X returns to agents without reopening on refresh',()=>{
+ const elements=new Map();let opens=0;
+ const context={recording:{manifest:{totalTicks:10}},tick:0,snapshot:null,finaleAutoOpened:false,inspected:null,playing:false,
+  frameAt:()=>({snapshot:{}}),finaleReached:(_recording,tick)=>tick>=10,
+  renderControls(){},renderHUD(){},renderEvidence(){},renderConversation(){},renderInspector(){},renderResultsPanel(){},updateDockAutoCollapse(){},unlock(){},
+  evidence:{open:false},conversation:{open:false},inspector:{open:false,close(){},addEventListener(){}},
+  resultsDialog:{open:false,showModal(){this.open=true;opens++;},close(){this.open=false;}},
+  $:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);}};
+ runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith('function seek('))),context);
+ runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith("$('close-inspector').onclick"))),context);
+ context.seek(9);assert.equal(opens,0);
+ context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,true);
+ elements.get('close-results').onclick();assert.equal(context.resultsDialog.open,false);
+ context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,false);
+ elements.get('open-results').onclick();assert.equal(opens,2);assert.equal(context.resultsDialog.open,true);
+});

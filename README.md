@@ -4,6 +4,13 @@ A first-person lab for walking through recorded research. The Pages site replays
 
 Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
+## Team
+
+**Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)**, built by Team caffeinated: Ariel Anders, Jialin Feng, Neeraj Shah and Masha Baidachna.
+
+- Live demo: https://arii.github.io/caffeinated
+- Repository: https://github.com/arii/caffeinated
+
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
@@ -103,3 +110,29 @@ npm run build
 Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The research swarm has its own checks (`make setup && make check`); see [the backend guide](docs/autoresearch-backend.md) and `testcases/README.md`.
 
 The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.
+
+
+## Continuous Sol/Luna live runs
+
+`scripts/run_openai_ignobel.sh` starts one continuous Ig Nobel session: eight Luna
+worker identities initially, growing by two when an assigned queue is exhausted
+and other workers are still active, up to twenty. Sol assigns up to eight concrete
+tasks at a time. Four workers may have model calls in flight; shared research
+files, Git mutations, and study confirmation are serialized. Each result is
+confirmed and published as it arrives, without waiting for the other workers.
+Luna uses no reasoning tokens; Sol uses low reasoning. Judges retain their
+existing independent evaluation.
+
+The default admission window is 30 minutes and the shared OpenAI reservation cap
+is $10, including supervisor, workers, repairs, and judges. Set
+`OPENAI_RUN_MINUTES` (1–30 through the UI) or `OPENAI_MAX_COST_USD` to lower these.
+Admission stops slightly before the cap to leave room for confirmation; the
+ledger still rejects any call that would exceed the cap. Current requests and
+confirmation may finish after the time limit. The RUNS drawer's Stop button stops
+new work and lets current work finish. Server shutdown terminates its run process
+group. This cap covers OpenAI, not optional Exa searches.
+
+The default ZIP replay is unchanged. Continuous recordings show one chronological
+session; internal job IDs remain in their artifacts. Continuous runs currently
+start fresh rather than resuming an interrupted queue. Other benchmark modes
+retain the existing round runner.
