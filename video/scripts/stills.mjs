@@ -30,10 +30,12 @@ if (!existsSync(metadataPath)) {
 }
 if (!existsSync(ffmpeg)) throw new Error(`ffmpeg not found: ${ffmpeg}`);
 const metadata = JSON.parse(await readFile(metadataPath, 'utf8'));
-const uiEvidencePath = path.join(root, metadata.uiEvidencePath);
-if (!existsSync(uiEvidencePath)) {
-  throw new Error(`Lab UI evidence still not found: ${uiEvidencePath}`);
-}
+const evidenceStills = [
+  ['lab-intro-satire.png', metadata.introEvidencePath],
+  ['lab-podium-empty.png', metadata.podiumEvidencePath],
+  ['lab-swimlane.png', metadata.swimlaneEvidencePath],
+  ['lab-provenance-badge.png', metadata.uiEvidencePath]
+];
 await mkdir(output, {recursive: true});
 
 function extractStill(filename, source, time) {
@@ -66,6 +68,15 @@ function extractStill(filename, source, time) {
 for (const [filename, time] of stills) {
   extractStill(filename, video, time);
 }
-const evidenceStill = path.join(output, 'lab-provenance-badge.png');
-await copyFile(uiEvidencePath, evidenceStill);
-console.log(evidenceStill);
+for (const [filename, relativePath] of evidenceStills) {
+  if (!relativePath) {
+    throw new Error(`Capture metadata is missing the path for ${filename}`);
+  }
+  const source = path.join(root, relativePath);
+  if (!existsSync(source)) {
+    throw new Error(`Lab evidence still not found: ${source}`);
+  }
+  const destination = path.join(output, filename);
+  await copyFile(source, destination);
+  console.log(destination);
+}

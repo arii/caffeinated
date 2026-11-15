@@ -8,7 +8,7 @@ import {chromium} from 'playwright';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const captures = path.join(root, 'public', 'captures');
 const serverUrl = new URL(
-  process.env.LAB_URL ?? 'http://localhost:8931/caffeinated/'
+  process.env.LAB_URL ?? 'http://localhost:8932/caffeinated/'
 );
 const captureSeconds = Number(process.env.CAPTURE_SECONDS ?? 270);
 const walkAtSeconds = Number(
@@ -109,6 +109,22 @@ async function scrubTo(tick) {
   }, tick);
 }
 
+async function assertCoachHidden(target, phase) {
+  const hidden = await target.locator('#coach-mark').evaluate((element) => element.hidden);
+  if (!hidden) {
+    throw new Error(`The coach mark is covering content ${phase}.`);
+  }
+}
+
+async function startWithoutCoach(target) {
+  await target.evaluate(() => localStorage.setItem('lab.coach.dismissed', '1'));
+  await target.locator('#intro-start').click();
+  await target.waitForFunction(
+    () => document.querySelector('#intro')?.hidden === true
+  );
+  await assertCoachHidden(target, 'after the intro');
+}
+
 function probeDuration(file) {
   return new Promise((resolve, reject) => {
     const child = spawn(
@@ -148,17 +164,40 @@ function runFfmpeg(args) {
 }
 
 let rawPath;
+let recordingTitle = '';
 try {
   const pageUrl = new URL(serverUrl);
   pageUrl.searchParams.set('recording', recording.id);
   await page.goto(pageUrl.toString(), {waitUntil: 'domcontentloaded'});
   await page.locator('#intro-start').waitFor({state: 'visible', timeout: 90_000});
   const title = await page.locator('#replay-title').innerText();
-  if (!title.includes('out-ignobel')) {
+  if (!/ig nobel prize hunt/i.test(title) || /out-ignobel/i.test(title)) {
     throw new Error(`Lab loaded the wrong recording: ${title}`);
   }
+  recordingTitle = title.replace(/\s+/g, ' ').trim();
+  const introText = await page.locator('#intro').innerText();
+  if (!introText.includes('Satire') || !introText.includes('No prize has been awarded')) {
+    throw new Error(`The Lab intro is missing its satire or no-prize disclosure: ${introText}`);
+  }
   events.recordingLoadedAt = elapsed();
-  await page.locator('#intro-start').click();
+  events.recordingTitle = recordingTitle;
+  await page.waitForTimeout(10_000);
+  await page.screenshot({
+    path: path.join(captures, 'lab-intro-satire.png')
+  });
+  events.introScreenshotAt = elapsed();
+  await page.locator('#intro-results-link').click();
+  await page.locator('#intro-real-results[open]').waitFor({state: 'visible'});
+  const introResultsText = (await page.locator('#intro-real-results').innerText())
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!introResultsText.includes('No prizes awarded yet')) {
+    throw new Error(`The intro results omit the pre-committee no-prize state: ${introResultsText}`);
+  }
+  events.introResultsText = introResultsText;
+  events.introResultsOpenedAt = elapsed();
+  await page.waitForTimeout(4_000);
+  await startWithoutCoach(page);
   events.introDismissedAt = elapsed();
   await page.locator('#pace').selectOption('1');
   const initialTick = Number(await page.locator('#timeline').inputValue());
@@ -168,6 +207,7 @@ try {
     initialTick,
     {timeout: 15_000}
   );
+  await assertCoachHidden(page, 'during replay');
 
   await waitUntil(walkAtSeconds);
   await page.locator('#play').click();
@@ -217,10 +257,56 @@ try {
   if (!/SNAP/i.test(runMeta)) {
     throw new Error(`Scrubbing to tick ${snapTick} did not show the real BOREDOM_SNAP state.`);
   }
+  await page.locator('[data-drawer="orchestration-drawer"]').click();
+  const swimlane = page.locator('#orchestration-content .orchestration-svg');
+  await swimlane.waitFor({state: 'visible', timeout: 10_000});
+  const swimlaneCount = await swimlane.locator('.orch-lane').count();
+  if (!swimlaneCount) {
+    throw new Error('The Lab orchestration swimlane contained no lanes.');
+  }
+  events.swimlaneShownAt = elapsed();
+  events.swimlaneLaneCount = swimlaneCount;
+  await page.screenshot({
+    path: path.join(captures, 'lab-swimlane.png')
+  });
+  await page.waitForTimeout(9_000);
+  await page.locator('#orchestration-drawer [data-close-drawer]').click();
+  await assertCoachHidden(page, 'after closing the swimlane');
   await waitUntil(captureSeconds * 0.84);
   await scrubTo(Math.floor(maxTick * 0.96));
   events.nearEndScrubbedAt = elapsed();
   events.nearEndTick = Math.floor(maxTick * 0.96);
+  await scrubTo(maxTick);
+  const resultsDialog = page.locator('#results-dialog');
+  await resultsDialog.waitFor({state: 'visible', timeout: 10_000});
+  const resultsContent = page.locator('#results-content');
+  const noPrizeLine = await resultsContent.locator('.podium-empty').innerText();
+  if (!noPrizeLine.includes('No prizes awarded yet')) {
+    throw new Error(`The final podium state is not the pre-committee empty state: ${noPrizeLine}`);
+  }
+  const judgingDetails = resultsContent.locator('.judging-details');
+  const judgingTitle = await judgingDetails.locator('summary').innerText();
+  if (judgingTitle !== "How it's judged") {
+    throw new Error(`Unexpected judging sheet title: ${judgingTitle}`);
+  }
+  await judgingDetails.locator('summary').click();
+  await page.waitForFunction(
+    () => document.querySelector('#results-content .judging-details')?.open === true
+  );
+  const judgingStepCount = await judgingDetails.locator('li').count();
+  if (!judgingStepCount) {
+    throw new Error('The judging sheet contains no explanation steps.');
+  }
+  await resultsDialog.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  events.podiumShownAt = elapsed();
+  events.podiumNoPrizeLine = noPrizeLine;
+  events.judgingStepCount = judgingStepCount;
+  await assertCoachHidden(page, 'over the final podium');
+  await page.screenshot({
+    path: path.join(captures, 'lab-podium-empty.png')
+  });
   await waitUntil(captureSeconds);
   await page.waitForTimeout(500);
 
@@ -243,7 +329,11 @@ try {
     evidenceUrl.searchParams.set('recording', recording.id);
     await evidencePage.goto(evidenceUrl.toString(), {waitUntil: 'domcontentloaded'});
     await evidencePage.locator('#intro-start').waitFor({state: 'visible', timeout: 90_000});
-    await evidencePage.locator('#intro-start').click();
+    const evidenceTitle = await evidencePage.locator('#replay-title').innerText();
+    if (!/ig nobel prize hunt/i.test(evidenceTitle) || /out-ignobel/i.test(evidenceTitle)) {
+      throw new Error(`The evidence Lab title is not human-readable: ${evidenceTitle}`);
+    }
+    await startWithoutCoach(evidencePage);
     const evidenceInitialTick = Number(await evidencePage.locator('#timeline').inputValue());
     await evidencePage.waitForFunction(
       (tick) => Number(document.querySelector('#timeline')?.value ?? 0) > tick,
@@ -267,6 +357,7 @@ try {
     const uiEvidence = await evidencePage.evaluate(() => ({
       provenance:
         document.querySelector('#provenance-badge')?.textContent?.trim() ?? '',
+      title: document.querySelector('#replay-title')?.textContent?.trim() ?? '',
       runMeta: document.querySelector('#run-meta')?.textContent?.trim() ?? '',
       roleChips: Array.from(
         document.querySelectorAll('#status-strip .status-role')
@@ -277,6 +368,9 @@ try {
     }));
     if (!uiEvidence.provenance.startsWith('Stopped real run (13/15 rounds)')) {
       throw new Error(`Unexpected Lab provenance badge: ${uiEvidence.provenance}`);
+    }
+    if (!/ig nobel prize hunt/i.test(uiEvidence.title) || /out-ignobel/i.test(uiEvidence.title)) {
+      throw new Error(`Unexpected human Lab title: ${uiEvidence.title}`);
     }
     if (
       !uiEvidence.runMeta.includes('Pre-committee run:') ||
@@ -291,6 +385,7 @@ try {
     ) {
       throw new Error(`Unexpected Lab role chips: ${uiEvidence.roleChips.join(' | ')}`);
     }
+    await assertCoachHidden(evidencePage, 'in the provenance still');
     await evidencePage.screenshot({
       path: path.join(captures, 'lab-ui-evidence.png')
     });
@@ -360,7 +455,7 @@ const captions = [
 ];
 const metadata = {
   recordingId: recording.id,
-  recordingTitle: recording.title,
+  recordingTitle,
   sourceUrl: pageUrlForManifest(serverUrl, recording.id),
   rawCapture: 'public/captures/lab-real.webm',
   speedClip: 'public/captures/lab-speedup.mp4',
@@ -368,6 +463,9 @@ const metadata = {
   sceneDurationSeconds: sceneSeconds,
   speedFactor,
   events,
+  introEvidencePath: 'public/captures/lab-intro-satire.png',
+  podiumEvidencePath: 'public/captures/lab-podium-empty.png',
+  swimlaneEvidencePath: 'public/captures/lab-swimlane.png',
   uiEvidencePath: 'public/captures/lab-ui-evidence.png',
   captions
 };
