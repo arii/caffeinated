@@ -1,3 +1,39 @@
 .replay-heading{pointer-events:none}
 .replay-heading button,.replay-heading a{pointer-events:auto}
-.sidebar small,.identity .eyebrow,.intro .eyebrow,.chip,.status-chip,.regime-chip,.warn-chip,.proxy-chip,.dialog-heading,.results-dialog .dialog-heading,dialog.character-popup .dialog-heading,#console .dialog-heading,kbd,.camera-hint,.orchestration-hint{font-size:11px}
+.sidebar small,.identity .eyebrow,.chip,.status-chip,.regime-chip,.warn-chip,.proxy-chip,.dialog-heading,.results-dialog .dialog-heading,dialog.character-popup .dialog-heading,#console .dialog-heading,kbd,.camera-hint,.orchestration-hint,.status-tile,.status-tile .turn-badge,.status-tile-name,.tile-metric,.panel-caption,.panel-caption>span,.agent-row small,.status-scroll-hint{font-size:12px}
+.replay-controls button,.replay-controls label select,#proximity button{min-height:44px}
+body.static-site .sidebar small{display:none}
+body.static-site .sidebar button{min-width:44px;min-height:44px}
+body.static-site .header-provenance .provenance-badge-chip{display:none}
+body.static-site .connection{display:none!important}
+body.static-site .sidebar{width:54px}
+body.static-site .sidebar{z-index:8}
+body.dock-context-open #status-strip{display:none!important}
+body.dock-auto-hidden .replay-bar{visibility:hidden!important;pointer-events:none!important}
+body.static-site .agent-row strong,body.static-site .agent-row small,body.static-site .panel-caption,body.static-site .panel-caption>span,body.static-site .whos-who summary{font-size:12px!important}
+body.static-site dialog button,body.static-site .side-drawer button{min-width:44px;min-height:44px}
+body.static-site .side-drawer .drawer-close{width:44px;height:44px;min-width:44px;min-height:44px;font-size:16px}
+body.static-site .dialog-heading button{width:44px;height:44px;min-width:44px;min-height:44px;font-size:16px}
+body.static-site button.chip,body.static-site .inspect-link{min-width:44px;min-height:44px}
+body.bar-collapsed .replay-controls label{font-size:12px}
+body.bar-collapsed #tick-label{font-size:12px}
+body.bar-collapsed #status-strip{display:flex}
+body.bar-collapsed #status-strip{width:min(1040px,calc(100vw - 16px))}
+body.bar-collapsed #timeline{height:44px}
+.status-role,.bubble-heading,.bubble-role,.bubble-mood,.bubble-idea,.bubble-activity,.bubble-card .now-card,.orchestration-legend-note{font-size:12px!important}
+#proximity .bubble-card button{font-size:12px!important}
+.coach-mark button{width:44px;height:44px;min-width:44px;min-height:44px}
+@media(max-width:750px) and (orientation:portrait){
+ header{justify-content:flex-start}
+ .brand{justify-content:flex-start}
+ header .top-right,header .header-actions,header .header-actions button{pointer-events:auto}
+ body.bar-collapsed .replay-bar{grid-template-columns:54px minmax(28px,1fr) auto 44px 88px 30px 44px;grid-template-areas:"play timeline round pace mode boredom expand";gap:2px;padding:4px}
+ body.bar-collapsed .replay-controls label{display:flex!important;font-size:0!important;gap:0}
+ body.bar-collapsed .replay-controls label:has(#pace){grid-area:pace}
+ body.bar-collapsed .replay-controls label:has(#replay-mode){grid-area:mode}
+ body.bar-collapsed .replay-controls label select{width:100%;max-width:none;min-height:44px;padding:0 2px;font-size:12px}
+ body.bar-collapsed #boredom-gauge{width:30px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ .bubble-card{max-height:44dvh}
+}

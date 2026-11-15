@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {compactDock,evidenceMetricLabel,metricValueLabel,taskTitle} from '../src/engine/runInfo.ts';
 import {formatValue} from '../src/engine/moments.ts';
 
-test('compact playback dock starts at the requested viewport limits',()=>{
+test('playback dock starts compact at desktop and mobile sizes',()=>{
  assert.equal(compactDock(700,800),true);
- assert.equal(compactDock(701,800),false);
+ assert.equal(compactDock(1440,900),true);
  assert.equal(compactDock(900,500),true);
- assert.equal(compactDock(900,501),false);
+ assert.equal(compactDock(1920,1080),true);
 });
 
 test('user-facing Ig Nobel run title omits the output directory suffix',()=>{
