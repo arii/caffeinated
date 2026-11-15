@@ -177,6 +177,11 @@ def create_app(data_dir=None,runner=True,execution_enabled=False):
         if 'gzip' in request.headers.get('accept-encoding',''):
             headers['Content-Encoding']='gzip';raw=gzip.compress(raw,compresslevel=5,mtime=0)
         return Response(raw,media_type='application/json',headers=headers)
+    @app.get('/api/recordings/{run_id}/artifacts/{artifact_path:path}')
+    def recording_artifact(run_id:str,artifact_path:str):
+        path=holder['recordings'].artifact(run_id,artifact_path)
+        if path is None:raise HTTPException(404,'Artifact not found')
+        return Response(path.read_text(errors='replace'),media_type='text/plain; charset=utf-8',headers={'X-Content-Type-Options':'nosniff'})
     @app.get('/api/experiments')
     def experiments():return [{'id':'autoresearch','title':'Autoresearch swarm','description':'Conductor, four workers, and a critic. Ari’s boredom-controlled search over train.py.'}]
     @app.get('/api/runs')

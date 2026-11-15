@@ -30,6 +30,26 @@ class DirectoryReplayTests(unittest.TestCase):
         (path / 'events.ndjson').write_text(json.dumps(event) + '\n')
         return path
 
+    def test_studies_entities_and_confined_artifacts(self):
+        path = self.run_dir()
+        (path / 'entities').mkdir()
+        (path / 'entities' / 'studies.json').write_text(json.dumps([{'id': 'study:1', 'question': 'Q?'}]))
+        (path / 'artifacts' / 'runs').mkdir(parents=True)
+        (path / 'artifacts' / 'runs' / 'abc.diff').write_text('+seed = 3\n')
+        (self.root / 'secret.txt').write_text('secret')
+        env = {'LAB_RECORDINGS_ZIP': str(self.root / 'missing.zip'),
+               'LAB_RECORDINGS_DIRS': str(self.root / 'viewer')}
+        with patch.dict(os.environ, env), TestClient(create_app(self.root / 'state', runner=False)) as client:
+            bundle = client.get('/api/recordings/run-1').json()
+            self.assertEqual(bundle['entities']['studies'][0]['question'], 'Q?')
+            artifact = client.get('/api/recordings/run-1/artifacts/runs/abc.diff')
+            self.assertEqual(artifact.status_code, 200)
+            self.assertEqual(artifact.text, '+seed = 3\n')
+            self.assertTrue(artifact.headers['content-type'].startswith('text/plain'))
+            for missing in ('runs/none.diff', '..%2F..%2F..%2Fsecret.txt', 'runs', '../../../secret.txt'):
+                self.assertEqual(client.get(f'/api/recordings/run-1/artifacts/{missing}').status_code, 404, missing)
+            self.assertEqual(client.get('/api/recordings/nope/artifacts/runs/abc.diff').status_code, 404)
+
     def test_real_layout_parent_scan_cache_updates_and_new_runs(self):
         path = self.run_dir('outs/one/viewer/run-1')
         catalog = RecordingCatalog(self.root / 'absent.zip', [self.root])
