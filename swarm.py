@@ -5,6 +5,7 @@ import argparse
 import csv
 import fcntl
 import gzip
+import hashlib
 import io
 import json
 import math
@@ -696,8 +697,13 @@ def memory_text(result):
     entries = []
     for item in result.get("results", []):
         content = str(item.get("content") or "").replace("\n", " ")
-        earlier = any(source.get("scope") == "cross_run" for source in item.get("sources") or [])
-        label = f"{item.get('kind', 'unknown')}{', earlier-run' if earlier else ''}"
+        sources = item.get("sources") or []
+        earlier = any(source.get("scope") == "cross_run" for source in sources)
+        current = any(source.get("type") == "hypothesis" for source in sources)
+        label = (
+            f"{item.get('kind', 'unknown')}{', current status' if current else ''}"
+            f"{', earlier-run' if earlier else ''}"
+        )
         entries.append(f"#{item.get('rank', '?')} [{label}] {content[:500]}")
     return "\n".join(entries) if entries else "No matching memories."
 
@@ -720,6 +726,39 @@ def write_memory_item(
         content,
         author,
         metadata,
+        backend=backend,
+        mirror=mirror,
+        log=log,
+        arm=arm,
+    )
+
+
+REGIME_PREFIX_RE = re.compile(r"^\s*\[(EXPLOIT|SNAP|BREAKOUT)\]\s*")
+HYPOTHESIS_STATUS = {
+    "keep": "confirmed",
+    "discard": "refuted",
+    "crash": "crashed",
+    "reject": "rejected by the gate",
+    "duplicate": "duplicate of an earlier candidate",
+}
+
+
+def hypothesis_id(arm, idea):
+    text = " ".join(REGIME_PREFIX_RE.sub("", str(idea or "")).casefold().split())
+    return f"hyp-{arm}-{hashlib.sha1(text[:80].encode('utf-8')).hexdigest()[:12]}"
+
+
+def write_hypothesis(idea, status, author, round_num, detail="", *, backend, mirror, log, arm):
+    """One stable record per idea: each update replaces the previous status in past.dev."""
+    idea = REGIME_PREFIX_RE.sub("", str(idea or "")).strip()
+    if not idea:
+        return None
+    return write_memory_item(
+        "hypothesis",
+        hypothesis_id(arm, idea),
+        f"Hypothesis: {idea}\nCurrent status: {status} (round {round_num}, {author}){detail}",
+        author,
+        {"arm": arm, "round": round_num, "idea": idea, "status": status},
         backend=backend,
         mirror=mirror,
         log=log,
@@ -2089,6 +2128,7 @@ def worker_attempts(
         f"what has been tried involving {profile.get('objective', 'loss')} and what happened",
         "untested implementation leads",
         "who is testing what this round",
+        "current status of hypotheses already tested",
     ]
     recalls = [
         recall_memory(
@@ -2449,6 +2489,16 @@ def worker_attempts(
                     "descriptor": value["descriptor"],
                     "source_ids": value.get("source_ids", []),
                 },
+                backend=backend,
+                mirror=mirror,
+                log=memory_log,
+                arm=arm,
+            )
+            write_hypothesis(
+                value["idea"],
+                "being tested",
+                agent,
+                round_num,
                 backend=backend,
                 mirror=mirror,
                 log=memory_log,
@@ -3106,6 +3156,19 @@ def write_result_memory(
         log=log,
         arm=arm,
     )
+    status = HYPOTHESIS_STATUS.get(str(event.get("status")))
+    if status and event.get("kind", "candidate") == "candidate":
+        write_hypothesis(
+            event.get("description"),
+            status,
+            event.get("agent") or "conductor",
+            event.get("round"),
+            "" if value is None else f", loss {float(value):.6f}",
+            backend=backend,
+            mirror=mirror,
+            log=log,
+            arm=arm,
+        )
 
 
 def update_critic_tsv(path, record):
@@ -4077,6 +4140,8 @@ def _orchestrate(args, publish_state, cleanup):
         rollbacks=memory_rollbacks,
         keyless=research_source == "keyless",
     ):
+        if memory_rollbacks and memory.selected_backend(memory_backend, args.arm) == "pastdev":
+            memory.rollback_memories(memory_mirror, memory_rollbacks, arm=args.arm, log=memory_log)
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,

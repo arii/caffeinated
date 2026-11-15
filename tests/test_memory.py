@@ -9,6 +9,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import unquote
 
 import memory
 
@@ -44,6 +45,11 @@ class PastStubHandler(BaseHTTPRequestHandler):
             self._respond(202, self.server.batch_response)
         elif self.path == "/api/v1/recall":
             self._respond(200, self.server.recall_response)
+        elif self.path == "/api/v1/data-points/delete":
+            if set(body["ids"]) & self.server.missing_ids:
+                self._respond(404, {"code": "data-point-not-found"})
+            else:
+                self._respond(202, {"operationId": "op-1", "ids": body["ids"]})
         else:
             self._respond(404, {"error": "unknown route"})
 
@@ -65,11 +71,22 @@ class PastStubHandler(BaseHTTPRequestHandler):
                 "body": body,
             }
         )
-        slug = self.path.rsplit("/", 1)[-1]
-        self._respond(
-            201,
-            {"slug": slug, "kind": body["kind"], "identities": body["identities"]},
+        self._respond(201, {"slug": self.path.rsplit("/", 1)[-1], **body})
+
+    def do_DELETE(self):
+        self.server.requests.append(
+            {
+                "method": "DELETE",
+                "path": self.path,
+                "authorization": self.headers.get("Authorization"),
+                "body": None,
+            }
         )
+        source_id = unquote(self.path.rsplit("/", 1)[-1])
+        if source_id in self.server.missing_ids:
+            self._respond(404, {"code": "data-point-not-found"})
+        else:
+            self._respond(202, {"operationId": "op-1", "ids": [source_id]})
 
     def log_message(self, _format_string, *args):
         pass
@@ -80,6 +97,7 @@ class MemoryCliTests(unittest.TestCase):
         server = ThreadingHTTPServer(("127.0.0.1", 0), PastStubHandler)
         server.requests = []
         server.get_paths = []
+        server.missing_ids = set()
         server.get_responses = []
         server.http_error = False
         server.ingest_response = {
@@ -525,6 +543,7 @@ class MemoryCliTests(unittest.TestCase):
             with (
                 patch.dict(os.environ, env, clear=False),
                 patch.object(memory, "_ENSURED_AUDIENCES", set()),
+                patch.object(memory, "_ENSURED_SCOPES", {}),
             ):
                 memory.write(
                     "result",
@@ -558,31 +577,39 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(
                 [request["path"] for request in requests],
                 [
-                    "/api/v1/audiences/arm-z",
+                    "/api/v1/identities/reader-z-audience-run",
+                    "/api/v1/audiences/run-z-audience-run",
                     "/api/v1/ingest",
                     "/api/v1/recall",
-                    "/api/v1/audiences/arm-y",
+                    "/api/v1/identities/reader-y-audience-run",
+                    "/api/v1/audiences/run-y-audience-run",
                     "/api/v1/recall",
                 ],
             )
+            self.assertEqual(requests[0]["body"], {"traits": {"arm": "z", "run": "audience-run"}})
             self.assertEqual(
-                requests[0]["body"],
-                {"kind": "fixed", "identities": ["swarm-arm-z"]},
+                requests[1]["body"]["rule"],
+                {
+                    "match": "all",
+                    "conditions": [
+                        {"trait": "arm", "operator": "is", "values": ["z"]},
+                        {"trait": "run", "operator": "is", "values": ["audience-run"]},
+                    ],
+                },
             )
-            self.assertEqual(requests[1]["body"]["audience"], "arm-z")
-            self.assertEqual(requests[1]["body"]["identity"], "autoresearch-agent")
-            self.assertEqual(requests[1]["body"]["metadata"]["arm"], "Z")
-            self.assertEqual(requests[1]["body"]["metadata"]["run_id"], "audience-run")
-            self.assertEqual(requests[2]["body"]["identity"], "swarm-arm-z")
-            self.assertEqual(requests[3]["body"]["identities"], ["swarm-arm-y"])
-            self.assertEqual(requests[4]["body"]["identity"], "swarm-arm-y")
+            self.assertEqual(requests[2]["body"]["audience"], "run-z-audience-run")
+            self.assertEqual(requests[2]["body"]["identity"], "autoresearch-agent")
+            self.assertEqual(requests[2]["body"]["metadata"]["arm"], "Z")
+            self.assertEqual(requests[2]["body"]["metadata"]["run_id"], "audience-run")
+            self.assertEqual(requests[3]["body"]["identity"], "reader-z-audience-run")
+            self.assertEqual(requests[6]["body"]["identity"], "reader-y-audience-run")
             self.assertTrue(
                 all(request["authorization"] == f"Bearer {TEST_API_KEY}" for request in requests)
             )
             records = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
             self.assertEqual(
                 [record["audience"] for record in records],
-                ["arm-z", "arm-z", "arm-y"],
+                ["run-z-audience-run", "run-z-audience-run", "run-y-audience-run"],
             )
 
     def test_pastdev_scope_reuses_same_task_history_and_isolates_arms(self):
@@ -597,7 +624,11 @@ class MemoryCliTests(unittest.TestCase):
                 "AUTORESEARCH_RUN_ID": "current-run",
                 "AUTORESEARCH_TASK": "hadamard19",
             }
-            with patch.dict(os.environ, env), patch.object(memory, "_ENSURED_AUDIENCES", set()):
+            with (
+                patch.dict(os.environ, env),
+                patch.object(memory, "_ENSURED_AUDIENCES", set()),
+                patch.object(memory, "_ENSURED_SCOPES", {}),
+            ):
                 memory.write(
                     "claim",
                     "claim-1",
@@ -717,6 +748,170 @@ class MemoryCliTests(unittest.TestCase):
                     record["dropped_tags"],
                     ["tag-keep", "tag-claim", "tag-task", "tag-arm", "tag-livecheck"],
                 )
+
+    def _scoped_env(self, server, **extra):
+        return {
+            "PAST_API_KEY": TEST_API_KEY,
+            "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            "AUTORESEARCH_ARM": "B",
+            "AUTORESEARCH_RUN_ID": "current-run",
+            "AUTORESEARCH_TASK": "ignobel_mini",
+            **extra,
+        }
+
+    def test_hypothesis_keeps_stable_id_in_lab_audience_and_recall_sends_time_window(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            with (
+                patch.dict(os.environ, self._scoped_env(server)),
+                patch.object(memory, "_ENSURED_SCOPES", {}),
+            ):
+                for status in ("being tested", "refuted"):
+                    memory.write(
+                        "hypothesis",
+                        "hyp-B-1",
+                        f"status {status}",
+                        "worker-1",
+                        {"status": status},
+                        backend="pastdev",
+                        mirror=mirror,
+                        log=log,
+                    )
+                memory.write(
+                    "claim",
+                    "claim-1",
+                    "a claim",
+                    "worker-1",
+                    {},
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                )
+                memory.recall(
+                    "status",
+                    "autoresearch",
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    query_timestamp="2026-11-15T10:05:00Z",
+                    occurred_from="2026-11-15T09:00:00Z",
+                    sort="chronological",
+                )
+            paths = [request["path"] for request in server.requests]
+            self.assertEqual(
+                paths[:3],
+                [
+                    "/api/v1/identities/reader-b-current-run",
+                    "/api/v1/audiences/run-b-current-run",
+                    "/api/v1/audiences/lab-b-ignobel-mini",
+                ],
+            )
+            self.assertEqual(
+                server.requests[2]["body"]["rule"]["conditions"][1],
+                {"trait": "task", "operator": "is", "values": ["ignobel-mini"]},
+            )
+            ingests = [r["body"] for r in server.requests if r["path"] == "/api/v1/ingest"]
+            self.assertEqual(
+                [body["id"] for body in ingests], ["hyp-B-1", "hyp-B-1", "claim-1@current-run"]
+            )
+            self.assertEqual(
+                [body["audience"] for body in ingests],
+                ["lab-b-ignobel-mini", "lab-b-ignobel-mini", "run-b-current-run"],
+            )
+            recall_body = server.requests[-1]["body"]
+            self.assertEqual(recall_body["identity"], "reader-b-current-run")
+            self.assertEqual(recall_body["queryTimestamp"], "2026-11-15T10:05:00Z")
+            self.assertEqual(recall_body["occurredFrom"], "2026-11-15T09:00:00Z")
+            self.assertEqual(recall_body["sort"], "chronological")
+
+    def test_rollback_deletes_new_memories_and_restores_earlier_versions(self):
+        server = self.start_server()
+        server.missing_ids = {"lead-1@current-run"}
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+
+            def record(source_id, written_at, epoch=0, content="x"):
+                return {
+                    "id": source_id,
+                    "sourceId": source_id,
+                    "content": content,
+                    "label": "l",
+                    "timestamp": written_at,
+                    "author": "worker-1",
+                    "audience": "lab-b-ignobel-mini",
+                    "metadata": {"written_at": written_at, "run_epoch": epoch},
+                }
+
+            rows = [
+                record("hyp-B-1", "2026-11-15T10:00:00Z", content="being tested"),
+                record("claim-1@current-run", "2026-11-15T10:00:00Z"),
+                record("hyp-B-1", "2026-11-15T11:00:00Z", content="refuted"),
+                record("claim-2@current-run", "2026-11-15T11:00:00Z"),
+                record("lead-1@current-run", "2026-11-15T11:00:00Z"),
+                record("claim-3@current-run", "2026-11-15T12:00:00Z", epoch=1),
+            ]
+            mirror.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+            rollbacks = [{"epoch": 1, "after": "2026-11-15T10:30:00Z"}]
+            with patch.dict(os.environ, self._scoped_env(server)):
+                outcome = memory.rollback_memories(mirror, rollbacks, arm="B", log=log)
+            self.assertEqual(outcome, {"deleted": ["claim-2@current-run"], "restored": ["hyp-B-1"]})
+            calls = [(r["method"], r["path"]) for r in server.requests]
+            self.assertEqual(
+                calls,
+                [
+                    ("POST", "/api/v1/data-points/delete"),
+                    ("DELETE", "/api/v1/data-points/claim-2%40current-run"),
+                    ("DELETE", "/api/v1/data-points/lead-1%40current-run"),
+                    ("POST", "/api/v1/ingest"),
+                ],
+            )
+            restored = server.requests[-1]["body"]
+            self.assertEqual(
+                (restored["id"], restored["content"], restored["audience"]),
+                ("hyp-B-1", "being tested", "lab-b-ignobel-mini"),
+            )
+            logged = json.loads(log.read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(logged["type"], "rollback")
+
+    def test_local_recall_returns_only_the_latest_version_of_an_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            for when, status in (
+                ("2026-11-15T10:00:00Z", "being tested"),
+                ("2026-11-15T11:00:00Z", "refuted"),
+            ):
+                memory.write(
+                    "hypothesis",
+                    "hyp-B-1",
+                    f"zebra stripes status {status}",
+                    "worker-1",
+                    {},
+                    timestamp=when,
+                    backend="local",
+                    mirror=mirror,
+                    log=log,
+                )
+            now = memory.recall(
+                "zebra stripes status", "a", backend="local", mirror=mirror, log=log
+            )
+            then = memory.recall(
+                "zebra stripes status",
+                "a",
+                backend="local",
+                mirror=mirror,
+                log=log,
+                query_timestamp="2026-11-15T10:30:00Z",
+            )
+            self.assertEqual(
+                [r["content"] for r in now["results"]], ["zebra stripes status refuted"]
+            )
+            self.assertEqual(
+                [r["content"] for r in then["results"]], ["zebra stripes status being tested"]
+            )
 
     def test_scope_decision_never_crosses_arms(self):
         scope = {"arm": "A", "run_id": "pair-1", "task": "bixbench_mini"}

@@ -71,14 +71,13 @@ published-event length). `swarm.py --resume <out>` continues a crashed or killed
 run with the same run id, ledger, score cache, memory mirror, arm branch and
 settings from `run.json`; it truncates a half-written round, cuts the published
 recording back to its checkpointed prefix so later publishes still append, and
-deletes that round's tags. past.dev memories from the abandoned round cannot be
-deleted remotely, so each write carries `run_epoch` and `written_at`, and recall
-drops same-run memories written after a checkpoint that a later resume rolled
-back to (`AUTORESEARCH_RUN_ROLLBACKS`). Limits: the abandoned memories still
-exist on past.dev and still count toward its storage and search ranking; memories
-written before this change carry no `written_at` and are never filtered; and
-past.dev's own write timestamps are not used, so the filter relies on the
-swarm host's clock. `--rounds N` extends the run; conflicting `--task`,
+deletes that round's tags. With the past.dev backend it also calls
+`memory.py::rollback_memories`, which deletes the abandoned round's data points
+(`POST /data-points/delete`) and, for a stable-id hypothesis that had an earlier
+version, re-ingests that version. Each write still carries `run_epoch` and
+`written_at`, and recall still drops same-run memories written after a rolled-back
+checkpoint (`AUTORESEARCH_RUN_ROLLBACKS`), which covers the local backend and
+memories written before this change. That filter relies on the swarm host's clock. `--rounds N` extends the run; conflicting `--task`,
 `--arm`, `--seed`, `--llm`, `--model`, `--exa` or `--memory-backend` values are
 rejected. A worker whose LLM call fails after retries records a `crash` row
 for that attempt and the round goes on; if every worker fails, the run stops so
