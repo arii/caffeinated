@@ -20,8 +20,11 @@ MOCK=1 pytest -q
 Running the same command twice gives a byte-identical `events.jsonl`. Add `--out DIR` to keep
 several runs, and `--resume` to continue a crashed run from its last saved round.
 
-`MOCK=1` swaps in a fake LLM, seeded embeddings, canned search results and a local
-subprocess sandbox. Real runs read keys from the environment; see `.env.example`.
+`MOCK=1` swaps in a fake LLM, seeded embeddings and canned search results. Study code never
+runs on the host: mock mode runs it in a local Docker container (no network, read-only, only the
+study's files and a copy of its dataset), real mode in a Modal sandbox. Docker must be running for
+mock runs and tests that run studies; if no sandbox is available the run stops with
+`lab.SandboxUnavailable`. Real runs read keys from the environment; see `.env.example`.
 
 ## Layout
 

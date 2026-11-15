@@ -7,6 +7,9 @@ import pytest
 
 import events
 import run_arm
+from conftest import requires_sandbox
+
+pytestmark = requires_sandbox
 
 
 def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None):
@@ -41,6 +44,26 @@ def test_resume_matches_uninterrupted_run(tmp_path):
     part = _run(tmp_path, rounds=1, out=tmp_path / "part")
     _run(tmp_path, rounds=3, resume=True, out=tmp_path / "part")
     assert filecmp.cmp(full, part, shallow=False)
+
+
+def test_resume_drops_events_from_a_crashed_round(tmp_path):
+    full = _run(tmp_path, rounds=3, out=tmp_path / "full")
+    part = _run(tmp_path, rounds=1, out=tmp_path / "part")
+    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    assert crashed.load_state()
+    crashed.log.append(2, "quill", "boredom", {"B": 0.9})  # round 2 got this far, then died
+    _run(tmp_path, rounds=3, resume=True, out=tmp_path / "part")
+    assert filecmp.cmp(full, part, shallow=False)
+
+
+def test_resume_without_checkpoint_replays_round0_cleanly(tmp_path):
+    full = _run(tmp_path, rounds=1, out=tmp_path / "full")
+    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    crashed.log.append(0, "quill", "seed", {"partial": True})
+    world = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    assert not world.load_state()
+    asyncio.run(world.run(1))
+    assert filecmp.cmp(full, tmp_path / "part" / "events.jsonl", shallow=False)
 
 
 @pytest.mark.parametrize("arm", ["random_snap", "single", "shared_memory", "no_exchange"])

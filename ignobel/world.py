@@ -1,6 +1,7 @@
 """The round loop. No judge is called here; nothing from committee/score is imported."""
 import asyncio
 import json
+import os
 import random
 from pathlib import Path
 
@@ -40,20 +41,26 @@ class World:
 
     # ------------------------------------------------------------- state
     def save_state(self) -> None:
-        st = {"round_done": self.round_done, "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
+        st = {"round_done": self.round_done, "events_bytes": self.log.size(),
+              "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
               "agents": {a.name: a.to_state() for a in self.agents}}
         if self.shared is not None:
             st["shared_memory"] = self.shared.to_state()
         else:
             st["memories"] = {a.name: a.memory.to_state() for a in self.agents}
-        (self.out / "state.json").write_text(json.dumps(st), encoding="utf-8")
+        tmp = self.out / "state.json.tmp"
+        tmp.write_text(json.dumps(st), encoding="utf-8")
+        os.replace(tmp, self.out / "state.json")
 
     def load_state(self) -> bool:
         f = self.out / "state.json"
         if not f.exists():
+            self.log.truncate(0)  # round 0 never finished; it will be replayed from scratch
             return False
         st = json.loads(f.read_text(encoding="utf-8"))
         self.round_done = st["round_done"]
+        if "events_bytes" in st:
+            self.log.truncate(st["events_bytes"])
         self.rng.setstate((3, tuple(st["rng"]), st["rng_gauss"]))
         for a in self.agents:
             a.load_state(st["agents"][a.name])

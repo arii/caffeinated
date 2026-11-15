@@ -47,6 +47,19 @@ def test_pastdev_mock_is_local():
     assert m.search("hello", 1)[0].id == "x"
 
 
+def test_pastdev_live_recall_goes_through_share(monkeypatch):
+    s = PastDevMemory("s")
+    s.live = True
+    monkeypatch.setattr(s, "_post", lambda path, payload: {"results": [
+        {"id": "r1", "content": "toast lands butter side down", "author": "quill"},
+        {"text": "birds sing louder near roads"}]})
+    r = LocalMemory()
+    _fill(r, "r", ["toast lands butter side down"])
+    out = share("s", s, "r", r, topic="toast")
+    assert out["offered"] == ["r1", "s-recall-1"]
+    assert [r.items[-1].text] == ["birds sing louder near roads"] and len(out["kept"]) == 1
+
+
 def test_load_specs_and_statistician():
     specs = agents.load_specs(n=4)
     assert [s.name for s in specs] == ["quill", "oyelaran", "ikeda", "volkov"]

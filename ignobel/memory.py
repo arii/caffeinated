@@ -107,10 +107,13 @@ class PastDevMemory(LocalMemory):
             return super().search(query, k)
         resp = self._post("/recall", {"query": query, "identity": self.identity, "limit": k})
         out = []
-        for i, r in enumerate(resp.get("results") or []):  # TODO(past.dev docs): verify shape
-            text = r.get("content") or r.get("text") or json.dumps(r)
+        results = resp.get("results") or []  # TODO(past.dev docs): verify shape
+        texts = [r.get("content") or r.get("text") or json.dumps(r) for r in results]
+        embs = llm.embed(texts)
+        for i, (r, text) in enumerate(zip(results, texts)):
             out.append(Item(id=r.get("id") or f"{self.identity}-recall-{i}", kind="library", text=text,
-                            source_agent=str(r.get("author") or "past.dev"), meta={"recall": True}))
+                            source_agent=str(r.get("author") or "past.dev"), meta={"recall": True},
+                            embedding=embs[i].tolist()))
         return out or super().search(query, k)
 
 
@@ -132,9 +135,16 @@ def share(sender: str, sender_mem: LocalMemory, receiver: str, receiver_mem: Loc
     offered = sender_mem.search(topic, max_items)
     kept = []
     for it in offered:
+        if it.embedding is None:
+            it.embedding = llm.embed([it.text])[0].tolist()
         emb = np.array(it.embedding)
         nearest = receiver_mem.search(it.text, 1)
-        if nearest and llm.cosine(emb, np.array(nearest[0].embedding)) >= keep_similarity:
+        near_emb = None
+        if nearest:
+            near_emb = nearest[0].embedding
+            if near_emb is None:
+                near_emb = llm.embed([nearest[0].text])[0].tolist()
+        if near_emb is not None and llm.cosine(emb, np.array(near_emb)) >= keep_similarity:
             continue
         copy = Item(id=f"{receiver}-from-{sender}-{len(receiver_mem.items) + 1}", kind=it.kind,
                     text=it.text, source_agent=sender,

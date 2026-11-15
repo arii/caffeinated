@@ -48,6 +48,16 @@ class EventLog:
         self.count += 1
         return ev
 
+    def size(self) -> int:
+        """Bytes written so far; save this with a checkpoint and pass it to truncate() on resume."""
+        return self.path.stat().st_size if self.path.exists() else 0
+
+    def truncate(self, size: int) -> None:
+        """Drop events written after a checkpoint (e.g. by a round that crashed)."""
+        if self.path.exists() and self.path.stat().st_size > size:
+            with open(self.path, "r+b") as f:
+                f.truncate(size)
+
 
 def read(path: str | Path) -> Iterator[Event]:
     """Yield events from a JSONL file."""
