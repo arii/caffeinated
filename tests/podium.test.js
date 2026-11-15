@@ -71,3 +71,8 @@ test('entity-only committee data is available only at the final state',()=>{
  assert.equal(podium([study],events,20,false).entries[0].unscored,true);
  assert.equal(podium([study],events,20,true).entries[0].score,.8);
 });
+
+test('study rejection text on a result event is not committee data',()=>{
+ const event={tick:1,type:'study.result',refs:{study_id:'s1'},payload:{rejected:'dataset unavailable: missing columns'}};
+ assert.equal(committeeOf({id:'s1'},[event],1,false),null);
+});

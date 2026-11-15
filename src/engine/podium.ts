@@ -12,26 +12,28 @@ const text=(v:unknown)=>typeof v==='string'?v:'';
 const number=(v:unknown)=>finite(v)?v:null;
 const idOf=(s:Row)=>text(s.id||s.study_id||s.studyId);
 const studyId=(e:ReplayEvent)=>text(e.refs?.study_id||e.refs?.studyId||e.payload?.study_id||e.payload?.studyId);
+const directCommitteeFields=['score','scores','judges','verdicts'];
+const hasCommitteeFields=(value:Row)=>Object.keys(value).length>0;
+const hasDirectCommitteeFields=(value:Row)=>directCommitteeFields.some(key=>value[key]!=null);
 function judgeRows(value:unknown){
  const src=row(value),source:Row[]=Array.isArray(value)?value.map(row):Object.entries(src).map(([id,v])=>({id,...row(v)}));
  return source.map(j=>({id:text(j.id)||'judge',model:text(j.model),laugh:number(j.laugh),think:number(j.think),reason:text(j.reason)}));
 }
 const committeeEventTypes=['award.issued','study.result','study.replicated','study.completed'];
-const hasCommitteeFields=(value:Row)=>['available','rejected','score','scores','judges','verdicts','prior_work','priorWork','prior_work_available'].some(key=>value[key]!=null);
 function committeePayload(event:ReplayEvent){
- const payload=row(event.payload),nested=row(payload.committee??payload.award);
- if(hasCommitteeFields(nested))return nested;
- return hasCommitteeFields(payload)?payload:null;
+ const payload=row(event.payload),nested=[payload.committee,payload.award].map(row).find(hasCommitteeFields);
+ if(nested)return nested;
+ return hasDirectCommitteeFields(payload)?payload:null;
 }
 export function committeeOf(study:Row,events:readonly ReplayEvent[],tick:number,final:boolean):Committee|null{
  const eventScores=events.filter(e=>committeeEventTypes.includes(e.type)&&studyId(e)===idOf(study)).map(e=>({event:e,payload:committeePayload(e)})).filter((item):item is {event:ReplayEvent;payload:Row}=>item.payload!==null);
  const reached=eventScores.filter(item=>item.event.tick<=tick).sort((a,b)=>a.event.tick-b.event.tick).at(-1);
  if(!reached&&(eventScores.length||!final))return null;
  const graded=row(study.graded);
- const entityCommittee=[study.committee,graded.committee,row(study.result).committee].map(row).find(candidate=>Object.keys(candidate).length>0);
+ const entityCommittee=[study.committee,graded.committee,row(study.result).committee].map(row).find(hasCommitteeFields);
  const raw=row(reached?.payload??entityCommittee);
  const legacyNumeric=values(graded.scores).map(s=>{const r=row(s);return number(r.score??r.value??s);}).filter(finite);
- if(!Object.keys(raw).length&&(graded.available!=null||graded.rejected!=null||graded.scores!=null||graded.verdicts!=null||graded.score!=null||graded.prior_work!=null))Object.assign(raw,{available:graded.available,rejected:graded.rejected,scores:graded.scores,verdicts:graded.verdicts,score:legacyNumeric.length?Math.min(...legacyNumeric):graded.score,prior_work:graded.prior_work});
+ if(!Object.keys(raw).length&&hasDirectCommitteeFields(graded))Object.assign(raw,{available:graded.available,rejected:graded.rejected,scores:graded.scores,verdicts:graded.verdicts,score:legacyNumeric.length?Math.min(...legacyNumeric):graded.score,prior_work:graded.prior_work});
  if(!Object.keys(raw).length)return null;
  if(raw.available===false)return {score:null,rejected:raw.rejected===true,judges:judgeRows(raw.judges??raw.verdicts),priorWork:null};
  const judges=judgeRows(raw.judges??raw.verdicts??raw.per_judge);

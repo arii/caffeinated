@@ -5,10 +5,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.export_pages import export
+from scripts.export_pages import PRE_COMMITTEE_NOTE, export
 
 
-def write_recording(viewer, *, title="Test recording", task=None):
+def write_recording(viewer, *, title="Test recording", task=None, events=None):
     run = viewer / "run-1"
     run.mkdir(parents=True)
     (run / "manifest.json").write_text(
@@ -23,8 +23,8 @@ def write_recording(viewer, *, title="Test recording", task=None):
             }
         )
     )
-    (run / "events.ndjson").write_text(
-        json.dumps(
+    if events is None:
+        events = [
             {
                 "event_id": "event-1",
                 "run_id": "run-1",
@@ -33,9 +33,8 @@ def write_recording(viewer, *, title="Test recording", task=None):
                 "type": "run.finished",
                 "payload": {"status": "finished"},
             }
-        )
-        + "\n"
-    )
+        ]
+    (run / "events.ndjson").write_text("".join(json.dumps(event) + "\n" for event in events))
 
 
 class ExportPagesTests(unittest.TestCase):
@@ -90,17 +89,89 @@ class ExportPagesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             viewer = root / "viewer"
-            write_recording(viewer, title="Ig Nobel Prize hunt", task="ignobel")
+            write_recording(
+                viewer,
+                title="Ig Nobel Prize hunt",
+                task="ignobel",
+                events=[
+                    {
+                        "event_id": "result-1",
+                        "run_id": "run-1",
+                        "tick": 1,
+                        "round": 1,
+                        "type": "study.result",
+                        "refs": {"study_id": "study:1"},
+                        "payload": {"rejected": "dataset unavailable: missing columns"},
+                    }
+                ],
+            )
+            manifest_path = viewer / "run-1" / "manifest.json"
+            source_manifest = json.loads(manifest_path.read_text())
+            source_manifest.update(
+                proxy_note="committee-scored in-run",
+                reference_note="committee-scored in-run",
+                metric={
+                    "name": "replicated_findings",
+                    "direction": "minimize",
+                    "description": "committee-scored in-run",
+                },
+            )
+            source_manifest["held_out_test"] = {
+                "proxy_note": "committee-scored in-run",
+                "reference_note": "committee-scored in-run",
+            }
+            manifest_path.write_text(json.dumps(source_manifest))
 
             items = export(viewer, root / "out")
             archive = root / "out" / "run-1.json.gz"
             shipped = json.loads(gzip.decompress(archive.read_bytes()))
-            expected = (
-                "Pre-committee run: loss 0 = passed preregistered gates, 1 = failed; "
-                "not committee-judged."
-            )
+            index_bytes = (root / "out" / "index.json").read_bytes()
+            index = json.loads(index_bytes)
+            expected = PRE_COMMITTEE_NOTE
             self.assertEqual(shipped["manifest"]["proxy_note"], expected)
             self.assertEqual(items[0]["proxy_note"], expected)
+            self.assertEqual(index[0]["proxy_note"], expected)
+            self.assertIn(expected.encode(), gzip.decompress(archive.read_bytes()))
+            self.assertIn(expected.encode(), index_bytes)
+            self.assertEqual(shipped["manifest"]["reference_note"], expected)
+            self.assertEqual(shipped["manifest"]["held_out_test"]["reference_note"], expected)
+            self.assertEqual(shipped["manifest"]["metric"]["description"], expected)
+            self.assertEqual(
+                (gzip.decompress(archive.read_bytes()) + index_bytes).count(
+                    b"committee-scored in-run"
+                ),
+                0,
+            )
+
+    def test_nested_committee_score_keeps_committee_task_note(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            viewer = root / "viewer"
+            write_recording(
+                viewer,
+                title="Ig Nobel Prize hunt",
+                task="ignobel",
+                events=[
+                    {
+                        "event_id": "result-1",
+                        "run_id": "run-1",
+                        "tick": 1,
+                        "round": 1,
+                        "type": "study.result",
+                        "refs": {"study_id": "study:1"},
+                        "payload": {"committee": {"score": 0.8}},
+                    }
+                ],
+            )
+            manifest_path = viewer / "run-1" / "manifest.json"
+            source_manifest = json.loads(manifest_path.read_text())
+            source_manifest["proxy_note"] = "Committee scoring is applied after the run."
+            manifest_path.write_text(json.dumps(source_manifest))
+
+            items = export(viewer, root / "out")
+            shipped = json.loads(gzip.decompress((root / "out" / "run-1.json.gz").read_bytes()))
+            self.assertEqual(items[0]["proxy_note"], source_manifest["proxy_note"])
+            self.assertEqual(shipped["manifest"]["proxy_note"], source_manifest["proxy_note"])
 
 
 if __name__ == "__main__":
