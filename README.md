@@ -46,8 +46,16 @@ score was run on the published recording.
 
 [REPRODUCE.md](REPRODUCE.md) explains how to recompute every published number from the
 committed artifacts, regrade the winning candidates in the sandbox, and rerun experiments.
-Releases publish a pinned image to `ghcr.io/arii/caffeinated`. The run artifacts are on Hugging
-Face at [onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs). The quickest check needs only Docker:
+Releases publish a pinned image to `ghcr.io/arii/caffeinated` (see
+[releases](https://github.com/arii/caffeinated/releases) for digests). The run artifacts are on
+Hugging Face at [onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs).
+The quickest check needs only Docker:
+
+```sh
+docker run --rm ghcr.io/arii/caffeinated:v1.0.0
+```
+
+To build the image from source instead:
 
 ```sh
 docker build -t caffeinated-repro . && docker run --rm caffeinated-repro
