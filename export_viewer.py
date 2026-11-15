@@ -330,7 +330,7 @@ def export_autoresearch(out_dir, arm=None, title=None):
                  "lesson": "critic", "assignment": "assign"}
     for line, item in memory_items:
         meta = item.get("metadata", {})
-        label = item.get("label") or meta.get("type") or "note"
+        label = meta.get("type") or (item.get("label") or "note").split(" by ")[0]
         author = item.get("author")
         agent = author if author in run.agents else ("conductor" if label == "assignment" else None)
         round_ = meta.get("round") if isinstance(meta.get("round"), int) else round_of_ts(starts, item.get("timestamp"))

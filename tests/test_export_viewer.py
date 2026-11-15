@@ -37,8 +37,9 @@ def autoresearch_run(root):
     write_jsonl(out / "memory.jsonl", [
         {"id": "m1", "author": "worker-2", "label": "lead", "content": "try tabu", "timestamp": "2026-11-14T10:01:30Z",
          "metadata": {"round": 1, "arm": "B"}},
-        {"id": "m2", "author": "worker-1", "label": "claim", "content": "tabu walks", "timestamp": "2026-11-14T10:03:00Z",
-         "metadata": {"round": 1, "commit": "c1", "rationale": "escape local optima"}},
+        {"id": "m2", "author": "worker-1", "label": "claim by worker-1", "content": "tabu walks",
+         "timestamp": "2026-11-14T10:03:00Z",
+         "metadata": {"type": "claim", "round": 1, "commit": "c1", "rationale": "escape local optima"}},
     ])
     write_jsonl(out / "llm_log.jsonl", [
         {"ts": "2026-11-14T10:02:30Z", "role": "WORKER_PROPOSE", "agent": "worker-1", "round": 1, "model": "m",
