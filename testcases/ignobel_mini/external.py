@@ -10,6 +10,7 @@ import hashlib
 import ipaddress
 import json
 import os
+import socket
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -48,7 +49,8 @@ def cited(url, research_log=None):
     return url in Path(path).read_text(encoding="utf-8", errors="replace")
 
 
-def check_url(url, research_log=None):
+def safe_url(url):
+    """Plain https to a public hostname; applied to the URL and every redirect."""
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
     if parts.scheme != "https" or not host or parts.username or parts.port not in (None, 443):
@@ -59,8 +61,19 @@ def check_url(url, research_log=None):
         pass
     else:
         raise ValueError("IP-address hosts are not fetched")
-    if host == "localhost" or host.endswith((".local", ".internal")):
+    if host == "localhost" or host.endswith((".local", ".internal", ".localhost")):
         raise ValueError("local hosts are not fetched")
+    try:
+        addresses = {info[4][0] for info in socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)}
+    except OSError as error:
+        raise ValueError(f"cannot resolve {host}") from error
+    if any(not ipaddress.ip_address(a.split("%")[0]).is_global for a in addresses):
+        raise ValueError(f"{host} resolves to a non-public address")
+    return parts
+
+
+def check_url(url, research_log=None):
+    host = safe_url(url).hostname.lower()
     open_host = any(host == h or host.endswith("." + h) for h in OPEN_DATA_HOSTS)
     if not open_host and not cited(url, research_log):
         raise ValueError("host is not an open-data host and the URL is not cited in the research log")
@@ -73,11 +86,12 @@ def ensure(url, task_dir=HERE, research_log=None):
     if entry_path.is_file() and (Path(task_dir) / ".cache" / "replication" / f"{name}.csv").is_file():
         return name, json.loads(entry_path.read_text(encoding="utf-8"))
     check_url(url, research_log)
-    previous, prepare.HERE = prepare.HERE, Path(task_dir)
+    previous = prepare.HERE, prepare.URL_CHECK
+    prepare.HERE, prepare.URL_CHECK = Path(task_dir), safe_url
     try:
         return name, _build(url, name, entry_path)
     finally:
-        prepare.HERE = previous
+        prepare.HERE, prepare.URL_CHECK = previous
 
 
 def _build(url, name, entry_path):

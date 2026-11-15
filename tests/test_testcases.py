@@ -431,9 +431,12 @@ class IgnobelPreregTests(unittest.TestCase):
                 for k in (1, 2)
             )
         )
-        patcher = patch.object(prepare, "fetch", return_value=self.csv)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for patcher in (
+            patch.object(prepare, "fetch", return_value=self.csv),
+            patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 443))]),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -530,6 +533,20 @@ class IgnobelPreregTests(unittest.TestCase):
         log = self.task_dir / "cited.jsonl"
         log.write_text(json.dumps({"url": "https://lab.example.org/raw/odd.csv"}) + "\n")
         check("https://lab.example.org/raw/odd.csv", research_log=log)
+
+    def test_redirects_and_private_resolution_are_blocked(self):
+        with patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("10.0.0.5", 443))]):
+            with self.assertRaises(ValueError):
+                self.external.safe_url("https://raw.githubusercontent.com/a.csv")
+        handler = self.prepare.CheckedRedirect()
+        previous = self.prepare.URL_CHECK
+        self.prepare.URL_CHECK = self.external.safe_url
+        try:
+            for target in ("http://raw.githubusercontent.com/a.csv", "https://169.254.169.254/latest"):
+                with self.subTest(target=target), self.assertRaises(ValueError):
+                    handler.redirect_request(None, None, 302, "Found", {}, target)
+        finally:
+            self.prepare.URL_CHECK = previous
 
     def test_dataset_is_frozen_and_split_deterministically(self):
         name, entry = self.external.ensure(self.URL, self.task_dir)

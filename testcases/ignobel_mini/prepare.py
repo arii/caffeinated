@@ -36,6 +36,18 @@ def clean(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+URL_CHECK = None
+
+
+class CheckedRedirect(urllib.request.HTTPRedirectHandler):
+    """Re-validate every redirect target with URL_CHECK before following it."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if URL_CHECK is not None:
+            URL_CHECK(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def source_url(path):
     return path if path.startswith("https://") else f"{BASE}/{path}"
 
@@ -47,7 +59,9 @@ def fetch(path):
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)
         request = urllib.request.Request(url, headers={"User-Agent": "caffeinated-ignobel/1"})
-        with urllib.request.urlopen(request, timeout=60) as response:
+        if URL_CHECK is not None:
+            URL_CHECK(url)
+        with urllib.request.build_opener(CheckedRedirect).open(request, timeout=60) as response:
             raw = response.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise ValueError(f"{url} is larger than {MAX_BYTES} bytes")
