@@ -164,3 +164,19 @@ test('Enter/Space opens any non-button inspector link, including the activity ca
  assert.match(source,/target\.matches\?\.\('\[data-experiment\]:not\(button\):not\(a\)'\)/);
  assert.match(source,/caption\.tabIndex=0;caption\.setAttribute\('role','button'\)/);
 });
+test('agents keep manifest names; initials, run-derived descriptors and who-is-who come from data',async()=>{
+ const {initials,agentDescriptor,descriptorText,whosWho}=await import('../src/engine/agentIdentity.ts');
+ assert.equal(initials('Worker 3'),'W3');
+ assert.equal(initials('Kitchen Physics Lab'),'KP');
+ assert.equal(initials('Critic'),'C');
+ assert.equal(agentIdentity({id:'w',name:'Worker 1',type:'worker'}).familyLabel,'WORKER');
+ assert.equal(agentIdentity({id:'b',name:'Baseline',type:'baseline'}).familyLabel,'REFERENCE · BASELINE');
+ const events=[{tick:1,type:'agent.assigned',agentId:'w',payload:{role:'exploit'}},{tick:2,type:'gate.checked',agentId:'w',payload:{descriptor:{mechanism:'food_science',method:'new_population'}}},{tick:5,type:'agent.assigned',agentId:'w',payload:{role:'divergent'}}];
+ assert.deepEqual(agentDescriptor(events,'w',3),{role:'exploit',mechanism:'food_science',method:'new_population'});
+ assert.equal(descriptorText(agentDescriptor(events,'w',9)),'divergent · food science / new population');
+ assert.equal(descriptorText({mechanism:'acoustics',method:'reanalysis'},'ACOUSTICS'),'reanalysis');
+ const legend=whosWho([{type:'critic',display_name:'Critic'},{type:'worker',display_name:'Worker 2'},{type:'conductor',display_name:'Conductor'},{type:'worker',display_name:'Worker 1'}]);
+ assert.deepEqual(legend.map(r=>[r.type,r.names.join('+')]),[['conductor','Conductor'],['worker','Worker 2+Worker 1'],['critic','Critic']]);
+ assert.match(legend[2].does,/re-runs/i);
+ assert.doesNotMatch(readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),/\^\[BCP\]\\d\+\$/);
+});

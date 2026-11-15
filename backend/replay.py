@@ -151,7 +151,6 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
         datetime.fromisoformat(created.replace("Z", "+00:00")).timestamp() if created else 0
     )
     agents = []
-    family_counts = {"B": 0, "C": 0, "P": 0}
     human_index = 0
     for identity in manifest.get("agents", []):
         original = (
@@ -160,11 +159,8 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
             or identity.get("native_id", identity["agent_id"])
         )
         identity["original_display_name"] = original
-        if identity.get("type") in {"baseline", "world"}:
-            identity["display_name"] = (
-                "Reference" if identity["type"] == "baseline" else "Environment"
-            )
-        else:
+        identity["display_name"] = original
+        if identity.get("type") not in {"baseline", "world"}:
             field = str(identity.get("family") or identity.get("field") or "").lower()
             prefix = (
                 "B"
@@ -181,10 +177,6 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
                 else "display assignment"
             )
             identity["family"] = {"B": "Bio", "C": "Chem", "P": "Physics"}[prefix]
-            family_counts[prefix] += 1
-            identity["display_name"] = (
-                original if identity.get("named") else prefix + str(family_counts[prefix])
-            )
             human_index += 1
         identity["label"] = identity["display_name"]
     for identity in manifest.get("agents", []):

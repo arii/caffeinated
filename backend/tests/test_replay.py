@@ -37,12 +37,8 @@ class ReplayTests(unittest.TestCase):
                 if a["type"] not in {"baseline", "world"}
             ]
             self.assertEqual(len(names), len(set(names)))
-            for name in (
-                a["display_name"]
-                for a in manifest["agents"]
-                if a["type"] not in {"baseline", "world"} and not a.get("named")
-            ):
-                self.assertRegex(name, r"^[BCP][1-9][0-9]*$")
+            for a in manifest["agents"]:
+                self.assertEqual(a["display_name"], a["original_display_name"])
             self.assertTrue(all(a.get("original_display_name") for a in manifest["agents"]))
         for m in c.list():
             b = c.get(m["id"])
