@@ -96,6 +96,22 @@ def test_interrupted_study_container_is_removed(monkeypatch):
     assert left.stdout.strip() == ""
 
 
+@requires_sandbox
+def test_sandbox_start_failure_is_not_a_study(monkeypatch):
+    real_run = lab.subprocess.run
+
+    def run(cmd, *a, **kw):
+        if cmd[1] == "create":
+            cmd = [c if c != "python" else "/no/such/python" for c in cmd]
+        return real_run(cmd, *a, **kw)
+
+    monkeypatch.setattr(lab.subprocess, "run", run)
+    with pytest.raises(lab.SandboxUnavailable):
+        lab.run_study(GOOD, _agent("quill"))
+    left = real_run(["docker", "ps", "-aq", "--filter", "name=ignobel-study-"], capture_output=True, text=True)
+    assert left.stdout.strip() == ""
+
+
 def test_no_sandbox_means_no_study(monkeypatch):
     monkeypatch.setattr(lab.shutil, "which", lambda _: None)
     with pytest.raises(lab.SandboxUnavailable):

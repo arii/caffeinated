@@ -65,7 +65,7 @@ def _run_docker(workdir: Path) -> tuple[str, str, int]:
     if docker is None:
         raise SandboxUnavailable("mock mode runs studies in Docker, but `docker` is not on PATH")
     name = f"ignobel-study-{uuid.uuid4().hex[:12]}"
-    create = [docker, "create", "--rm", "--name", name,
+    create = [docker, "create", "--name", name,
               "--network", "none", "--read-only", "--tmpfs", "/tmp:size=16m",
               "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
               "--memory", "512m", "--cpus", "1", "--pids-limit", "64",
@@ -78,12 +78,14 @@ def _run_docker(workdir: Path) -> tuple[str, str, int]:
         raise SandboxUnavailable(f"docker could not create the sandbox: {c.stderr.strip()}")
     try:  # `start -a` exits with the study's own status
         p = subprocess.run([docker, "start", "-a", name], capture_output=True, text=True, timeout=TIMEOUT_S)
+        err = subprocess.run([docker, "inspect", "--format", "{{.State.Error}}", name],
+                             capture_output=True, text=True).stdout.strip()
     except subprocess.TimeoutExpired as e:
-        _remove(docker, name)
         return _text(e.stdout), _text(e.stderr) + "\ntimeout", 124
-    except BaseException:  # e.g. Ctrl-C: the container outlives the docker client otherwise
+    finally:  # also on Ctrl-C: the container outlives the docker client otherwise
         _remove(docker, name)
-        raise
+    if err:  # the runtime failed to start the container, so no study code ran
+        raise SandboxUnavailable(f"docker could not start the sandbox: {err}")
     return p.stdout, p.stderr, p.returncode
 
 
