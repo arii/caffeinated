@@ -8,7 +8,7 @@ import statistics
 from pathlib import Path
 
 EXA_ENDPOINTS = frozenset({"/search", "/contents", "/findSimilar", "/answer"})
-WASTED_OUTCOMES = frozenset({"rejected", "duplicate", "invalid", "edit_error"})
+WASTED_OUTCOMES = frozenset({"rejected", "duplicate", "invalid", "edit_error", "pi_no_steer"})
 TOKEN_FIELDS = ("input_tokens", "cached_tokens", "output_tokens", "reasoning_tokens")
 
 

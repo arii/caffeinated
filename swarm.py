@@ -1319,8 +1319,6 @@ def validate_proposal(profile, proposal):
     proposal["source_ids"] = sources
     proposal["predicted_delta"] = predicted_delta
     proposal["lead_id"] = proposal.get("lead_id") or None
-    if proposal["lead_id"] is not None and not re.fullmatch(r"[A-Za-z0-9_-]+", proposal["lead_id"]):
-        raise ValueError("lead_id must contain only letters, digits, '_' or '-'")
     proposal["descriptor"] = json.loads(json.dumps(descriptor))
     return proposal
 
@@ -1865,15 +1863,20 @@ def run_pi_steering(
     )
     call_ids = getattr(llm_client, "call_ids", [])
     call_id_start = len(call_ids)
+    previous_last_call_id = getattr(llm_client, "last_call_id", None)
     call_id = None
     try:
         response = llm_client.call("PI", agent="pi", round_num=round_num, values=values)
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
         steers = validate_pi_steers(response, stuck_agents, known_sources, known_leads)
-    except Exception as error:
+    except (llm.LLMError, ValueError, RuntimeError) as error:
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
+        if call_id is None:
+            last_call_id = getattr(llm_client, "last_call_id", None)
+            if last_call_id != previous_last_call_id:
+                call_id = last_call_id
         print(
             f"round {round_num}: PI steering unavailable: {type(error).__name__}: {error}",
             file=sys.stderr,
@@ -1898,7 +1901,7 @@ def run_pi_steering(
                 "round": round_num,
                 "agent": "pi",
                 "role": "PI",
-                "outcome": "steered",
+                "outcome": "steered" if steers else "pi_no_steer",
                 "agents": sorted(steers),
             },
         )
@@ -1940,6 +1943,21 @@ def validate_lead_reference(proposal, known_leads):
     if lead is None:
         raise ValueError("lead_id must reference a known lead")
     return lead
+
+
+def normalize_proposal_lead_id(proposal, known_leads):
+    lead_id = proposal.get("lead_id")
+    if not lead_id:
+        proposal["lead_id"] = None
+        return []
+    if isinstance(lead_id, str) and re.fullmatch(research.SOURCE_ID_PATTERN, lead_id):
+        proposal["source_ids"] = source_union(proposal.get("source_ids", []), [lead_id])
+        proposal["lead_id"] = None
+        return [f"lead_id {lead_id} moved to source_ids"]
+    if not any(lead.get("id") == lead_id for lead in known_leads):
+        proposal["lead_id"] = None
+        return [f"unknown lead_id {str(lead_id)[:80]} cleared"]
+    return []
 
 
 def cited_sources_for_proposal(proposal, lead):
@@ -2144,8 +2162,10 @@ def worker_attempts(
     precheck_failures = {}
     current_proposal = proposal
     for attempt in (1, 2, 3):
+        normalized = []
         try:
             current_proposal = validate_proposal(profile, current_proposal)
+            normalized = normalize_proposal_lead_id(current_proposal, known_leads)
             mismatch_reason = assigned_cell_mismatch_reason(
                 profile, current_proposal["descriptor"], common["assigned_cell"]
             )
@@ -2160,6 +2180,7 @@ def worker_attempts(
                     "pass": False,
                     "outcome": "invalid",
                     "reasons": [str(error)],
+                    "normalized": normalized,
                 }
             )
             log_worker_rejection(
@@ -2263,6 +2284,7 @@ def worker_attempts(
                     "pass": False,
                     "outcome": "duplicate" if cached_duplicate else "rejected",
                     "reasons": precheck_reasons,
+                    "normalized": normalized,
                 }
             )
             log_worker_rejection(
@@ -2436,6 +2458,7 @@ def worker_attempts(
                     "edit_error": str(error),
                     "outcome": "edit_error",
                     "reasons": [str(error)],
+                    "normalized": normalized,
                 }
             )
             if attempt == 1:
@@ -2489,6 +2512,7 @@ def worker_attempts(
                     else "rejected"
                 ),
                 "reasons": gate_record.get("reasons", []),
+                "normalized": normalized,
             }
         )
         candidate = {
@@ -3223,7 +3247,8 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
     wasted_calls = sum(
         1
         for record in outcomes
-        if record.get("outcome") in {"rejected", "duplicate", "invalid", "edit_error"}
+        if record.get("outcome")
+        in {"rejected", "duplicate", "invalid", "edit_error", "pi_no_steer"}
     )
     spend = {
         "round": round_num,

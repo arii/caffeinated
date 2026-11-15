@@ -219,13 +219,14 @@ class TinkerTests(unittest.TestCase):
     def test_pi_role_uses_its_reasoning_effort(self):
         body = {"choices": [{"message": {"content": '{"steers": []}'}}], "usage": {}}
         with (
-            patch.dict(os.environ, {"TINKER_PI_REASONING_EFFORT": "medium"}),
+            patch.dict(os.environ, {"TINKER_PI_REASONING_EFFORT": "high"}),
             patch("llm.urlopen", return_value=self.http_response(body)) as urlopen,
         ):
             client = self.client()
             self.assertEqual(client.call("PI", agent="pi", round_num=2, values={}), {"steers": []})
         payload = json.loads(urlopen.call_args.args[0].data)
-        self.assertEqual(payload["reasoning_effort"], "medium")
+        self.assertEqual(payload["reasoning_effort"], "high")
+        self.assertEqual(llm.DEFAULT_TINKER_PI_REASONING_EFFORT, "high")
 
     def test_openai_path_logs_cached_tokens_reasoning_and_call_ids(self):
         body = {

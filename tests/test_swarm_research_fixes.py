@@ -138,6 +138,32 @@ class ProposalGroundingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "^lead_id must reference a known lead$"):
             swarm.validate_lead_reference({"lead_id": "unknown"}, known)
 
+    def test_lead_id_source_and_unknown_values_are_normalized(self):
+        known = [{"id": "lead-B-6-worker-2", "source_ids": ["S1"]}]
+        dataset_source = {"lead_id": "D6_3", "source_ids": ["S1"]}
+        normalized = swarm.normalize_proposal_lead_id(dataset_source, known)
+        self.assertEqual(dataset_source["lead_id"], None)
+        self.assertEqual(dataset_source["source_ids"], ["S1", "D6_3"])
+        self.assertEqual(normalized, ["lead_id D6_3 moved to source_ids"])
+
+        source_id = {"lead_id": "S194", "source_ids": []}
+        normalized = swarm.normalize_proposal_lead_id(source_id, known)
+        self.assertEqual(source_id["lead_id"], None)
+        self.assertEqual(source_id["source_ids"], ["S194"])
+        self.assertEqual(normalized, ["lead_id S194 moved to source_ids"])
+
+        unknown = {"lead_id": "#3", "source_ids": ["D1_1"]}
+        normalized = swarm.normalize_proposal_lead_id(unknown, known)
+        self.assertEqual(unknown["lead_id"], None)
+        self.assertEqual(unknown["source_ids"], ["D1_1"])
+        self.assertEqual(normalized, ["unknown lead_id #3 cleared"])
+
+        valid = {"lead_id": "lead-B-6-worker-2", "source_ids": []}
+        normalized = swarm.normalize_proposal_lead_id(valid, known)
+        self.assertEqual(valid["lead_id"], "lead-B-6-worker-2")
+        self.assertEqual(normalized, [])
+        self.assertEqual(swarm.validate_lead_reference(valid, known), known[0])
+
 
 class PromptFeedbackAndRuleTests(unittest.TestCase):
     def setUp(self):
@@ -341,6 +367,72 @@ class PromptFeedbackAndRuleTests(unittest.TestCase):
             "source_ids must use the S<number> or D<round>_<number> format",
             next_round_values["own_feedback"],
         )
+
+    def test_worker_attempt_records_moved_source_id_normalization(self):
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        proposal = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        proposal["lead_id"] = "D6_3"
+        proposal["source_ids"] = []
+
+        def next_proposal(*_args, **_kwargs):
+            return {**proposal, "source_ids": list(proposal["source_ids"])}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = SimpleNamespace(
+                call=next_proposal,
+                last_call_id=None,
+                call_ids=[],
+            )
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(
+                    swarm, "local_candidate_precheck", return_value=["pre-check rejection"]
+                ),
+                patch.object(swarm, "assigned_cell_repair", return_value=None),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+        self.assertEqual(result["status"], "reject")
+        self.assertEqual(result["attempts"][0]["normalized"], ["lead_id D6_3 moved to source_ids"])
+        self.assertEqual(result["attempts"][1]["normalized"], ["lead_id D6_3 moved to source_ids"])
 
 
 class LocalPrecheckTests(unittest.TestCase):
@@ -708,26 +800,46 @@ class PISteeringTests(unittest.TestCase):
 
     def test_pi_failure_is_nonfatal_and_pi_off_skips_call(self):
         class BrokenClient:
-            last_call_id = None
+            def __init__(self):
+                self.call_ids = []
+                self.last_call_id = None
 
             def call(self, *args, **kwargs):
+                self.last_call_id = "PI-r3-pi-1"
                 raise RuntimeError("offline failure")
 
         with tempfile.TemporaryDirectory() as tmp:
+            client = BrokenClient()
             with (
                 patch.object(swarm, "recall_memory", return_value={"results": []}),
                 redirect_stderr(io.StringIO()),
             ):
-                steers = self.run_pi(client=BrokenClient(), out_dir=tmp)
+                steers = self.run_pi(client=client, out_dir=tmp)
             failures = llm.read_log(Path(tmp) / "pi.jsonl")
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
             off_client = SimpleNamespace(
                 call=lambda *args, **kwargs: self.fail("unexpected PI call")
             )
             self.assertEqual(self.run_pi(enabled=False, client=off_client, out_dir=tmp), {})
         self.assertEqual(steers, {})
         self.assertEqual(failures[0]["type"], "pi_error")
+        self.assertEqual(outcomes[0]["outcome"], "pi_no_steer")
         args = swarm.build_parser().parse_args(["--pi", "off"])
         self.assertEqual(args.pi, "off")
+
+    def test_pi_programming_errors_are_not_swallowed(self):
+        class BrokenClient:
+            last_call_id = None
+
+            def call(self, *args, **kwargs):
+                raise TypeError("programming bug")
+
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory", return_value={"results": []}),
+            self.assertRaisesRegex(TypeError, "programming bug"),
+        ):
+            self.run_pi(client=BrokenClient(), out_dir=tmp)
 
 
 class LiveToolGuardTests(unittest.TestCase):
@@ -797,6 +909,7 @@ class LiveToolGuardTests(unittest.TestCase):
                     for record in (
                         {
                             "round": 4,
+                            "call_id": "WORKER_PROPOSE-r4-worker-1-1",
                             "usage": {
                                 "prompt_tokens": 10,
                                 "cached_tokens": 2,
@@ -806,6 +919,7 @@ class LiveToolGuardTests(unittest.TestCase):
                         },
                         {
                             "round": 4,
+                            "call_id": "PI-r4-pi-2",
                             "usage": {
                                 "prompt_tokens": 5,
                                 "prompt_tokens_details": {"cached_tokens": 1},
@@ -819,9 +933,9 @@ class LiveToolGuardTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (output / "llm_outcomes.jsonl").write_text(
-                json.dumps({"outcome": "rejected"})
+                json.dumps({"call_id": "WORKER_PROPOSE-r4-worker-1-1", "outcome": "rejected"})
                 + "\n"
-                + json.dumps({"outcome": "repaired_then_accepted"})
+                + json.dumps({"call_id": "PI-r4-pi-2", "outcome": "pi_no_steer"})
                 + "\n",
                 encoding="utf-8",
             )
@@ -849,7 +963,7 @@ class LiveToolGuardTests(unittest.TestCase):
                 "cached_tokens": 3,
                 "output_tokens": 7,
                 "reasoning_tokens": 3,
-                "wasted_calls": 1,
+                "wasted_calls": 2,
                 "exa_searches": 2,
                 "pastdev_recalls": 2,
                 "pastdev_writes": 1,

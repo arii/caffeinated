@@ -20,6 +20,7 @@ DEFAULT_PROMPT_DIR = ROOT / "prompts"
 TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
 TINKER_TIMEOUT_SECONDS = 900
 DEFAULT_TINKER_REASONING_EFFORT = "low"
+DEFAULT_TINKER_PI_REASONING_EFFORT = "high"
 TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
@@ -391,7 +392,7 @@ class LLMClient:
     def call(self, role, *, agent, round_num, values):
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
-        self.last_call_id = None
+        self.last_call_id = call_id
         prompt_values = dict(values)
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
@@ -469,7 +470,7 @@ class LLMClient:
         """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
         base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
         reasoning_effort = (
-            os.environ.get("TINKER_PI_REASONING_EFFORT", "medium")
+            os.environ.get("TINKER_PI_REASONING_EFFORT", DEFAULT_TINKER_PI_REASONING_EFFORT)
             if str(role or "").upper() == "PI"
             else os.environ.get("TINKER_REASONING_EFFORT", DEFAULT_TINKER_REASONING_EFFORT)
         )

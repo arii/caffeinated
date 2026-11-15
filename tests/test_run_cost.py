@@ -9,6 +9,31 @@ from scripts import run_cost
 
 
 class RunCostTests(unittest.TestCase):
+    def test_pi_no_steer_counts_as_wasted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            (run_dir / "llm_log.jsonl").write_text(
+                json.dumps(
+                    {
+                        "call_id": "PI-r1-pi-1",
+                        "role": "PI",
+                        "round": 1,
+                        "agent": "pi",
+                        "usage": {"prompt_tokens": 12, "completion_tokens": 4},
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (run_dir / "llm_outcomes.jsonl").write_text(
+                json.dumps({"call_id": "PI-r1-pi-1", "outcome": "pi_no_steer"}) + "\n",
+                encoding="utf-8",
+            )
+            wasted = run_cost.build_report(run_dir)["llm"]["wasted"]
+        self.assertEqual(wasted["calls"], 1)
+        self.assertEqual(wasted["input_tokens"], 12)
+        self.assertEqual(wasted["output_tokens"], 4)
+
     def test_fixture_groups_usage_and_reports_wasted_calls_and_tool_counts(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)
