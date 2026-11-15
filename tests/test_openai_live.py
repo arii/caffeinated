@@ -153,6 +153,7 @@ class IgNobelCommitteeOpenAITests(unittest.TestCase):
                 committee._complete("gpt-6.1-sol", "system", "user")
             self.assertTrue(sent)
             payload = sent[0]
+            self.assertEqual(payload["service_tier"], "default")
             self.assertIn("max_completion_tokens", payload)
             self.assertNotIn("max_tokens", payload)
             self.assertNotIn("temperature", payload)
