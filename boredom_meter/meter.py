@@ -35,13 +35,22 @@ def load_profile(path):
     profile.setdefault("k", 5)
     profile.setdefault("knn", 3)
     profile.setdefault("patience", 5)
+    profile.setdefault("frontier_statuses", ["keep"])
+    profile.setdefault("trivial_statuses", ["duplicate"])
+    if profile.get("patience_unit", "attempt") not in ("attempt", "round"):
+        raise ValueError("patience_unit must be 'attempt' or 'round'")
+    stuck = profile.get("stuck")
+    if stuck is not None:
+        stuck.setdefault("depth", min(2, len(profile["levels"])))
+        if not (1 <= stuck["min_fails"] <= stuck["window"] and 1 <= stuck["depth"] <= len(profile["levels"])):
+            raise ValueError("stuck needs 1 <= min_fails <= window and 1 <= depth <= len(levels)")
     profile.setdefault("eps", 0.0)
     profile.setdefault("weights", [0.45, 0.45, 0.10])
     profile.setdefault("thresholds", {"snap": 0.70, "breakout": 0.85, "exit": 0.55})
     profile.setdefault("min_attempts", 3)
     profile.setdefault("trivial_distance", 0.05)
     profile.setdefault("fail_statuses", ["crash", "invalid", "qc_fail"])
-    profile.setdefault("attempt_statuses", ["keep", "discard", "crash"])
+    profile.setdefault("attempt_statuses", ["keep", "discard", "crash", "duplicate"])
     profile.setdefault("required_mechanisms", list(profile.get("vocab") or {}))
     profile.setdefault("gate", {"snap_min_distance": 0.35, "failed_min_distance": 0.25})
     profile["_hash"] = sha({k: v for k, v in profile.items() if not k.startswith("_")})
@@ -62,12 +71,24 @@ def read_ledger(path):
     return sorted(events, key=lambda e: e["seq"])
 
 
+def is_other_descriptor(profile, descriptor):
+    """`other/<slug>` extends a two-level vocabulary without editing the profile."""
+    levels = profile["levels"]
+    if len(levels) != 2 or descriptor.get(levels[0]) != "other":
+        return False
+    slug = descriptor.get(levels[1])
+    return (isinstance(slug, str) and slug.isascii() and 2 <= len(slug) <= 40
+            and slug[0].isalpha() and slug == slug.lower() and slug.replace("_", "").isalnum())
+
+
 def validate_descriptor(profile, descriptor):
     levels = profile["levels"]
     vocab = profile.get("vocab")
     for level in levels:
         if level not in descriptor:
             raise ValueError(f"descriptor missing level '{level}'")
+    if vocab and is_other_descriptor(profile, descriptor):
+        vocab = None
     if vocab:
         node = vocab
         for level in levels:
@@ -139,7 +160,11 @@ def is_better(profile, x, y, margin=0.0):
 
 def score_ok(profile, e):
     s = e.get("score")
-    return e.get("status") not in profile["fail_statuses"] and isinstance(s, (int, float)) and math.isfinite(s)
+    return (
+        e.get("status") in profile.get("frontier_statuses", ["keep"])
+        and isinstance(s, (int, float))
+        and math.isfinite(s)
+    )
 
 
 def simpson(cells):
@@ -157,6 +182,33 @@ def attempt_events(profile, events):
             if e.get("status") in profile["attempt_statuses"] and e.get("kind") != "critic")
 
 
+def patience_key(profile, e):
+    """Unit that stall and stagnation count: one attempt, or one ledger round.
+
+    An event without an integer `round` is its own round.
+    """
+    if profile.get("patience_unit") == "round" and isinstance(e.get("round"), int):
+        return ("round", e["round"])
+    return ("seq", e["seq"])
+
+
+def stuck_cells(profile, events):
+    """Cells whose recent attempts mostly failed: {cell: (fails, recent)}."""
+    rule = profile.get("stuck")
+    if not rule:
+        return {}
+    history = {}
+    for e in attempt_events(profile, events):
+        c = cell_key(profile, e["descriptor"], rule["depth"])
+        history.setdefault(c, []).append(e.get("status") in profile["fail_statuses"])
+    out = {}
+    for c, fails in history.items():
+        recent = fails[-rule["window"]:]
+        if sum(recent) >= rule["min_fails"]:
+            out[c] = (sum(recent), len(recent))
+    return out
+
+
 def fold(profile, events, agent=None):
     """Replay the ledger once, returning per-event metrics and final state."""
     k, patience = profile["k"], profile["patience"]
@@ -164,12 +216,15 @@ def fold(profile, events, agent=None):
     th = profile["thresholds"]
     w1, w2, w3 = profile["weights"]
     head = profile["levels"][0]
+    by_round = profile.get("patience_unit") == "round"
     archive = []
     best = best_sig = None
     best_seq = None
     streak = stall = 0
     agent_streak = {}
+    sig_key, stall_keys, agent_keys = None, set(), {}
     novelty_hist, trivial_hist, fail_hist, cell_hist = [], [], [], []
+    swarm_fail_hist = []
     regime = "EXPLOIT"
     trace = []
     required_cells = set(profile["required_mechanisms"])
@@ -198,9 +253,24 @@ def fold(profile, events, agent=None):
         else:
             streak += 1
             agent_streak[ea] = agent_streak.get(ea, 0) + 1
+        if by_round:
+            key = patience_key(profile, e)
+            if improved_sig:
+                sig_key, stall_keys = key, set()
+                agent_keys = {a: set() for a in agent_keys}
+                agent_keys[ea] = set()
+            elif key != sig_key:
+                stall_keys.add(key)
+                agent_keys.setdefault(ea, set()).add(key)
+            streak = stall = len(stall_keys)
+            agent_streak = {a: len(keys) for a, keys in agent_keys.items()}
+        swarm_fail_hist.append(failed)
         if agent is None or ea == agent:
             novelty_hist.append(nov)
-            trivial_hist.append(nearest < profile["trivial_distance"])
+            trivial_hist.append(
+                nearest < profile["trivial_distance"]
+                or e.get("status") in profile.get("trivial_statuses", [])
+            )
             fail_hist.append(failed)
             cell_hist.append(d[head])
         win_nov = novelty_hist[-k:]
@@ -209,6 +279,7 @@ def fold(profile, events, agent=None):
         stagnation = min(s_streak / patience, 1.0)
         win_fail, win_triv = fail_hist[-k:], trivial_hist[-k:]
         fail_rate = sum(win_fail) / len(win_fail) if win_fail else 0.0
+        frustration = sum(swarm_fail_hist[-k:]) / len(swarm_fail_hist[-k:])
         trivial_rate = sum(win_triv) / len(win_triv) if win_triv else 0.0
         overload = max(fail_rate, trivial_rate)
         B = min(max(w1 * (1 - novelty) + w2 * stagnation + w3 * overload, 0.0), 1.0)
@@ -219,7 +290,7 @@ def fold(profile, events, agent=None):
             regime = "EXPLOIT"
         elif regime == "CONVERGED":
             regime = "CONVERGED"
-        elif stall >= 3 * patience and coverage_complete:
+        elif best is not None and stall >= 3 * patience and coverage_complete:
             regime = "CONVERGED"
         elif n < profile["min_attempts"]:
             regime = "EXPLOIT"
@@ -234,7 +305,7 @@ def fold(profile, events, agent=None):
         trace.append({
             "seq": e["seq"], "agent": ea, "B": r(B), "regime": regime,
             "novelty": r(novelty), "stagnation": r(stagnation), "overload": r(overload),
-            "fail_rate": r(fail_rate), "trivial_rate": r(trivial_rate),
+            "fail_rate": r(fail_rate), "trivial_rate": r(trivial_rate), "frustration": r(frustration),
             "diversity": r(simpson(cell_hist[-k:])), "frontier_stall": stall,
             "best": r(best), "best_seq": best_seq,
         })
@@ -247,12 +318,13 @@ def status(profile, events, agent=None, at=None):
     trace = fold(profile, events, agent)
     last = trace[-1] if trace else {
         "seq": 0, "B": 0.0, "regime": "EXPLOIT", "novelty": 1.0, "stagnation": 0.0,
-        "overload": 0.0, "fail_rate": 0.0, "trivial_rate": 0.0, "diversity": 0.0,
+        "overload": 0.0, "fail_rate": 0.0, "trivial_rate": 0.0, "frustration": 0.0, "diversity": 0.0,
         "frontier_stall": 0, "best": None, "best_seq": None,
     }
     out = {k: v for k, v in last.items() if k != "agent"}
     out.update({
         "scope": agent or "swarm", "n_attempts": len(trace),
+        "stuck_cells": sorted(stuck_cells(profile, events)),
         "ledger_sha256": sha(events), "profile_sha256": profile["_hash"],
         "directive": profile.get("directives", {}).get(out["regime"], ""),
     })
@@ -279,6 +351,8 @@ def suggest(profile, events, n=5, depth=None):
     """Least-visited descriptor cells, failures counted against a cell; deterministic order."""
     depth = depth or min(2, len(profile["levels"]))
     visits, fails, best = {}, {}, {}
+    rule = profile.get("stuck")
+    stuck_prefixes = set(stuck_cells(profile, events)) if rule and rule["depth"] <= depth else set()
     for e in attempt_events(profile, events):
         c = cell_key(profile, e["descriptor"], depth)
         visits[c] = visits.get(c, 0) + 1
@@ -287,8 +361,10 @@ def suggest(profile, events, n=5, depth=None):
         if score_ok(profile, e) and (c not in best or is_better(profile, e["score"], best[c])):
             best[c] = e["score"]
     cells = sorted(set(all_cells(profile, depth)) | set(visits))
-    ranked = sorted(cells, key=lambda c: (visits.get(c, 0), fails.get(c, 0), c))
-    return [{"cell": c, "visits": visits.get(c, 0), "fails": fails.get(c, 0), "best": best.get(c)} for c in ranked[:n]]
+    stuck = {c for c in cells if rule and "/".join(c.split("/")[:rule["depth"]]) in stuck_prefixes}
+    ranked = sorted(cells, key=lambda c: (c in stuck, visits.get(c, 0), fails.get(c, 0), c))
+    return [{"cell": c, "visits": visits.get(c, 0), "fails": fails.get(c, 0), "best": best.get(c),
+             "stuck": c in stuck} for c in ranked[:n]]
 
 
 def gate(profile, events, descriptor, agent=None, sources=None, role=None):
@@ -325,6 +401,11 @@ def gate(profile, events, descriptor, agent=None, sources=None, role=None):
         head = profile["levels"][0]
         if any(o[head] == descriptor[head] for o in recent):
             reasons.append(f"BREAKOUT requires a {head} not used in the last {profile['k']} attempts")
+    if profile.get("stuck"):
+        cell = cell_key(profile, descriptor, profile["stuck"]["depth"])
+        stuck = stuck_cells(profile, events).get(cell)
+        if stuck:
+            reasons.append(f"stuck: cell {cell} failed {stuck[0]}/{stuck[1]} recent attempts")
     return {"pass": not reasons, "regime": st["regime"], "B": st["B"], "min_recent_distance": r(min_recent),
             "min_failed_distance": r(min_failed), "reasons": reasons,
             "ledger_sha256": st["ledger_sha256"], "profile_sha256": st["profile_sha256"]}

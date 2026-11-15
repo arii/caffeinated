@@ -19,8 +19,8 @@ SOURCE_ID_RE = re.compile(r"^S(\d+)$")
 QUERY_ID_RE = re.compile(r"^Q(\d+)$")
 EXTRACT_ID_RE = re.compile(r"^E(\d+)$")
 DEFAULT_EXTRACT_QUESTION = (
-    "What concrete change to a small GPT training script does this propose? "
-    "Give the hyperparameters and the reported effect."
+    "What concrete, testable change for the task described by this source does it propose? "
+    "Give implementation details and the reported effect."
 )
 
 
@@ -302,7 +302,7 @@ def source_by_id(records, source_id):
 
 
 def command_query(args):
-    if args.command in ("search", "prior-art", "scout"):
+    if args.command in ("search", "prior-art", "scout", "worker-search"):
         return args.query
     if args.command in ("similar", "extract"):
         return args.source
@@ -317,6 +317,7 @@ def run_disabled(args):
         "list": "search",
         "prior-art": "prior-art",
         "scout": "scout",
+        "worker-search": "worker-search",
         "similar": "similar",
         "extract": "extract",
     }[args.command]
@@ -400,8 +401,11 @@ def run_scout(args):
             include_domains=["github.com"],
             start_published_date=since,
         )
+    purpose = "worker-search" if args.command == "worker-search" else "scout"
+    cell = getattr(args, "cell", None)
     write_query_results(
-        args, records, query_id, "scout", args.query, "/search", payload
+        args, records, query_id, purpose, args.query, "/search", payload,
+        extra_record={"cell": cell} if cell else None,
     )
     return 0
 

@@ -10,7 +10,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 - **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Autoresearch runner:** [swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md).
-- **Artificial Scientist Swarms backend:** [backend and judge guide](https://github.com/arii/caffeinated/blob/autoresearch/README.md) on the `autoresearch` branch, covering agent types, the orchestration loop and the boredom meter.
+- **Artificial Scientist Swarms backend:** [backend and judge guide](docs/autoresearch-backend.md), covering agent types, the orchestration loop and the boredom meter.
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run

@@ -131,11 +131,11 @@ class MemoryCliTests(unittest.TestCase):
         repo = Path(directory) / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        train_file = repo / "train.py"
-        train_file.write_text("WIDTH = 8\n", encoding="utf-8")
+        editable_file = repo / "candidate.py"
+        editable_file.write_text("WIDTH = 8\n", encoding="utf-8")
 
         def commit(message):
-            subprocess.run(["git", "add", "train.py"], cwd=repo, check=True)
+            subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
                     "git",
@@ -157,7 +157,7 @@ class MemoryCliTests(unittest.TestCase):
             ).strip()
 
         first = commit("baseline")
-        train_file.write_text("WIDTH = 10\n", encoding="utf-8")
+        editable_file.write_text("WIDTH = 10\n", encoding="utf-8")
         message = candidate_message or "[SNAP] increase width based on paper\n\nSource: S1"
         second = commit(message)
         return repo, first, second
@@ -166,7 +166,7 @@ class MemoryCliTests(unittest.TestCase):
         with path.open("w", newline="", encoding="utf-8") as results_file:
             writer = csv.writer(results_file, delimiter="\t")
             writer.writerow(
-                ["commit", "val_bpb", "memory_gb", "status", "description"]
+                ["commit", "loss", "status", "description"]
             )
             writer.writerows(rows)
 
@@ -192,10 +192,8 @@ class MemoryCliTests(unittest.TestCase):
                 "remember",
                 "--commit",
                 commit,
-                "--val-bpb",
+                "--loss",
                 "0.98",
-                "--memory-gb",
-                "44",
                 "--status",
                 "keep",
                 "--description",
@@ -223,19 +221,19 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(body["id"], f"run:boredom:{commit}")
             self.assertTrue(body["timestamp"].endswith("Z"))
             self.assertEqual(body["identity"], "autoresearch-agent")
-            self.assertEqual(body["metadata"]["val_bpb"], 0.98)
+            self.assertEqual(body["metadata"]["loss"], 0.98)
             self.assertEqual(body["metadata"]["status"], "keep")
             self.assertEqual(body["metadata"]["regime"], "BOREDOM_SNAP")
             self.assertEqual(body["metadata"]["sources"], ["S1"])
             self.assertEqual(body["metadata"]["type"], "result")
             self.assertEqual(body["metadata"]["author"], "autoresearch-agent")
             self.assertEqual(body["metadata"]["run_id"], "test-run")
-            self.assertIn("Outcome: keep (val_bpb 0.98", body["content"])
+            self.assertIn("Outcome: keep (loss 0.98", body["content"])
             self.assertIn(
                 "Sources: S1 A useful paper https://example.test/paper",
                 body["content"],
             )
-            self.assertIn("train.py diff:", body["content"])
+            self.assertIn("candidate diff:", body["content"])
             self.assertIn("-WIDTH = 8", body["content"])
             self.assertIn("+WIDTH = 10", body["content"])
 
@@ -309,7 +307,7 @@ class MemoryCliTests(unittest.TestCase):
                 "remember",
                 "--commit",
                 commit,
-                "--val-bpb",
+                "--loss",
                 "0.98",
                 "--status",
                 "keep",
@@ -504,7 +502,7 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(
                 request["body"],
                 {
-                    "id": "lesson:1",
+                    "id": "lesson:1@test-run",
                     "content": "Try a different schedule.",
                     "label": "lesson by worker-1",
                     "timestamp": "2025-01-02T03:04:05Z",
@@ -604,7 +602,7 @@ class MemoryCliTests(unittest.TestCase):
                 ["arm-z", "arm-z", "arm-y"],
             )
 
-    def test_pastdev_recall_drops_foreign_and_livecheck_sources_outside_arm_run(self):
+    def test_pastdev_scope_reuses_same_task_history_and_isolates_arms(self):
         server = self.start_server()
         with tempfile.TemporaryDirectory() as directory:
             mirror = Path(directory) / "memory.jsonl"
@@ -614,51 +612,100 @@ class MemoryCliTests(unittest.TestCase):
                 "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
                 "AUTORESEARCH_ARM": "B",
                 "AUTORESEARCH_RUN_ID": "current-run",
+                "AUTORESEARCH_TASK": "hadamard19",
             }
             with patch.dict(os.environ, env), patch.object(memory, "_ENSURED_AUDIENCES", set()):
                 memory.write(
-                    "result", "own-source", "validation loss experiment", "worker-1",
-                    {"arm": "A", "run_id": "stale-run"},
+                    "claim", "claim-1", "fresh claim about restarts", "worker-1", {},
                     backend="pastdev", mirror=mirror, log=log,
                 )
-                own_source = server.ingest_response["sourceId"]
-                for source_id, metadata in (
-                    ("livecheck", {"arm": "B", "run_id": "livecheck-run"}),
-                    ("other-arm", {"arm": "A", "run_id": "current-run"}),
-                ):
-                    memory.append_jsonl(mirror, {"sourceId": source_id, "metadata": metadata})
+                payload = next(request["body"] for request in server.requests if request["path"].endswith("/ingest"))
+                self.assertEqual(payload["id"], "claim-1@current-run")
+                self.assertEqual(
+                    {key: payload["metadata"][key] for key in ("arm", "run_id", "task")},
+                    {"arm": "B", "run_id": "current-run", "task": "hadamard19"},
+                )
 
-                def item(content, source_id=None, metadata=None):
+                def item(content, source_id, metadata=None, tags=None):
                     return {
                         "content": content, "artifact": {"kind": "memory"},
-                        "sources": [] if source_id is None else [{"sourceId": source_id, "metadata": metadata or {}}],
+                        "sources": [{
+                            "sourceId": source_id, "metadata": metadata or {},
+                            "tags": tags or [],
+                        }],
                     }
 
-                server.recall_response = {"results": [
-                    item("hadamard19 determinant", "foreign-source", {"arm": "B", "run_id": "current-run"}),
-                    item("old livecheck exhausted directions", "livecheck"),
-                    item("other arm", "other-arm"),
-                    item("no source"),
-                    item("stale metadata", own_source, {"arm": "B", "run_id": "old-run"}),
-                    item("validation loss experiment", own_source),
-                ]}
-                result = memory.recall("exhausted directions", "scout", backend="pastdev", mirror=mirror, log=log)
-                self.assertEqual([item["content"] for item in result["results"]], ["validation loss experiment"])
-                records = [json.loads(line) for line in log.read_text().splitlines()]
-                self.assertEqual(records[-1]["dropped_count"], 5)
-                self.assertEqual(records[-1]["source_ids"], [own_source])
-                payload = next(request["body"] for request in server.requests if request["path"].endswith("/ingest"))
-                self.assertEqual(payload["metadata"]["arm"], "B")
-                self.assertEqual(payload["metadata"]["run_id"], "current-run")
+                def scoped(**metadata):
+                    return {"arm": "B", "run_id": "old-run", "task": "hadamard19", **metadata}
 
-                recalled = self.run_cli(
-                    server, "recall", "exhausted directions", "--json", "--arm", "B",
-                    "--run-id", "current-run", "--mirror", str(mirror), "--log", str(log),
+                server.recall_response = {"results": [
+                    item("old lesson restarts", "old-lesson", scoped(type="lesson")),
+                    item("old verdict restarts", "old-verdict", scoped(type="verdict")),
+                    item("old failed restarts", "old-fail", scoped(type="result", status="discard")),
+                    item("old kept restarts", "old-keep", scoped(type="result", status="keep"), ["tag-keep"]),
+                    item("old claim restarts", "old-claim", scoped(type="claim"), ["tag-claim"]),
+                    item("bixbench lesson", "foreign-task", scoped(type="lesson", task="bixbench_mini"), ["tag-task"]),
+                    item("arm A lesson", "foreign-arm", scoped(type="lesson", arm="A"), [{"id": "tag-arm"}]),
+                    item("arm A same run", "foreign-arm-run", scoped(type="claim", arm="A", run_id="current-run")),
+                    item("livecheck", "livecheck", {}, ["tag-livecheck"]),
+                    item("legacy lesson without task", "legacy", scoped(type="lesson", task=None)),
+                ]}
+                result = memory.recall("restarts", "scout", backend="pastdev", mirror=mirror, log=log)
+                contents = [entry["content"] for entry in result["results"]]
+                self.assertEqual(contents[0], "fresh claim about restarts")
+                self.assertEqual(
+                    sorted(contents[1:]),
+                    ["old failed restarts", "old lesson restarts", "old verdict restarts"],
                 )
-                self.assertEqual(recalled.returncode, 0, recalled.stderr)
-                self.assertEqual([item["content"] for item in json.loads(recalled.stdout)["results"]], ["validation loss experiment"])
-                self.assertNotIn("hadamard19", recalled.stdout)
-                self.assertTrue(all(request["method"] in ("POST", "PUT") for request in server.requests))
+                self.assertEqual(result["results"][0]["sources"][0]["scope"], "same_run")
+                self.assertEqual(result["results"][1]["sources"][0]["scope"], "cross_run")
+                record = [json.loads(line) for line in log.read_text().splitlines()][-1]
+                self.assertEqual(record["cross_run_kept"], 3)
+                self.assertEqual(record["local_same_run"], 1)
+                self.assertEqual(record["dropped_count"], 7)
+                self.assertEqual(
+                    record["dropped_reasons"],
+                    {"run_only": 2, "foreign_task": 1, "untagged_task": 1,
+                     "foreign_arm": 2, "unscoped": 1},
+                )
+                self.assertEqual(
+                    record["dropped_source_ids"],
+                    ["old-keep", "old-claim", "foreign-task", "foreign-arm",
+                     "foreign-arm-run", "livecheck", "legacy"],
+                )
+                self.assertEqual(
+                    record["dropped_tags"],
+                    ["tag-keep", "tag-claim", "tag-task", "tag-arm", "tag-livecheck"],
+                )
+
+    def test_scope_decision_never_crosses_arms(self):
+        scope = {"arm": "A", "run_id": "pair-1", "task": "bixbench_mini"}
+        for metadata in (
+            {"arm": "B", "run_id": "pair-1", "task": "bixbench_mini", "type": "claim"},
+            {"arm": "B", "run_id": "old", "task": "bixbench_mini", "type": "lesson"},
+            {"arm": "b", "run_id": "old", "task": "bixbench_mini", "type": "verdict"},
+        ):
+            self.assertEqual(memory.scope_decision(metadata, scope), "foreign_arm")
+        self.assertEqual(
+            memory.scope_decision(
+                {"arm": "a", "run_id": "old", "task": "bixbench_mini", "type": "lesson"}, scope
+            ),
+            "cross_run",
+        )
+        self.assertEqual(
+            memory.scope_decision(
+                {"arm": "A", "run_id": "old", "task": "hadamard19", "type": "lesson"}, scope
+            ),
+            "foreign_task",
+        )
+        self.assertEqual(
+            memory.scope_decision({"arm": "A", "run_id": "old", "type": "lesson"}, scope),
+            "untagged_task",
+        )
+        self.assertEqual(
+            memory.scope_decision({"arm": "A", "run_id": "pair-1", "type": "claim"}, scope),
+            "same_run",
+        )
 
     def test_pastdev_arm_recall_with_empty_mirror_drops_all_results(self):
         server = self.start_server()
