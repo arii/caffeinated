@@ -114,6 +114,9 @@ def fake_response(role, values):
             "lesson": None,
         }
     if role in ("WORKER_PROPOSE", "WORKER_REPAIR"):
+        assigned = values.get("assigned_cell")
+        if assigned and assigned != "none":
+            return fake_assigned_proposal(assigned, str(values["train_py"]), values.get("assigned_descriptor"))
         proposal = values.get("proposal")
         if role == "WORKER_REPAIR" and isinstance(proposal, dict):
             return proposal
@@ -181,6 +184,72 @@ def fake_response(role, values):
             "edits": [{"old": old, "new": new}],
         }
     raise ValueError(f"no fake response for role {role}")
+
+
+def fake_assigned_proposal(cell, train_py, descriptor=None):
+    mechanism, method = cell.split("/")
+    knobs = {
+        "architecture/depth": ("DEPTH", 1),
+        "architecture/width": ("ASPECT_RATIO", 8),
+        "architecture/head_dim": ("HEAD_DIM", 16),
+        "optimizer/matrix_lr": ("MATRIX_LR", 0.002),
+        "optimizer/embed_lr": ("EMBEDDING_LR", 0.02),
+        "optimizer/unembed_lr": ("UNEMBEDDING_LR", 0.001),
+        "optimizer/weight_decay": ("WEIGHT_DECAY", 0.02),
+        "lr_schedule/warmup": ("WARMUP_RATIO", 0.02),
+        "lr_schedule/warmdown": ("WARMDOWN_RATIO", 0.02),
+        "lr_schedule/final_lr": ("FINAL_LR_FRAC", 0.02),
+    }
+    if cell in knobs:
+        name, increment = knobs[cell]
+        match = re.search(rf"(?m)^{name}\s*=\s*([\d.]+)", train_py)
+        if match is None:
+            raise ValueError(f"fake assigned cell cannot find {name}")
+        value = float(match.group(1)) + increment
+        value = (descriptor or {}).get("params", {}).get("value", value)
+        old, new = match.group(0), f"{name} = {value:g}"
+    else:
+        edits = {
+            "architecture/family": ("x = F.relu(x).square()", "x = F.gelu(x)"),
+            "architecture/mlp": ("4 * config.n_embd", "3 * config.n_embd"),
+            "architecture/norm": ("return F.rms_norm(x, (x.size(-1),))", "return F.layer_norm(x, (x.size(-1),))"),
+            "attention/family": ("q, k = norm(q), norm(k)", "q, k = norm(q) * 0.9, norm(k)"),
+            "attention/softcap": ("causal=True, window_size=window_size", "causal=True, window_size=window_size, softcap=30.0"),
+            "attention/window": ('WINDOW_PATTERN = "SSSL"', 'WINDOW_PATTERN = "SLLL"'),
+            "data/ordering": ("x, y, epoch = next(train_loader)  # prefetch first batch", "next(train_loader)  # skip the first training batch\nx, y, epoch = next(train_loader)  # prefetch first batch"),
+            "data/sequence": ("config = build_model_config(DEPTH)", "MAX_SEQ_LEN //= 2\nconfig = build_model_config(DEPTH)"),
+            "optimizer/adam_beta": ("ADAM_BETAS = (0.8, 0.95)", "ADAM_BETAS = (0.85, 0.95)"),
+            "optimizer/family": ("kind='muon', params=group_params, lr=matrix_lr,", "kind='adamw', params=group_params, lr=matrix_lr, betas=adam_betas, eps=1e-10,"),
+        }
+        if cell == "batch/total_batch":
+            match = re.search(r"TOTAL_BATCH_SIZE\s*=\s*2\*\*(\d+)", train_py)
+            if match is None:
+                raise ValueError("fake assigned cell cannot find TOTAL_BATCH_SIZE")
+            old, new = match.group(0), f"TOTAL_BATCH_SIZE = 2**{int(match.group(1)) - 1}"
+        elif cell in edits:
+            old, new = edits[cell]
+        else:
+            raise ValueError(f"fake worker does not support assigned cell {cell}")
+        value = None
+    if cell == "architecture/mlp":
+        match = re.search(r"self.c_fc = nn.Linear\(config.n_embd, (\d+) \* config.n_embd", train_py)
+        if match is None:
+            raise ValueError("fake assigned cell cannot find the MLP width")
+        width = match.group(1)
+        old = "\n".join(line for line in train_py.splitlines() if f"{width} * config.n_embd" in line)
+        new = old.replace(f"{width} * config.n_embd", f"{int(width) + 1} * config.n_embd")
+    elif cell not in knobs and old not in train_py and new in train_py:
+        old, new = new, old
+    if old not in train_py or old == new:
+        raise ValueError(f"fake assigned edit unavailable for {cell}")
+    return {
+        "descriptor": {"mechanism": mechanism, "method": method,
+                       **({"params": {"value": value}} if value is not None else {})},
+        "idea": f"Test assigned {cell}",
+        "rationale": "Implement the conductor-assigned descriptor cell.",
+        "lead_id": None, "source_ids": [], "predicted_delta": -0.001,
+        "edits": [{"old": old, "new": new}],
+    }
 
 
 class LLMClient:
