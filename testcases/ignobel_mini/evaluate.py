@@ -5,8 +5,8 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
 1. checks the registration (field, question, hypothesis, mechanism, a real
    public dataset URL, the two columns, direction, predicted effect size);
 2. verifies every citation: at least MIN_CITATIONS distinct sources, each an
-   Exa source id or URL from this run's research log (TASK_RESEARCH_LOG) or a
-   pre-vetted entry in sources.json;
+   Exa source id or URL from this run's research log (TASK_RESEARCH_LOG), a
+   pre-vetted entry in sources.json, or a DOI that Crossref confirms exists;
 3. downloads the dataset once (external.py: open-data hosts or URLs the run's
    Exa research cites), freezes it, and allows ONE registered test per dataset
    per run (later registrations on the same dataset score 0);
@@ -214,8 +214,14 @@ def check_citations(citations, dataset_url, task_dir, research_log):
         else:
             url = citation
             if url not in vetted_urls and not (url.startswith("https://") and url in text):
-                problems.append(f"{url} was not found by this run's research or in sources.json")
-                continue
+                try:
+                    real = external.doi_title(url, task_dir)
+                except Exception as error:
+                    problems.append(f"{url}: DOI lookup failed ({type(error).__name__})")
+                    continue
+                if not real:
+                    problems.append(f"{url} is neither a registered DOI nor found by this run's research or in sources.json")
+                    continue
         if url == dataset_url:
             problems.append("the dataset itself is not a citation")
             continue

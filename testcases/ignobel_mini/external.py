@@ -11,7 +11,11 @@ import hashlib
 import ipaddress
 import json
 import os
+import re
 import socket
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -41,6 +45,36 @@ OPEN_DATA_HOSTS = (
 
 def dataset_id(url):
     return "x" + hashlib.sha256(url.split("#", 1)[0].encode()).hexdigest()[:10]
+
+
+DOI = re.compile(r"(?:https?://(?:dx\.)?doi\.org/|doi:)?(10\.\d{4,9}/\S+)", re.I)
+
+
+def doi_title(citation, task_dir=HERE):
+    """Title of a real DOI-registered work (Crossref, cached), or None if it does not exist."""
+    match = DOI.fullmatch(citation.strip())
+    if not match:
+        return None
+    doi = match.group(1).rstrip(".").lower()
+    cache = Path(task_dir) / ".cache" / "doi" / (hashlib.sha256(doi.encode()).hexdigest()[:16] + ".json")
+    if cache.is_file():
+        return json.loads(cache.read_text(encoding="utf-8")).get("title")
+    request = urllib.request.Request(
+        "https://api.crossref.org/works/" + urllib.parse.quote(doi, safe="/"),
+        headers={"User-Agent": "caffeinated-ignobel/1 (mailto:swarm@localhost)"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            message = json.loads(response.read(2_000_000))["message"]
+    except urllib.error.HTTPError as error:
+        if error.code != 404:
+            raise
+        title = None
+    else:
+        title = " ".join((message.get("title") or [""])[0].split()) or doi
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps({"doi": doi, "title": title}) + "\n", encoding="utf-8")
+    return title
 
 
 def cited(url, research_log=None):
