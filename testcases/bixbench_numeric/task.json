@@ -1,6 +1,7 @@
 {
  "editable": "analysis.py",
  "deterministic": true,
+ "research": "off",
  "search_topic": "answering bioinformatics data analysis questions (BixBench) with pandas, scipy and statsmodels",
  "brief": "an analysis script (`analysis.py`) that answers 45 BixBench questions (question text and dataset previews are under Task inputs) from 10 capsules of raw data in data/<capsule>/ and prints {question_id: number}. Only a fixed dev subset of the questions is graded during the search (loss = 1 - dev accuracy); the rest are held out and graded once after the run, so answer every question with a general, correct procedure rather than tuning to the dev score",
  "fake_edits": [

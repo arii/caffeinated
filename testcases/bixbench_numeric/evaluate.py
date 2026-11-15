@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from testcases import sandbox
+from testcases.bixbench_mini.evaluate import answer_literal_qids
 
 HERE = Path(__file__).resolve().parent
 ANSWERS = ".cache/answers.json"
@@ -57,19 +58,27 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, answers_file=ANSWERS)
             required_files=(answers_file,),
         )
         key = json.loads((task_dir / answers_file).read_text())
-        run = sandbox.run_candidate(
-            task_dir,
-            config["editable"],
-            source,
-            context_files=config.get("context_files", []),
-            timeout_s=TIMEOUT_S if timeout_s is None else timeout_s,
+        answer_literals = answer_literal_qids(
+            source, key, (task_dir / "questions.json").read_text(encoding="utf-8")
         )
-        network_isolated = run.network_isolated
-        candidate_stderr = run.stderr
-        failure = sandbox.candidate_failure(run)
+        run = None
+        if answer_literals:
+            reason = "answer_literal"
+            diagnostics = f"candidate contains answer literals for {', '.join(answer_literals)}"
+        else:
+            run = sandbox.run_candidate(
+                task_dir,
+                config["editable"],
+                source,
+                context_files=config.get("context_files", []),
+                timeout_s=TIMEOUT_S if timeout_s is None else timeout_s,
+            )
+            network_isolated = run.network_isolated
+            candidate_stderr = run.stderr
+        failure = sandbox.candidate_failure(run) if run is not None else None
         if failure:
             reason, diagnostics = failure
-        else:
+        elif run is not None:
             try:
                 lines = [line for line in run.stdout.splitlines() if line.strip()]
                 answers = json.loads(lines[-1]) if lines else None
