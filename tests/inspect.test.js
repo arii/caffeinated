@@ -41,6 +41,7 @@ test('experiment detail is hidden before it starts and reveals lifecycle as play
  assert.equal(started.idea.text,'Seeds matter');assert.equal(started.gate,null);assert.equal(started.result,null);assert.equal(started.verdict,null);
  assert.deepEqual(Object.keys(started.artifacts),['diff']);assert.equal(started.logTail,null);
  const gated=experimentDetail(recording,X,4);assert.equal(gated.gate.pass,true);assert.deepEqual(gated.gate.priorArt,['Q2']);assert.equal(gated.studyId,'study:1');
+ assert.equal(experimentDetail(recording,X,6).verdict,null);
  const done=experimentDetail(recording,X,9);
  assert.deepEqual(done.gate.reasons,['duplicate blob']);assert.equal(done.gate.attempts,2);
  assert.deepEqual(done.result,{status:'discard',metric:0.2,reward:0,text:'Result discard',tick:6});

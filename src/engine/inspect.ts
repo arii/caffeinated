@@ -37,7 +37,7 @@ export function experimentDetail(recording:Source|null|undefined,id:string,tick:
  const hypothesis=hypothesisEvent?byId(entityRows(recording,'hypotheses')).get(hid!)||{}:null;
  const gate=entity.gate&&typeof entity.gate==='object'?entity.gate:{},gateRecorded=Array.isArray(gate.reasons)&&gate.reasons.length>0||typeof gate.pass==='boolean'||num(gate.attempts)!>0;const gp=gateEvent?.payload||{};
  const reasons=[...(Array.isArray(gp.reasons)?gp.reasons:[]),...(finished&&Array.isArray(gate.reasons)?gate.reasons:[])].map(String);
- const verdict=finished||verdictEvent?entity.verdict:null;const vp=verdictEvent?.payload||{};
+ const verdictLater=recording.events.some(e=>e.type==='verdict.issued'&&e.refs?.experiment_id===id),verdict=verdictEvent||finished&&!verdictLater?entity.verdict:null;const vp=verdictEvent?.payload||{};
  return {id,agentId:text(entity.agent_id)||started?.agentId||own[0].agentId||null,round:num(entity.round)??num(own[0].round),kind:text(entity.kind),commit:text(entity.commit)||text(gp.candidate_commit),role:text(entity.role)||text(started?.payload?.role),
   description:text(entity.description)||text(started?.payload?.description)||text(started?.message),
   idea:hypothesis?{text:proposal(hypothesis.text||hypothesisEvent?.payload?.text).text,rationale:text(hypothesis.rationale)||text(hypothesisEvent?.payload?.rationale)||text(proposal(hypothesis.text||hypothesisEvent?.payload?.text).rationale),predictedDelta:num(hypothesis.predicted_delta)??num(entity.predicted_delta),sources:(Array.isArray(hypothesis.source_ids)?hypothesis.source_ids:[]).map(String)}:null,
