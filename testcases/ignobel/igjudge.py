@@ -1,4 +1,4 @@
-"""Post-run six-perspective IgJudge; independent of the in-run committee.
+"""Post-run six-perspective IgJudge via OpenAI; independent of the in-run committee.
 
 python -m testcases.ignobel.igjudge RECORDING_OR_RUN_DIR --out artifact.json
 """
@@ -8,6 +8,9 @@ import hashlib
 import json
 import os
 import sys
+import time
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,9 +21,9 @@ if str(HERE) not in sys.path:
 
 import prepare
 
-import llm
 from testcases.ignobel import committee
 
+CACHE_DIR = HERE.parents[1] / ".cache" / "igjudge"
 CRITERIA = [
     {"key": "humor", "label": "Humor & Absurdity", "weight": 2},
     {"key": "plausibility", "label": "Scientific Plausibility", "weight": 2},
@@ -38,14 +41,46 @@ CLASSIFICATIONS = [
 ]
 
 
-def require_tinker():
-    if not os.environ.get("TINKER_API_KEY", "").strip():
-        raise RuntimeError("IgJudge requires TINKER_API_KEY; no fallback is available")
-    for name in ("IGNOBEL_JUDGE_BASE_URL", "TINKER_BASE_URL"):
-        if os.environ.get(name, llm.TINKER_BASE_URL).rstrip("/") != llm.TINKER_BASE_URL:
-            raise RuntimeError(f"IgJudge is Tinker-only; remove the {name} override")
-    if committee._key_env() != "TINKER_API_KEY":
-        raise RuntimeError("IgJudge requires IGNOBEL_JUDGE_API_KEY_ENV unset or TINKER_API_KEY")
+def require_openai():
+    if not os.environ.get("OPENAI_API_KEY", "").strip():
+        raise RuntimeError("IgJudge requires OPENAI_API_KEY; no fallback is available")
+
+
+def complete_openai(model, system, user):
+    require_openai()
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "response_format": {"type": "json_object"},
+    }
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}",
+            "Content-Type": "application/json",
+            "User-Agent": "caffeinated-igjudge",
+        },
+        method="POST",
+    )
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                return json.loads(response.read().decode("utf-8"))["choices"][0]["message"]
+        except urllib.error.HTTPError as error:
+            if (error.code == 429 or 500 <= error.code < 600) and attempt == 0:
+                error.close()
+                time.sleep(5)
+                continue
+            detail = error.read().decode("utf-8", "replace")[:300]
+            raise RuntimeError(f"OpenAI endpoint returned HTTP {error.code}: {detail}") from error
+        except (urllib.error.URLError, TimeoutError) as error:
+            raise RuntimeError(
+                f"OpenAI endpoint request failed: {getattr(error, 'reason', error)}"
+            ) from error
 
 
 def parse_response(response):
@@ -199,8 +234,8 @@ def load_ideas(directory):
     return run_id, ideas
 
 
-def judge_idea(idea, model, prompt, cache_dir, complete=None, prior_search=None):
-    complete = complete or committee._complete
+def judge_idea(idea, model, prompt, cache_dir=CACHE_DIR, complete=None, prior_search=None):
+    complete = complete or complete_openai
     prior_search = prior_search or committee.get_prior_work
     prior = prior_search(idea["title"], task_dir=cache_dir)
     user = (
@@ -213,7 +248,7 @@ def judge_idea(idea, model, prompt, cache_dir, complete=None, prior_search=None)
         )
     )
     key = hashlib.sha256(json.dumps([model, prompt, user]).encode()).hexdigest()[:24]
-    cache = Path(cache_dir) / ".cache" / "igjudge" / f"{key}.json"
+    cache = Path(cache_dir) / f"{key}.json"
     output = {k: v for k, v in idea.items() if k != "study"}
     output.update(
         scores={},
@@ -275,16 +310,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
-    require_tinker()
+    require_openai()
     run_id, ideas = load_ideas(args.directory)
     prompt = (HERE / "igjudge_prompt.md").read_text(encoding="utf-8")
-    model = os.environ.get("IGJUDGE_MODEL", committee.DEFAULT_MODELS["a"])
+    model = os.environ.get("IGJUDGE_MODEL", "gpt-5.5")
     with ThreadPoolExecutor(max_workers=6) as pool:
-        results = list(
-            pool.map(
-                lambda idea: judge_idea(idea, model, prompt, args.directory), ideas[: args.limit]
-            )
-        )
+        results = list(pool.map(lambda idea: judge_idea(idea, model, prompt), ideas[: args.limit]))
     artifact = build_artifact(run_id, model, prompt, results)
     prepare.atomic_write(
         args.out, json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
