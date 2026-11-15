@@ -265,6 +265,44 @@ class PromptFeedbackAndRuleTests(unittest.TestCase):
 
 
 class LocalPrecheckTests(unittest.TestCase):
+    def test_snap_grounding_rule_applies_without_profile_source_requirement(self):
+        profile = meter.load_profile(ROOT / "testcases/bixbench_mini/boredom_profile.json")
+        profile["gate"]["require_sources"] = False
+        proposal = {
+            "descriptor": {"mechanism": "normalization", "method": "log_cpm"},
+            "edits": [],
+        }
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(swarm, "TASK", {"deterministic": False}),
+            patch.object(
+                swarm.meter,
+                "gate",
+                return_value={"regime": "BOREDOM_SNAP", "reasons": [], "pass": True},
+            ),
+        ):
+            reasons = swarm.local_candidate_precheck(
+                repo=ROOT,
+                out_dir=tmp,
+                profile=profile,
+                role="divergent",
+                proposal=proposal,
+                cited_sources=[],
+                source_text="",
+            )
+            rules = swarm.hard_rules(
+                profile,
+                [],
+                "worker-1",
+                "divergent",
+                {"regime": "BOREDOM_SNAP"},
+                False,
+            )
+        self.assertEqual(reasons, ["ungrounded: no valid source id in Source trailer"])
+        self.assertIn("Cite at least one source", rules)
+        self.assertTrue(boredom.grounding_required("BOREDOM_SNAP"))
+
     def test_deterministic_blob_already_in_cache_fails_before_commit(self):
         profile = meter.load_profile(ROOT / "testcases/hadamard19/boredom_profile.json")
         source = "VALUE = 1\n"

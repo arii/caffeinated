@@ -519,11 +519,12 @@ def hard_rules(profile, events, agent, role, status, deterministic):
     attempts = list(meter.attempt_events(profile, events))
     rules = []
 
-    if (
-        regime in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED")
-        and gate.get("require_sources")
-        and os.environ.get("GROUNDING", "").casefold() != "off"
-    ):
+    profile_requires_sources = regime in (
+        "BOREDOM_SNAP",
+        "PARADIGM_BREAKOUT",
+        "CONVERGED",
+    ) and gate.get("require_sources")
+    if profile_requires_sources or boredom.grounding_required(regime):
         rules.append(
             "Cite at least one source from search results, dataset IDs (D…), or a lead's sources."
         )
@@ -1478,6 +1479,8 @@ def local_candidate_precheck(*, repo, out_dir, profile, role, proposal, cited_so
                 role=role,
             )
             reasons.extend(result["reasons"])
+            if boredom.grounding_required(result["regime"]) and not valid_sources:
+                reasons.append("ungrounded: no valid source id in Source trailer")
         except ValueError as error:
             reasons.append(f"invalid-descriptor: {error}")
     if TASK.get("deterministic"):
