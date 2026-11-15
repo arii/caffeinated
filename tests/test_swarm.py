@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -53,6 +54,51 @@ class FakeLLMTests(unittest.TestCase):
         self.assertEqual(proposal["descriptor"]["mechanism"], "search")
         self.assertEqual(proposal["descriptor"]["method"], "restarts")
         self.assertTrue(proposal["edits"])
+
+    def test_hadamard_fake_targets_build_construction_and_objective_edits(self):
+        task = swarm.load_task("hadamard19")
+        source = (ROOT / "testcases/hadamard19/construct.py").read_text()
+        for name, mechanism, method, _ in task["fake_targets"]:
+            if mechanism not in {"construction", "objective"}:
+                continue
+            proposal = llm.fake_assigned_proposal(
+                f"{mechanism}/{method}", source,
+                {"mechanism": mechanism, "method": method},
+                fake_targets=task["fake_targets"],
+            )
+            self.assertNotEqual(proposal.get("status"), "reject")
+            self.assertIn(proposal["edits"][0]["old"], source)
+            self.assertEqual(proposal["descriptor"]["mechanism"], mechanism)
+            self.assertEqual(proposal["descriptor"]["method"], method)
+
+    def test_unbuildable_assigned_cell_is_rejected(self):
+        proposal = llm.fake_assigned_proposal(
+            "objective/log_det",
+            "RESTARTS = 4\n",
+            {"mechanism": "objective", "method": "log_det"},
+            fake_targets=[["RESTARTS", "search", "restarts", 1]],
+        )
+        self.assertEqual(proposal["status"], "reject")
+        self.assertEqual(proposal["reason"], "unbuildable assignment: objective/log_det")
+
+    def test_real_repair_descriptor_mismatch_is_rejected(self):
+        profile = meter.load_profile(PROFILE)
+        reason = swarm.assigned_cell_mismatch_reason(
+            profile,
+            {"mechanism": "search", "method": "restarts"},
+            "objective/log_det",
+        )
+        self.assertEqual(reason, "unbuildable assignment: objective/log_det")
+
+    def test_deterministic_critic_uses_first_score_without_rerun(self):
+        with patch.object(swarm, "TASK", {"deterministic": True}), patch(
+            "swarm.run_evaluations", side_effect=AssertionError("unexpected rerun")
+        ):
+            result = swarm.critic_confirmation_result(
+                Path("."), "commit", 0.123, Path("critic")
+            )
+        self.assertEqual(result["loss"], 0.123)
+        self.assertEqual(result["critic_rerun"], "skipped (deterministic)")
 
 
 class AllocationTests(unittest.TestCase):
@@ -113,6 +159,12 @@ class AllocationTests(unittest.TestCase):
 
 class SandboxedSwarmTests(unittest.TestCase):
     def without_commits(self, value):
+        if isinstance(value, str):
+            return re.sub(
+                r"(duplicate: blob already scored as )\S+",
+                r"\1<commit>",
+                value,
+            )
         if isinstance(value, dict):
             return {
                 key: self.without_commits(item)
@@ -295,6 +347,73 @@ class SandboxedSwarmTests(unittest.TestCase):
             self.assertGreaterEqual(len(entries), 2)
             ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
             self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
+
+    def test_fake_run_stops_early_when_converged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "converged")
+            out = Path(tmp) / "out"
+            args = swarm.build_parser().parse_args([
+                "--task", "hadamard19", "--rounds", "10", "--llm", "fake",
+                "--no-push", "--out", str(out), "--repo", str(repo),
+            ])
+            original = meter.load_profile
+
+            def quick_profile(path):
+                profile = original(path)
+                profile["patience"] = 1
+                profile["required_mechanisms"] = ["baseline"]
+                profile["attempt_statuses"] = ["keep", "discard", "crash", "reject"]
+                profile["_hash"] = meter.sha(
+                    {key: value for key, value in profile.items() if not key.startswith("_")}
+                )
+                return profile
+
+            with patch.dict(os.environ, {"EXA": "off", "MEMORY_BACKEND": "local"}), patch(
+                "swarm.meter.load_profile", side_effect=quick_profile
+            ):
+                swarm.orchestrate(args)
+            summary = json.loads((out / "converged.json").read_text())
+            ledger = meter.read_ledger(out / "ledger.jsonl")
+            profile = original(PROFILE)
+            profile["attempt_statuses"] = ["keep", "discard", "crash", "reject"]
+            self.assertLess(summary["round"], 10)
+            self.assertLess(
+                max(event.get("round", 0) for event in ledger), summary["round"]
+            )
+            self.assertEqual(
+                round(summary["best_loss"], 6),
+                summary["status_record"]["best_loss"],
+            )
+            self.assertEqual(
+                summary["attempt_count"],
+                len(list(meter.attempt_events(profile, ledger))),
+            )
+            self.assertTrue(json.loads((out / "run.json").read_text())["converged"])
+            manifest = json.loads(next((out / "viewer").glob("*/manifest.json")).read_text())
+            self.assertEqual(manifest["status"], "finished")
+            self.assertTrue(manifest["converged"])
+
+    def test_deterministic_gate_rejects_previously_scored_blob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "dedup")
+            out = Path(tmp) / "out"
+            out.mkdir()
+            args = swarm.build_parser().parse_args(
+                ["--task", "hadamard19", "--llm", "fake"]
+            )
+            swarm.configure_task(args)
+            commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            swarm.record_score_cache(
+                repo, out, {commit: {"loss": 0.5, "status": "ok"}}
+            )
+            passed, record = swarm.gate_candidate(
+                repo=repo, out_dir=out, profile_path=PROFILE, commit=commit
+            )
+            self.assertFalse(passed)
+            self.assertEqual(
+                record["reasons"],
+                [f"duplicate: blob already scored as {commit}"],
+            )
 
 
 if __name__ == "__main__":

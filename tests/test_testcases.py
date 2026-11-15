@@ -18,7 +18,15 @@ from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_fra
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
-DOCKER_AVAILABLE = sandbox.docker_available()
+DOCKER_DAEMON_AVAILABLE = sandbox.docker_available()
+DOCKER_IMAGE_AVAILABLE = DOCKER_DAEMON_AVAILABLE and subprocess.run(
+    ["docker", "image", "inspect", "caffeinated-testcases:py311-v1"],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    check=False,
+).returncode == 0
+DOCKER_AVAILABLE = DOCKER_IMAGE_AVAILABLE
+DOCKER_SKIP_REASON = "Docker daemon and caffeinated-testcases:py311-v1 image required"
 
 
 def evaluate(task):
@@ -57,9 +65,44 @@ class EvaluatorTests(unittest.TestCase):
     def test_profiles_are_valid(self):
         for profile in TESTCASES.glob("*/boredom_profile.json"):
             with self.subTest(profile=profile.parent.name):
-                meter.load_profile(profile)
+                loaded = meter.load_profile(profile)
+                task = json.loads((profile.parent / "task.json").read_text(encoding="utf-8"))
+                for edit in task.get("fake_edits", []):
+                    meter.validate_descriptor(loaded, edit["descriptor"])
+                for target in task.get("fake_targets", []):
+                    meter.validate_descriptor(
+                        loaded, {"mechanism": target[1], "method": target[2]}
+                    )
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_fake_edit_changes_each_task_score(self):
+        for task_name in ("hadamard19", "bixbench_mini", "playworld_mini"):
+            task_dir = TESTCASES / task_name
+            config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+            source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+            if task_name == "hadamard19":
+                candidates = [
+                    source.replace("CONSTRUCTION = 0", "CONSTRUCTION = 1", 1),
+                    source.replace("OBJECTIVE = 0", "OBJECTIVE = 1", 1),
+                ]
+            else:
+                index = 1 if task_name == "bixbench_mini" else 0
+                edit = config["fake_edits"][index]
+                candidates = [source.replace(edit["old"], edit["new"], 1)]
+            baseline = sandbox.evaluate_task(task_dir, source)
+            self.assertEqual(baseline["status"], "ok")
+            candidate_results = [
+                sandbox.evaluate_task(task_dir, candidate) for candidate in candidates
+            ]
+            self.assertTrue(
+                any(
+                    result["status"] == "ok" and result["loss"] != baseline["loss"]
+                    for result in candidate_results
+                ),
+                task_name,
+            )
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_baseline_score_is_unchanged(self):
         result = evaluate("hadamard19")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -68,7 +111,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(values["beats_reference"], "false")
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_baseline_score_is_unchanged(self):
         result = evaluate("bixbench_mini")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -77,7 +120,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertAlmostEqual(float(values["loss"]), 1 - 2 / 17, places=5)
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_playworld_baseline_score_is_unchanged(self):
         result = evaluate("playworld_mini")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -85,7 +128,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertAlmostEqual(float(values["score"]), 0.149, places=3)
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_non_pm1_matrix(self):
         source = (
             "import json\n"
@@ -97,7 +140,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(result["score"], 0.0)
         self.assertIn("error:", result["stderr"])
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_valid_output_followed_by_crash(self):
         source = (
             (TESTCASES / "hadamard19" / "construct.py").read_text(encoding="utf-8")
@@ -109,7 +152,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertIn("status 3", result["stderr"])
         self.assertEqual(result["score"], 0.0)
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_candidate_cannot_read_answer_key_or_host_keys(self):
         task_dir = TESTCASES / "bixbench_mini"
         sandbox.prepare_task(
@@ -172,7 +215,7 @@ class EvaluatorTests(unittest.TestCase):
         )
         self.assertTrue(answer_path.exists())
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_playworld_candidate_cannot_import_grader_or_reach_network(self):
         source = """
 import json
@@ -219,7 +262,7 @@ def predict(context_frames, context_actions, future_actions):
         self.assertEqual(probe["host_paths"], [False])
         self.assertFalse(probe["hidden_future_frames"])
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_busy_candidate_times_out_and_container_is_removed(self):
         result = task_evaluation("hadamard19", "while True:\n    pass\n", timeout_s=1)
         self.assertEqual(result["status"], "crash")
@@ -284,7 +327,7 @@ class SwarmTaskModeTests(unittest.TestCase):
                 preview = swarm.preview_file(path)
             self.assertIn("preview unavailable", preview)
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_llm_swarm_scores_candidates_with_task_evaluator(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory) / "repo"

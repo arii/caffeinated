@@ -35,6 +35,7 @@ def load_profile(path):
     profile.setdefault("k", 5)
     profile.setdefault("knn", 3)
     profile.setdefault("patience", 5)
+    profile.setdefault("frontier_statuses", ["keep"])
     profile.setdefault("eps", 0.0)
     profile.setdefault("weights", [0.45, 0.45, 0.10])
     profile.setdefault("thresholds", {"snap": 0.70, "breakout": 0.85, "exit": 0.55})
@@ -139,7 +140,11 @@ def is_better(profile, x, y, margin=0.0):
 
 def score_ok(profile, e):
     s = e.get("score")
-    return e.get("status") not in profile["fail_statuses"] and isinstance(s, (int, float)) and math.isfinite(s)
+    return (
+        e.get("status") in profile.get("frontier_statuses", ["keep"])
+        and isinstance(s, (int, float))
+        and math.isfinite(s)
+    )
 
 
 def simpson(cells):

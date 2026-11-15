@@ -38,13 +38,8 @@ TASK = None
 RESULT_COLUMNS = (
     "commit",
     "loss",
-    "memory_gb",
     "status",
     "description",
-    "agent",
-    "round",
-    "descriptor",
-    "kind",
 )
 
 
@@ -224,11 +219,6 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         rationale = (
             f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
         )
-    elif regime == "CONVERGED":
-        roles = {agent: "exploit" for agent in agents}
-        if exa_enabled:
-            scouts = [divergent_worker()]
-        rationale = "CONVERGED permits confirmation runs only, with one scout."
     else:
         roles = {agent: "exploit" for agent in agents}
         divergent_agent = divergent_worker()
@@ -270,18 +260,12 @@ def write_results(ledger_path, results_path):
         writer.writerow(RESULT_COLUMNS)
         for event in events:
             score = event.get("score")
-            memory_gb = event.get("memory_gb")
             writer.writerow(
                 [
                     event.get("commit") or "",
                     "" if score is None else f"{float(score):.6f}",
-                    "" if memory_gb is None else f"{float(memory_gb):.1f}",
                     event.get("status", ""),
                     event.get("description", ""),
-                    event.get("agent", ""),
-                    event.get("round", 0),
-                    json.dumps(event.get("descriptor"), sort_keys=True),
-                    event.get("kind", ""),
                 ]
             )
     return events
@@ -681,6 +665,14 @@ def validate_proposal(profile, proposal):
     return proposal
 
 
+def assigned_cell_mismatch_reason(profile, descriptor, assigned_cell):
+    if assigned_cell in (None, "none"):
+        return None
+    if meter.cell_key(profile, descriptor, 2) != assigned_cell:
+        return f"unbuildable assignment: {assigned_cell}"
+    return None
+
+
 def apply_edits(source_path, edits):
     text = Path(source_path).read_text(encoding="utf-8")
     edited = text
@@ -754,7 +746,21 @@ def gate_candidate(
     profile_path,
     commit,
     role=None,
+    descriptor=None,
 ):
+    if TASK.get("deterministic"):
+        cache_path = Path(out_dir) / "score_cache.json"
+        cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+        blob = git_text(repo, "rev-parse", f"{commit}:{TARGET_FILE}")
+        if blob in cache:
+            reason = f"duplicate: blob already scored as {cache[blob]['commit']}"
+            record = {
+                "type": "gate", "ts": timestamp(), "candidate_commit": commit,
+                "candidate_blob": blob, "pass": False, "reasons": [reason],
+                "descriptor": descriptor, "role": role,
+            }
+            append_jsonl(Path(out_dir) / "boredom_log.jsonl", record)
+            return False, record
     args = SimpleNamespace(
         command="gate",
         results=str(Path(out_dir) / "results.tsv"),
@@ -778,6 +784,22 @@ def gate_candidate(
     if record.get("type") != "gate" or record.get("candidate_commit") != commit:
         raise RuntimeError("boredom.py gate did not append its gate record")
     return result == 0, record
+
+
+def record_score_cache(repo, out_dir, results):
+    if not TASK.get("deterministic"):
+        return
+    path = Path(out_dir) / "score_cache.json"
+    cache = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    for commit, result in results.items():
+        if result.get("status") != "ok" or result.get("loss") is None:
+            continue
+        blob = git_text(repo, "rev-parse", f"{commit}:{TARGET_FILE}")
+        cache.setdefault(blob, {
+            "commit": commit, "loss": result.get("loss"),
+            "status": result.get("status"),
+        })
+    path.write_text(json.dumps(cache, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def source_union(*groups):
@@ -869,10 +891,11 @@ def worker_attempts(
     for attempt in (1, 2, 3):
         try:
             current_proposal = validate_proposal(profile, current_proposal)
-            if common["assigned_cell"] != "none" and meter.cell_key(
-                profile, current_proposal["descriptor"], 2
-            ) != common["assigned_cell"]:
-                raise ValueError("proposal must implement the assigned cell")
+            mismatch_reason = assigned_cell_mismatch_reason(
+                profile, current_proposal["descriptor"], common["assigned_cell"]
+            )
+            if mismatch_reason:
+                raise ValueError(mismatch_reason)
             valid_leads = {
                 item.get("id") for item in all_leads if item.get("id")
             }
@@ -886,6 +909,18 @@ def worker_attempts(
             if current_proposal.get("lead_id") is None and lead:
                 current_proposal["lead_id"] = lead["id"]
         except (ValueError, TypeError) as error:
+            if (
+                common["assigned_cell"] != "none"
+                and str(error).startswith("unbuildable assignment: ")
+            ):
+                return {
+                    "agent": agent, "status": "reject", "score": None,
+                    "commit": "", "descriptor": current_proposal.get("descriptor", {}),
+                    "sources": [], "lead": lead.get("id") if lead else None,
+                    "idea": current_proposal.get("idea", ""),
+                    "predicted_delta": None, "role": role,
+                    "reasons": [str(error)], "attempts": attempts,
+                }
             if attempt == 1:
                 current_proposal = llm_client.call(
                     "WORKER_REPAIR",
@@ -897,12 +932,20 @@ def worker_attempts(
                         "proposal": json.dumps(current_proposal, sort_keys=True),
                     },
                 )
+                if current_proposal.get("status") == "reject":
+                    return {
+                        "agent": agent, "status": "reject", "score": None,
+                        "commit": "", "descriptor": common["assigned_descriptor"],
+                        "sources": [], "lead": lead.get("id") if lead else None,
+                        "idea": "assigned cell has no buildable fake target",
+                        "predicted_delta": None, "role": role,
+                        "reasons": [current_proposal["reason"]], "attempts": attempts,
+                    }
                 continue
             return {
                 "agent": agent,
                 "status": "reject",
                 "score": None,
-                "memory_gb": None,
                 "commit": "",
                 "descriptor": {"mechanism": "baseline", "method": "none"},
                 "sources": [],
@@ -1008,7 +1051,6 @@ def worker_attempts(
                 "agent": agent,
                 "status": "reject",
                 "score": None,
-                "memory_gb": None,
                 "commit": "",
                 "descriptor": current_proposal["descriptor"],
                 "sources": cited_sources,
@@ -1026,6 +1068,7 @@ def worker_attempts(
             profile_path=profile_path,
             commit=committed["commit"],
             role=role,
+            descriptor=current_proposal["descriptor"],
         )
         attempts.append(
             {
@@ -1039,7 +1082,6 @@ def worker_attempts(
             "agent": agent,
             "status": "pending" if gate_pass else "reject",
             "score": None,
-            "memory_gb": None,
             "commit": committed["commit"],
             "descriptor": current_proposal["descriptor"],
             "sources": cited_sources,
@@ -1053,6 +1095,11 @@ def worker_attempts(
             "attempts": attempts,
             "branch": committed["branch"],
         }
+        if any(
+            reason.startswith("duplicate: blob already scored as ")
+            for reason in candidate["reasons"]
+        ):
+            return candidate
         if gate_pass:
             return candidate
         common["reasons"] = "; ".join(gate_record.get("reasons", []))
@@ -1086,6 +1133,15 @@ def worker_attempts(
                             + json.dumps(common["assigned_descriptor"], sort_keys=True),
                             "proposal": json.dumps(current_proposal, sort_keys=True)},
                 )
+                if current_proposal.get("status") == "reject":
+                    return {
+                        "agent": agent, "status": "reject", "score": None,
+                        "commit": "", "descriptor": common["assigned_descriptor"],
+                        "sources": [], "lead": lead.get("id") if lead else None,
+                        "idea": "assigned cell has no buildable fake target",
+                        "predicted_delta": None, "role": role,
+                        "reasons": [current_proposal["reason"]], "attempts": attempts,
+                    }
                 continue
         if attempt == 1:
             current_proposal = llm_client.call(
@@ -1106,7 +1162,6 @@ def worker_attempts(
         "agent": agent,
         "status": "reject",
         "score": None,
-        "memory_gb": None,
         "commit": "",
         "descriptor": {"mechanism": "baseline", "method": "none"},
         "sources": [],
@@ -1206,7 +1261,6 @@ def local_task_result(repo, commit, out_dir):
     return {
         "commit": commit,
         "loss": loss,
-        "memory_gb": 0.0,
         "status": result.get("status", "crash") if result else "crash",
         "reason": result.get("reason") if result else "candidate_source_unavailable",
     }
@@ -1221,13 +1275,23 @@ def run_evaluations(repo, commits, out_dir):
     for commit, result in results.items():
         score = result["loss"]
         print(
-            f"{commit}\t{score if score is None else f'{score:.6f}'}\t0.0\t"
-            f"{result['status']}"
+            f"{commit}\t{score if score is None else f'{score:.6f}'}\t{result['status']}"
         )
     return results, ""
 
 
-def add_result_event(profile, ledger_path, candidate, round_num, status, score, memory_gb):
+def critic_confirmation_result(repo, commit, first_score, out_dir):
+    if TASK.get("deterministic"):
+        return {
+            "loss": first_score,
+            "status": "ok",
+            "critic_rerun": "skipped (deterministic)",
+        }
+    results, _ = run_evaluations(repo, [commit], out_dir)
+    return results[commit]
+
+
+def add_result_event(profile, ledger_path, candidate, round_num, status, score):
     event = {
         "ts": timestamp(),
         "kind": "candidate",
@@ -1240,7 +1304,6 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score, 
         "commit": candidate.get("commit") or None,
         "round": round_num,
         "lead": candidate.get("lead"),
-        "memory_gb": memory_gb,
         "description": candidate.get("description")
         or f"[{candidate.get('regime_label', 'EXPLOIT')}] {candidate.get('idea', '')}",
         "role": candidate.get("role"),
@@ -1248,6 +1311,7 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score, 
         "predicted_delta": candidate.get("predicted_delta"),
         "gate_reasons": candidate.get("reasons", []),
         "gate_attempts": candidate.get("attempts", []),
+        "critic_rerun": candidate.get("critic_rerun"),
     }
     return meter.submit(profile, ledger_path, event)
 
@@ -1267,13 +1331,11 @@ def write_result_memory(
     else:
         memory_id = f"reject:{arm}:r{event.get('round')}-{event.get('agent')}"
     value = event.get("score")
-    memory_gb = event.get("memory_gb")
     content = (
         f"autoresearch {arm} round {event.get('round')} by {event.get('agent')}\n"
         f"Idea: {event.get('description', '')}\n"
         f"Outcome: {event.get('status')} (loss "
-        f"{'n/a' if value is None else f'{float(value):.6f}'}, memory "
-        f"{'n/a' if memory_gb is None else f'{float(memory_gb):.1f}'} GB)\n"
+        f"{'n/a' if value is None else f'{float(value):.6f}'})\n"
         f"Descriptor: {json.dumps(event.get('descriptor'), sort_keys=True)}"
     )
     write_memory_item(
@@ -1512,8 +1574,8 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
 
 
 def _orchestrate(args, publish_state):
-    if args.rounds < 1 or args.rounds > 10:
-        raise ValueError("--rounds must be between 1 and 10")
+    if args.rounds < 1 or args.rounds > 50:
+        raise ValueError("--rounds must be between 1 and 50")
     prompt_dir = configure_task(args)
     if args.arm not in {"A", "B", "C", "D"}:
         raise ValueError("--arm must be A, B, C, or D")
@@ -1585,6 +1647,7 @@ def _orchestrate(args, publish_state):
     if baseline["loss"] is None:
         raise RuntimeError(f"task {TASK['name']} baseline failed to score")
     baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
+    record_score_cache(repo, out_dir, {baseline_commit: baseline})
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
     with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
@@ -1603,7 +1666,6 @@ def _orchestrate(args, publish_state):
                     "commit": baseline_commit,
                     "round": 0,
                     "lead": None,
-                    "memory_gb": 0.0,
                     "description": "baseline",
                 },
             )
@@ -1623,6 +1685,28 @@ def _orchestrate(args, publish_state):
                 "ledger_sha256": allocation["ledger_sha256"],
                 "profile_sha256": profile["_hash"],
             }
+            if allocation["regime"] == "CONVERGED":
+                status_record = read_jsonl(out_dir / "boredom_log.jsonl")
+                converged = {
+                    "round": round_num,
+                    "best_commit": best_metric_commit,
+                    "best_loss": best_val,
+                    "cells_covered": sorted({
+                        meter.cell_key(profile, event["descriptor"], 2)
+                        for event in meter.attempt_events(profile, events)
+                    }),
+                    "attempt_count": len(list(meter.attempt_events(profile, events))),
+                    "status_record": status_record[-1] if status_record else status,
+                }
+                (out_dir / "converged.json").write_text(
+                    json.dumps(converged, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                run_path = out_dir / "run.json"
+                run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
+                run_artifact["converged"] = True
+                _write_run_artifact(out_dir, run_artifact)
+                break
             events_for_scouts = list(events)
             cell_suggestions = suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
@@ -1691,7 +1775,6 @@ def _orchestrate(args, publish_state):
                     "EXPLOIT": "EXPLOIT",
                     "BOREDOM_SNAP": "SNAP",
                     "PARADIGM_BREAKOUT": "BREAKOUT",
-                    "CONVERGED": "EXPLOIT",
                 }.get(allocation["regime"], "EXPLOIT")
                 candidate_records.append(candidate)
 
@@ -1704,11 +1787,11 @@ def _orchestrate(args, publish_state):
             evaluation_results, _ = run_evaluations(
                 repo, commits, out_dir / "runs"
             )
+            record_score_cache(repo, out_dir, evaluation_results)
             provisional = []
             for candidate in run_candidates:
                 result = evaluation_results.get(candidate["commit"], {})
                 candidate["score"] = result.get("loss")
-                candidate["memory_gb"] = result.get("memory_gb")
                 candidate["evaluation_status"] = result.get("status", "crash")
                 if (
                     candidate["evaluation_status"] == "ok"
@@ -1729,15 +1812,14 @@ def _orchestrate(args, publish_state):
                 previous_best_val = best_val
                 previous_best_commit = best_metric_commit
                 critic_dir = out_dir / "runs" / "critic_confirmation"
-                critic_results, _ = run_evaluations(
-                    repo,
-                    [provisional_best["commit"]],
+                critic_result = critic_confirmation_result(
+                    repo, provisional_best["commit"], provisional_best["score"],
                     critic_dir,
                 )
-                critic_result = critic_results[provisional_best["commit"]]
+                if critic_result.get("critic_rerun"):
+                    provisional_best["critic_rerun"] = critic_result["critic_rerun"]
                 provisional_best["critic_score"] = critic_result.get("loss")
                 provisional_best["replicate_score"] = critic_result.get("loss")
-                provisional_best["critic_memory_gb"] = critic_result.get("memory_gb")
                 first_score = float(provisional_best["score"])
                 second_score = critic_result.get("loss")
                 accepted = critic_accepts(
@@ -1836,7 +1918,6 @@ def _orchestrate(args, publish_state):
                     "commit": provisional_best["commit"],
                     "round": round_num,
                     "lead": provisional_best.get("lead"),
-                    "memory_gb": critic_result.get("memory_gb"),
                     "description": (
                         f"critic second-evaluation confirmation for "
                         f"{provisional_best['idea']}"
@@ -1873,7 +1954,6 @@ def _orchestrate(args, publish_state):
                     round_num,
                     event_status,
                     candidate.get("score") if event_status != "reject" else None,
-                    candidate.get("memory_gb"),
                 )
                 write_result_memory(
                     event,

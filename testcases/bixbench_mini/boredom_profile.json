@@ -1,6 +1,6 @@
 {
   "domain": "testcase-bixbench-mini",
-  "version": 1,
+  "version": 2,
   "direction": "min",
   "objective": "loss",
   "eps": 0.03,

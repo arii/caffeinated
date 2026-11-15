@@ -1,6 +1,6 @@
 {
   "domain": "testcase-playworld-mini",
-  "version": 1,
+  "version": 2,
   "direction": "min",
   "objective": "loss",
   "eps": 0.005,
@@ -33,7 +33,7 @@
     ],
     "learning": [
       "tabular",
-      "from_train_data",
+      "from_public_data",
       "neural"
     ],
     "rendering": [
@@ -53,7 +53,7 @@
   "directives": {
     "EXPLOIT": "One focused change to the current world model.",
     "BOREDOM_SNAP": "Stop tweaking the same component; try a different mechanism (memory, dynamics, learning), grounded in world-model literature (Exa) and checked against past.dev.",
-    "PARADIGM_BREAKOUT": "Replace the model family (e.g. explicit map memory, learned tabular dynamics from data/train.jsonl).",
+    "PARADIGM_BREAKOUT": "Change the approach family (e.g. explicit map memory or learned tabular dynamics from the public episode split).",
     "CONVERGED": "Re-run the best model to confirm the score."
   }
 }
