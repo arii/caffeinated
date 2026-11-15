@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {finaleReached,finaleSummary,improvementText,wilson} from '../src/engine/finale.ts';
+import {PRE_COMMITTEE_NOTE} from '../src/engine/proxyNote.ts';
 
 const run=(direction,baseline,best,held_out_test=null)=>({
  manifest:{id:'r',title:'run',totalTicks:10,status:'finished',metric:{name:'loss',label:'loss',direction},held_out_test},
@@ -45,6 +46,17 @@ test('non-fraction held-out scores do not imply item counts or Wilson intervals'
  const summary=finaleSummary(run('maximize',.8,.9,held),10);
  assert.equal(summary?.heldOut?.best.fraction,null);
  assert.equal(summary?.heldOut?.best.wilson,null);
+});
+
+test('finale summaries use the recording-owned pre-committee note',()=>{
+ const recording=run('minimize',.8,.9);
+ recording.manifest.title='Ig Nobel Prize hunt · out-ignobel';
+ recording.manifest.metric.description='1 - (replicated and significant): 0 = the study replicated, 1 = it did not';
+ recording.manifest.proxy_note='Today’s committee-scoring caveat.';
+ recording.entities={studies:[{id:'study:1'}]};
+ const summary=finaleSummary(recording,10);
+ assert.equal(summary?.proxyNote,PRE_COMMITTEE_NOTE);
+ assert.doesNotMatch(summary?.proxyNote||'',/replicated/i);
 });
 
 test('no-keeps uses baseline as best and absent held-out data stays absent',()=>{

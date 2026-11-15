@@ -1,5 +1,6 @@
 import {frameAt,type Recording} from './replay.ts';
 import {outcomeOf} from './scoreChart.ts';
+import {isIgnobelRecording,recordingProxyNote} from './proxyNote.ts';
 
 export interface WilsonInterval{low:number;high:number}
 export function wilson(k:number,n:number,z=1.96):WilsonInterval|null{
@@ -55,11 +56,11 @@ export function finaleSummary(recording:Recording|null,tick:number):FinaleSummar
  const delta=baseline==null||best==null?null:direction==='maximize'?best-baseline:baseline-best;
  const totals={kept:0,discarded:0,crashed:0};
  for(const row of results){const outcome=outcomeOf(String(row.status||''),String(row.kind||''));if(outcome!=='baseline')totals[outcome]++;}
- const held=manifest.held_out_test,n=held&&finite(held.n_items)?held.n_items:0;
- const heldOut=held&&n>0?{n,baseline:heldScore(held.baseline,n),best:heldScore(held.best,n),proxyNote:held.proxy_note||manifest.proxy_note||'',referenceNote:held.reference_note||manifest.reference_note||''}:null;
+ const proxyNote=recordingProxyNote(manifest,recording)||'',held=manifest.held_out_test,n=held&&finite(held.n_items)?held.n_items:0;
+ const heldOut=held&&n>0?{n,baseline:heldScore(held.baseline,n),best:heldScore(held.best,n),proxyNote:isIgnobelRecording(manifest,recording)?proxyNote:held.proxy_note||proxyNote,referenceNote:held.reference_note||manifest.reference_note||''}:null;
  return {
   status:manifest.status==='stopped'?'stopped':'finished',metric,direction,baseline,best,delta,
   winner:kept.length&&bestRow?{commit:shortCommit(bestRow.commit),description:String(bestRow.description||''),agent:String(bestRow.agent||'')}:null,
-  totals,heldOut,proxyNote:heldOut?.proxyNote||manifest.proxy_note||'',referenceNote:heldOut?.referenceNote||manifest.reference_note||''
+  totals,heldOut,proxyNote:heldOut?.proxyNote||proxyNote,referenceNote:heldOut?.referenceNote||manifest.reference_note||''
  };
 }

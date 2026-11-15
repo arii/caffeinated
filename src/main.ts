@@ -25,14 +25,15 @@ import {buildReplayPoses,type PoseFrame} from './engine/replayMotion';
 import {buildReplayPresence,replayPeople,replayStation} from './engine/replayPresence';
 import {discussionAt} from './engine/discussion';
 import {agentNow,nowCardHtml,eventWhy} from './engine/nowCard';
-import {experimentDetail,sourceCards,studyCards,dialogueThrough,type InspectEvent} from './engine/inspect';
+import {experimentDetail,sourceCards,studyCards,dialogueThrough,pValue,type InspectEvent} from './engine/inspect';
 import {experimentHtml,sourceCardsHtml,studyCardsHtml,dialogueHtml,type ViewContext} from './engine/inspectView';
 import {bubbleContent,bubbleHtml,pickNear,staffStripLabel,tileBestLabel,tileGateCounts,tileGateLabel,tileMetrics} from './engine/glance';
 import {hasCreditError,provenanceBadge} from './engine/provenanceBadge';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './engine/proxyNote';
 import {finaleReached,finaleSummary,improvementText} from './engine/finale';
 import {podium} from './engine/podium';
-import {compactMarks,lanes,turns} from './engine/orchestration';
+import {podiumMetricHtml} from './engine/podiumView';
+import {compactMarks,lanes,roundX,turns} from './engine/orchestration';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const rawEsc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const esc=(v:unknown)=>rawEsc(aliasText(String(v??'')));
@@ -110,25 +111,25 @@ function renderStatusStrip(){
  }).join('')+(scientistCount?`<span class="status-scroll-hint">${scientistCount} scientist${scientistCount===1?'':'s'} ›</span>`:'');
  strip.hidden=!roster.length;
  const turnLabels={active:'Active turn',waiting:'Waiting',done:'Done this round',idle:'Idle'},stateByAgent=turns(recording,tick);
- strip.querySelectorAll<HTMLElement>('.status-tile[data-agent]:not(.status-role)').forEach(tile=>{const state=stateByAgent[tile.dataset.agent||''];if(state)tile.insertAdjacentHTML('beforeend',`<small class="turn-badge" data-turn="${state}">${turnLabels[state]}</small>`);});
+ strip.querySelectorAll<HTMLElement>('.status-tile[data-agent]:not(.status-role)').forEach(tile=>{const state=stateByAgent[tile.dataset.agent||''];if(state&&state!=='idle')tile.insertAdjacentHTML('beforeend',`<small class="turn-badge" data-turn="${state}">${turnLabels[state]}</small>`);});
  alignStatusStrip();
 }
 function renderOrchestration(){
  const host=$('orchestration-content');if(!recording){host.innerHTML='<p>No run loaded.</p>';return;}
- const view=lanes(recording,tick),width=860,rowHeight=40,top=30,height=top+view.lanes.length*rowHeight+12,left=158,span=width-left-24,total=Math.max(1,recording.manifest.totalTicks),x=(t:number)=>left+Math.max(0,Math.min(total,t))/total*span;
- const colors:Record<string,string>={idea:'#e4c986',critic:'#91b4d4',veto:'#e77872',scout:'#82c5ae',memory:'#b39bdb',boredom:'#dd9b59',evaluation:'#a8b6b7',keep:'#e3cf84',gate:'#e77872'};
+ const view=lanes(recording,tick),width=860,rowHeight=40,top=30,height=top+view.lanes.length*rowHeight+12,left=158,span=width-left-24,cellWidth=span/Math.max(1,view.rounds.length),x=(t:number,r?:number)=>left+roundX(view.roundSpans,t,r)*cellWidth;
+ const colors:Record<string,string>={idea:'#e4c986',critic:'#91b4d4',veto:'#e77872',scout:'#82c5ae',memory:'#b39bdb',boredom:'#dd9b59',evaluation:'#a8b6b7',keep:'#77bb69',gate:'#e77872'};
  const lines=view.lanes.map((lane,i)=>{
-  const y=top+i*rowHeight,cellWidth=span/Math.max(1,view.rounds.length),marks=compactMarks(lane.marks).map(group=>{
-   const roundIndex=Math.max(0,view.rounds.indexOf(group.round)),cellLeft=left+roundIndex*cellWidth+4,cellRight=left+(roundIndex+1)*cellWidth-4,positions=group.visible.map(mark=>x(mark.tick));
+  const y=top+i*rowHeight,marks=compactMarks(lane.marks).map(group=>{
+   const roundIndex=Math.max(0,view.rounds.indexOf(group.round)),cellLeft=left+roundIndex*cellWidth+4,cellRight=left+(roundIndex+1)*cellWidth-4,positions=group.visible.map(mark=>x(mark.tick,mark.round));
    for(let j=1;j<positions.length;j++)positions[j]=Math.max(positions[j],positions[j-1]+8.5);
    if(positions.length){const rightOverflow=positions.at(-1)!-cellRight;if(rightOverflow>0)for(let j=0;j<positions.length;j++)positions[j]-=rightOverflow;const leftOverflow=cellLeft-positions[0];if(leftOverflow>0)for(let j=0;j<positions.length;j++)positions[j]+=leftOverflow;}
-   const visible=group.visible.map((mark,index)=>`<g class="orch-mark" role="button" tabindex="0" data-orch-tick="${mark.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${esc(mark.label)} by ${esc(lane.name)} at tick ${mark.tick}"><title>${esc(mark.label)}${mark.why?`: ${esc(mark.why)}`:''} · tick ${mark.tick}</title><circle cx="${positions[index]}" cy="${y}" r="${mark.kind==='veto'?5:4}" fill="${colors[mark.kind]}" class="orch-dot ${mark.kind}"/></g>`).join(''),firstHidden=group.hidden[0],overflowX=firstHidden?Math.max(cellLeft+10,Math.min(cellRight-10,x(firstHidden.tick))):0,overflow=firstHidden?`<g class="orch-overflow" role="button" tabindex="0" data-orch-tick="${firstHidden.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${group.hidden.length} more events in round ${group.round}; jump to ${esc(firstHidden.label)} at tick ${firstHidden.tick}"><title>${group.hidden.length} more events in round ${group.round}</title><rect x="${overflowX-10}" y="${y+14}" width="20" height="14" rx="7"/><text x="${overflowX}" y="${y+24}" text-anchor="middle">+${group.hidden.length}</text></g>`:'';
+   const visible=group.visible.map((mark,index)=>`<g class="orch-mark" role="button" tabindex="0" data-orch-tick="${mark.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${esc(mark.label)} by ${esc(lane.name)} at tick ${mark.tick}"><title>${esc(mark.label)}${mark.why?`: ${esc(mark.why)}`:''} · tick ${mark.tick}</title><circle cx="${positions[index]}" cy="${y}" r="${mark.kind==='veto'?5:4}" fill="${colors[mark.kind]}" class="orch-dot ${mark.kind}"/></g>`).join(''),firstHidden=group.hidden[0],overflowX=firstHidden?Math.max(cellLeft+10,Math.min(cellRight-10,x(firstHidden.tick,group.round))):0,overflow=firstHidden?`<g class="orch-overflow" role="button" tabindex="0" data-orch-tick="${firstHidden.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${group.hidden.length} more events in round ${group.round}; jump to ${esc(firstHidden.label)} at tick ${firstHidden.tick}"><title>${group.hidden.length} more events in round ${group.round}</title><rect x="${overflowX-10}" y="${y+14}" width="20" height="14" rx="7"/><text x="${overflowX}" y="${y+24}" text-anchor="middle">+${group.hidden.length}</text></g>`:'';
    return `${visible}${overflow}`;
   }).join('');
   return `<text x="8" y="${y+4}" class="orch-name">${esc(lane.name)}</text><line x1="${left}" y1="${y}" x2="${width-12}" y2="${y}" class="orch-lane"/>${marks}`;
  }).join('');
- const closes=view.roundCloses.filter(c=>c.tick>0).map(c=>`<line x1="${x(c.tick)}" y1="${top-20}" x2="${x(c.tick)}" y2="${height}" class="orch-close"><title>Round ${c.round} closed</title></line>`).join('');
- const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*span/Math.max(1,view.rounds.length)}" y="13" class="orch-round">Round ${r}</text>`).join('');
+ const closes=view.roundCloses.filter(c=>c.tick>0).map(c=>`<line x1="${x(c.tick,c.round)}" y1="${top-20}" x2="${x(c.tick,c.round)}" y2="${height}" class="orch-close"><title>Round ${c.round} closed</title></line>`).join('');
+ const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*cellWidth}" y="13" class="orch-round">Round ${r}</text>`).join('');
  const playhead=`<line x1="${x(tick)}" y1="${top-20}" x2="${x(tick)}" y2="${height}" class="orch-playhead"/>`;
  const legend=[['idea','Idea'],['scout','Search'],['memory','Memory'],['boredom','Boredom shift'],['critic','Review'],['veto','Veto'],['keep','Kept']].map(([kind,label])=>`<span><i style="--mark:${colors[kind]}"></i>${label}</span>`).join('');
  host.innerHTML=view.lanes.length?`<div class="orchestration-scroll"><svg class="orchestration-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Orchestration lanes through tick ${Math.floor(tick)}">${rounds}${closes}${lines}${playhead}</svg></div><div class="orchestration-legend">${legend}</div><p class="orchestration-hint">Select a mark to jump to that event and focus its scientist.</p>`:'<p>No orchestration events by this moment.</p>';
@@ -139,11 +140,11 @@ function renderResultsPanel(){
  if(isIgnobelRecording(recording.manifest,recording)){
   const summary=researchResults(recording,tick),board=podium(recording.entities?.studies,recording.events,tick),noAwards=summary.awards.length?`<p class="podium-award-count">${esc(resultCopy.awardCount.replace('{N}',String(summary.awards.length)))}</p>`:isPreCommitteeIgnobel(recording.manifest,recording)?`<p class="podium-empty">${esc(resultCopy.noAwards)}${hasCreditError(recording.manifest,recording)?esc(resultCopy.creditErrorSuffix):''}</p>`:`<p class="podium-empty">${esc(judgingCopy.committeePending)}</p>`;
   const counts=resultCopy.countLine.replace('{N}',String(summary.registered)).replace('{M}',String(summary.confirmed)).replace('{K}',String(summary.underCurrentRules));
-  const entries=board.entries.map(item=>`<li>${item.rank?`<b>#${item.rank}</b> `:''}${esc(item.headline||item.studyId)}${item.unscored?' · Unscored':` · score ${esc(item.score)}`}${item.p!=null?` · p ${esc(item.p)}`:''}</li>`).join('');
+  const entries=board.entries.map(item=>`<li>${item.rank?`<b>#${item.rank}</b> `:''}${esc(item.headline||item.studyId)}${item.unscored?' · Unscored':` · score ${esc(item.score)}`}${item.rho!=null?` · ρ ${item.rho.toFixed(3)}`:''}${item.p!=null?` · p ${pValue(item.p)}`:''}</li>`).join('');
   $('results-title').textContent='IG NOBEL RESULTS';
   const entryBlock=board.status==='awaiting'&&entries?`<details class="unscored-studies"><summary>${board.confirmed} confirmed studies, unscored</summary><ul class="podium-list">${entries}</ul></details>`:entries?`<ul class="podium-list">${entries}</ul>`:'';
-  const metricNote=recording.manifest.metric?.description?`<p class="metric-description">${esc(recording.manifest.metric.description)}</p>`:'',preCommitteeNote=isPreCommitteeIgnobel(recording.manifest,recording)?`<p class="proxy-note">${esc(recordingProxyNote(recording.manifest,recording)||'')}</p>`:'';
-  $('results-content').innerHTML=`${badgeHtml}<h2>Ig Nobel podium</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${preCommitteeNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
+  const metricNote=podiumMetricHtml(recording,esc);
+  $('results-content').innerHTML=`${badgeHtml}<h2>Ig Nobel podium</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
   return;
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}

@@ -76,16 +76,21 @@ test('real results replace a current Ig Nobel proxy note for pre-committee recor
 test('empty recordings do not invent study, award, or proxy results',()=>{
  const r={manifest:{totalTicks:0},entities:{},events:[]},html=introHtml(config,researchTrail(r),esc,researchResults(r));
  assert.match(html,/No Ig Nobel study registrations appear in this recording\./);
- assert.match(html,/No prizes awarded yet — this run stopped before committee judging\./);
+ assert.doesNotMatch(html,/No prizes awarded yet — this run stopped before committee judging\./);
  assert.doesNotMatch(html,/Prizes awarded:/);
  assert.match(html,/No proxy note is present in this recording\./);
 });
 test('credit exhaustion is appended to the no-prizes line only for an explicit credit error',()=>{
- const ordinary={manifest:{id:'ordinary',totalTicks:0},entities:{},events:[]};
+ const ordinary={manifest:{id:'ordinary',metric:{name:'replicated_findings',description:'replicated and significant'},totalTicks:0},entities:{studies:[{id:'s1'}]},events:[]};
  const ordinaryHtml=introHtml(config,researchTrail(ordinary),esc,researchResults(ordinary),ordinary.manifest,ordinary);
  assert.match(ordinaryHtml,/No prizes awarded yet — this run stopped before committee judging\./);
  assert.doesNotMatch(ordinaryHtml,/Tinker credit ran out/);
- const stopped={manifest:{id:'stopped',status:'stopped',totalTicks:1},entities:{},events:[{tick:1,type:'run.stopped',payload:{text:'Tinker credit exhausted after a billing error'}}]};
+ const stopped={manifest:{id:'stopped',status:'stopped',totalTicks:1,metric:{name:'replicated_findings',description:'replicated and significant'}},entities:{studies:[{id:'study:1'}]},events:[{tick:1,type:'run.stopped',payload:{text:'Tinker credit exhausted after a billing error'}}]};
  const stoppedHtml=introHtml(config,researchTrail(stopped),esc,researchResults(stopped),stopped.manifest,stopped);
  assert.match(stoppedHtml,/No prizes awarded yet — this run stopped before committee judging\. \(Tinker credit ran out\)/);
+});
+test('BixBench results omit the Ig Nobel award fallback',()=>{
+ const run={manifest:{id:'bixbench-mini',totalTicks:0,metric:{name:'accuracy',direction:'maximize'}},entities:{},events:[]};
+ const html=introHtml(config,researchTrail(run),esc,researchResults(run),run.manifest,run);
+ assert.doesNotMatch(html,/No prizes awarded yet|Prizes awarded:/);
 });
