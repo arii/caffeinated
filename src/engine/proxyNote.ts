@@ -22,10 +22,9 @@ export function isPreCommitteeIgnobel(manifest:RecordingManifest|null|undefined,
 
 export function recordingProxyNote(manifest:RecordingManifest|null|undefined,recording:Pick<Recording,'entities'|'events'>|null|undefined):string|undefined{
  if(isIgnobelRecording(manifest,recording)){
+  if(isPreCommitteeIgnobel(manifest,recording))return PRE_COMMITTEE_NOTE;
   const metric=manifest?.metric?.description;
-  const explainer=isPreCommitteeIgnobel(manifest,recording)?PRE_COMMITTEE_NOTE:'';
-  if(metric)return explainer?`${metric} ${explainer}`:metric;
-  if(explainer)return explainer;
+  if(metric)return metric.replace(/\breplicated\s+and\s+significant\b/gi,'split-half consistent and significant').replace(/\breplicated\b/gi,'passed split-half consistency').replace(/\breplication\b/gi,'split-half consistency');
  }
  return manifest?.proxy_note;
 }

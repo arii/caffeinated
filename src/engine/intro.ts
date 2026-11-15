@@ -1,7 +1,7 @@
 import type {Recording} from './replay.ts';
 import {studyCards} from './inspect.ts';
 import {momentsBetween} from './moments.ts';
-import {provenanceBadge} from './provenanceBadge.ts';
+import {hasCreditError,provenanceBadge} from './provenanceBadge.ts';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './proxyNote.ts';
 import {currentRules,currentRuleThresholds} from './currentRules.ts';
 
@@ -13,7 +13,7 @@ export interface IntroConfig{
  replay:{title:string;subline:string;button:string;qualifier:string;resultsButton:string};
  sections:{about:string;event:string;tools:string;authors:string;boredom:string;trail:string;results:string};
  labels:{source:string;missingExa:string;recording:string;searches:string;sources:string;recalls:string;pastdev:string;localMemory:string;noCitations:string};
- results:{studyCount:string;passedCount:string;awardCount:string;awardFallback:string;proxyNote:string;noStudies:string;noAwards:string;noProxy:string;factualLine:string;noCommitteeSuffix:string;countLine:string;track3Line:string;memoryComparisonLine:string;memoryComparisonUrl:string};
+ results:{studyCount:string;passedCount:string;awardCount:string;awardFallback:string;creditErrorSuffix:string;proxyNote:string;noStudies:string;noAwards:string;noProxy:string;factualLine:string;noCommitteeSuffix:string;countLine:string;track3Line:string;memoryComparisonLine:string;memoryComparisonUrl:string;bixbenchLine:string};
 }
 type Row=Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v as Row[]:v&&typeof v==='object'?Object.values(v as Row) as Row[]:[];
@@ -56,13 +56,14 @@ export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,e
  const fill=(template:string,values:Record<string,string|number>)=>template.replace(/\{([^}]+)\}/g,(_,key:string)=>String(values[key]??''));
  const studySummary=results.studies?`<p>${esc(fill(c.results.countLine,{N:results.registered,M:results.confirmed,K:results.underCurrentRules}))}</p>`:`<p>${esc(c.results.noStudies)}</p>`;
  const factualLine=results.isIgnobel&&results.studies?`<p class="intro-result-line">${esc(fill(c.results.factualLine,{N:results.registered,K:results.underCurrentRules,committeeSuffix:results.preCommittee?c.results.noCommitteeSuffix:''}))}</p>`:'';
- const awards=results.awards.length?`<ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}</p>`;
+ const awardSection=results.awards.length?`<p>${esc(fill(c.results.awardCount,{N:results.awards.length}))}</p><ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}${manifest&&hasCreditError(manifest,recording)?esc(c.results.creditErrorSuffix):''}</p>`;
  const memoryComparison=`<p class="track3-note"><a href="${esc(c.results.memoryComparisonUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.results.memoryComparisonLine)}</a></p>`;
+ const bixbenchLine=`<p class="track3-note">${esc(c.results.bixbenchLine)}</p>`;
  return `<div class="intro-card">${badgeHtml}<h1>${esc(c.replay.title)}</h1><p class="intro-subline">${esc(c.replay.subline)}</p>${factualLine}<button id="intro-start" class="intro-start">${esc(c.replay.button)}</button><a id="intro-results-link" class="intro-results-button" href="#intro-real-results">${esc(c.replay.resultsButton)}</a><a id="intro-qualifier" class="intro-qualifier" href="#intro-real-results">${esc(c.replay.qualifier)}</a>
 <details id="intro-about" class="intro-about"><summary>${esc(c.sections.about)}</summary><div class="intro-sections"><details class="intro-section"><summary>${esc(c.sections.event)}</summary><p class="eyebrow">${esc(c.event.title)} · ${esc(c.event.dates)} · ${esc(c.event.host)}</p><p>${esc(c.event.summary)}</p></details>
 <details class="intro-section"><summary>${esc(c.sections.tools)}</summary><ul class="intro-tools">${toolItems}</ul></details>
 <details class="intro-section"><summary>${esc(c.sections.authors)}</summary><p class="${c.authors.placeholder?'placeholder':''}">${esc(c.authors.names.join(', '))}</p></details>
 <details class="intro-section"><summary>${esc(c.sections.boredom)}</summary><h2>${esc(c.boredom.title)}</h2>${c.boredom.paragraphs.map(p=>`<p>${esc(p)}</p>`).join('')}<p class="muted">${esc(c.boredom.source)}</p></details>
 <details class="intro-section intro-trail"><summary>${esc(c.sections.trail)}</summary><p>${esc(c.labels.recording)}: ${trail.exaSearches} ${esc(c.labels.searches)}, ${trail.sources} ${esc(c.labels.sources)}, ${trail.memoryRecalls} ${esc(c.labels.recalls)} ${esc(trail.pastdev?c.labels.pastdev:c.labels.localMemory)}.</p>${cites?`<ul class="intro-cites">${cites}</ul>`:`<p class="muted">${esc(c.labels.noCitations)}</p>`}</details></div></details>
-<details id="intro-real-results" class="intro-real-results" hidden><summary>${esc(c.sections.results)}</summary>${studySummary}<p><strong>${results.awards.length}</strong> ${esc(c.results.awardCount)}</p>${awards}<p class="track3-note">${esc(c.results.track3Line)}</p>${memoryComparison}${results.proxyNote?`<p><b>${esc(c.results.proxyNote)}:</b> ${esc(results.proxyNote)}</p>`:`<p class="muted">${esc(c.results.noProxy)}</p>`}</details></div>`;
+<details id="intro-real-results" class="intro-real-results" hidden><summary>${esc(c.sections.results)}</summary>${studySummary}${awardSection}<p class="track3-note">${esc(c.results.track3Line)}</p>${memoryComparison}${bixbenchLine}${results.proxyNote?`<p><b>${esc(c.results.proxyNote)}:</b> ${esc(results.proxyNote)}</p>`:`<p class="muted">${esc(c.results.noProxy)}</p>`}</details></div>`;
 }

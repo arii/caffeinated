@@ -59,7 +59,9 @@ test('real results report recorded studies, passed findings, award entries, and 
  assert.deepEqual(results,{studies:1,registered:1,confirmed:1,underCurrentRules:0,passed:1,awards:['Ig Nobel · A playful award'],proxyNote:'Synthetic benchmark, not a clinical trial.',isIgnobel:true,preCommittee:false});
  assert.match(html,/Real result so far: 0 of 1 preregistered tests held up/);
  assert.match(html,/<p>1 registered · 1 confirmed \(0 under current rules\)<\/p>/);
- assert.match(html,/<strong>1<\/strong> award\.issued entries/);
+ assert.match(html,/<p>Prizes awarded: 1<\/p>/);
+ assert.doesNotMatch(html,/award\.issued/);
+ assert.match(html,/<p class="track3-note">BixBench held-out: baseline 1\/7 → swarm best 6\/7 \(one run; 95% CI 0\.49–0\.97\)<\/p>/);
  assert.match(html,/Synthetic benchmark, not a clinical trial\./);
  assert.match(html,/Track 3 check: a single agent scored higher on held-out than the boredom swarm, but the ordering depends on a grader fix made after the winners were known; exploratory\./);
  assert.doesNotMatch(html,/beat the boredom swarm|3\/3 seeds/);
@@ -74,6 +76,16 @@ test('real results replace a current Ig Nobel proxy note for pre-committee recor
 test('empty recordings do not invent study, award, or proxy results',()=>{
  const r={manifest:{totalTicks:0},entities:{},events:[]},html=introHtml(config,researchTrail(r),esc,researchResults(r));
  assert.match(html,/No Ig Nobel study registrations appear in this recording\./);
- assert.match(html,/No award\.issued entries appear in this recording\./);
+ assert.match(html,/No prizes awarded yet — this run stopped before committee judging\./);
+ assert.doesNotMatch(html,/Prizes awarded:/);
  assert.match(html,/No proxy note is present in this recording\./);
+});
+test('credit exhaustion is appended to the no-prizes line only for an explicit credit error',()=>{
+ const ordinary={manifest:{id:'ordinary',totalTicks:0},entities:{},events:[]};
+ const ordinaryHtml=introHtml(config,researchTrail(ordinary),esc,researchResults(ordinary),ordinary.manifest,ordinary);
+ assert.match(ordinaryHtml,/No prizes awarded yet — this run stopped before committee judging\./);
+ assert.doesNotMatch(ordinaryHtml,/Tinker credit ran out/);
+ const stopped={manifest:{id:'stopped',status:'stopped',totalTicks:1},entities:{},events:[{tick:1,type:'run.stopped',payload:{text:'Tinker credit exhausted after a billing error'}}]};
+ const stoppedHtml=introHtml(config,researchTrail(stopped),esc,researchResults(stopped),stopped.manifest,stopped);
+ assert.match(stoppedHtml,/No prizes awarded yet — this run stopped before committee judging\. \(Tinker credit ran out\)/);
 });

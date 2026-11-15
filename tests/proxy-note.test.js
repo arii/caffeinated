@@ -3,21 +3,23 @@ import assert from 'node:assert/strict';
 import {PRE_COMMITTEE_NOTE,isPreCommitteeIgnobel,recordingProxyNote} from '../src/engine/proxyNote.ts';
 
 const metricNote='1 - (replicated and significant): 0 = the study replicated, 1 = it did not';
+const splitHalfMetricNote='1 - (split-half consistent and significant): 0 = the study passed split-half consistency, 1 = it did not';
 const manifest={title:'Ig Nobel Prize hunt · out-ignobel',proxy_note:'Current task caveat.',metric:{name:'loss',direction:'minimize',description:metricNote}};
 const oldRun={entities:{studies:[{id:'study:1',committee:null,result:{committee:null},graded:{committee:null}}]},events:[{type:'study.result'}]};
 
-test('pre-committee Ig Nobel recordings explain their binary gate loss',()=>{
+test('pre-committee Ig Nobel playback chips use only the run explainer',()=>{
  assert.equal(isPreCommitteeIgnobel(manifest,oldRun),true);
- assert.equal(recordingProxyNote(manifest,oldRun),`${metricNote} ${PRE_COMMITTEE_NOTE}`);
+ assert.equal(recordingProxyNote(manifest,oldRun),PRE_COMMITTEE_NOTE);
 });
 
-test('committee data and award events use the recording metric description',()=>{
+test('committee Ig Nobel playback chips reword replication as split-half consistency',()=>{
  for(const study of [
   {committee:{available:false}},
   {result:{committee:{available:true}}},
   {graded:{committee:{score:.5}}}
- ])assert.equal(recordingProxyNote(manifest,{entities:{studies:[study]},events:[]}),metricNote);
- assert.equal(recordingProxyNote(manifest,{entities:{studies:[]},events:[{type:'award.issued'}]}),metricNote);
+ ])assert.equal(recordingProxyNote(manifest,{entities:{studies:[study]},events:[]}),splitHalfMetricNote);
+ assert.equal(recordingProxyNote(manifest,{entities:{studies:[]},events:[{type:'award.issued'}]}),splitHalfMetricNote);
+ assert.doesNotMatch(recordingProxyNote(manifest,{entities:{studies:[{committee:{available:true}}]},events:[]}),/replicat/i);
 });
 
 test('non-Ig-Nobel recordings keep their manifest proxy note unchanged',()=>{

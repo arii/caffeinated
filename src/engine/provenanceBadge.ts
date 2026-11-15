@@ -9,7 +9,7 @@ function shortModel(value:string){
 }
 
 const creditError=/\b(?:402|credit|billing|payment|quota)\b/i;
-function hasCreditError(manifest:RecordingManifest,recording?:Pick<Recording,'events'>|null){
+export function hasCreditError(manifest:RecordingManifest,recording?:Pick<Recording,'events'>|null){
  const mentions=(value:unknown)=>typeof value==='string'&&creditError.test(value.replace(/https?:\/\/\S+/gi,' '));
  if(Array.isArray(manifest.publish_errors)&&manifest.publish_errors.some(issue=>mentions(issue.kind)||mentions(issue.message)))return true;
  return (recording?.events||[]).some(event=>
