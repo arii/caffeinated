@@ -176,7 +176,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
 
     if arm == "A":
         roles = {agent: "exploit" for agent in agents}
-        scout = divergent_worker()
+        scout = agents[0]
         roles[scout] = "divergent"
         scouts = [scout] if exa_enabled else []
         rationale = (
@@ -309,15 +309,16 @@ def format_cells(cells):
 
 
 def common_values(agent, round_num, role, status, agent_b, best_commit, best_val, profile):
+    shadow = os.environ.get("BOREDOM", "").casefold() == "off"
     return {
         "agent": agent,
         "best_commit": best_commit,
         "best_loss": f"{best_val:.6f}",
         "noise": str(profile.get("eps", 0.0036)),
         "round": round_num,
-        "swarm_B": f"{status['swarm_B']:.3f}",
+        "swarm_B": "disabled" if shadow else f"{status['swarm_B']:.3f}",
         "regime": status["regime"],
-        "agent_B": f"{agent_b:.3f}",
+        "agent_B": "disabled" if shadow else f"{agent_b:.3f}",
         "role": role,
         "task_brief": (TASK or {}).get("brief", ""),
         "editable": (TASK or {}).get("editable", ""),
@@ -398,10 +399,14 @@ def append_assignment(
         "provenance": provenance or {},
     }
     append_jsonl(Path(out_dir) / "assignments.jsonl", record)
+    recalled_record = dict(record)
+    if arm == "A":
+        for key in ("swarm_B", "per_agent_B", "per_agent_boredom"):
+            recalled_record.pop(key, None)
     write_memory_item(
         "assignment",
         f"assignment-{arm}-{round_num}",
-        json.dumps(record, sort_keys=True),
+        json.dumps(recalled_record, sort_keys=True),
         "conductor",
         {
             "arm": arm,
@@ -492,7 +497,7 @@ def run_scouts(
     replay,
 ):
     leads = {}
-    cells = suggest_cells(profile, events)
+    cells = [] if arm == "A" else suggest_cells(profile, events)
     for agent in scouts:
         recalled = recall_memory(
             "lessons and results that identify exhausted or already tried directions",
@@ -1675,6 +1680,8 @@ def _orchestrate(args, publish_state):
     )
     _write_run_artifact(out_dir, {
         "run_id": run_id, "task": args.task, "arm": args.arm, "status": "running",
+        "seed": args.seed, "rounds": args.rounds, "workers": len(AGENTS),
+        "llm": args.llm, "exa": "on" if exa_enabled else "off",
         "profile_path": "boredom_profile.json", "profile_sha256": profile["_hash"],
         **provenance,
     })
@@ -1694,7 +1701,12 @@ def _orchestrate(args, publish_state):
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
+        seed=args.seed,
     )
+    provenance.update({"seed": args.seed, "model": llm_client.model})
+    run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
+    run_artifact.update({"model": llm_client.model, "memory_backend": memory_backend})
+    _write_run_artifact(out_dir, run_artifact)
     if not critic_path.exists():
         critic_path.write_text(
             "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\n",
@@ -1766,7 +1778,7 @@ def _orchestrate(args, publish_state):
                 _write_run_artifact(out_dir, run_artifact)
                 break
             events_for_scouts = list(events)
-            cell_suggestions = suggest_cells(profile, events_for_scouts)
+            cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
             append_assignment(
@@ -2132,6 +2144,7 @@ def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", choices=("A", "B", "C", "D"), default="B")
     parser.add_argument("--rounds", type=int, default=10)
+    parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
     parser.add_argument(
