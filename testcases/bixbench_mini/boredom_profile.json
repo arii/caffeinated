@@ -1,13 +1,19 @@
 {
   "domain": "testcase-bixbench-mini",
-  "version": 2,
+  "version": 3,
   "direction": "min",
   "objective": "loss",
   "eps": 0.03,
   "eps_note": "one question is 1/17 = 0.0588 of the score; eps is half of that",
   "k": 5,
   "knn": 3,
-  "patience": 5,
+  "patience": 3,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
   "levels": [
     "mechanism",
     "method"

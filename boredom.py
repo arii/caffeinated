@@ -450,6 +450,8 @@ def status_record(rows, events, metrics, profile, disabled):
         "stagnation": metrics["stagnation"],
         "overload": metrics["overload"],
         "frontier_stall": metrics["frontier_stall"],
+        "frustration": metrics["frustration"],
+        "stuck_cells": metrics["stuck_cells"],
         "best_loss": metrics["best"],
         "best_commit": best_commit,
         "weights": list(profile["weights"]),

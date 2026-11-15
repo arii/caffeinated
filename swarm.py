@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parent
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
 BOREDOM_COMPONENTS = (
     "B", "regime", "novelty", "stagnation", "overload",
-    "fail_rate", "trivial_rate", "diversity", "frontier_stall",
+    "fail_rate", "trivial_rate", "diversity", "frontier_stall", "frustration",
 )
 TESTCASES = ROOT / "testcases"
 TARGET_FILE = None
@@ -242,6 +242,8 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         "roles": roles,
         "scouts": scouts,
         "rationale": rationale,
+        "frustration": swarm_status["frustration"],
+        "stuck_cells": swarm_status["stuck_cells"],
         "ledger_sha256": swarm_status["ledger_sha256"],
         "profile_sha256": swarm_status["profile_sha256"],
     }
@@ -283,6 +285,8 @@ def append_status(out_dir, profile, events, arm):
         "best_loss": status["best"],
         "best_seq": status["best_seq"],
         "frontier_stall": status["frontier_stall"],
+        "frustration": status["frustration"],
+        "stuck_cells": status["stuck_cells"],
         "disabled": disabled,
         "ledger_sha256": status["ledger_sha256"],
         "profile_sha256": status["profile_sha256"],

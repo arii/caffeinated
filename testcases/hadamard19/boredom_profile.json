@@ -1,13 +1,19 @@
 {
   "domain": "testcase-hadamard19",
-  "version": 2,
+  "version": 3,
   "direction": "min",
   "objective": "loss",
   "eps": 0.005,
   "eps_note": "evaluator is exact and deterministic; 0.005 in log10|det| is a ~1.2% determinant gain",
   "k": 5,
   "knn": 3,
-  "patience": 5,
+  "patience": 3,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
   "levels": [
     "mechanism",
     "method"
