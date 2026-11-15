@@ -153,3 +153,14 @@ test('Ig Nobel candidates measured on another scale stay off the replication-cou
  assert.match(svg,/replicated · 0\.03/);
  assert.doesNotMatch(svg,/>0\.4</);
 });
+test('chart points with an experiment id are keyboard-reachable inspector links',()=>{
+ const results=[{id:'experiment:1',tick:1,value:1,status:'keep',agent:'B1',description:'a'},{id:'experiment:2',tick:2,value:null,status:'crash',agent:'C1',description:'b'},{tick:3,value:2,status:'discard',agent:'P1',description:'c'}];
+ const svg=scoreChartSvg(scoreSeries(results,[{tick:1,snapshot:{value:1}}],3),{name:'loss',direction:'minimize'},3,esc);
+ assert.equal((svg.match(/data-experiment="experiment:\d"/g)||[]).length,2);
+ assert.equal((svg.match(/tabindex="0"/g)||[]).length,2);
+ assert.match(svg,/<g class="pt crashed" data-experiment="experiment:2" tabindex="0" role="button"/);
+});
+test('Enter/Space opens any non-button inspector link, including the activity caption',()=>{
+ assert.match(source,/target\.matches\?\.\('\[data-experiment\]:not\(button\):not\(a\)'\)/);
+ assert.match(source,/caption\.tabIndex=0;caption\.setAttribute\('role','button'\)/);
+});
