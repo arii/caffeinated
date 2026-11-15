@@ -1336,6 +1336,17 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 "best_metric": confirmed and confirmed["metric_value"],
             },
         )
+    if run_artifact.get("continuous"):
+        # Job IDs are internal bookkeeping. The viewer has one chronological session.
+        for event in run.raw:
+            event["payload"]["job"] = event["round"]
+            event["round"] = 1
+            event["key"] = (1, 0, event["ts"] or "", *event["key"][3:])
+        for entities in run.entities.values():
+            for entity in entities.values():
+                if "round" in entity:
+                    entity["job"] = entity["round"]
+                    entity["round"] = 1
     baseline = next(
         (number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None
     )
@@ -1389,6 +1400,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "status": final_status if final else live_status,
         "live": not final,
         "converged": bool(run_artifact.get("converged", False)),
+        "continuous": bool(run_artifact.get("continuous", False)),
     }
     labels = {a["agent_id"]: a["label"] for a in run.agents.values()}
     for raw in run.raw:
@@ -1840,6 +1852,7 @@ def build(run, extra):
         "status": extra.get("status", "finished"),
         "live": extra.get("live", False),
         "converged": bool(extra.get("converged", False)),
+        "continuous": bool(extra.get("continuous", False)),
         "arm": extra["arm"],
         "metric": extra["metric"],
         "boredom": extra["boredom"],
