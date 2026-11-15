@@ -212,7 +212,8 @@ def fake_edit_pairs(target, candidate_source):
     """The edits a canned fake edit makes to candidate_source, or None if it does not apply.
 
     A target is {"old", "new"}, {"edits": [{"old", "new"}, ...]} or {"replace_with": text
-    or JSON object} (the whole file); every old text must occur exactly once.
+    or JSON object} (the whole file); every old text must occur exactly once, and an
+    insertion whose new text is already present counts as applied.
     """
     if "replace_with" in target:
         new = target["replace_with"]
@@ -230,6 +231,8 @@ def fake_edit_pairs(target, candidate_source):
         if not isinstance(old, str) or not isinstance(new, str):
             raise ValueError("fake task edits must contain string old/new values")
         if not old or old == new or candidate_source.count(old) != 1:
+            return None
+        if old in new and new in candidate_source:
             return None
         edits.append({"old": old, "new": new})
     return edits

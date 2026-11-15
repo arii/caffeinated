@@ -56,6 +56,8 @@ class FakeLLMTests(unittest.TestCase):
         both = {"edits": [{"old": "A = 1", "new": "A = 3"}, {"old": "B = 2", "new": "B = 4"}]}
         self.assertEqual(len(llm.fake_edit_pairs(both, source)), 2)
         self.assertIsNone(llm.fake_edit_pairs({"old": "C = 1", "new": "C = 2"}, source))
+        insert = {"old": "B = 2\n", "new": "B = 2\nC = 3\n"}
+        self.assertIsNone(llm.fake_edit_pairs(insert, source.replace("B = 2\n", insert["new"])))
         missing = {"edits": [both["edits"][0], {"old": "C = 1", "new": "C = 2"}]}
         self.assertIsNone(llm.fake_edit_pairs(missing, source))
         whole = {"replace_with": {"x": 1}}

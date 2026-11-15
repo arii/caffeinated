@@ -96,9 +96,11 @@ class EvaluatorTests(unittest.TestCase):
                 eps = meter.load_profile(task_dir / "boredom_profile.json")["eps"]
                 source = (task_dir / config["editable"]).read_text(encoding="utf-8")
                 previous = sandbox.evaluate_task(task_dir, source)["loss"]
-                for edit in config["fake_edits"]:
+                for index, edit in enumerate(config["fake_edits"]):
                     for pair in llm.fake_edit_pairs(edit, source):
                         source = source.replace(pair["old"], pair["new"], 1)
+                    applied = config["fake_edits"][: index + 1]
+                    self.assertFalse(any(llm.fake_edit_pairs(done, source) for done in applied))
                     result = sandbox.evaluate_task(task_dir, source)
                     self.assertEqual(result["status"], "ok", edit["idea"])
                     self.assertLess(result["loss"], previous - eps, edit["idea"])
