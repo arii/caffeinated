@@ -39,7 +39,8 @@ class LLMResult(BaseModel):
 
 usage = {"tokens": 0}
 _prompt_log: Path | None = None
-_client = None
+_clients = None
+_turn = 0
 
 
 def set_prompt_log(path: str | Path | None) -> None:
@@ -91,15 +92,14 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
         return LLMResult(**cached, cached=True)
 
-    client = _openai()
     t0 = time.monotonic()
-    resp = client.chat.completions.create(
+    resp = _openai_call(lambda client: client.chat.completions.create(
         model=model,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         response_format={"type": "json_object"},
         max_completion_tokens=max_tokens,
         seed=seed,
-    )
+    ))
     latency_ms = int((time.monotonic() - t0) * 1000)
     text = resp.choices[0].message.content or "{}"
     try:
@@ -143,7 +143,7 @@ def embed(texts: list[str]) -> np.ndarray:
 def _embed_remote(texts: list[str]) -> list:
     if EMBED_BACKEND == "local":
         return list(_local_embedder().embed(texts))
-    resp = _openai().embeddings.create(model=EMBED_MODEL, input=texts)
+    resp = _openai_call(lambda client: client.embeddings.create(model=EMBED_MODEL, input=texts))
     _charge(resp.usage.total_tokens if resp.usage else 0)
     return [item.embedding for item in resp.data]
 
@@ -176,12 +176,32 @@ def cosine(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (na * nb))
 
 
-def _openai():
-    global _client
-    if _client is None:
-        from openai import OpenAI
-        _client = OpenAI()  # reads OPENAI_API_KEY (and OPENAI_BASE_URL) from env
-    return _client
+def _openai_call(fn):
+    """Run fn(client), taking turns across the comma-separated keys in OPENAI_API_KEY.
+
+    A key that is rejected or out of credit (401/402/403, or 429 insufficient_quota) is dropped
+    for the rest of the process and the call is retried with the next one.
+    """
+    import openai
+    global _clients, _turn
+    if _clients is None:
+        keys = [k.strip() for k in os.environ.get("OPENAI_API_KEY", "").split(",") if k.strip()]
+        if not keys:
+            raise RuntimeError("set OPENAI_API_KEY (comma-separated for several keys), or run with MOCK=1")
+        _clients = [openai.OpenAI(api_key=k) for k in keys]  # base URL from OPENAI_BASE_URL
+    while _clients:
+        i = _turn % len(_clients)
+        _turn += 1
+        try:
+            return fn(_clients[i])
+        except openai.APIStatusError as e:
+            body = e.body if isinstance(e.body, dict) else {}
+            quota = e.status_code == 429 and "insufficient_quota" in json.dumps(body)
+            if e.status_code not in (401, 402, 403) and not quota:
+                raise
+            _clients.pop(i)
+            _turn -= 1  # the next key slides into slot i
+    raise RuntimeError("every OPENAI_API_KEY was rejected or is out of credit")
 
 
 # ----------------------------------------------------------------- mock data

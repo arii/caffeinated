@@ -64,7 +64,26 @@ def test_local_embed_backend_needs_no_key(monkeypatch, tmp_path):
     monkeypatch.setattr(llm, "EMBED_BACKEND", "local")
     monkeypatch.setattr(llm, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(llm, "_local_model", FakeEmbedder())
-    monkeypatch.setattr(llm, "_openai", lambda: (_ for _ in ()).throw(AssertionError("called OpenAI")))
+    monkeypatch.setattr(llm, "_openai_call", lambda fn: (_ for _ in ()).throw(AssertionError("called OpenAI")))
     v = llm.embed(["ab", "abcd"])
     assert v.shape == (2, 2) and abs(float((v[0] ** 2).sum()) - 1) < 1e-9
     assert (llm.embed(["ab"]) == v[:1]).all()  # second call comes from the cache
+
+
+def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):
+    import httpx
+    import openai
+    import llm
+
+    monkeypatch.setenv("OPENAI_API_KEY", "k1, k2,k3")
+    monkeypatch.setattr(llm, "_clients", None)
+    monkeypatch.setattr(llm, "_turn", 0)
+
+    def call(client):
+        if client.api_key == "k2":
+            req = httpx.Request("POST", "http://x")
+            raise openai.APIStatusError("no credit", response=httpx.Response(402, request=req), body=None)
+        return client.api_key
+
+    assert [llm._openai_call(call) for _ in range(4)] == ["k1", "k3", "k1", "k3"]
+    assert [c.api_key for c in llm._clients] == ["k1", "k3"]
