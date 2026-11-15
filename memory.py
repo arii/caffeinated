@@ -577,7 +577,7 @@ def write(
         scope = arm_run_scope(
             arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
         )
-        if spawned_worker(agent or author):
+        if scope and spawned_worker(agent or author):
             scope = {**(scope or {}), "agent": agent or author}
         if scope:
             rollbacks = scope.pop("rollbacks", [])
@@ -1151,7 +1151,7 @@ def _recall(
         )
     else:
         scope = arm_run_scope(arm, run_id)
-        if spawned_worker(caller_agent):
+        if scope and spawned_worker(caller_agent):
             scope = {**(scope or {}), "agent": caller_agent}
         api_key = api_key_for_arm(arm)
         if not api_key:

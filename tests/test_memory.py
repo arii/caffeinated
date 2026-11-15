@@ -723,6 +723,41 @@ class MemoryCliTests(unittest.TestCase):
         self.assertEqual(spawned_ids, {"spawned-note"})
         self.assertEqual(team_ids, {"team-note", "spawned-note"})
 
+    def test_unarmed_spawned_worker_writes_and_recalls_without_native_scope(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            env = {
+                "AUTORESEARCH_INITIAL_WORKERS": "4",
+                "AUTORESEARCH_RUN_ID": "fresh-run",
+                "PAST_API_KEY": TEST_API_KEY,
+                "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            }
+            with patch.dict(os.environ, env):
+                os.environ.pop("AUTORESEARCH_ARM", None)
+                memory.write(
+                    "claim",
+                    "c1",
+                    "zebra claim",
+                    "worker-5",
+                    {},
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    agent="worker-5",
+                )
+                memory.recall(
+                    "zebra",
+                    "autoresearch",
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    caller_agent="worker-5",
+                )
+        paths = [r["path"] for r in server.requests]
+        self.assertFalse(any("/identities/" in p or "/audiences/" in p for p in paths))
+
     def test_spawned_pastdev_mirror_fallback_excludes_team_records(self):
         server = self.start_server()
         with tempfile.TemporaryDirectory() as directory:
