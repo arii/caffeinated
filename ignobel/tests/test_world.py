@@ -24,7 +24,8 @@ def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=Non
 def test_full_arm_emits_every_event_type(tmp_path):
     path = _run(tmp_path, rounds=4)
     types = {e.type for e in events.read(path)}
-    assert types == events.EVENT_TYPES - {"spawn", "research"}, f"missing {events.EVENT_TYPES - types}"
+    family_only = {"spawn", "research", "experiment_request", "experiment_result"}
+    assert types == events.EVENT_TYPES - family_only, f"missing {events.EVENT_TYPES - types}"
 
 
 def test_same_seed_same_file(tmp_path):

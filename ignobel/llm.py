@@ -369,6 +369,13 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
         if not ctx.get("datasets"):
             first = {"tool": "load", "lead": "D1"} if ctx.get("leads") else {"tool": "datasets", "query": query}
             return {"steps": [first, paper], "why": "mock: a study needs real data"}
+        if ctx.get("can_ask_experiment") and n % 3 == 0:
+            return {"steps": [{"tool": "experiment", "question": f"Do {noun} respond to a manipulation nobody has recorded?",
+                               "protocol": f"Assign {noun} at random to two conditions and measure the response.",
+                               "materials": "a bench, a stopwatch and patience", "design": ("two_group", "corr")[n % 2],
+                               "measure": "response", "compare": "treated vs untreated" if n % 2 == 0 else "dose",
+                               "n": 60 + n % 40, "refuted_if": "the two conditions do not differ"}, paper],
+                    "why": "mock: no public dataset covers this"}
         steps = [paper]
         if ctx.get("sources"):
             steps.append({"tool": "read", "source": ctx["sources"][n % len(ctx["sources"])],
@@ -407,6 +414,19 @@ def _mock_requests(n: int, ctx: dict) -> list[dict]:
 
 def _mock_study_code(n: int, ctx: dict) -> str:
     variant = n % 10
+    if ctx.get("rehearsal"):
+        d = ctx["rehearsal"]
+        num = [c["name"] for c in d["columns"] if c["kind"] == "numeric"]
+        cat = [c for c in d["columns"] if c["kind"] == "categorical"]
+        if cat:
+            g = cat[0]
+            return ("from lab_runtime import rows, report\n"
+                    f"a = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][0]!r}}})]\n"
+                    f"b = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][1]!r}}})]\n"
+                    "report(a, b, direction='+', effect_size=0.5)\n")
+        return ("from lab_runtime import rows, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{num[0]!r}, {num[1]!r}]))\n"
+                "report_corr(x, y, direction='+', effect_size=0.5)\n")
     real = [d for d in ctx.get("datasets") or [] if len(d["numeric"]) >= 2]
     if real:
         d = real[n % len(real)]

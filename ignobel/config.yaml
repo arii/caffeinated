@@ -15,6 +15,10 @@ first_research_passes: 2     # research passes before a new daughter's first ide
 papers_per_search: 4
 dataset_leads: 3             # dataset candidates returned per search
 max_datasets: 2              # real datasets a daughter can hold
+max_experiments: 2           # experiments a daughter may ask for when no public dataset can answer her idea
+bench: simulated             # simulated = each request is rehearsed once on placeholder numbers drawn from the
+                             # daughter's own prediction (never evidence); none = requests are only listed.
+                             # Real measurements returned to <run>/lab_inbox/ (or bench_inbox) are always taken in.
 traceable_share: 0.5         # a study is supported only if, in each array it reported, more than this
                              # share of the values are cells of a dataset it loaded and read
 wander_prob: 0.15            # chance a working daughter bumps into a random colleague each round;

@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 import agents as agents_mod
+import bench
 import boredom
 import events
 import families as families_mod
@@ -198,7 +199,8 @@ class World:
             trace = lab.trace_values(out["stats"] if out["ok"] else None, [d for d in real if d[0] in out["read"]])
             cited = dict.fromkeys((idea.citations if idea else []) + re.findall(r"S\d+", abstract))
             evidence = {"evidence": {
-                "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")} for d in a.datasets],
+                "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256", "provenance")
+                              if k in d} for d in a.datasets],
                 "citations": [known[c] for c in cited if c in known],
                 "read": out["read"], "traceable": trace["share"], "trace": trace["arrays"],
                 "supported": bool(out["ok"] and verdict["replicated"] and out["read"]
@@ -228,10 +230,76 @@ class World:
                 done = self._do_step(a, step)
                 if done.get("tool") == "load" and "error" not in done:
                     a.meter["fresh"] = a.meter["progress"] = r  # new real data is progress
-                self.log.append(r, a.name, "research", done, tokens=tokens, latency_ms=latency)
+                if done.get("tool") == "experiment" and "error" not in done:
+                    self.log.append(r, a.name, "experiment_request", done["request"], tokens=tokens, latency_ms=latency)
+                else:
+                    self.log.append(r, a.name, "research", done, tokens=tokens, latency_ms=latency)
                 tokens = latency = 0
             # D ids stay fixed while one plan runs; used leads are dropped and the list trimmed only afterwards
             a.leads = [l for l in a.leads if not l.get("used")][-6:]
+        await self._bench(who, r)
+
+    async def _bench(self, who: list, r: int) -> None:
+        """Move on each lab's open experiment requests: take in real measurements somebody returned,
+        or rehearse the experiment once on the stand-in bench. Only returned measurements become data."""
+        inbox = Path(self.cfg.get("bench_inbox") or self.out / "lab_inbox")
+        rehearse = []
+        for a in who:
+            for exp in a.experiments:
+                if exp["status"] == "returned":
+                    continue
+                name = f"x{exp['id'].rsplit('-x', 1)[1]}"
+                rel = Path("data") / a.name / f"{name}.csv"
+                try:
+                    ds = bench.collect(exp, inbox, self.out / rel)
+                except (sources.ResearchError, OSError) as e:
+                    ds = None
+                    if exp.get("error") != str(e)[:300]:  # say once why a return was not accepted
+                        exp["error"] = str(e)[:300]
+                        self.log.append(r, a.name, "experiment_result",
+                                        {"request_id": exp["id"], "provenance": "returned", "error": exp["error"]})
+                if ds is not None:
+                    exp["status"] = "returned"
+                    a.datasets.append({"name": name, "file": str(rel), **ds})
+                    a.meter["fresh"] = a.meter["progress"] = r  # real measurements are progress
+                    self.log.append(r, a.name, "experiment_result", {
+                        "request_id": exp["id"], "provenance": "returned",
+                        **{k: ds[k] for k in ("performed_by", "performed_at", "apparatus", "notes")},
+                        "dataset": {**{k: ds[k] for k in ("id", "title", "url", "license", "rows", "sha256")},
+                                    "name": name, "columns": [c["name"] for c in ds["columns"]]}})
+                    a.memory.write(Item(id=f"{a.name}-{exp['id']}-returned", kind="experiment", source_agent=a.name,
+                                        text=f"Experiment {exp['id']} was performed by {ds['performed_by']}; its real "
+                                             f"measurements are now my dataset '{name}'. {exp['question']}"))
+                elif exp["status"] == "requested" and self.cfg.get("bench", "simulated") == "simulated":
+                    rehearse.append((a, exp))
+        sims = []
+        for a, exp in rehearse:
+            try:
+                sims.append({"name": "sim", **bench.simulate(exp, self.seed, self.out / "bench" / f"{exp['id']}.csv")})
+            except sources.ResearchError as e:
+                sims.append(None)
+                exp["error"] = str(e)[:300]
+        todo = [(a, exp, ds) for (a, exp), ds in zip(rehearse, sims) if ds]
+        codes = await self._gather([(lambda a=a, exp=exp, ds=ds: a.write_rehearsal_code(exp, ds)) for a, exp, ds in todo])
+        for (a, exp, ds), (code, res) in zip(todo, codes):
+            src = [("sim", self.out / "bench" / f"{exp['id']}.csv", [c["name"] for c in ds["columns"]])]
+            out = lab.run_study(code, a, datasets=src)
+            verdict = stats.check(out["stats"] if out["ok"] else None, 1, float(self.cfg.get("alpha", 0.05)), seed=self.seed)
+            need = bench.needed_n(exp["design"], exp["prediction"]["effect_size"], float(self.cfg.get("alpha", 0.05)))
+            exp["status"] = "simulated"
+            self.log.append(r, a.name, "experiment_result", {
+                "request_id": exp["id"], "provenance": "simulated", "supported": False, "ok": out["ok"],
+                "detected": verdict["replicated"], "stats": verdict, "n": exp["n"], "needed_n": need,
+                "traceable": lab.trace_values(out["stats"] if out["ok"] else None, src)["share"],
+                "code": code[:4000], "stderr": "" if out["ok"] else out["stderr"]},
+                tokens=res.tokens, latency_ms=res.latency_ms)
+            how = ("the analysis did not run" if not out["ok"] else
+                   f"with {exp['n']} measurements the effect I predict would {'' if verdict['replicated'] else 'not '}show up")
+            a.memory.write(Item(id=f"{a.name}-{exp['id']}-rehearsal", kind="experiment", source_agent=a.name,
+                                text=f"Rehearsal of experiment {exp['id']} on placeholder numbers drawn from my own "
+                                     f"prediction (not a finding): {how}"
+                                     + (f"; about {need} measurements would be needed" if need else "")
+                                     + ". The experiment still needs doing."))
 
     def _do_step(self, a, step: dict) -> dict:
         tool = str(step.get("tool", "")).strip().lower()
@@ -280,6 +348,17 @@ class World:
                 a.datasets.append(ds)
                 return {"tool": "load", "dataset": {**{k: ds[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")},
                                                     "columns": [c["name"] for c in ds["columns"]]}}
+            if tool == "experiment":
+                idea = a.current_idea()
+                if not a.can_ask_experiment() or idea is None:
+                    raise sources.ResearchError("this lab cannot ask for an experiment now (no idea yet, or too many open)")
+                exp = {"id": f"{a.name}-x{len(a.experiments) + 1}", "idea_id": idea.idea_id, "title": idea.title,
+                       **bench.clean_request(step), "prediction": idea.prediction.model_dump(), "status": "requested"}
+                a.experiments.append(exp)
+                a.memory.write(Item(id=f"{a.name}-{exp['id']}", kind="experiment", source_agent=a.name,
+                                    text=f"Experiment needed ({exp['id']}, not done yet): {exp['question']} "
+                                         f"Protocol: {exp['protocol']}"))
+                return {"tool": "experiment", "request": {k: v for k, v in exp.items() if k != "status"}}
             raise sources.ResearchError(f"unknown tool {tool!r}")
         except (sources.ResearchError, ValueError, KeyError, TypeError, OSError) as e:  # a bad source never ends a run
             out = {"tool": tool or "none", "error": str(e)[:300]}

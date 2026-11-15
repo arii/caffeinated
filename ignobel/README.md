@@ -34,6 +34,20 @@ Each round a daughter chooses her own research steps (`research` events):
   derived array is shown with its share but is not eligible. `score.py` ranks
   supported studies; the top one is the community's Ig Nobel candidate.
 
+- **Experiments needed:** when no public dataset can answer her idea, a daughter can instead write down
+  the experiment it needs (`experiment` step: question, protocol, materials, design, sample size, what
+  would refute it; at most `max_experiments`). It is logged as an `experiment_request`, listed in the
+  trace under "Experiments needed" and scored by `score.py` as a proposal. A proposal is never
+  `supported` and never the candidate.
+- **The bench (`bench.py`):** no real lab is connected yet. With `bench: simulated`, each request is
+  rehearsed once: placeholder measurements are drawn from the daughter's own prediction and her
+  analysis code runs on them in the sandbox, which shows whether the protocol and analysis work and
+  about how many measurements she would need. That `experiment_result` is marked
+  `provenance: simulated`, is never evidence, and the numbers never become one of her datasets.
+  Real measurements come back through `<run>/lab_inbox/<request id>.csv` plus `<request id>.json`
+  (`performed_by`, `performed_at`, optional `apparatus`, `notes`, `url`, `license`): they become a
+  dataset of hers (`provenance: returned`), and a study on them is checked like any other.
+
 Real runs execute studies in the `caffeinated-testcases:py311-v1` image (numpy, pandas, scipy; the
 same recipe as the autoresearch `testcases/Dockerfile`, copied to `sandbox/Dockerfile` and built on
 first use). `--roster flat` and its CSVs in `data/` are a small synthetic fixture kept for offline tests.
@@ -87,6 +101,7 @@ replies get cut off; cut-off replies are marked `_truncated` and not cached.
 
 | file | job |
 |---|---|
+| `bench.py` | experiment requests: simulated rehearsal, and intake of real returned measurements |
 | `events.py` | append one JSON line per action to `events.jsonl` ([schema](events.md)) |
 | `llm.py` | JSON chat, embeddings, disk cache, token cap, prompt log, mock mode |
 | `agents.yaml`, `agents.py` | agent definitions and the six one-call LLM methods |

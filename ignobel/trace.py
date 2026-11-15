@@ -91,6 +91,31 @@ def body(e: dict, run: Path, agents: dict) -> str:
                        + (f" <small>columns: {esc(', '.join(x['columns'][:12]))}</small>" if x.get("columns") else "") + "</li>"
                        for x in p.get("results", []))
         return f"<span class=tag>{esc(tool)}</span> <i>{esc(p.get('query'))}</i><ul>{rows or '<li>nothing found</li>'}</ul>"
+    if t == "experiment_request":
+        rows = "".join(f"<tr><th>{esc(k.replace('_', ' '))}</th><td>{esc(p.get(k))}</td></tr>"
+                       for k in ("protocol", "materials", "design", "measure", "compare", "n", "refuted_if") if p.get(k))
+        pred = p.get("prediction") or {}
+        return (f"<span class=tag>experiment needed</span> <b>{esc(p.get('id'))}</b>: {esc(p.get('question'))}"
+                f"<div>for idea <i>{esc(p.get('title'))}</i>; predicts {esc(pred.get('direction'))} {esc(pred.get('effect_size'))}. "
+                f"<span class=bad>not done yet, not a finding</span></div><table>{rows}</table>")
+    if t == "experiment_result":
+        if p.get("error"):
+            return f"<b>{esc(p.get('request_id'))}</b>: returned measurements not accepted. <span class=bad>{esc(p['error'])}</span>"
+        if p.get("provenance") == "returned":
+            d = p.get("dataset", {})
+            return (f"<b>{esc(p.get('request_id'))}</b> <span class=ok>performed</span> by {esc(p.get('performed_by'))} "
+                    f"on {esc(p.get('performed_at'))}: real measurements loaded as dataset <b>{esc(d.get('name'))}</b> "
+                    f"({esc(d.get('rows'))} rows; columns: {esc(', '.join(d.get('columns', [])))})"
+                    f"<div>{esc(p.get('apparatus'))} {esc(p.get('notes'))}</div>")
+        st = p.get("stats") or {}
+        how = ("the analysis did not run" if not p.get("ok") else
+               f"with n={esc(p.get('n'))} the predicted effect would {'' if p.get('detected') else 'not '}be detected "
+               f"(effect {esc(st.get('effect_size'))}, p={esc(st.get('p'))})")
+        need = f"; about {esc(p['needed_n'])} measurements needed for 80% power" if p.get("needed_n") else ""
+        return (f"<b>{esc(p.get('request_id'))}</b> <span class=bad>simulated rehearsal, not evidence</span>: placeholder "
+                f"measurements drawn from the lab's own prediction; {how}{need}. The experiment still needs doing."
+                f"<details><summary>analysis code</summary><pre>{esc(p.get('code', ''))}</pre></details>"
+                + (f"<details><summary>stderr</summary><pre>{esc(p.get('stderr'))}</pre></details>" if p.get("stderr") else ""))
     if t == "seed":
         rows = "".join(f"<li><a href='{esc(s.get('url', '#'))}'>{esc(s.get('title') or s.get('url'))}</a></li>"
                        for s in p.get("sources", []))
@@ -161,6 +186,17 @@ def render(run: Path) -> str:
             f"{esc(a)} <small>({esc(family.get(a, '—'))})</small></label>" for a in agents]
     out.append(f"</nav><main><h2>Studies</h2><table><tr><th>round</th><th>agent</th><th>title</th><th>result</th>"
                f"<th>effect</th></tr>{summary}</table>")
+    state_of = {e["payload"]["request_id"]: ("performed, real measurements returned" if e["payload"]["provenance"] == "returned"
+                                             else "rehearsed on simulated numbers; still needs doing")
+                for e in evs if e["type"] == "experiment_result" and not e["payload"].get("error")}
+    needed = "".join(
+        f"<tr><td>{e['round']}</td><td>{esc(e['agent'])}</td><td>{esc(e['payload']['id'])}</td>"
+        f"<td>{esc(e['payload'].get('question', ''))[:140]}</td>"
+        f"<td>{esc(state_of.get(e['payload']['id'], 'needs doing'))}</td></tr>"
+        for e in evs if e["type"] == "experiment_request")
+    if needed:
+        out.append(f"<h2>Experiments needed</h2><table><tr><th>round</th><th>agent</th><th>id</th><th>question</th>"
+                   f"<th>state</th></tr>{needed}</table>")
     for r in sorted(by_round):
         out.append(f"<h2>Round {r}</h2>")
         for e in by_round[r]:

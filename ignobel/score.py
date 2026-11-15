@@ -16,9 +16,17 @@ def score_events(events_path: str | Path, out_path: str | Path | None = None, se
     out_path = Path(out_path) if out_path else events_path.with_name("scores.jsonl")
     rows = []
     for ev in events.read(events_path):
+        p = ev.payload
+        if ev.type == "experiment_request":  # an experiment that still needs doing: a proposal, never a finding
+            text = (f"Proposed experiment, not yet performed. {p['question']} Protocol: {p['protocol']} "
+                    f"Predicted: {p['prediction']['direction']} {p['prediction']['effect_size']}. "
+                    f"Refuted if: {p.get('refuted_if', '')}")
+            rows.append({"kind": "proposal", "study_id": p["id"], "round": ev.round, "agent": ev.agent, "arm": ev.arm,
+                         "seed": ev.seed, "replicated": None, "supported": False, "title": p.get("title", ""),
+                         **committee.score_study(text, p.get("title", ""), seed=seed)})
+            continue
         if ev.type != "study_result":
             continue
-        p = ev.payload
         verdict = committee.score_study(p.get("abstract", ""), p.get("title", ""), seed=seed)
         row = {"study_id": p["study_id"], "round": ev.round, "agent": ev.agent, "arm": ev.arm,
                "seed": ev.seed, "replicated": p.get("replicated"), **verdict}
@@ -48,8 +56,11 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
     rows = score_events(args.events, args.out, args.seed)
     out = args.out or str(Path(args.events).with_name("scores.jsonl"))
-    print(f"scored {len(rows)} studies -> {out}")
-    for r in sorted(rows, key=lambda r: -r["score"]):
+    proposals = [r for r in rows if r.get("kind") == "proposal"]
+    print(f"scored {len(rows) - len(proposals)} studies and {len(proposals)} proposed experiments -> {out}")
+    for r in sorted(proposals, key=lambda r: -r["score"]):
+        print(f"  {r['score']:2d}  r{r['round']} {r['study_id']:24s} experiment needed: {r['title'][:60]}")
+    for r in sorted((r for r in rows if r.get("kind") != "proposal"), key=lambda r: -r["score"]):
         flag = " REJECTED" if r["rejected"] else ""
         if r.get("traceable") is not None:
             flag += f" traceable={r['traceable']:.0%}"

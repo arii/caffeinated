@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 import llm
 
-Kind = Literal["idea", "hypothesis", "prediction", "result", "failure", "library"]
+Kind = Literal["idea", "hypothesis", "prediction", "result", "failure", "library", "experiment"]
 
 
 class Item(BaseModel):

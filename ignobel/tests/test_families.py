@@ -348,3 +348,76 @@ def test_exa_research_rotates_keys_and_dataset_search_mixes_providers(tmp_path, 
     assert again == ["h1", "z2", "h2"]  # a repeated search still turns up new leads
     monkeypatch.setattr(llm, "MOCK", True)
     assert sources.find_datasets("iris", 3, skip={sources.MOCK_LEAD["id"]}) == []  # the mock lead is not offered twice
+
+
+STEP = {"tool": "experiment", "question": "Do wet socks slow a walker?", "protocol": "Walk 20 m in wet and in dry socks.",
+        "materials": "socks, water, stopwatch", "design": "two_group", "measure": "walk time", "compare": "wet vs dry",
+        "n": 80, "refuted_if": "times do not differ"}
+
+
+@requires_sandbox
+def test_an_experiment_request_is_listed_and_rehearsed_but_is_never_evidence(tmp_path):
+    import score
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    a = w.agents[0]
+    assert "error" in w._do_step(a, {"tool": "experiment", "question": "no protocol"})
+    done = w._do_step(a, dict(STEP))
+    exp = a.experiments[0]
+    assert done["request"]["id"] == exp["id"] and exp["prediction"] == a.current_idea().prediction.model_dump()
+    w.log.append(1, a.name, "experiment_request", done["request"])
+    held = len(a.datasets)
+    asyncio.run(w._bench([a], 1))
+    res = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "experiment_result"]
+    assert len(res) == 1 and res[0]["provenance"] == "simulated" and res[0]["supported"] is False
+    assert res[0]["ok"] and res[0]["traceable"] == 1.0 and res[0]["needed_n"] > 0
+    # placeholder numbers never become one of her datasets or one of her studies, and are rehearsed only once
+    assert len(a.datasets) == held and not a.studies and exp["status"] == "simulated"
+    asyncio.run(w._bench([a], 2))
+    assert sum(e.type == "experiment_result" for e in events.read(tmp_path / "events.jsonl")) == 1
+    rows = score.score_events(tmp_path / "events.jsonl")
+    assert [r["kind"] for r in rows if r["study_id"] == exp["id"]] == ["proposal"]
+    assert score.candidate([r for r in rows if r.get("kind") == "proposal"]) is None
+    w._do_step(a, dict(STEP))
+    assert "error" in w._do_step(a, dict(STEP))  # max_experiments
+
+
+def test_real_returned_measurements_become_a_dataset_only_with_who_and_when(tmp_path):
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families", cfg=_cfg(bench="none"))
+    asyncio.run(w.round0())
+    a = w.agents[0]
+    w._do_step(a, dict(STEP))
+    exp, held = a.experiments[0], len(a.datasets)
+    asyncio.run(w._bench([a], 1))
+    assert exp["status"] == "requested" and len(a.datasets) == held  # bench: none only lists the request
+    inbox = tmp_path / "lab_inbox"
+    inbox.mkdir()
+    rows = "".join(f"{'wet' if i % 2 else 'dry'},{10 + i % 7 + (2 if i % 2 else 0)}.5\n" for i in range(80))
+    (inbox / f"{exp['id']}.csv").write_text("Socks,Walk time (s)\n" + rows, encoding="utf-8")
+    asyncio.run(w._bench([a], 1))
+    assert exp["status"] == "requested" and "performed_by" in exp["error"]  # no note saying who did it
+    (inbox / f"{exp['id']}.json").write_text(json.dumps({"performed_by": "M. Lab", "performed_at": "2026-11-20",
+                                                         "url": "javascript:alert(1)"}), encoding="utf-8")
+    asyncio.run(w._bench([a], 2))
+    ds = a.datasets[-1]
+    assert exp["status"] == "returned" and ds["name"] == "x1" and ds["provenance"] == "returned" and ds["url"] == ""
+    assert [c["name"] for c in ds["columns"]] == ["socks", "walk_time_s"] and ds["rows"] == 80
+    res = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "experiment_result"]
+    assert [("error" in p, p["provenance"]) for p in res] == [(True, "returned"), (False, "returned")]
+    assert res[1]["performed_by"] == "M. Lab" and a.meter["progress"] == 2
+
+
+def test_simulated_measurements_follow_the_prediction_and_sample_sizes():
+    import bench
+    import stats
+    assert bench.needed_n("two_group", 0.5) == 126 and bench.needed_n("corr", 0.3) == 85
+    assert bench.needed_n("corr", 0.0) is None
+    req = {**bench.clean_request({**STEP, "n": 400}), "id": "a-x1", "prediction": {"direction": "-", "effect_size": 0.8}}
+    out = Path(os.environ.get("TMPDIR", "/tmp")) / "bench_sim_test.csv"
+    ds = bench.simulate(req, 0, out)
+    assert ds["provenance"] == "simulated" and [c["name"] for c in ds["columns"]] == ["group", "walk_time"]
+    cells = list(csv.DictReader(open(out, encoding="utf-8")))
+    wet = [float(r["walk_time"]) for r in cells if r["group"] == "wet"]
+    dry = [float(r["walk_time"]) for r in cells if r["group"] == "dry"]
+    assert len(wet) == len(dry) == 200 and -1.1 < stats.two_group(wet, dry)[0] < -0.5
+    assert bench.clean_request({**STEP, "n": "lots", "design": "magic"})["n"] == 60

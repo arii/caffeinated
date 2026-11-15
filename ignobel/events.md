@@ -51,6 +51,15 @@ not enforce payload shapes; the fields below describe the producer's current wri
 - `lesson`: {text}, the rewritten private lesson note after each round.
 - `spawn` {daughter, field, reason, field_B?, instruments:[name]} a mother (agent = mother name) started a daughter lab: `reason` is `founded` (round 0, after the mothers' meeting) or `bored` (its daughters' mean boredom reached `spawn_threshold`; `field_B` is that mean)
 - `research` {tool, ...} one research step a daughter lab chose for itself. `tool` is `exa` / `openalex` / `arxiv` / `pubmed` {query, results:[{id (S id), title, url}]}, `read` {source, url, question, notes}, `datasets` {query, results:[{lead (D id), title, url, license, columns}]} or `load` {dataset:{name, id, title, url, license, rows, sha256, columns}}. A step that failed has `error` instead. Every S id is a record in the run's `research_log.jsonl` (autoresearch `research.py` format).
+- `experiment_request` {id, idea_id, title, question, protocol, materials, design:"two_group"|"corr", measure,
+  compare, n, refuted_if, prediction} an experiment a daughter lab says her idea needs because no public
+  dataset can answer it. It is a proposal, not a finding.
+- `experiment_result` {request_id, provenance, ...} what the bench (`bench.py`) did with a request.
+  `provenance: "simulated"` {supported: false, ok, detected, stats, n, needed_n, traceable, code, stderr}: a
+  rehearsal of her analysis on placeholder measurements drawn from her own prediction; never evidence.
+  `provenance: "returned"` {performed_by, performed_at, apparatus, notes, dataset:{name, id, title, url,
+  license, rows, sha256, columns}}: real measurements somebody performed and returned, now a dataset of
+  hers; or {error} if the return was not accepted.
 
 For daughter labs, `study_result` also has `evidence` {datasets:[{name, id, title, url, license,
 rows, sha256}], citations:[{id, title, url}], read:[name], traceable, trace:{array:{column, share}},

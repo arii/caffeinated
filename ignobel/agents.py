@@ -87,7 +87,7 @@ def _parse_prediction(d: dict, fallback_seed: int) -> Prediction:
     return Prediction(direction=direction, effect_size=round(eff, 3))
 
 
-STEP_NAMES = ("exa", "openalex", "arxiv", "pubmed", "datasets", "read", "load")
+STEP_NAMES = ("exa", "openalex", "arxiv", "pubmed", "datasets", "read", "load", "experiment")
 
 
 def _steps(data: dict) -> list[dict]:
@@ -108,7 +108,8 @@ def _steps(data: dict) -> list[dict]:
     for i, m in enumerate(cuts):
         chunk = raw[m.end():cuts[i + 1].start() if i + 1 < len(cuts) else len(raw)]
         step = {"tool": m.group(1)}
-        for key in ("query", "source", "question", "lead"):
+        for key in ("query", "source", "question", "lead", "protocol", "materials", "measure", "compare",
+                    "design", "refuted_if"):
             v = re.search(key + r'"?\s*:\s*"((?:[^"\\]|\\.)*)"', chunk)
             if v:
                 step[key] = v.group(1)
@@ -119,6 +120,19 @@ def _steps(data: dict) -> list[dict]:
 def _note(it) -> str:
     sid = (it.meta or {}).get("sid")
     return f"- [{sid}] {it.text[:300]}" if sid else f"- {it.text[:200]}"
+
+
+REAL_API = ("from lab_runtime import datasets, rows, path, report, report_corr\n"
+            "rows(dataset, [column, ...], where=None) -> list of tuples of floats, one per data row in which "
+            "every listed column is a number; where={'column': value} first keeps rows whose column equals "
+            "value (a category or a number). Example: x, y = zip(*rows('d1', ['dose', 'response'])).\n"
+            "path(dataset) -> the CSV file, if you prefer pandas. numpy, scipy and pandas are installed.\n"
+            "Use only the real columns listed in your datasets; never simulate or make up data.\n"
+            "The values you report are checked against the dataset: the result counts only if most of the "
+            "values in each list you report are cells of one of its columns, so report measured columns, "
+            "not numbers you derived from them.\n"
+            "Finish with exactly one report(group_a, group_b, direction, effect_size) (two lists of numbers) "
+            "or report_corr(x, y, direction, effect_size) (two lists of equal length).")
 
 
 class Agent:
@@ -136,6 +150,7 @@ class Agent:
         self.datasets: list[dict] = []  # real public datasets this lab loaded (sources.fetch_dataset)
         self.leads: list[dict] = []     # dataset candidates it found but has not loaded; D1, D2, ...
         self.meter: dict = {}           # private boredom-meter state (boredom.daughter_components)
+        self.experiments: list[dict] = []  # experiments it asked for that no public dataset can answer (bench.py)
 
     # ------------------------------------------------------------ helpers
     @property
@@ -155,6 +170,10 @@ class Agent:
             return bool(self.datasets)
         return self.budget_left > 0 or self.spec.is_statistician
 
+    def can_ask_experiment(self) -> bool:
+        return bool(self.spec.family and self.ideas
+                    and len(self.experiments) < int(self.cfg.get("max_experiments", 2)))
+
     def known_sources(self) -> dict[str, dict]:
         """{S id: {url, title}} for every source in this agent's memory, oldest first."""
         out = {}
@@ -173,7 +192,8 @@ class Agent:
                "instruments": [i.name for i in self.spec.instruments],
                "sources": list(self.known_sources())[-3:],
                "datasets": [{"name": d["name"], "numeric": [c["name"] for c in d["columns"] if c["kind"] == "numeric"]}
-                            for d in self.datasets]}
+                            for d in self.datasets],
+               "can_ask_experiment": bool(self.ideas) and not self.experiments}
         ctx.update(extra)
         return ctx
 
@@ -293,6 +313,11 @@ class Agent:
                 '- {"do": "datasets", "query": "..."}: look for a real public dataset (Zenodo, Hugging Face); '
                 "short queries of 2-4 plain words work best\n"
                 '- {"do": "load", "lead": "D1"}: load a dataset lead so you can analyse it\n'
+                + ('- {"do": "experiment", "question": "...", "protocol": "...", "materials": "...", '
+                   '"design": "two_group" or "corr", "measure": "the outcome", "compare": "group one vs group two, '
+                   'or the second variable", "n": 60, "refuted_if": "..."}: only if no public dataset can answer '
+                   "your current idea, write down the new experiment it needs. It is not a result: it goes on "
+                   "the list of experiments that need doing\n" if self.can_ask_experiment() else "")
                 + ("Your dataset searches have not worked so far: try different, simpler words, or load a lead "
                    "a colleague gave you.\n" if self.meter.get("trigger") == "no_data" else "") +
                 "You need a loaded dataset before you can run a study. Reply with plain JSON text only, exactly "
@@ -318,17 +343,7 @@ class Agent:
         idea = self.current_idea()
         peer_lines = "\n".join(f"- {p['agent']}: {', '.join(p['instruments'])}" for p in peers if p["instruments"])
         if self.spec.family:
-            api = ("from lab_runtime import datasets, rows, path, report, report_corr\n"
-                   "rows(dataset, [column, ...], where=None) -> list of tuples of floats, one per data row in which "
-                   "every listed column is a number; where={'column': value} first keeps rows whose column equals "
-                   "value (a category or a number). Example: x, y = zip(*rows('d1', ['dose', 'response'])).\n"
-                   "path(dataset) -> the CSV file, if you prefer pandas. numpy, scipy and pandas are installed.\n"
-                   "Use only the real columns listed in your datasets; never simulate or make up data.\n"
-                   "The values you report are checked against the dataset: the result counts only if most of the "
-                   "values in each list you report are cells of one of its columns, so report measured columns, "
-                   "not numbers you derived from them.\n"
-                   "Finish with exactly one report(group_a, group_b, direction, effect_size) (two lists of numbers) "
-                   "or report_corr(x, y, direction, effect_size) (two lists of equal length).")
+            api = REAL_API
             req = "requests must be []."
         elif self.spec.instruments:
             api = ("from lab_runtime import instruments, instrument, report, report_corr\n"
@@ -351,6 +366,19 @@ class Agent:
         code = str(res.data.get("code", ""))
         requests = res.data.get("requests") or []
         return {"code": code, "requests": requests if isinstance(requests, list) else []}, res
+
+    def write_rehearsal_code(self, exp: dict, ds: dict) -> tuple[str, llm.LLMResult]:
+        """Analysis code for an experiment that has not been done, rehearsed on placeholder measurements."""
+        user = (f"Your experiment {exp['id']} has not been done yet: {exp['question']}\n"
+                f"Protocol: {exp['protocol']}\nPrediction: {exp['prediction']}\n"
+                "A stand-in bench drew placeholder measurements from your own prediction, in standard units, so "
+                "you can rehearse the analysis. They are not real and prove nothing.\n"
+                f"{sources.describe(ds)}\n"
+                f"Write the Python you would run on the real measurements, using only dataset '{ds['name']}'.\n"
+                f"{REAL_API}\nNo network.\nReturn JSON {{code: string}}.")
+        res = self._call("study_code", user, model=llm.MODEL_STRONG, max_tokens=2500,
+                         datasets=[], rehearsal={"name": ds["name"], "columns": ds["columns"]})
+        return str(res.data.get("code", "")), res
 
     def write_abstract(self, study: dict) -> tuple[str, llm.LLMResult]:
         """Write the abstract the committee will read later."""
@@ -377,7 +405,8 @@ class Agent:
         return {"ideas": [i.model_dump() for i in self.ideas],
                 "studies": [s.model_dump() for s in self.studies],
                 "lessons": self.lessons, "budget_left": self.budget_left,
-                "datasets": self.datasets, "leads": self.leads, "meter": self.meter}
+                "datasets": self.datasets, "leads": self.leads, "meter": self.meter,
+                "experiments": self.experiments}
 
     def load_state(self, st: dict) -> None:
         self.ideas = [Idea(**i) for i in st["ideas"]]
@@ -387,3 +416,4 @@ class Agent:
         self.datasets = st.get("datasets", [])
         self.leads = st.get("leads", [])
         self.meter = st.get("meter", {})
+        self.experiments = st.get("experiments", [])
