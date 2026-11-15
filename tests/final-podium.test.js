@@ -52,3 +52,26 @@ test('finished recordings refresh when post-run judging changes their content ve
  assert.equal(recordingChanged(current,{...current,contentVersion:'after-judging'}),true);
  assert.equal(recordingChanged(current,current),false);
 });
+
+test('recorded judge agents join to manifest identities, with study ownership as fallback',async()=>{
+ const {recordingFinalIdeas}=await import('../src/engine/finalPodium.ts');
+ const r={...recording,manifest:{...recording.manifest,agents:[{agent_id:'worker-a',display_name:'Kitchen Physics Lab'}]},entities:{studies:[{id:'a',agent_id:'worker-a'}]}};
+ assert.deepEqual(recordingFinalIdeas(r)[0].agent,{id:'worker-a',name:'Kitchen Physics Lab'});
+ r.igjudge={...artifact,ideas:[{...artifact.ideas[0],agent_id:'baseline'}]};
+ assert.deepEqual(recordingFinalIdeas(r)[0].agent,{id:'baseline',name:'baseline'});
+ assert.match(recordingPodiumHtml(r,10,esc),/class="podium-agent"/);
+});
+
+test('real scored replay renders the recorded winners and their actual owners',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {gunzipSync}=await import('node:zlib');
+ const {recordingFinalIdeas}=await import('../src/engine/finalPodium.ts');
+ const r=JSON.parse(gunzipSync(readFileSync(new URL('../docs/recordings/50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929.json.gz',import.meta.url))));
+ assert.deepEqual(topIdeas(recordingFinalIdeas(r)).map(i=>[i.id,i.score,i.agent.name]),[
+  ['study:1',58.5,'Baseline'],['study:18',54,'Kitchen Physics Lab'],['study:22',47,'Animal Behaviour Lab']
+ ]);
+ const html=recordingPodiumHtml(r,r.manifest.totalTicks,esc);
+ assert.equal((html.match(/class="podium-agent"/g)||[]).length,3);
+ assert.match(html,/Do heavier cabbages shortchange you on vitamin C/);
+ assert.doesNotMatch(html,/Agent not recorded/);
+});
