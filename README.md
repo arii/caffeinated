@@ -18,7 +18,7 @@ flowchart LR
   W --> N[Descriptor and citation gate]
   N --> E[Docker CPU experiment]
   E --> T[Trusted grader]
-  T --> K[Repeat evaluation and keep/discard]
+  T --> K[Numeric confirmation and keep/discard]
   K --> C
   C --> A[Evidence ledger and artifacts]
   A --> P[Round-end and final viewer publish]
@@ -27,7 +27,7 @@ flowchart LR
 
 The human edits [program.md](program.md); agents may edit only the task's declared
 candidate file, not the grader or research rules. The objective is a **score, lower is
-better**. The running backend described here has source baseline `add9002`; the separate
+better**. The running backend described here has source baseline `1cc62b0`; the separate
 Ig Nobel community is described at main revision `be658b6`. Extensions that are not yet
 merged into those implementations are explicitly identified.
 
@@ -110,17 +110,20 @@ base. Calls and evaluations are **sequential** in this implementation; four slot
 mean four concurrent experiments.
 
 1. Evaluate the starting program and load the task's descriptor vocabulary and meter profile.
-2. Recompute shared and worker-scoped meter status from the ledger. Assign exploit,
-   divergent and scout responsibilities, with suggested cells to explore.
+2. Recompute shared and worker-scoped meter status from the ledger. Stop if converged;
+   otherwise assign exploit, divergent and scout responsibilities, with suggested cells.
 3. Have scouts recall previous findings, retrieve prior art and turn useful sources into
    implementation leads.
 4. Have workers recall outcomes and current claims, propose focused edits and commit them
    with descriptors and research references.
 5. Check each proposal at the gate. A worker has up to three bounded attempts: initial
-   proposal, repair, and possible conductor-assigned descriptor-cell work.
-6. Evaluate passing programs inside Docker. Identify the best provisional improvement.
-7. Evaluate that candidate again and apply the confirmation rule. Outside arm A, obtain a
-   critic explanation. Keep only a confirmed improvement and advance the conductor to it.
+   proposal, repair, and possible conductor-assigned descriptor-cell work. Previously scored
+   deterministic editable-file blobs become duplicate attempts without evaluation.
+6. Deduplicate identical passing blobs within the round, evaluate unique programs inside
+   Docker and identify the best provisional improvement.
+7. Apply numeric confirmation: deterministic tasks reuse the first score; other tasks run a
+   second evaluation. Outside arm A, obtain a critic explanation. Keep only a confirmed
+   improvement and advance the conductor to it.
 8. Record outcomes and memories, update tabular/status artifacts, commit the research
    artifacts, tag attempts, optionally push, and publish the round's viewer state.
    On exit, publish a final finished or stopped state.
@@ -135,27 +138,30 @@ sequenceDiagram
   participant K as Confirmation and critic
   participant V as Viewer publisher
   C->>E: Evaluate starting program
-  loop Each round
-    C->>M: Fold ledger and allocate roles
+  loop Each round, until budget or convergence
+    C->>M: Fold ledger; stop if converged, otherwise allocate roles
     C->>W: Assign four candidate slots and optional scouts
     W->>M: Recall findings and record grounded claims
     W->>G: Commit candidate with descriptor and references
     G-->>W: Pass or bounded repair/reassignment
-    C->>E: Evaluate passing candidates
+    C->>E: Evaluate unique passing blobs
     E-->>C: Score or crash
     opt Provisional improvement
-      C->>K: Repeat evaluation and apply numeric rule
+      C->>K: Reuse deterministic score or evaluate again; apply rule
       K-->>C: Decision and explanation outside A
     end
-    C->>M: Record keep/discard and memories
+    C->>M: Record keep/discard/crash/duplicate and memories
     C->>C: Commit artifacts, tag attempts, optionally push
     C->>V: Publish running state unless disabled
   end
   C->>V: Publish finished/stopped state unless disabled
 ```
 
-Confirmation repeats evaluation; **it does not independently change the seed**.
-Hadamard is deterministic, and Playworld reuses its held-out seeds. The gate verifies
+All three current CPU tasks declare deterministic evaluation: confirmation reuses the first
+score and records `critic_rerun="skipped (deterministic)"`. Other tasks repeat evaluation
+without independently changing seeds. At a round boundary, CONVERGED stops further work,
+writes converged.json and marks run.json/manifest converged=true. Round budgets range from
+1 to 50. The gate verifies
 declared novelty and citation requirements, not scientific originality.
 `--no-push` suppresses remote pushes, not local branches, commits or tags; fake mode also
 forces no-push. Viewer publication failures are logged without aborting the experiment.
@@ -230,8 +236,9 @@ Descriptor validation requires declared parameters with finite numeric values.
 ### Novelty, progress and repeated failures
 
 Index eligible attempts in ledger order. These include baseline and candidate rows with
-keep/discard/crash status, but exclude critic rows and rejected proposals. Rejections
-remain in the audit logs; crashes enter the meter. Let $`A_{t-1}`$ be all eligible
+keep/discard/crash/duplicate status, but exclude critic rows and rejected proposals.
+Rejections remain in audit logs. Duplicates enter the archive and scoped windows, increment
+stagnation/stall and count as trivial even when their declared descriptor is distant. Let $`A_{t-1}`$ be all eligible
 descriptors **preceding** attempt $`t`$. Its sparseness $`\nu_t`$ is the average distance
 to the nearest $`m_t`$ archive members [7]:
 
@@ -269,7 +276,9 @@ s_t=
 \qquad S_t=\min(s_t/\text{patience},1).
 ```
 
-A score is valid when finite, numeric and not associated with a configured fail status.
+A frontier-eligible score is finite, numeric and has a configured frontier status: all CPU
+profiles use **keep only**. Discarded, crashed and duplicate attempts cannot improve either
+best, even if they carry a numeric score.
 For a maximizing profile, reverse the inequality and add the margin. The raw frontier
 tracks **any** strict valid best-score improvement. Its stall $`F_t`$ resets to zero on such
 an improvement and otherwise increments by one, independently of $`\epsilon`$:
@@ -283,13 +292,13 @@ F_{t-1}+1,&\text{otherwise}.
 \quad
 f_t=\frac{\sum_{i\in W_t}\mathbf{1}[\text{fail status}_i]}{|W_t|},
 \quad
-q_t=\frac{\sum_{i\in W_t}\mathbf{1}[\min_{a\in A_{i-1}}d(d_i,a)<0.05]}{|W_t|},
+q_t=\frac{\sum_{i\in W_t}\mathbf{1}[\min_{a\in A_{i-1}}d(d_i,a)<0.05\ \lor\ \mathrm{status}_i=\mathrm{duplicate}]}{|W_t|},
 \quad O_t=\max(f_t,q_t).
 ```
 
 Initially both streak and frontier stall are zero. For an empty preceding archive,
-the nearest distance used for triviality is one; empty
-failure/trivial windows give rates zero. The CPU fail status is crash. The overload name
+the nearest distance used for triviality is one; explicit duplicate status still makes the
+attempt trivial. Empty failure/trivial windows give rates zero. The CPU fail status is crash. The overload name
 is an engineering label for the larger of failure and near-repeat rates, not a measure
 of cognitive load.
 
@@ -365,7 +374,10 @@ Empty swarm status is B=0, N=1 and EXPLOIT.
 | playworld_mini | 0.005 | 5 | 3 | 5 |
 
 Profiles also specify the vocabulary, parameter scales, direction and regime instructions.
-None of these three sets an explicit acceptance margin.
+None sets an explicit acceptance margin, weights or regime thresholds: margin falls back to
+epsilon and weights/thresholds use the defaults above. All three set attempt statuses to
+keep/discard/crash/duplicate, frontier statuses to keep and trivial statuses to duplicate;
+only crash counts as failure.
 
 ### Gate and acceptance rules
 
@@ -379,7 +391,8 @@ Outside EXPLOIT and CONVERGED, a proposed descriptor $`d`$ must satisfy:
 
 An empty comparison set imposes no restriction. Recent means the last $`k`$ shared eligible
 attempts. BREAKOUT also requires a top-level mechanism absent from those attempts.
-CONVERGED instead permits only a descriptor at distance zero from the best descriptor:
+The standalone gate in CONVERGED permits only a descriptor at distance zero from the
+best descriptor; the conductor instead stops before assigning more work:
 
 ```math
 R=\mathrm{P}\ \Longrightarrow\
@@ -388,11 +401,20 @@ R=\mathrm{C}\ \Longrightarrow\
  \text{best descriptor exists}\ \land\ d(d,d_{\rm best})=0.
 ```
 
-Citation checks are additional to descriptor checks. Arm A disables meter gating;
+Before descriptor/citation checks, deterministic tasks compare the editable-file Git blob
+against score_cache.json. A cache hit logs a failed gate with duplicate_of and the cached
+score, then records a duplicate ledger attempt without repair or evaluation. Same-round
+deduplication evaluates the first occurrence and copies its successful score to later ones.
+Baseline and successful evaluations populate this per-run cache; descriptor labels do not
+determine code identity. Fake assigned-cell work rejects unbuildable cells instead of
+substituting a different method.
+
+Citation checks are additional to descriptor checks. Arm A disables meter gating but still
+uses deterministic blob deduplication;
 turning Exa off removes prior-art requirements. These checks operate on declared
 descriptors and logged source IDs, not an independent semantic assessment of the code.
 
-Let $`y_\star`$ be the previous best score and $`y_1,y_2`$ the first and repeated evaluations.
+Let $`y_\star`$ be the previous best score and $`y_1,y_2`$ the first and confirmation scores.
 Only the best provisional candidate is confirmed:
 
 ```math
@@ -407,8 +429,10 @@ m=
  y_2\text{ exists}\ \land\ \frac{y_1+y_2}{2}<y_\star-m.
 ```
 
-This is a repeatability guard, not a statistical significance test. Arm A skips the critic
-LLM but still requires numeric confirmation.
+For deterministic tasks, set $`y_2=y_1`$ with confirmation status ok and record the skipped
+rerun. Otherwise $`y_2`$ comes from a second evaluation. This is a numeric acceptance guard,
+not a statistical significance test or independent replication for deterministic tasks.
+Arm A skips the critic LLM but still applies this predicate.
 
 ### Ig Nobel: a different private meter
 
@@ -501,7 +525,7 @@ The runnable benchmark backend supports four arms:
 | Arm | Allocation / ablation |
 | --- | --- |
 | A: meter off | Fixed 3 exploit / 1 divergent; the divergent worker scouts if Exa is on. Meter gate disabled; no critic LLM. Shadow meter values remain available. |
-| B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED uses a confirmation-only gate. |
+| B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED stops the run at the next round boundary. |
 | C: meter on, Exa off | The meter controls allocation, but Exa is disabled. |
 | D: meter on, local memory | The meter controls allocation, and memory defaults to local storage instead of past.dev. |
 
@@ -512,11 +536,11 @@ The meter-enabled arms allocate roles as follows:
 | EXPLOIT | 3 / 1 | 1 / 0 |
 | BOREDOM_SNAP | 1 / 3 | min(2, 1 + bored-agent count) / 0 |
 | PARADIGM_BREAKOUT | 0 / 4 | 2 / 0 |
-| CONVERGED | 4 / 0 | 1 / 0; gate restricts workers to confirmation |
+| CONVERGED | No further assignments | No scouts; write convergence report and stop |
 
 Workers with higher B sort first, with names breaking ties; remaining scout slots fill
 from the lowest-B available workers. If nobody is bored, EXPLOIT gives its divergent
-slot to the lowest-B worker. Scouts are divergent workers except in CONVERGED.
+slot to the lowest-B worker. Scouts are divergent workers; convergence is checked before further assignments.
 C always disables scouts; explicit memory settings can override D's local default.
 
 For a meaningful comparison, hold task, starting revision, four slots, round budget,
@@ -597,19 +621,21 @@ allocated, grounded, evaluated and accepted or rejected. The backend writes thes
 
 | File | Key fields / purpose | Writer |
 | --- | --- | --- |
-| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score, descriptor, sources, commit, round; candidate replicate_score, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
-| results.tsv | commit, `loss` (score, lower is better), `memory_gb` (legacy format column, always 0.0), status, description, agent, round, descriptor, kind | swarm.write_results |
+| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score, descriptor, sources, commit, round; candidate replicate_score, critic_rerun, duplicate_of, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
+| results.tsv | Four columns: commit, `loss` (score, lower is better), status, description; full metadata stays in the ledger | swarm.write_results |
 | assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, ledger/profile hashes, command/commit provenance | swarm.append_assignment |
 | boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss (best score), best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments. | boredom.run_gate; swarm.append_status |
 | research_log.jsonl | query id/purpose/agent/regime/endpoint/query/n_results/cost/latency_ms, optional disabled; source id/query_id/url/title/published/highlights; extract records when used | research.append_query_record/write_query_results/run_extract |
 | memory.jsonl | id, sourceId, label, content, author, metadata, timestamp; memory type is metadata.type, alongside arm/round/commit/status as appropriate | memory.write/append_mirror |
-| memory_log.jsonl | writes/recalls: backend, agent, query or ID, latency, evidence/source IDs, counts, pending/dropped counts where applicable | memory.write/recall |
+| memory_log.jsonl | writes/recalls: backend, agent, query or ID, latency, evidence/source IDs, counts, pending/dropped counts; up to 20 dropped source IDs/tags for scoped recall diagnostics | memory.write/recall |
 | llm_log.jsonl | ts, role, agent, round, model, prompt_sha, full prompt, parsed response, latency_ms, usage, optional attempts | llm.LLMClient.call |
-| critic.tsv | round, commit, run1_loss and run2_loss (first and repeated scores), accepted, verdict, why | swarm.update_critic_tsv |
+| critic.tsv | round, commit, run1_loss and run2_loss (first and confirmation scores), accepted, verdict, why | swarm.update_critic_tsv |
 | run_id | Persisted UUID hex for memory run scope | swarm._orchestrate |
-| run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments | swarm._write_run_artifact |
+| run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments, optional converged | swarm._write_run_artifact |
 | boredom_profile.json | Effective profile without private `_` fields; used to reproduce meter values and verify profile hashes | swarm._orchestrate |
 | viewer_publish_log.jsonl | ts, status, final, exception class and message; written only on publish failure | swarm.publish_viewer_state |
+| score_cache.json | Deterministic editable-file blob → first successful commit/score/status, scoped to this run | swarm.record_score_cache |
+| converged.json | Stop report: round, best commit/score, covered cells, attempt count and last status record | swarm._orchestrate |
 | viewer/ | Default published index and run directories, including events, entities, keyframes, manifests and copied experiment artifacts | export_viewer.publish |
 
 Review full prompts, responses and retrieved content before sharing. Command redaction
@@ -635,7 +661,13 @@ timeline.json, events.ndjson, entities and keyframes. Deterministic UUIDv5 ident
 gap-free ticks make replay reproducible for the same inputs. Events link assignments,
 questions, observations, hypotheses, experiments, gates, verdicts and discoveries;
 Ig Nobel also supplies conversations, exchanges and diaries. A reducer reconstructs a
-WorldSnapshot, using round-end and periodic keyframes to seek.
+WorldSnapshot, using round-end and periodic keyframes to seek. Keyframes retain the baseline;
+the no-keyframe fallback reads it from an optional manifest field. The exporter does not yet
+write that field, so fallback replay without keyframes can show a null baseline.
+CPU event phases use evaluate; snapshots retain
+the legacy wire activity token `training` for candidate evaluation. Duplicate ledger rows
+normalize to discarded experiments with duplicate gate reasons; raw artifacts retain duplicate
+status. Manifests expose converged separately from finished/stopped lifecycle status.
 
 For new CPU runs, provenance includes the starting commit, redacted command arguments,
 inference provider and research/memory settings. Artifact hash provenance is still empty.
@@ -668,7 +700,8 @@ not the raw ledger directory. All routes below have prefix `/api/v1`:
 World and agent selectors default to the latest tick. Unknown runs, agents and entities
 return 404; invalid world selectors return 416. Event pages default to 500 and cap at
 5000; collection pages default to 100 and cap at 1000. NDJSON returns a bounded page,
-whereas SSE remains connected during an active run.
+whereas SSE remains connected during an active run. Timestamp selectors require timezone-aware
+ISO instants and compare UTC instants, not timestamp strings.
 
 The conductor publishes after each round and again on exit. The default destination is
 `<out>/viewer`; `--viewer-dest PATH` changes it and `--no-viewer` disables it.
@@ -678,7 +711,8 @@ published keyframes or a non-prefix event history. Other files are replaced atom
 one file at a time, not as a whole-directory transaction. Publication errors do not halt
 research.
 
-SSE polls complete event lines every 0.1 seconds, resumes after Last-Event-ID or after,
+SSE incrementally reads complete event lines with a byte offset and partial-line buffer,
+handles replacement/truncation, polls every 0.1 seconds and resumes after Last-Event-ID or after,
 sends status heartbeats every 15 seconds and closes at terminal status. This provides
 **round-level visibility**, not streaming from every worker log write. Pausing a viewer
 does not pause the swarm.
@@ -748,12 +782,11 @@ EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s boredom_meter/tests -v
 ```
 
-The verified run produced 75 gap-free ticks and three keyframes with no candidate kept.
-API run-list, event-page and world requests returned 200, terminal SSE reported finished,
-and POST /api/v1/runs returned 405. The root suite ran 74 tests with one skip; the unchanged
-meter suite previously passed 23 tests. The separate main Ig Nobel suite previously passed
-56 tests in its own environment/worktree; it is not part of this branch's runnable package.
-No live Tinker, Exa, past.dev or Modal calls were made.
+The root suite covers deterministic blob caching, same-round duplicates, skipped reruns,
+convergence stops, viewer replay and API errors/stream resume. Meter tests cover duplicate
+triviality and frontier exclusion, including distant duplicate descriptors and discarded
+scores. The separate main Ig Nobel suite runs in its own environment/worktree.
+Offline verification uses no live Tinker, Exa, past.dev or Modal calls.
 
 Implementation: `swarm.build_parser`, `viewer.__main__` and `tests/`.
 
@@ -765,8 +798,9 @@ Implementation: `swarm.build_parser`, `viewer.__main__` and `tests/`.
   epsilon; convergence is only a coverage/stall rule.
 - Known-optimum, subset and synthetic tasks do not establish full-benchmark or real
   scientific performance. Generated Ig Nobel effects remain simulations.
-- Repeated evaluation does not change seeds independently or constitute statistical testing.
-  Equal slots/rounds are not equal costs or identical histories.
+- Deterministic confirmation reuses the first score; other tasks rerun without independently
+  changing seeds. Neither constitutes statistical testing. Equal slots/rounds are not equal
+  costs or identical histories.
 - Fake mode does not validate external service reliability. Main's Modal integration still
   has verification TODOs; its CPU sandbox request was inspected, not exercised live.
 - Authentication, broad secret scrubbing and strong transactional publication are absent.
@@ -805,3 +839,6 @@ https://doi.org/10.1162/evco_a_00025
 
 [8] Simpson, E. H. (1949). “Measurement of diversity.” *Nature*, 163, 688.
 https://doi.org/10.1038/163688a0
+
+
+Exit code: 0

@@ -1,5 +1,5 @@
 {common}
-You are the critic. Candidate {commit} by {author}: "{idea}". First evaluation score {v1}, repeated evaluation score {v2} (the evaluator does not independently change seeds), previous best {prev_best}. Accepted by rule: {accepted}.
+You are the critic. Candidate {commit} by {author}: "{idea}". First evaluation score {v1}, confirmation score {v2} (deterministic tasks reuse the first score; other tasks are evaluated again), previous best {prev_best}. Accepted by rule: {accepted}.
 Lead/source claim: {claim} (predicted delta {predicted_delta}).
 Recent results in this basin:
 {basin_results}

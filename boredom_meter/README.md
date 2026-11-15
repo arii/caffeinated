@@ -11,8 +11,10 @@ the [backend reference](../docs/backend.md#formula-and-threshold-sources) for co
 ## Inputs and scoring
 
 The ledger is append-only JSONL. Eligible attempts have configured attempt statuses:
-keep, discard and crash by default. CPU baseline and candidate rows enter the archive;
-critic rows and gate-rejected proposals do not enter B. Rejections remain auditable.
+keep, discard, crash and duplicate by default. CPU baseline and candidate rows enter the archive;
+critic rows and ordinary gate rejections do not enter B. Deterministic blob duplicates
+are recorded with duplicate status and do enter B, even when detected by a failed gate.
+Their cached scores cannot improve the frontier. Ordinary rejections remain auditable.
 
 A profile defines descriptor levels and vocabulary, numeric parameter scales, objective
 direction, epsilon, windows, thresholds and failure statuses. Scoring is a pure function
@@ -36,12 +38,18 @@ gives novelty one. N averages these values over the last k eligible attempts in 
 
 | Quantity | Definition |
 | --- | --- |
-| Stagnation S | min(streak/patience, 1); a first valid score or improvement strictly exceeding epsilon relative to the last significant best resets the streak |
+| Stagnation S | min(streak/patience, 1); a first frontier-eligible score or improvement strictly exceeding epsilon relative to the last significant best resets the streak |
 | Failure rate | Fraction of the last k scoped attempts with a configured fail status; CPU profiles use crash |
-| Trivial rate | Fraction whose nearest preceding archive distance is below trivial_distance; default 0.05 |
+| Trivial rate | Fraction with nearest preceding distance below trivial_distance (default 0.05) OR a configured trivial status (default duplicate) |
 | Overload O | max(failure rate, trivial rate), an engineering proxy rather than cognitive load |
 | Diversity | One minus the sum of squared top-level mechanism proportions over the scoped window; zero for an empty window |
 | Frontier stall | Attempts since any strict valid raw-best improvement, independently of epsilon |
+
+Only statuses in frontier_statuses can update significant/raw best: the default and all
+three CPU profiles use keep. Discards and duplicates may carry finite scores but still
+increment stagnation and frontier stall. Duplicate descriptors join the archive, participate
+in future novelty calculations and always count as trivial, independently of their distance.
+Fail status remains a separate test; CPU duplicates are not failures.
 
 Default weights give:
 
@@ -72,7 +80,9 @@ The fold evaluates these conditions in order:
 
 There is no timed cooldown. Required mechanisms default to all top-level vocabulary
 entries, including baseline. Convergence does not explicitly require an existing scored
-best and is not proof of an optimum.
+best and is not proof of an optimum. The conductor stops at the next round boundary,
+writes converged.json and publishes the terminal state; the pure meter/gate can still
+be called separately.
 
 Outside EXPLOIT/CONVERGED, the default gate requires distance at least 0.35 from the
 last k shared attempts (except exploit-role workers), and at least 0.25 from all failed

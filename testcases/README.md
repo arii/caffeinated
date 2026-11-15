@@ -8,7 +8,7 @@ known-optimum task; BixBench Mini is a subset; Playworld Mini is synthetic.
 The swarm minimizes an objective score. Evaluators also print a native metric named
 score, for which higher is better; their loss field is the transformed lower-is-better
 objective consumed by the swarm. The inherited results.tsv loss column stores that
-objective; memory_gb is a legacy column set to 0.0.
+objective. results.tsv has exactly commit, loss, status and description columns.
 
 | Task | Scope and editable file | Baseline and reference | Minimized objective |
 | --- | --- | --- | --- |
@@ -60,6 +60,12 @@ EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 -
 
 Fake inference, local memory and Exa-off avoid external inference/research/memory calls.
 The first BixBench preparation still downloads public data if its cache is empty.
+All three task.json files set deterministic=true. The conductor caches successful scores
+by editable-file Git blob, including the baseline, and avoids reevaluating repeated blobs.
+Same-round duplicates share the first blob's successful score. Duplicates still count in
+the boredom ledger as trivial attempts; they cannot move the kept-score frontier.
+Deterministic critic confirmation reuses the first score and logs the skipped rerun.
+Unbuildable fake descriptor assignments return a rejection instead of another method.
 The conductor edits only the task's declared candidate file in worker worktrees,
 evaluates commits in Docker, loads the task's boredom profile and uses the common prompts.
 No-push prevents remote pushes, not local Git writes.
@@ -77,7 +83,9 @@ python3 testcases/run_task.py hadamard19 --results results.tsv --desc "current c
 This evaluates the file as it currently exists; it does not implement the method named
 in --desc. With --status auto it records keep only for a strict objective improvement
 over the best kept row (or the first successful result), otherwise discard. It does not
-perform the swarm's epsilon-margin and repeated-evaluation confirmation rule.
+perform the swarm's epsilon-margin/confirmation rule or its per-run blob deduplication.
+For current deterministic tasks the swarm's confirmation reuses the first score; other
+tasks are evaluated a second time.
 Use a separate results file if preserving existing results.
 
 The [_reference](_reference) directory contains trusted reference programs; it is not
