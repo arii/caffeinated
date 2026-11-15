@@ -41,7 +41,7 @@ def main():
         emit('agent.updated', view(agent, short_role, 'reviewing'))
         return result
     llm.LLMClient.call = call
-    options = ['--repo', str(workspace), '--out', str(out), '--arm', config['arm'], '--rounds', str(config['rounds']), '--seed', str(config['seed']), '--llm', 'fake' if config['mode']=='offline' else 'tinker', '--gpu', 'modal' if config['mode']=='tinker_modal' else 'fake', '--memory-backend', 'local', '--exa', 'off', '--no-push']
+    options = ['--repo', str(workspace), '--out', str(out), '--arm', config['arm'], '--rounds', str(config['rounds']), '--seed', str(config['seed']), '--llm', 'tinker', '--gpu', 'modal', '--memory-backend', 'local', '--exa', 'off', '--no-push']
     if config.get('model'): options += ['--model', config['model']]
     return swarm.main(options)
 

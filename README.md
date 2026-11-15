@@ -16,13 +16,11 @@ Open http://localhost:5175. This starts the API on 127.0.0.1:8765 and Vite on 12
 
 Panels start hidden. Use the left sidebar to open Overview, Team, Runs, the observatory, or the guide. Under **Runs**, choose **New research run**, select an execution profile, and start. Actual agent identities and assignments create characters in the room. The observatory and stations show the native ledger, findings, shared memory, provenance, and downloadable logs. Completed runs stay available in the run selector.
 
-| Profile | Model calls | Evaluation |
-| --- | --- | --- |
-| Offline protocol check | Fake provider | Deterministic fake GPU scores |
-| Tinker protocol | Real Tinker sampling | Deterministic fake GPU scores |
-| Tinker + Modal | Real Tinker sampling | Modal GPU training; requires separate setup |
+The room starts with no experiment selected. Fake model/evaluator profiles and the three sample benchmark problems have been removed from the application. Their saved histories are retired from the API and run selector; local audit files are preserved.
 
-Protocol scores validate orchestration, not scientific or training performance. The room and central table are visualizations, not a biological solver. The frontend does not calculate research scores or schedule the swarm.
+The remaining live execution path uses real Tinker calls and Modal GPU training, with no fake fallback. It stays unavailable until Modal and prepared training data are configured. We have not selected a replacement experiment domain.
+
+The room and central table are visualizations, not a biological solver. The frontend does not calculate research scores or schedule the swarm.
 
 ## Tinker and training
 
@@ -44,11 +42,11 @@ Runs allow 1–3 rounds, one active job, a default limit of 32 high-level LLM ca
 - `backend/ingest.py` normalizes native JSONL artifacts and uses Ari’s own meter for per-agent boredom. `backend/store.py` persists snapshots and idempotent ordered events in SQLite.
 - `src/engine/contract.ts` validates incoming snapshots; `api.ts` handles snapshot loading and SSE reconnect. The world consumes roster and assignment state.
 
-Data lives in ignored `.lab_data/` (or `LAB_DATA_DIR`). A server restart marks unfinished jobs interrupted rather than silently rerunning them. The service binds to loopback for local use. Git clones separate research changes from the working branch; they are not a security sandbox for untrusted code.
+Data lives in ignored `.lab_data/` (or `LAB_DATA_DIR`). A server restart marks unfinished jobs interrupted rather than silently rerunning them. The service binds to loopback for local use. Git clones separate research changes from the working branch. The merged upstream CPU runner retains its Docker sandbox for future adapters, but its three sample tasks are not exposed in the application.
 
 Each agent’s API/export JSON includes `boredom` on a 0–100 scale and `boredomSpectrum: {position, color, regime}`. Position is 0–1, color is a continuous teal-to-rose mapping, and regime comes from the upstream meter. Individual spectra stay in JSON; the screen shows one swarm spectrum. Color does not replace the scheduler’s threshold, hysteresis, and convergence rules.
 
-The API is the integration boundary for future domain adapters, including diffusion or cell simulations. Preserve their metric units, source records, and simulation timestamps. Ig Nobel, trace replay, and generic benchmark branches have not been folded into this frontend task. See [backend design](docs/lab-backend-design.md).
+The API is the integration boundary for future domain adapters, including diffusion or cell simulations. Preserve their metric units, source records, and simulation timestamps. The CPU task branch is integrated. Ig Nobel and biological solvers remain separate integrations. See [backend design](docs/lab-backend-design.md).
 
 ## Controls and checks
 
@@ -62,4 +60,14 @@ npm run build
 .venv/bin/python -m unittest discover -s boredom_meter/tests
 ```
 
-Frontend checks cover snapshot validation/ordering and station access; backend checks cover durable ingestion, API validation, interruption recovery, and an actual offline swarm run. Upstream tests include mocked Tinker behavior. A bounded live Tinker/protocol run was also completed locally; Modal training remains separately configured.
+Frontend checks cover snapshot validation/ordering and station access; backend checks cover durable ingestion, API validation, interruption recovery, and an actual Docker-scored benchmark baseline. Upstream tests include mocked Tinker behavior. A live Tinker/CPU verification was stopped when the sample tasks were removed. Modal training remains separately configured.
+
+## Ari’s archive
+
+The supplied `swarm-viewer-sample-runs.zip` was extracted outside the repository. Its three autoresearch recordings were inspected and imported into private `.lab_data/`, then removed from the application at the user’s request. The Ig Nobel recording was left out. Import an extracted bundle with:
+
+```sh
+.venv/bin/python -m backend.import_recording /path/to/extracted/runs
+```
+
+The adapter folds native events in tick order, preserves original entity files and audit events, and labels the result recorded. It does not treat the bundle’s keyframe zero as an initial state because that keyframe contains later-run data. Missing seeds/source commits and missing boredom remain unknown. The ZIP contains records, not candidate executables; they cannot be resumed from this bundle alone. Recorded model calls and measurements are supplied provenance, not measurements independently rerun on this computer.

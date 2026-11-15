@@ -47,7 +47,7 @@ function renderHUD(){
   $('run-progress').textContent=s?`${Math.round(s.progress*100)}%`:'—';$('progress-fill').style.width=`${(s?.progress||0)*100}%`;
   $('progress-label').textContent=s?`${s.status} · round ${s.round}/${s.config.rounds}`:'No active run';
   $('metric-name').textContent=s?.metric.name||'Metric';$('metric-value').textContent=s?.value==null?'—':s.value.toFixed(6);
-  $('run-label').textContent=s?`${s.config.mode==='offline'?'OFFLINE PROTOCOL':s.provenance.gpu==='fake'?'TINKER / PROTOCOL EVALUATION':'TINKER / MODAL TRAINING'} · ${s.status.toUpperCase()}`:connected?'Connected · ready for research':'Start backend with npm run dev';
+  $('run-label').textContent=s?`TINKER / MODAL TRAINING · ${s.status.toUpperCase()}`:connected?'Connected · no experiment selected':'Start backend with npm run dev';
   $('provenance').innerHTML=s?`${esc(s.provenance.llm.toUpperCase())} MODEL · ${esc(s.provenance.gpu.toUpperCase())} EVALUATOR<br><span>${esc(s.runId.slice(0,12))} · ${esc(s.sourceCommit.slice(0,7))}</span>`:'LIVE STATE · PERSISTENT HISTORY<br><span>NO RUN STARTS AUTOMATICALLY</span>';
   $<HTMLButtonElement>('new-run').disabled=!connected||!!(s&&active.has(s.status));
 }
@@ -55,7 +55,7 @@ function renderPanel(){
   const s=snapshot,station=world.stations.find(s=>s.id===panel);
   $('console-tag').textContent=panel==='research'?'RUN OBSERVATORY':`STATION / ${panel.toUpperCase()}`;
   if(!s){$('console-content').innerHTML='<h2>The next question.</h2><p>The lab is waiting for a research run. Start one to follow actual agent assignments, proposals, measurements, and findings.</p><div class="console-actions"><button data-action="new">Configure a run →</button></div>';return;}
-  let html=`<h2>${esc(station?.name||'Autoresearch observatory')}</h2><p>${esc(s.config.mode==='offline'?'Offline protocol check: Ari’s real orchestration, with fake LLM and GPU providers.':s.provenance.gpu==='fake'?'Tinker is producing agent reasoning. GPU scores are deterministic protocol fixtures, not training measurements.':'Tinker reasoning and Modal GPU training. Validation bits per byte are lower-is-better.')}</p>`;
+  let html=`<h2>${esc(station?.name||'Autoresearch observatory')}</h2><p>Tinker reasoning and Modal GPU training. Validation bits per byte are lower-is-better.</p>`;
   html+=`<div class="stat-grid"><div><label>STATUS / ROUND ${s.round}</label><b class="status-value">${esc(s.status)}</b></div><div><label>BOREDOM / ${esc(s.regime)}</label><b>${s.boredom.toFixed(0)}%</b></div><div><label>${esc(s.metric.name.toUpperCase())} ↓</label><b>${s.value==null?'—':s.value.toFixed(6)}</b></div></div>`;
   html+=`<div class="console-spectrum"><div class="boredom-spectrum" role="meter" aria-label="Swarm boredom" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${boredomPercent(s.boredom)}"><i style="left:${boredomPercent(s.boredom)}%"></i></div><div class="spectrum-legend"><span>0 · Engaged</span><span>100 · Repetitive</span></div><p>Color shows the backend’s boredom score. The current regime comes from the runner’s scheduling rules.</p></div>`;
   if(s.error)html+=`<p class="error-text">${esc(s.error)}</p>`;
@@ -64,30 +64,31 @@ function renderPanel(){
     html+=s.results.slice().reverse().map(r=>`<tr><td>${r.round}</td><td>${esc(r.agent)}</td><td>${esc(r.kind==='baseline'?'reference baseline':r.status)}</td><td>${r.value==null?'—':r.value.toFixed(6)}</td><td title="${esc(r.commit)}">${esc(r.description)}</td></tr>`).join('');html+='</tbody></table></div>';
   }
   html+='<h3>Research findings & shared memory</h3>'+(s.findings.length?s.findings.slice(-30).reverse().map(f=>`<div class="finding"><b>${esc(f.agent||f.role)}</b><span>${esc(f.message)}</span></div>`).join(''):'<p>No findings recorded yet.</p>');
-  if(panel==='explorer'||panel==='notebook')html+='<h3>Research sources</h3>'+(s.sources.length?s.sources.map(source=>`<div class="artifact">${esc(source.id)} · ${esc(source.title)}<br>${esc(source.url)}</div>`).join(''):'<p>Exa is disabled for these bounded local runs. No external sources have been claimed.</p>');
-  html+=`<h3>Provenance</h3><div class="artifact">Run ${esc(s.runId)}<br>Source commit ${esc(s.sourceCommit)}<br>Model ${esc(s.config.model||'fake')} · Seed ${s.config.seed} · Arm ${s.config.arm}<br>Metric ${esc(s.metric.name)} (${esc(s.metric.unit)}), ${esc(s.metric.direction)}<br>Exa off · Local memory · No Git pushes</div><div class="console-actions">${active.has(s.status)?'<button class="stop" data-action="stop">Stop run</button>':'<button data-action="new">New run →</button>'}<a href="/api/runs/${s.runId}/export" download="lab-run.json">Export full history ↓</a><button class="secondary" data-action="artifacts">Run artifacts ↗</button></div><div id="artifacts"></div>`;
+  if(panel==='explorer'||panel==='notebook')html+='<h3>Research sources</h3>'+(s.sources.length?s.sources.map(source=>`<div class="artifact">${esc(source.id)} · ${esc(source.title)}<br>${esc(source.url)}</div>`).join(''):'<p>No sources were recorded for this run.</p>');
+  html+=`<h3>Provenance</h3><div class="artifact">Run ${esc(s.runId)}<br>Source commit ${esc(s.sourceCommit)}<br>Model ${esc(s.config.model||'Not supplied')} · Seed ${s.config.seed} · Arm ${s.config.arm}<br>Metric ${esc(s.metric.name)} (${esc(s.metric.unit)}), ${esc(s.metric.direction)}<br>Exa ${esc(s.provenance.exa)} · Memory ${esc(s.provenance.memory)}<br>No Git pushes</div><div class="console-actions">${active.has(s.status)?'<button class="stop" data-action="stop">Stop run</button>':'<button data-action="new">New run →</button>'}<a href="/api/runs/${s.runId}/export" download="lab-run.json">Export full history ↓</a><button class="secondary" data-action="artifacts">Run artifacts ↗</button></div><div id="artifacts"></div>`;
   $('console-content').innerHTML=html;
 }
 function openPanel(which:typeof panel){closeDrawer();unlock();panel=which;renderPanel();if(!consoleDialog.open)consoleDialog.showModal();}
-function modeDescription(){const selected=$<HTMLSelectElement>('mode').value;const mode=capabilities?.modes.find(m=>m.id===selected);$('mode-description').textContent=mode?.description||'Backend unavailable';$<HTMLInputElement>('model').disabled=selected==='offline';}
+function modeDescription(){const selected=$<HTMLSelectElement>('mode').value;const mode=capabilities?.modes.find(m=>m.id===selected);$('mode-description').textContent=mode?.description||'Backend unavailable';$<HTMLInputElement>('model').disabled=false;$<HTMLButtonElement>('submit-run').disabled=!mode?.available;}
 async function setupRun(){
   closeDrawer();unlock();consoleDialog.close();$('run-error').textContent='';
   try{capabilities=await client.health();connected=true;renderHUD();
     $('mode').innerHTML=capabilities.modes.map(m=>`<option value="${m.id}" ${m.available?'':'disabled'}>${esc(m.name)}${m.available?'':' · setup required'}</option>`).join('');
-    $<HTMLSelectElement>('mode').value=capabilities.modes.find(m=>m.available)?.id||'offline';
+    $<HTMLSelectElement>('mode').value=capabilities.modes.find(m=>m.available)?.id||'tinker_modal';
     $<HTMLInputElement>('model').value=capabilities.model;modeDescription();configure.showModal();
   }catch(e){toast((e as Error).message);}
 }
 async function refreshRuns(attach=false){
-  try{const runs=await client.list();$('run-picker').innerHTML='<option value="">Select a run</option>'+runs.map(s=>`<option value="${s.runId}">${s.runId.slice(0,7)} · ${s.config.mode} · ${s.status}</option>`).join('');
+  try{const runs=await client.list();$('run-picker').innerHTML='<option value="">Select a run</option>'+runs.map(s=>`<option value="${s.runId}">${esc(s.title||s.config.task||s.runId.slice(0,7))} · ${s.status}</option>`).join('');
     if(snapshot)$<HTMLSelectElement>('run-picker').value=snapshot.runId;
+    if(attach&&!runs.length){const url=new URL(location.href);url.searchParams.delete('run');history.replaceState(null,'',url);}
     if(attach&&runs.length){const requested=new URLSearchParams(location.search).get('run');await attachRun(runs.find(s=>s.runId===requested)?.runId||runs.find(s=>active.has(s.status))?.runId||runs[0].runId);}
   }catch{}
 }
 async function attachRun(id:string){try{await client.attach(id);const url=new URL(location.href);url.search='';url.searchParams.set('run',id);history.replaceState(null,'',url);$<HTMLSelectElement>('run-picker').value=id;}catch(e){toast((e as Error).message);}}
 $('run-form').addEventListener('submit',async e=>{e.preventDefault();$<HTMLButtonElement>('submit-run').disabled=true;$('run-error').textContent='';
   const mode=$<HTMLSelectElement>('mode').value as RunConfig['mode'];const model=$<HTMLInputElement>('model').value.trim();
-  try{const s=await client.start({mode,arm:$<HTMLSelectElement>('arm').value as 'A'|'B',rounds:Number($<HTMLInputElement>('rounds').value),seed:Number($<HTMLInputElement>('seed').value),...(mode==='offline'||!model?{}:{model})});configure.close();await refreshRuns();await attachRun(s.runId);toast('Research started. The team is joining the lab.');}
+  try{const s=await client.start({mode,arm:$<HTMLSelectElement>('arm').value as 'A'|'B',rounds:Number($<HTMLInputElement>('rounds').value),seed:Number($<HTMLInputElement>('seed').value),...(!model?{}:{model})});configure.close();await refreshRuns();await attachRun(s.runId);toast('Research started. The team is joining the lab.');}
   catch(error){$('run-error').textContent=(error as Error).message;}finally{$<HTMLButtonElement>('submit-run').disabled=false;}
 });
 $('mode').onchange=modeDescription;$('new-run').onclick=setupRun;$('close-configure').onclick=()=>configure.close();

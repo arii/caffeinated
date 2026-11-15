@@ -254,7 +254,7 @@ export function createWorld(): LabWorld {
     state.agents.forEach((a,index)=>{
       let w=workers.get(a.id);
       if(!w)w=researcher((index%3-1)*.6,10.4+Math.floor(index/3)*.4,Math.PI,a.name,a.stationId,index%2?'#d0a080':'#a47c60','#4b3c32',a.id);
-      const slot=Number(a.id.match(/\d+$/)?.[0]||1)-1;
+      const slot=a.id.startsWith('worker-')?Number(a.id.match(/\d+$/)?.[0]||1)-1:index%4;
       const goal=a.stationId==='culture'?{x:-9+slot*.85,z:-3.45}:a.stationId==='analyzer'?{x:5.5,z:-1.15}:a.stationId==='notebook'?{x:-6.3,z:6.8}:{x:-.9+slot*.55,z:-9.25};
       const target=`${a.stationId}:${slot}`;
       if(w.target!==target){w.target=target;w.station=a.stationId;w.path=findPath(w.group.position,goal,bounds,colliders);}

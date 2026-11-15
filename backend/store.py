@@ -8,13 +8,13 @@ ACTIVE = {'queued', 'starting', 'running', 'stopping'}
 
 
 def initial_snapshot(run_id, config, commit):
-    protocol = config['mode'] != 'tinker_modal'
+    cpu = config['mode'] == 'tinker_cpu'
     return {'runId': run_id, 'lastSequence': 0, 'status': 'queued', 'createdAt': time.time(),
             'config': config, 'sourceCommit': commit, 'progress': 0, 'round': 0, 'boredom': 0,
             'regime': 'EXPLOIT', 'value': None, 'reference': None, 'agents': [], 'findings': [],
             'results': [], 'sources': [], 'error': None,
-            'metric': {'name': 'Protocol score' if protocol else 'val_bpb', 'unit': 'synthetic' if protocol else 'bits/byte', 'direction': 'minimize'},
-            'provenance': {'llm': 'fake' if config['mode'] == 'offline' else 'tinker', 'gpu': 'fake' if protocol else 'modal', 'exa': 'off', 'memory': 'local'}}
+            'metric': {'name': 'Task loss' if cpu else 'val_bpb', 'unit': '' if cpu else 'bits/byte', 'direction': 'minimize'},
+            'provenance': {'llm': 'tinker', 'gpu': 'cpu-docker' if cpu else 'modal', 'exa': 'off', 'memory': 'local'}}
 
 
 def apply(snapshot, kind, payload):
@@ -24,6 +24,8 @@ def apply(snapshot, kind, payload):
         if s['status'] == 'completed': s['progress'] = 1
         if s['status'] not in ACTIVE:
             s['agents'] = [{**a, 'state': 'reviewing' if s['status'] == 'completed' else 'idle'} for a in s['agents']]
+    elif kind == 'run.metadata':
+        s.update(payload)
     elif kind == 'agent.updated':
         previous=next((a for a in s['agents'] if a['id']==payload['id']),{})
         if 'boredomSpectrum' in previous:

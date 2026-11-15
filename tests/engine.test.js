@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {SnapshotSchema} from '../src/engine/contract.ts';
 import {acceptSnapshot} from '../src/engine/state.ts';
-const snapshot={runId:'one',lastSequence:3,status:'running',createdAt:1,config:{mode:'offline',arm:'B',rounds:1,seed:42,model:null},sourceCommit:'abc',progress:0,round:1,boredom:20,regime:'EXPLOIT',value:null,reference:null,agents:[],findings:[],results:[],sources:[],error:null,metric:{name:'Protocol score',unit:'synthetic',direction:'minimize'},provenance:{llm:'fake',gpu:'fake',exa:'off',memory:'local'}};
+const snapshot={runId:'one',lastSequence:3,status:'running',createdAt:1,config:{mode:'tinker_modal',arm:'B',rounds:1,seed:42,model:null},sourceCommit:'abc',progress:0,round:1,boredom:20,regime:'EXPLOIT',value:null,reference:null,agents:[],findings:[],results:[],sources:[],error:null,metric:{name:'Task loss',unit:'',direction:'minimize'},provenance:{llm:'tinker',gpu:'modal',exa:'off',memory:'local'}};
 test('snapshot contract rejects invalid lifecycle and measurements',()=>{
  assert.ok(SnapshotSchema.safeParse(snapshot).success);
  for(const patch of [{status:'invented'},{progress:1.1},{value:NaN},{agents:[{id:'x'}]}])assert.equal(SnapshotSchema.safeParse({...snapshot,...patch}).success,false);

@@ -31,7 +31,7 @@ load_local_env(ROOT/'.env')
 
 class RunConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    mode: Literal['offline', 'tinker_protocol', 'tinker_modal'] = 'tinker_protocol'
+    mode: Literal['tinker_modal'] = 'tinker_modal'
     arm: Literal['A','B'] = 'B'
     rounds: int = Field(default=1, ge=1, le=3)
     seed: int = Field(default=42, ge=0, le=2147483647)
@@ -58,13 +58,10 @@ class Manager:
         return text
 
     def capabilities(self):
-        tinker = bool(importlib.util.find_spec('tinker') and importlib.util.find_spec('tml_renderers'))
-        key = bool(os.environ.get('TINKER_API_KEY')); model=os.environ.get('TINKER_MODEL','')
-        modal = shutil.which('modal') is not None
+        tinker=bool(importlib.util.find_spec('tinker') and importlib.util.find_spec('tml_renderers'))
+        key=bool(os.environ.get('TINKER_API_KEY'));model=os.environ.get('TINKER_MODEL','')
         return {'connected':True,'tinkerInstalled':tinker,'tinkerConfigured':key,'model':model,
-                'modes':[{'id':'tinker_protocol','name':'Tinker reasoning · protocol evaluation','available':tinker and key and bool(model),'description':'Real model calls; deterministic fake GPU scores. Not a training result.'},
-                         {'id':'tinker_modal','name':'Tinker reasoning · Modal training','available':tinker and key and bool(model) and modal,'description':'Real model calls and GPU training. Requires Modal authentication and prepared data.'},
-                         {'id':'offline','name':'Offline protocol check','available':True,'description':'Real swarm orchestration with fake model and GPU providers. No paid services.'}],
+                'modes':[{'id':'tinker_modal','name':'Tinker · Modal training','available':tinker and key and bool(model) and shutil.which('modal') is not None,'description':'Real model calls and GPU training. Requires Modal authentication and prepared data. No default benchmark is selected.'}],
                 'maxRounds':3,'maxModelCalls':int(os.environ.get('LAB_MAX_LLM_CALLS','32'))}
 
     def start(self, config):
@@ -72,7 +69,7 @@ class Manager:
             if any(s['status'] in ACTIVE for s in self.store.list()): raise HTTPException(409,'A run is already active. Stop it before starting another.')
             mode=next(m for m in self.capabilities()['modes'] if m['id']==config.mode)
             if not mode['available']: raise HTTPException(422,'Selected provider is not ready. Install/configure it before starting.')
-            c=config.model_dump();c['model']=c['model'] or os.environ.get('TINKER_MODEL') if c['mode']!='offline' else None
+            c=config.model_dump();c['model']=c['model'] or os.environ.get('TINKER_MODEL')
             commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
             run_id=uuid.uuid4().hex;s=self.store.create(run_id,c,commit);self.out(run_id).mkdir(parents=True)
             if self.runner:
@@ -89,7 +86,7 @@ class Manager:
                 subprocess.run(['git','config',key,value],cwd=workspace,check=True,capture_output=True)
             (base/'config.json').write_text(json.dumps(s['config']))
             if (out/'stop.requested').exists(): return
-            env={k:v for k,v in os.environ.items() if k in {'PATH','HOME','TMPDIR','LANG','LC_ALL','SSL_CERT_FILE','SSL_CERT_DIR','TINKER_API_KEY','TINKER_MODEL','LAB_MAX_LLM_CALLS','LAB_RUN_TIMEOUT','MODAL_TOKEN_ID','MODAL_TOKEN_SECRET'}}
+            env={k:v for k,v in os.environ.items() if k in {'PATH','HOME','TMPDIR','LANG','LC_ALL','SSL_CERT_FILE','SSL_CERT_DIR','TINKER_API_KEY','TINKER_MODEL','LAB_MAX_LLM_CALLS','LAB_RUN_TIMEOUT','MODAL_TOKEN_ID','MODAL_TOKEN_SECRET','DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG'}}
             env.update({'PYTHONPATH':str(ROOT),'PYTHONUNBUFFERED':'1','EXA':'off','MEMORY_BACKEND':'local','MPLCONFIGDIR':str(base/'mpl')})
             with (out/'worker.log').open('w') as log:
                 p=subprocess.Popen([sys.executable,str(ROOT/'backend'/'worker.py'),'--workspace',str(workspace),'--out',str(out),'--config',str(base/'config.json')],cwd=workspace,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
@@ -137,8 +134,7 @@ class Manager:
     def artifacts(self,run_id):
         out=self.out(run_id)
         if not out.is_dir():return []
-        paths=[p for p in out.iterdir() if p.is_file() and p.suffix in {'.json','.jsonl','.tsv','.log'}]
-        paths += list((out/'runs').glob('*.log')) if (out/'runs').is_dir() else []
+        paths=[p for p in out.rglob('*') if p.is_file() and p.suffix in {'.json','.jsonl','.ndjson','.tsv','.log'}]
         return [{'id':str(p.relative_to(out)),'name':p.name,'bytes':p.stat().st_size} for p in sorted(paths)][:200]
 
 
@@ -160,19 +156,20 @@ def create_app(data_dir=None,runner=True):
     def manager():return holder['manager']
     def get(run_id):
         if not (s:=manager().store.get(run_id)):raise HTTPException(404,'Run not found')
+        if s['config']['mode']!='tinker_modal':raise HTTPException(410,'This experiment has been removed from the Lab Environment.')
         return s
     @app.get('/api/health')
     def health():return manager().capabilities()
     @app.get('/api/experiments')
     def experiments():return [{'id':'autoresearch','title':'Autoresearch swarm','description':'Conductor, four workers, and a critic. Ari’s boredom-controlled search over train.py.'}]
     @app.get('/api/runs')
-    def runs():return manager().store.list()
+    def runs():return [s for s in manager().store.list() if s['config']['mode']=='tinker_modal']
     @app.post('/api/runs',status_code=201)
     def start(config:RunConfig):return manager().start(config)
     @app.get('/api/runs/{run_id}')
     def snapshot(run_id:str):return get(run_id)
     @app.post('/api/runs/{run_id}/stop')
-    def stop(run_id:str):return manager().stop(run_id)
+    def stop(run_id:str):get(run_id);return manager().stop(run_id)
     @app.get('/api/runs/{run_id}/events')
     async def events(run_id:str,request:Request,after:int=0):
         get(run_id)

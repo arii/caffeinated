@@ -62,7 +62,9 @@ def ingest(store, run_id, directory, redact=lambda s: s):
 
     # Use the upstream meter for each agent; color is presentation metadata only.
     ledger=root/'ledger.jsonl'
-    profile_path=root.parent/'workspace'/'boredom_meter'/'profiles'/'autoresearch_llm.json'
+    config=store.get(run_id)['config']
+    workspace=root.parent/'workspace'
+    profile_path=workspace/'testcases'/config['task']/'boredom_profile.json' if config['mode']=='tinker_cpu' else workspace/'boredom_meter'/'profiles'/'autoresearch_llm.json'
     if ledger.is_file() and profile_path.is_file():
         import hashlib
         from boredom import descriptor_meter as meter

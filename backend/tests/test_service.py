@@ -7,11 +7,16 @@ from fastapi.testclient import TestClient
 from backend.app import create_app, Manager, RunConfig
 from backend.store import Store
 from backend.ingest import ingest
+from unittest.mock import patch
 
 class ServiceTests(unittest.TestCase):
+    def setUp(self):
+        self.capabilities=patch.object(Manager,'capabilities',return_value={'modes':[{'id':'tinker_modal','available':True}]})
+        self.capabilities.start();self.addCleanup(self.capabilities.stop)
+
     def test_ingestion_deduplicates_partial_writes_and_preserves_results(self):
         with tempfile.TemporaryDirectory() as d:
-            root=Path(d);store=Store(root/'db');store.create('r',RunConfig(mode='offline').model_dump(),'abc')
+            root=Path(d);store=Store(root/'db');store.create('r',RunConfig(mode='tinker_modal').model_dump(),'abc')
             path=root/'ledger.jsonl'
             line=json.dumps({'kind':'candidate','status':'keep','score':1.25,'agent':'worker-1','description':'measured'})
             path.write_text(line)
@@ -24,10 +29,10 @@ class ServiceTests(unittest.TestCase):
     def test_api_validation_single_run_stop_and_recovery(self):
         with tempfile.TemporaryDirectory() as d:
             with TestClient(create_app(d,runner=False)) as c:
-                self.assertEqual(c.post('/api/runs',json={'mode':'offline','rounds':99}).status_code,422)
-                self.assertEqual(c.post('/api/runs',json={'mode':'offline'},headers={'Origin':'https://external.example'}).status_code,403)
-                r=c.post('/api/runs',json={'mode':'offline'});self.assertEqual(r.status_code,201);rid=r.json()['runId']
-                self.assertEqual(c.post('/api/runs',json={'mode':'offline'}).status_code,409)
+                self.assertEqual(c.post('/api/runs',json={'mode':'tinker_modal','rounds':99}).status_code,422)
+                self.assertEqual(c.post('/api/runs',json={'mode':'tinker_modal'},headers={'Origin':'https://external.example'}).status_code,403)
+                r=c.post('/api/runs',json={'mode':'tinker_modal'});self.assertEqual(r.status_code,201);rid=r.json()['runId']
+                self.assertEqual(c.post('/api/runs',json={'mode':'tinker_modal'}).status_code,409)
                 self.assertEqual(c.get(f'/api/runs/{rid}/artifacts/not-allowed').status_code,404)
                 self.assertEqual(c.get('/api/runs/missing').status_code,404)
                 self.assertEqual(c.post(f'/api/runs/{rid}/stop').json()['status'],'stopping')
@@ -39,31 +44,29 @@ class ServiceTests(unittest.TestCase):
 
     def test_secret_redaction_and_artifact_containment(self):
         with tempfile.TemporaryDirectory() as d:
-            m=Manager(d,runner=False);m.secrets=['private-secret-value'];r=m.start(RunConfig(mode='offline'));rid=r['runId']
+            m=Manager(d,runner=False);m.secrets=['private-secret-value'];r=m.start(RunConfig(mode='tinker_modal'));rid=r['runId']
             (m.out(rid)/'worker.log').write_text('private-secret-value')
             self.assertEqual(m.redact((m.out(rid)/'worker.log').read_text()),'[REDACTED]')
             self.assertEqual(m.artifacts(rid)[0]['id'],'worker.log')
             m.close()
 
-    def test_real_offline_swarm_reaches_terminal_state(self):
-        with tempfile.TemporaryDirectory() as d:
-            m=Manager(d);r=m.start(RunConfig(mode='offline'));rid=r['runId']
-            try:
-                until=time.monotonic()+40
-                while time.monotonic()<until:
-                    s=m.store.get(rid)
-                    if s['status'] not in {'queued','starting','running','stopping'}:break
-                    time.sleep(.2)
-                self.assertEqual(s['status'],'completed',s.get('error'))
-                self.assertEqual(len(s['agents']),6);self.assertGreater(len(s['results']),0)
-                for a in s['agents']:
-                    spectrum=a['boredomSpectrum']
-                    self.assertAlmostEqual(spectrum['position']*100,a['boredom'])
-                    self.assertRegex(spectrum['color'],r'^#[0-9a-f]{6}$')
-                ledger=m.out(rid)/'ledger.jsonl';complete=ledger.read_text();ledger.write_text(complete+'{"partial":')
-                ingest(m.store,rid,m.out(rid));ledger.write_text(complete)
-                self.assertEqual(s['provenance']['gpu'],'fake');self.assertEqual(s['metric']['unit'],'synthetic')
-                before=s['lastSequence'];ingest(m.store,rid,m.out(rid));self.assertEqual(m.store.get(rid)['lastSequence'],before)
-            finally:m.close()
+    def test_fake_modes_are_rejected(self):
+        with tempfile.TemporaryDirectory() as d, TestClient(create_app(d,runner=False)) as c:
+            for mode in ['offline','tinker_protocol','tinker_cpu']:
+                self.assertEqual(c.post('/api/runs',json={'mode':mode}).status_code,422)
+            store=Store(Path(d)/'runs.sqlite3')
+            store.create('retired',{'mode':'offline','rounds':1},'abc')
+            store.create('removed-sample',{'mode':'recorded','task':'hadamard19','rounds':4},'')
+            self.assertEqual(c.get('/api/runs/removed-sample').status_code,410)
+            self.assertEqual(c.get('/api/runs/retired').status_code,410)
+            self.assertEqual(c.get('/api/runs').json(),[])
+
+    def test_cpu_grader_returns_measured_loss(self):
+        from testcases import sandbox
+        if not sandbox.docker_available():self.skipTest('Docker unavailable')
+        task=Path(__file__).resolve().parents[2]/'testcases'/'hadamard19'
+        result=sandbox.evaluate_task(task,(task/'construct.py').read_text())
+        self.assertEqual(result['status'],'ok',result)
+        self.assertAlmostEqual(result['loss'],.058514,places=5)
 
 if __name__=='__main__':unittest.main()
