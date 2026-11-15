@@ -70,7 +70,7 @@ def body(e: dict, run: Path, agents: dict) -> str:
     if t == "snap":
         src = p.get("source") or {}
         return (f"bored; meets <b>{esc(p.get('partner'))}</b>. Inspired by: "
-                f"<a href='{esc(src.get('url', '#'))}'>{esc(src.get('title') or src.get('url', 'source'))}</a>"
+                f"{link(src.get('url'), src.get('title') or src.get('url') or 'source')}"
                 f"<div><i>{esc(str(src.get('snippet', ''))[:300])}</i></div>")
     if t == "share":
         return (f"shares memories with <b>{esc(p.get('receiver'))}</b>: offered {len(p.get('offered', []))}, "
@@ -121,7 +121,7 @@ def body(e: dict, run: Path, agents: dict) -> str:
                 f"<details><summary>analysis code</summary><pre>{esc(p.get('code', ''))}</pre></details>"
                 + (f"<details><summary>stderr</summary><pre>{esc(p.get('stderr'))}</pre></details>" if p.get("stderr") else ""))
     if t == "seed":
-        rows = "".join(f"<li><a href='{esc(s.get('url', '#'))}'>{esc(s.get('title') or s.get('url'))}</a></li>"
+        rows = "".join(f"<li>{link(s.get('url'), s.get('title'))}</li>"
                        for s in p.get("sources", []))
         return f"searched <i>{esc(p.get('query'))}</i><details><summary>{len(p.get('sources', []))} sources</summary><ul>{rows}</ul></details>"
     if t == "lesson":
@@ -143,8 +143,9 @@ def body(e: dict, run: Path, agents: dict) -> str:
                         f"{' (' + cols + ')' if cols else ''}{'' if ev.get('read') else '; the code did not open a dataset'}")
             proof = f"<div>{tag}. Data: {data or 'none'}</div><details><summary>{len(ev.get('citations', []))} cited sources</summary><ul>{cites}</ul></details>"
         plot = ""
-        if p.get("plot_path") and (run / p["plot_path"]).exists():
-            plot = f"<div class=plot>{(run / p['plot_path']).read_text(encoding='utf-8')}</div>"
+        svg = (run / str(p.get("plot_path") or "")).resolve()
+        if p.get("plot_path") and svg.suffix == ".svg" and run.resolve() in svg.parents and svg.is_file():
+            plot = f"<div class=plot>{svg.read_text(encoding='utf-8')}</div>"
         return (f"<b>{esc(p.get('title', ''))}</b> — {verdict}"
                 f"<div>effect {esc(st.get('effect_size'))}, n={esc(st.get('n'))}, p={esc(st.get('p'))}; "
                 f"predicted {esc((p.get('prediction') or {}).get('direction'))} {esc((p.get('prediction') or {}).get('effect_size'))}; "
