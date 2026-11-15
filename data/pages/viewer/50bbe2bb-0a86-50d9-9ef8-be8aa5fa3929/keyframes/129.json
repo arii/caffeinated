@@ -1,0 +1,869 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 1,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 18,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 5,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 10,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 3,
+    "observations": 16,
+    "questions": 9,
+    "tokens": 18695
+   },
+   "diary_head": {
+    "diary_id": "diary:3",
+    "excerpt": "The sharpness–annoyance lead remains unusable because no confirmed CSV mirror or headers are available. SPASS instead supplies a new, directly downloadable street-scene population with exact numeric coordinate headers. Sound-localization re"
+   },
+   "focus": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "hypothesis_id": "hypothesis:3",
+    "question_id": "question:Q5"
+   },
+   "last_observation_id": "observation:S12",
+   "last_question_id": "question:Q5",
+   "last_reward": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "metric_value": 0.0,
+    "reward_id": "reward:2",
+    "status": "keep",
+    "tick": 109,
+    "value": 100.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 121,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 11,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 6,
+    "questions": 4,
+    "tokens": 5994
+   },
+   "diary_head": {
+    "diary_id": "diary:4",
+    "excerpt": "The steak-risk baseline is null and its dataset cannot be reused. Palmer penguins provides exact numeric headers and many complete rows; published morphological work supports positive scaling between flipper length and body mass, with an ef"
+   },
+   "focus": {
+    "experiment_id": "experiment:4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+    "hypothesis_id": "hypothesis:4",
+    "question_id": "question:Q6"
+   },
+   "last_observation_id": "observation:S15",
+   "last_question_id": "question:Q6",
+   "last_reward": {
+    "experiment_id": "experiment:4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+    "metric_value": null,
+    "reward_id": "reward:3",
+    "status": "crash",
+    "tick": 111,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 122,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 12,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 6,
+    "questions": 4,
+    "tokens": 6151
+   },
+   "diary_head": {
+    "diary_id": "diary:5",
+    "excerpt": "The steak dataset is exhausted, while lme4's sleepstudy CSV provides 180 repeated observations with exact numeric headers. Belenky et al. documented cumulative lapses and slowing during sleep restriction, and Lim and Dinges' meta-analysis s"
+   },
+   "focus": {
+    "experiment_id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+    "hypothesis_id": "hypothesis:5",
+    "question_id": "question:Q7"
+   },
+   "last_observation_id": "observation:S18",
+   "last_question_id": "question:Q7",
+   "last_reward": {
+    "experiment_id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+    "metric_value": 0.0,
+    "reward_id": "reward:4",
+    "status": "discard",
+    "tick": 113,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 123,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 13,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 6,
+    "questions": 4,
+    "tokens": 6393
+   },
+   "diary_head": {
+    "diary_id": "diary:6",
+    "excerpt": "The steak dataset is exhausted, and the other three strong candidates are already claimed. The Rdatasets mtcars CSV is a distinct, directly downloadable public dataset with exact numeric headers wt and mpg. Extra mass increases rolling resi"
+   },
+   "focus": {
+    "experiment_id": "experiment:b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+    "hypothesis_id": "hypothesis:6",
+    "question_id": "question:Q8"
+   },
+   "last_observation_id": "observation:S21",
+   "last_question_id": "question:Q8",
+   "last_reward": {
+    "experiment_id": "experiment:b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+    "metric_value": 1.0,
+    "reward_id": "reward:5",
+    "status": "discard",
+    "tick": 115,
+    "value": -100.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 124,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 5976
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 128,
+   "station": "notebook",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ],
+   [
+    "48800556-998f-552b-aa75-6ab96f83acde",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "166bcc3b-e216-5d63-b96c-e06a1f7245e7",
+   "payload": {
+    "description": "Test whether penguins with longer flippers are heavier, a strong body-size allom",
+    "role": "exploit",
+    "text": "Testing: Test whether penguins with longer flippers are heavier, a strong body-size allom"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+    "hypothesis_id": "hypothesis:4"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 3,
+    "native_type": "candidate"
+   },
+   "tick": 110,
+   "ts": "2026-11-15T08:13:25.889207Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "de022e56-7d92-5907-b85a-1e586fa633c7",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "crash",
+    "text": "Result crash: interesting-finding loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:4c481e7b69eca62ff7ff6d48b3d71a783170363b",
+    "reward_id": "reward:3"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 3,
+    "native_type": "candidate"
+   },
+   "tick": 111,
+   "ts": "2026-11-15T08:13:25.889207Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "9803a277-5997-5418-9c8b-e6e61d1abbb9",
+   "payload": {
+    "description": "Test whether reaction times steadily lengthen as days of sleep restriction accum",
+    "role": "exploit",
+    "text": "Testing: Test whether reaction times steadily lengthen as days of sleep restriction accum"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+    "hypothesis_id": "hypothesis:5"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 4,
+    "native_type": "candidate"
+   },
+   "tick": 112,
+   "ts": "2026-11-15T08:13:26.248195Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "4f5f92f2-f7ec-585b-84c5-86b09aa0a0f9",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+    "reward_id": "reward:4"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 4,
+    "native_type": "candidate"
+   },
+   "tick": 113,
+   "ts": "2026-11-15T08:13:26.248195Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "e652f055-2fca-526e-b443-70b39dd109d9",
+   "payload": {
+    "description": "Test whether heavier cars are thirstier: vehicle weight should strongly reduce m",
+    "role": "exploit",
+    "text": "Testing: Test whether heavier cars are thirstier: vehicle weight should strongly reduce m"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+    "hypothesis_id": "hypothesis:6"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 5,
+    "native_type": "candidate"
+   },
+   "tick": 114,
+   "ts": "2026-11-15T08:13:26.852039Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "38150049-5d54-5e03-8499-ca95681de349",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": -100.0,
+    "status": "discard",
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:b48150f25f92a4e3aea63160ac173e9f47d4feb7",
+    "reward_id": "reward:5"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 5,
+    "native_type": "candidate"
+   },
+   "tick": 115,
+   "ts": "2026-11-15T08:13:26.852039Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "2c7761f3-5fa1-5f53-bfad-3bc7bcbf7b70",
+   "payload": {
+    "confirmed": true,
+    "halves": [
+     {
+      "n": 39298,
+      "p": 1.187890133108218e-54,
+      "problem": null,
+      "rho": 0.07841726594462203
+     },
+     {
+      "n": 39261,
+      "p": 9.157483990296991e-34,
+      "problem": null,
+      "rho": 0.06107067622157311
+     }
+    ],
+    "n": 78559,
+    "p": 2.4667687430010973e-85,
+    "replicated": true,
+    "rho": 0.0697602850026561,
+    "significant": true,
+    "text": "Critic re-ran the study: rho 0.0698 (predicted 0.45), p 2.5e-85, n 78559: REPLICATED"
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "study_id": "study:2"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 5,
+    "native_type": "study"
+   },
+   "tick": 116,
+   "ts": "2026-11-15T08:13:16.719942Z",
+   "type": "study.replicated"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "9c92a32f-1390-55a8-9ebc-118ecd5e9bf8",
+   "payload": {
+    "latency_ms": 7889,
+    "model": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "prompt_sha": "fa0d215a2079275507af49982d2f6dff7a9abcc4d816abe7c63d7d1450a89f00",
+    "role": "CRITIC",
+    "text": "Asked the CRITIC model (moonshotai/Kimi-K3.1-Pro:peft:262144, 2595 tokens)",
+    "tokens": 2595
+   },
+   "phase": "critic",
+   "refs": {
+    "llm_call_id": "llm_call:10"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "llm_log.jsonl",
+    "line": 10,
+    "native_type": "CRITIC"
+   },
+   "tick": 117,
+   "ts": "2026-11-15T08:13:24.610516Z",
+   "type": "llm.called"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "d1427a89-21d3-5971-9a99-45752507efcb",
+   "payload": {
+    "excerpt": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
+    "text": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
+    "type": "verdict"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:verdict-B-1-worker-1@065dd413fd17"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 7,
+    "native_type": "verdict"
+   },
+   "tick": 118,
+   "ts": "2026-11-15T08:13:25.172998Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "6d516736-18ab-54be-9766-1af680ba8790",
+   "payload": {
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar",
+    "text": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar",
+    "type": "lesson"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:lesson-B-structured-spatial-associations@065dd413fd17"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 8,
+    "native_type": "lesson"
+   },
+   "tick": 119,
+   "ts": "2026-11-15T08:13:25.515476Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "0f035500-e09c-55ce-8863-54bd275f7de6",
+   "payload": {
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar",
+    "kind": "critic_lesson",
+    "text": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "phase": "critic",
+   "refs": {
+    "diary_id": "diary:8"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 8,
+    "native_type": "lesson"
+   },
+   "tick": 120,
+   "ts": "2026-11-15T08:13:25.515476Z",
+   "type": "diary.written"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "4f9b4983-79df-5976-9d56-b65f1a750119",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Test whether street sound sources line up along a diagonal corridor, so x and y \nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Test whether street sound sources line up along a diagonal corridor, so x and y \nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 9,
+    "native_type": "result"
+   },
+   "tick": 121,
+   "ts": "2026-11-15T08:13:25.881256Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "6fa12ee5-8d94-50ff-be3f-f7cd042d8291",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Test whether penguins with longer flippers are heavier, a strong body-size allom\nOutcome: crash (loss n/a)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"replicate_published\"}",
+    "text": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Test whether penguins with longer flippers are heavier, a strong body-size allom\nOutcome: crash (loss n/a)\nDescriptor: {\"mechanism\": \"animal_behavior\", \"method\": \"replicate_published\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:4c481e7b69eca62ff7ff6d48b3d71a783170363b"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 10,
+    "native_type": "result"
+   },
+   "tick": 122,
+   "ts": "2026-11-15T08:13:26.247945Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "fd18d4c2-a624-5dfa-91bf-31b90a9c33a9",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Test whether reaction times steadily lengthen as days of sleep restriction accum\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"sleep_science\", \"method\": \"replicate_published\"}",
+    "text": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Test whether reaction times steadily lengthen as days of sleep restriction accum\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"sleep_science\", \"method\": \"replicate_published\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:b59e8e386e737aaa1501eeef428d6a41aa9558f4"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 11,
+    "native_type": "result"
+   },
+   "tick": 123,
+   "ts": "2026-11-15T08:13:26.851775Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "7717e531-b25f-593d-abd9-255b7c9f93d3",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Test whether heavier cars are thirstier: vehicle weight should strongly reduce m\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"transport\", \"method\": \"replicate_published\"}",
+    "text": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Test whether heavier cars are thirstier: vehicle weight should strongly reduce m\nOutcome: discard (loss 1.000000)\nDescriptor: {\"mechanism\": \"transport\", \"method\": \"replicate_published\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:b48150f25f92a4e3aea63160ac173e9f47d4feb7"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 12,
+    "native_type": "result"
+   },
+   "tick": 124,
+   "ts": "2026-11-15T08:13:27.156217Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "04daad44-5621-51bc-a108-301d38db28f9",
+   "payload": {
+    "accepted": true,
+    "replicate_score": null,
+    "text": "Critic verdict replicated: The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
+    "verdict": "replicated",
+    "vetoed": false,
+    "why": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently."
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 125,
+   "ts": "2026-11-15T08:13:27.156489Z",
+   "type": "verdict.issued"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "ab6aa5cd-4d7f-5e20-9cdc-49c350ff3415",
+   "payload": {
+    "metric_value": 0.0,
+    "previous_best": 1.0,
+    "text": "New best interesting-finding loss 0: Test whether street sound sources line up along a diagonal corridor, so x and y",
+    "title": "Test whether street sound sources line up along a diagonal corridor, so x and y"
+   },
+   "phase": "critic",
+   "refs": {
+    "discovery_id": "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 126,
+   "ts": "2026-11-15T08:13:27.156489Z",
+   "type": "discovery.made"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "b64d0c06-1612-5c16-8418-51aa5a4b152d",
+   "payload": {
+    "kind": "verdict",
+    "text": "Re \"Test whether street sound sources line up along a diagonal corridor, so x and y\": accepted (replicated). The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
+    "to_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "to_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 127,
+   "ts": "2026-11-15T08:13:27.156489Z",
+   "type": "message.sent"
+  },
+  {
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "event_id": "54d47c0f-338a-53ce-afbd-c0f774e221f5",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Test whether street sound sources line up along a diagonal corridor, so x and y \nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\":",
+    "text": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Test whether street sound sources line up along a diagonal corridor, so x and y \nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\":",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f:critic:r1"
+   },
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 13,
+    "native_type": "result"
+   },
+   "tick": 128,
+   "ts": "2026-11-15T08:13:27.478804Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "208c4641-3269-5b1e-99b3-45e97a953090",
+   "payload": {
+    "B": 0.29,
+    "best_metric": 0.0,
+    "directive": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "frontier_stall": 3,
+    "frustration": 0.2,
+    "regime": "EXPLOIT",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.29 (EXPLOIT)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 1,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 5,
+    "native_type": "status"
+   },
+   "tick": 129,
+   "ts": "2026-11-15T08:13:27.479367Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 1,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.29,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 3,
+  "regime": "EXPLOIT"
+ },
+ "tick": 129,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 5,
+  "memory_items": 13,
+  "questions": 21,
+  "sources": 23,
+  "tokens": 43209
+ },
+ "ts": "2026-11-15T08:13:27.479367Z"
+}

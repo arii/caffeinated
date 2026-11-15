@@ -1,3 +1,4 @@
+import gzip
 import json
 import tempfile
 import unittest
@@ -26,6 +27,7 @@ def autoresearch_run(root):
                 "profile_path": "boredom_profile.json",
                 "profile_sha256": profile["_hash"],
                 "status": "finished",
+                "critic_model": "critic-model",
             }
         ),
         encoding="utf-8",
@@ -229,6 +231,41 @@ class ExportViewerTests(unittest.TestCase):
         }
         return run_dir, events, manifest, timeline, entities
 
+    def test_critic_veto_is_exposed_in_verdict_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            ledger_path = out / "ledger.jsonl"
+            ledger = [json.loads(line) for line in ledger_path.read_text().splitlines()]
+            ledger[1]["status"] = "discard"
+            ledger[1].pop("accepted", None)
+            ledger[1].pop("verdict", None)
+            ledger.append(
+                {
+                    "seq": 3,
+                    "round": 1,
+                    "kind": "critic",
+                    "agent": "critic",
+                    "status": "discard",
+                    "score": 0.5,
+                    "commit": "c1",
+                    "accepted": False,
+                    "vetoed": True,
+                    "verdict": "contradicted",
+                }
+            )
+            write_jsonl(ledger_path, ledger)
+
+            _, events, _, _, _ = self.export(out, root / "dest")
+
+        verdict = next(
+            event
+            for event in events
+            if event["type"] == "verdict.issued" and event["payload"].get("vetoed")
+        )
+        self.assertFalse(verdict["payload"]["accepted"])
+        self.assertTrue(verdict["payload"]["vetoed"])
+
     def test_autoresearch_export_matches_schema(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -255,7 +292,10 @@ class ExportViewerTests(unittest.TestCase):
                 set(manifest["provenance"]),
                 {
                     "llm",
+                    "critic_model",
+                    "llm_mode",
                     "exa",
+                    "research",
                     "native_run_id",
                     "memory_backend",
                     "swarm_commit",
@@ -263,6 +303,7 @@ class ExportViewerTests(unittest.TestCase):
                     "artifacts",
                 },
             )
+            self.assertEqual(manifest["provenance"]["critic_model"], "critic-model")
 
             ids = {key for table in entities.values() for key in table}
             for event in events:
@@ -320,6 +361,127 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["boredom"]["B"], expected_b)
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
+
+    def test_ignobel_export_preserves_committee_details(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / "ignobel"
+            out.mkdir()
+            committee = {
+                "available": True,
+                "score": 0.6,
+                "rejected": False,
+                "judges": {
+                    "a": {"laugh": 8, "think": 6, "reason": "Odd and plausible."},
+                    "b": {"laugh": 7, "think": 6, "reason": "Not textbook."},
+                },
+                "prior_work": [
+                    {
+                        "title": "Related work",
+                        "url": "https://example.org/paper",
+                        "snippet": "A prior-work snippet.",
+                    }
+                ],
+                "prior_work_available": True,
+            }
+            write_jsonl(
+                out / "ignobel_studies.jsonl",
+                [
+                    {
+                        "ts": "2026-11-14T10:00:00Z",
+                        "commit": "abc",
+                        "prereg": {
+                            "field": "everyday_physics",
+                            "study_type": "untested_prediction",
+                            "question": "Does X go with Y?",
+                            "hypothesis": "X and Y are related.",
+                            "dataset": {"url": "https://example.org/data.csv", "x": "X", "y": "Y"},
+                        },
+                        "result": {
+                            "confirmed": True,
+                            "headline": "X goes with Y",
+                            "dataset_id": "dataset:1",
+                            "rho": 0.3,
+                            "p": 0.001,
+                            "n": 200,
+                            "citations": [],
+                            "committee": committee,
+                        },
+                    }
+                ],
+            )
+            write_jsonl(
+                out / "scores.jsonl",
+                [
+                    {
+                        "commit": "abc",
+                        "field": "everyday_physics",
+                        "headline": "X goes with Y",
+                        "dataset": "https://example.org/data.csv",
+                        "committee": 0.6,
+                        "available": True,
+                        "rejected": False,
+                        "verdicts": {},
+                        "judges": committee["judges"],
+                        "prior_work": committee["prior_work"],
+                        "prior_work_available": True,
+                    }
+                ],
+            )
+
+            class FakeRun:
+                def __init__(self):
+                    self.entities = {
+                        "experiments": {
+                            "experiment:abc": {
+                                "agent_id": "agent-worker-1",
+                                "round": 1,
+                            }
+                        },
+                        "studies": {},
+                    }
+                    self.agents = {"worker-1": {"agent_id": "agent-worker-1"}}
+                    self.events = []
+
+                def put(self, table, key, entity):
+                    self.entities[table][key] = entity
+                    return key
+
+                def emit(self, event_type, **event):
+                    self.events.append({"type": event_type, **event})
+
+            run = FakeRun()
+            export_viewer.export_studies(run, out, {}, {"abc": "experiment:abc"}, 1, [])
+
+            study = next(iter(run.entities["studies"].values()))
+            self.assertEqual(study["committee"]["score"], 0.6)
+            self.assertEqual(study["committee"]["judges"]["a"]["think"], 6)
+            self.assertEqual(
+                study["committee"]["prior_work"][0]["url"], "https://example.org/paper"
+            )
+            result_event = next(event for event in run.events if event["type"] == "study.result")
+            self.assertEqual(result_event["payload"]["committee"]["score"], 0.6)
+            award_event = next(event for event in run.events if event["type"] == "award.issued")
+            self.assertEqual(award_event["payload"]["prior_work"][0]["title"], "Related work")
+
+    def test_arm_branch_checkout_with_gzipped_logs_exports_the_same_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            events = self.export(out, root / "dest-raw")[1]
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                path = out / name
+                with gzip.open(out / f"{name}.gz", "wb") as archive:
+                    archive.write(path.read_bytes())
+                path.unlink()
+            archived = self.export(out, root / "dest-archived")[1]
+            self.assertEqual(len(archived), len(events))
+            self.assertEqual(
+                [event["type"] for event in archived], [event["type"] for event in events]
+            )
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                (out / f"{name}.gz").unlink()
+            self.assertLess(len(self.export(out, root / "dest-without-logs")[1]), len(events))
 
     def test_duplicate_experiment_maps_to_discard_with_reason(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -381,93 +543,6 @@ class ExportViewerTests(unittest.TestCase):
                 for frame in keyframes.values()
             ]
             self.assertIn("exploit", roles)  # earlier keyframes keep historical state
-
-    def test_ignobel_events_convert(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            out = root / "ig"
-            out.mkdir()
-            base = {"arm": "full", "seed": 0, "tokens": 0, "latency_ms": 0}
-            write_jsonl(
-                out / "events.jsonl",
-                [
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "idea",
-                        "payload": {
-                            "idea_id": "q1",
-                            "text": "Do cats nap more on Mondays?",
-                            "source_urls": [],
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "prediction",
-                        "payload": {"idea_id": "q1", "direction": "+", "effect_size": 0.2},
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "boredom",
-                        "payload": {
-                            "B": 0.4,
-                            "regime": "EXPLOIT",
-                            "similarity": 0.1,
-                            "action": "RUN_STUDY",
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "measurement_request",
-                        "payload": {"requester": "volkov", "instrument": "t", "n": 10},
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "study_result",
-                        "payload": {
-                            "study_id": "s1",
-                            "idea_id": "q1",
-                            "ok": True,
-                            "replicated": True,
-                            "prediction": {"direction": "+", "effect_size": 0.2},
-                            "stats": {"direction": "+", "effect_size": 0.2, "p": 0.01},
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "talk",
-                        "payload": {"partner": "volkov", "turn": 1, "text": "hi"},
-                    },
-                ],
-            )
-            _run_dir, events, manifest, _timeline, entities = self.export(out, root / "dest")
-            types = {a["native_id"]: a["type"] for a in manifest["agents"]}
-            self.assertEqual(
-                types, {"quill": "researcher", "volkov": "statistician", "world": "world"}
-            )
-            self.assertTrue(all(e["ts"] is None for e in events))
-            self.assertEqual(entities["rewards"]["reward:s1"]["value"], 1.0)
-            self.assertEqual(
-                entities["hypotheses"]["hypothesis:q1"]["prediction"]["effect_size"], 0.2
-            )
-            talk = next(e for e in events if e["type"] == "message.sent")
-            self.assertEqual(
-                talk["refs"]["to_agent_id"],
-                next(a["agent_id"] for a in manifest["agents"] if a["native_id"] == "volkov"),
-            )
-            index = json.loads((root / "dest" / "index.json").read_text())
-            self.assertEqual(index["runs"][0]["run_id"], manifest["run_id"])
 
     def test_profile_sha_mismatch_fails_export(self):
         with tempfile.TemporaryDirectory() as tmp:

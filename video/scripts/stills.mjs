@@ -1,0 +1,84 @@
+import {copyFile, mkdir, readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const video = path.join(root, 'out', 'demo.mp4');
+const metadataPath = path.join(root, 'public', 'captures', 'manifest.json');
+const output = process.env.STILLS_DIR ?? path.join(process.env.HOME ?? root, 'video-assets', 'stills');
+const ffmpeg = process.env.FFMPEG ?? '/usr/bin/ffmpeg';
+const stills = [
+  ['scene-01-hook.png', 4],
+  ['scene-02-hackathon.png', 11.5],
+  ['scene-03-tools.png', 19.5],
+  ['scene-04-authors.png', 26],
+  ['scene-05-boredom.png', 34],
+  ['scene-06-real-lab.png', 59],
+  ['scene-07-results.png', 89],
+  ['track3-metric-direction.png', 84],
+  ['track3-results.png', 88],
+  ['ignobel-counts.png', 102.5],
+  ['scene-08-ignobel.png', 107],
+  ['ignobel-known-relationships.png', 110],
+  ['scene-09-close.png', 117],
+  ['close-frame.png', 119.5]
+];
+
+if (!existsSync(video)) throw new Error(`Rendered video not found: ${video}`);
+if (!existsSync(metadataPath)) {
+  throw new Error(`Capture metadata not found: ${metadataPath}`);
+}
+if (!existsSync(ffmpeg)) throw new Error(`ffmpeg not found: ${ffmpeg}`);
+const metadata = JSON.parse(await readFile(metadataPath, 'utf8'));
+const evidenceStills = [
+  ['lab-intro-satire.png', metadata.introEvidencePath],
+  ['lab-podium-empty.png', metadata.podiumEvidencePath],
+  ['lab-swimlane.png', metadata.swimlaneEvidencePath],
+  ['lab-provenance-badge.png', metadata.uiEvidencePath]
+];
+await mkdir(output, {recursive: true});
+
+function extractStill(filename, source, time) {
+  const destination = path.join(output, filename);
+  const result = spawnSync(
+    ffmpeg,
+    [
+      '-y',
+      '-ss',
+      String(time),
+      '-i',
+      source,
+      '-frames:v',
+      '1',
+      '-update',
+      '1',
+      '-vf',
+      'scale=1920:1080',
+      destination
+    ],
+    {stdio: 'inherit'}
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`ffmpeg failed extracting ${filename} from ${time}s`);
+  }
+  console.log(destination);
+}
+
+for (const [filename, time] of stills) {
+  extractStill(filename, video, time);
+}
+for (const [filename, relativePath] of evidenceStills) {
+  if (!relativePath) {
+    throw new Error(`Capture metadata is missing the path for ${filename}`);
+  }
+  const source = path.join(root, relativePath);
+  if (!existsSync(source)) {
+    throw new Error(`Lab evidence still not found: ${source}`);
+  }
+  const destination = path.join(output, filename);
+  await copyFile(source, destination);
+  console.log(destination);
+}

@@ -98,6 +98,51 @@ class TinkerTests(unittest.TestCase):
             self.assertEqual(self.call(replay), {"paper_query": "working"})
         self.assertEqual(llm.read_log(self.log_path)[-1]["model"], "stub/chat-model")
 
+    def test_role_models_are_logged_and_replayed_from_mixed_model_logs(self):
+        usage = {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5}
+        client = self.client(
+            model="worker-model",
+            role_models={"CRITIC": "critic-model"},
+        )
+        with patch.object(
+            client,
+            "_tinker_completion",
+            side_effect=[
+                ('{"paper_query": "worker response"}', usage),
+                ('{"verdict": "replicated"}', usage),
+            ],
+        ):
+            self.assertEqual(
+                client.call("SCOUT_QUERY", agent="worker-1", round_num=1, values={}),
+                {"paper_query": "worker response"},
+            )
+            self.assertEqual(
+                client.call("CRITIC", agent="critic", round_num=1, values={}),
+                {"verdict": "replicated"},
+            )
+        self.assertEqual(
+            [row["model"] for row in llm.read_log(self.log_path)],
+            ["worker-model", "critic-model"],
+        )
+
+        replay = self.client(
+            model="replay-base",
+            role_models={"CRITIC": "replay-critic"},
+            replay=True,
+        )
+        self.assertEqual(
+            replay.call("SCOUT_QUERY", agent="worker-1", round_num=1, values={}),
+            {"paper_query": "worker response"},
+        )
+        self.assertEqual(
+            replay.call("CRITIC", agent="critic", round_num=1, values={}),
+            {"verdict": "replicated"},
+        )
+        self.assertEqual(
+            [row["model"] for row in llm.read_log(self.log_path)[-2:]],
+            ["worker-model", "critic-model"],
+        )
+
     def test_retry_is_bounded(self):
         client = self.client()
         with (
@@ -127,14 +172,17 @@ class TinkerTests(unittest.TestCase):
         }
         model = "moonshotai/Kimi-K3.1-Pro:peft:262144"
         with patch("llm.urlopen", return_value=self.http_response(body)) as urlopen:
-            client = self.client(model=model, seed=7)
+            client = self.client(
+                model=model, role_models={"SCOUT_QUERY": "role-specific-model"}, seed=7
+            )
             self.assertEqual(self.call(client), {"ok": True})
         request = urlopen.call_args.args[0]
         self.assertEqual(request.full_url, llm.TINKER_BASE_URL + "/chat/completions")
         self.assertEqual(request.get_header("Authorization"), "Bearer stub-tinker-key")
         payload = json.loads(request.data)
         record = llm.read_log(self.log_path)[0]
-        self.assertEqual(payload["model"], model)
+        self.assertEqual(record["model"], "role-specific-model")
+        self.assertEqual(payload["model"], "role-specific-model")
         self.assertEqual(payload["messages"], [{"role": "user", "content": record["prompt"]}])
         self.assertEqual(payload["reasoning_effort"], "low")
         self.assertEqual(payload["seed"], record["seed"])
@@ -150,7 +198,7 @@ class TinkerTests(unittest.TestCase):
         )
         with (
             patch("llm.urlopen", side_effect=error),
-            self.assertRaisesRegex(RuntimeError, "HTTP 400.*not supported"),
+            self.assertRaisesRegex(llm.LLMError, "HTTP 400.*not supported"),
         ):
             self.call(self.client())
 

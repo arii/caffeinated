@@ -1,0 +1,48 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+d8b485471a64beb61fce4a8ccb7ca5c858d177d0		crash	[EXPLOIT] Replace the three-answer stub with deterministic, question-specific analyses cov
+4a6e8c1b04f84df76019fceedd8b0626cde59f7b	0.888889	keep	[EXPLOIT] Compute the rhlR- circularity standard error as the sample standard deviation di
+cea84601ef7f1f876a7b57925569d622fe5520b6	0.888889	discard	[EXPLOIT] Answer bix-18-q1 by selecting the genotype with the largest mean swarming area a
+42254c518133491c199381c576bf39c0eaeb1fd1	0.925926	discard	[EXPLOIT] Answer bix-18-q5 as the ratio of mean ΔlasR colony area to mean wildtype colony 
+4a6e8c1b04f84df76019fceedd8b0626cde59f7b	0.888889	keep	critic second-evaluation confirmation for Compute the rhlR- circularity standard error as the sample standard deviation di
+4e669eeb844f0ed044543a84580331e5612db451	0.888889	discard	[EXPLOIT] Add a general ENO1 lookup in the proteomics table to answer the normal level, ad
+c8faec407dfb0ec79de9ed5d4fdfeb3d1525beba	0.888889	discard	[EXPLOIT] Compute bix-19-q2 as Cohen's d for KD versus CTRL NeuN counts using the pooled s
+2edae2e3a0eb7f190817af110e1e8dc9bcef9d42	0.851852	keep	[EXPLOIT] Compute bix-19-q3 as the Shapiro-Wilk W statistic for NeuN counts in the KD hemi
+814491909ef04adc6f68c05f8c1c6e0bac190e3f		crash	[EXPLOIT] Answer bix-41-q3 as the mean circularity of Strain 98 minus that of Strain 1, co
+2edae2e3a0eb7f190817af110e1e8dc9bcef9d42	0.851852	keep	critic second-evaluation confirmation for Compute bix-19-q3 as the Shapiro-Wilk W statistic for NeuN counts in the KD hemi
+bf6528b10727c6a341673fe64f7644f5a80c74ee		crash	[EXPLOIT] Fit the requested bix-51 logistic regressions from the raw efficacy data and der
+396380609c487f2fe48a6203fec81416ca7650b8	0.851852	discard	[EXPLOIT] Add a general ENO1 lookup in the proteomics table to answer the normal level, ad
+92b921cfb4e7ebf83ce797914c0fcf245e420af9	0.814815	keep	[EXPLOIT] Add general NeuN effect-size, power-analysis, and two-way ANOVA procedures for b
+bcbdaf1ba66288c852f2586fda9889275ed62c02	0.814815	discard	[EXPLOIT] Add general MeRIP-seq contingency-table and category-count procedures for the fo
+92b921cfb4e7ebf83ce797914c0fcf245e420af9	0.814815	keep	critic second-evaluation confirmation for Add general NeuN effect-size, power-analysis, and two-way ANOVA procedures for b
+85f9e26d6539aedbb5937f228761911e81168d16	0.814815	discard	[EXPLOIT] Add a general COVID-19 severity pipeline using ordinal logistic regression and s
+1ed59b42a1068fabaa222f7e61e0ec3f169bb40c	0.814815	discard	[EXPLOIT] Add a general ENO1 lookup in the bix-37 proteomics table for its normal level, a
+cd10e76b03fe3426f54abab83dcbd5f0dfeb690d	0.814815	discard	[EXPLOIT] Compute bix-27 PC1 variance directly from the log10-transformed expression matri
+774d2c178a38e52913d991d9ab439c778ab9c041		crash	[EXPLOIT] Fit all requested bix-51 logistic regressions directly from the efficacy table a
+0c9ed2ecd9b3cf9b76ff0c378e98dd74626cc530	0.814815	duplicate	[EXPLOIT] Extract ENO1's normal protein level, adjusted p-value, and rounded log2 fold cha
+534e3e342dcec3f7bcf22a1270879b4f6e5b57eb	0.814815	discard	[EXPLOIT] Compute bix-27 PC1 variance directly from the log10-transformed expression matri
+906ac34659d7fd19ce19e6de3530d5e074c551c9		crash	[EXPLOIT] Compute the raw Strain 98 minus Strain 1 difference in mean circularity directly
+cdf7971338c4aec70c07cbc810f48543eb587002	0.814815	discard	[EXPLOIT] Add a general filtered-unique-CpG density pipeline for the Zebra Finch and Jackd
+6161dee7eaf4ac42f878cd4f474dd4cb9b20fe91	0.814815	discard	[EXPLOIT] Compute bix-27 PC1 variance directly from the log10-transformed expression matri
+ebea00e3c63ece9de7ecd41eedfb0bfd83f9a366		crash	[EXPLOIT] Add a general bix-51 logistic-regression pipeline for age, BMI, and gender model
+30784d534b1a88c6f0ede5a28da22140bdd3c6a2	0.777778	keep	[EXPLOIT] Add the two remaining bix-18 genotype summaries: circularity for the largest-are
+f17714c8228a8906069b8eb28c6ef56019bd6668	0.777778	discard	[EXPLOIT] Add a general bix-54 polynomial and natural-spline regression pipeline for swarm
+30784d534b1a88c6f0ede5a28da22140bdd3c6a2	0.777778	keep	critic second-evaluation confirmation for Add the two remaining bix-18 genotype summaries: circularity for the largest-are
+c656794afc14501801d62d64eb177a92ce990ed0	0.703704	keep	[EXPLOIT] Add a general bix-8 contingency-test and differential-methylation counting pipel
+2941d2aa43beede36c07f3a6d529938bea4df2b3	0.777778	discard	[EXPLOIT] Add a general bix-37 proteomics lookup for ENO1's normal level, adjusted p-value
+8623afcca88048e5716207a6cb019f63d8952d2e	0.777778	discard	[EXPLOIT] Add a general bix-41 pipeline for the Strain 98 circularity difference and two-s
+343ee9b3ae93c2eaf74921c105a8e7569f816b4d	0.777778	discard	[EXPLOIT] Compute bix-27 PC1 explained variance directly from the log10-transformed sample
+c656794afc14501801d62d64eb177a92ce990ed0	0.703704	keep	critic second-evaluation confirmation for Add a general bix-8 contingency-test and differential-methylation counting pipel
+3c6b0f586f3d7b784794b2f72f0a97ddfda28193		crash	[EXPLOIT] Add a general bix-51 logistic-regression pipeline for age, BMI, and gender model
+3c68c229788a014bc27c6ce806387bfe2275338a	0.703704	discard	[EXPLOIT] Add a general bix-37 proteomic lookup pipeline for ENO1 normal abundance, adjust
+c095ee2bcf0552c3f8c93b955e380630c046c5cd	0.703704	discard	[EXPLOIT] Add the bix-27 log10-transformed PCA pipeline and report the first principal com
+311f0ae36d847dd9937b7641348e3d579ad12c63	0.703704	discard	[EXPLOIT] Add a general bix-52 unique-site filtering and chromosomal-density pipeline for 
+983083debe54cc0403275e26cdf09fe9f47e28e7	0.703704	discard	[EXPLOIT] Add a proteomic lookup pipeline that reports ENO1's normal abundance, adjusted p
+034023df7ee80337ac78ea8dd83147d06a2cd84c	0.629630	discard	[EXPLOIT] Add a general bix-10 COVID-19 severity pipeline using adjusted ordinal logistic 
+aa547e949e4ae0413023f6574a45fc171c47f97f	0.518519	keep	[EXPLOIT] Add a robust bix-51 logistic-regression pipeline using explicit design matrices 
+581d97bb9afe0839a3cca6894cdfcd3ff72e80f5		crash	[EXPLOIT] Add a general bix-54 polynomial and natural-spline regression pipeline for swarm
+aa547e949e4ae0413023f6574a45fc171c47f97f	0.518519	keep	critic second-evaluation confirmation for Add a robust bix-51 logistic-regression pipeline using explicit design matrices 
+090fa1fa9ed92091c4f5ff30dcce67a5deee965d	0.518519	discard	[EXPLOIT] Add a general bix-10 COVID-19 severity pipeline using ordinal logistic regressio
+		crash	[EXPLOIT] LLM call failed
+		crash	[EXPLOIT] LLM call failed
+		crash	[EXPLOIT] LLM call failed

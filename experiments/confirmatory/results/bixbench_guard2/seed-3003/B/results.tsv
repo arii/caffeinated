@@ -1,0 +1,33 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+c9c6501f2c3447556afd5c011d478f0a7101a82b		crash	[EXPLOIT] Replace the partial script with a typed, capsule-isolated analysis pipeline that
+b83d08b23352c9a86be232b718105372947c7bf5	0.851852	keep	[EXPLOIT] Add the four bix-8 answers using categorical filtering and a chi-square continge
+4493ca2da0203e8f50472c33086e323eb5bec14f		crash	[EXPLOIT] Add all seven bix-51 answers with logistic regressions using the specified predi
+674cb3af78ea04029579ceb08345480d96d0eeb6	0.851852	discard	[EXPLOIT] Add all four bix-19 answers using pooled Cohen's d, two-sample power analysis, S
+b83d08b23352c9a86be232b718105372947c7bf5	0.851852	keep	critic second-evaluation confirmation for Add the four bix-8 answers using categorical filtering and a chi-square continge
+9d6dc163beebea9534240038f9917775ed6fb6a4	0.851852	discard	[EXPLOIT] Add the three bix-37 answers by selecting ENO1 from the proteomics results and a
+85f7c0112fa11938f45da4a3153129cf0310d214	0.777778	keep	[EXPLOIT] Complete the bix-18 summary answers and correct the rhlR- circularity standard e
+2f7ac198d3bf3df845fecfbb060c0d7de307d380		crash	[EXPLOIT] Add all seven bix-51 answers using binary logistic regression with PR as the res
+b162e4cfdc8f09e40e62cb563bbf580798084754		crash	[EXPLOIT] Add all seven bix-10 answers from COVID-19 adverse events using one adjusted ord
+85f7c0112fa11938f45da4a3153129cf0310d214	0.777778	keep	critic second-evaluation confirmation for Complete the bix-18 summary answers and correct the rhlR- circularity standard e
+e22d637cde8543217f8d1b10365c013c76e7924f	0.777778	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by selecting its gene row and reading
+4a1d36663bc87738ad760bc019114de8fc064b56	0.777778	discard	[EXPLOIT] Add the four bix-52 answers by filtering methylation extremes, deduplicating CpG
+94a85dc63285f7d07506a344f4b65850595b285c	0.703704	keep	[EXPLOIT] Add all four bix-19 answers using pooled-SD Cohen's d, two-sample power analysis
+		reject	[EXPLOIT] proposal rejected after repair
+94a85dc63285f7d07506a344f4b65850595b285c	0.703704	keep	critic second-evaluation confirmation for Add all four bix-19 answers using pooled-SD Cohen's d, two-sample power analysis
+2b32df1f8d4d61991fc2699fae14bc81b54268b4	0.703704	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by direct row lookup and requested ro
+29d593cb3f05cb3743ff63c9a4f5519b070953f6	0.703704	discard	[EXPLOIT] Answer all four bix-52 questions by deduplicating filtered CpG sites and calcula
+7abcff40496544649bc7ac142c51debee024d589	0.703704	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by selecting the gene row and applyin
+f83db330c8799d625b0cf20f10d04849e9461a7c		crash	[EXPLOIT] Answer all four bix-41 questions using group means and two-sided Dunnett compari
+b085e29489dd6b7fd9e9453f45c2b5e69000288d	0.703704	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by looking up ENO1 and applying the
+d1586b9dab51b93727a501e1a3d78820162b3beb	0.703704	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by selecting the ENO1 row and apply
+dd3c338400e36238a844300147169518ca9ef969	0.703704	discard	[EXPLOIT] Answer all four bix-52 questions by filtering methylation extremes, deduplicatin
+393c23672e9d5f9d6024e322bba097c8f265e5ef	0.703704	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by direct lookup and requested roundi
+		reject	[EXPLOIT] proposal rejected after repair
+		reject	[EXPLOIT] proposal rejected after repair
+3c384db183ae8beb2d9e9003c46514ca27a04eeb	0.703704	discard	[EXPLOIT] Answer the three ENO1 questions by selecting its proteomics row and applying onl
+7d21ebb00328ac0457e102c08473d40b9d2968fd	0.703704	discard	[EXPLOIT] Answer the three bix-37 proteomics questions directly from ENO1's tabulated meas
+37daa8d88e64288f77a9a3fa4d1d1d3cdd8f0fa3	0.703704	discard	[SNAP] Answer all four bix-41 questions using group summaries and two-sided Dunnett pos
+		reject	[SNAP] proposal rejected after repair
+2d4ebaff55481d7f82b08da95396f5abc1f2da55	0.703704	discard	[SNAP] Use Dunnett multiple-comparison tests after grouping the bix-41 co-cultures by s
+7a15cf9f73139f1293d04303517fccd398a9d400		crash	[SNAP] Add both bix-27 answers using log10 PCA and a deterministic 50-split hierarchica

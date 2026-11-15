@@ -1,0 +1,28 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+1481896f6d05d57e2f75269f88c18cebbc9eb471	0.348944	discard	[EXPLOIT] Add a deterministic Paley conference-core candidate with diagonal-sign coordinat
+a6ac508cd7cde1868859ead4729f6afab0b091d7	0.348944	discard	[EXPLOIT] Increase deterministic random-restart greedy search from 4 to 32 restarts while 
+a610a42284ba2331e6594ee1c83f8afdec2011c5	0.342880	keep	[EXPLOIT] After single-flip convergence, use a determinant-lemma scan to accept the best i
+f1cbb3b1904e6561608bd32aaf1da5e265d0abe4	0.377180	discard	[EXPLOIT] Add a fixed-seed simulated-annealing escape phase after each greedy local optimu
+a610a42284ba2331e6594ee1c83f8afdec2011c5	0.342880	keep	critic second-evaluation confirmation for After single-flip convergence, use a determinant-lemma scan to accept the best i
+c211b342ca01fd5046c78d9ce78ff24aa2ded0eb	0.099786	keep	[EXPLOIT] Replace random-restart search with a deterministic Paley Hadamard matrix of orde
+aa00d9d3b0797af6232abc7f6a6d3587395eaff3	0.342880	discard	[EXPLOIT] Increase deterministic random-restart search from 4 to 16 basins while retaining
+cd8e2aea06d1b0eaaf623b9120b2af825992beb4	0.325801	discard	[EXPLOIT] When greedy and pair-flip search converge, run a deterministic 120-step best-adm
+ae4d057fb780240627826b3de6695bef26f7eba0	0.377461	discard	[EXPLOIT] Replace sequential first-improvement flips with deterministic steepest-ascent si
+c211b342ca01fd5046c78d9ce78ff24aa2ded0eb	0.099786	keep	critic second-evaluation confirmation for Replace random-restart search with a deterministic Paley Hadamard matrix of orde
+76da5b8b0b90854dde53938bfcd5e5fc08162299	0.099786	discard	[EXPLOIT] Add symmetric-circulant Williamson Hadamard-28 cores and retain one only when it
+85179f5f18ed8751a573a7ed0264e81d3ae0f629	0.099786	discard	[EXPLOIT] Polish each optimized border with improving mixed one-entry flips in b and c, fo
+97e80cd65aa2ce00973d1e2396665d8b62ac910c	0.099786	discard	[EXPLOIT] After border optimization, apply incumbent-safe best-improvement single-entry fl
+ea53850e50abad1b2a2712af0c7c4d681b859905	0.099786	discard	[EXPLOIT] After border optimization, try incumbent-safe best-improvement same-row two-entr
+381bfc1716f523e69e7279d77bfc98af50fc6b29	0.099786	discard	[EXPLOIT] Add a deterministic Williamson order-28 Hadamard core, optimize its border indep
+dd20680ab0c81949c130e89daecafa5a78b183bc	0.099786	discard	[EXPLOIT] After border coordinate ascent, repeatedly apply the best improving two-entry fl
+5d3eb8c9b2d5c62a41f51fb31d8e4889ed11a322	0.099786	discard	[EXPLOIT] Increase deterministic border coordinate-ascent restarts from 128 to 4096 while 
+158026d274f38fe5e9d120a097f188e6f8935f69	0.099786	discard	[EXPLOIT] Escape the best border coordinate-ascent basin with a deterministic tabu walk ov
+6ce6c1d46e2da260bfa38d5a3f36ed9e2990ab2d	0.099786	discard	[SNAP] Add incumbent-safe multistart ADMM optimization of the boxed log-det relaxation,
+a4078b882993cb1b0203f3946ef3a7ec77596c7d	0.099786	discard	[SNAP] Add deterministic annealed mean-field optimization of the bordered bilinear surr
+c0b1d1fdaafbb173bd308ae296d2c2f8f7c38741	0.099786	duplicate	[SNAP] Increase deterministic border coordinate-ascent multistart budget from 128 to 40
+710d5f9b01ef93c7c85dbf4aa7d453d779bc95c4	0.099786	discard	[SNAP] Add incumbent-safe projected gradient ascent on the continuous log-det relaxatio
+6803134ba7766489555e60f8522f6d5f900ac443	0.099786	discard	[SNAP] Retain the bordered incumbent while adding Paley-difference-set and random seeds
+39880ec30e8c0ed83267bbb15360a24fc1aea723	0.099786	discard	[SNAP] Use Metropolis-annealed border states as nonlocal seeds for exact coordinate-asc
+802af66a0f461d74de953f91829a9c48bd3ba248	0.099786	discard	[SNAP] Add truncated Sylvester-Walsh sign vectors and their negations as deterministic 
+32bbf5b8c0918d111eb2e4ffe185e5aed6d94470	0.099786	discard	[SNAP] Search an ensemble of deterministic random seeds for border coordinate ascent

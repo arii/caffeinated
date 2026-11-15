@@ -6,7 +6,8 @@ sandbox, and keeps or discards experiments by their measured loss.
 
 The three tasks are honest local proxies: Hadamard-19 is exact with a known
 optimum; BixBench Mini is a 17-question subset, not full BixBench; Playworld
-Mini is a synthetic proxy, not PlayWorld, using an 8-frame-memory reference.
+Mini is a synthetic proxy, not PlayWorld. Its `RECORD = 0.3598` is a dev-only
+constant from the original commit; the reference model source is not in the repo.
 
 ## Quickstart
 
@@ -16,7 +17,7 @@ From a fresh clone (Python 3.10+, Docker; Python 3.12 recommended):
 make setup                     # creates .venv with uv (or venv+pip) from requirements-dev.txt
 . .venv/bin/activate
 cp .env.example .env           # fill in TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker
 ```
 
@@ -36,12 +37,58 @@ Candidate evaluation dependencies live separately in the Docker image.
 Before creating any branch or worktree, `swarm.py` checks the Docker sandbox
 image and the keys the chosen arm needs, and lists every missing piece with its
 fix. Arm B uses Exa and past.dev memory by default; `--exa off` and
-`--memory-backend local` run without those keys. `swarm.py` owns
+`--memory-backend local` run without those keys. Under `--exa off` research falls
+back to keyless OpenAlex, arXiv and PubMed paper search (`literature.py`, sources
+logged as `S<k>` like Exa's); `--llm fake` runs stay offline unless
+`--literature keyless`, and `--literature off` disables it. A missing
+`EXA_API_KEY` fails preflight unless `--literature keyless` or `--literature auto`
+is given, so an arm never switches research source silently; `run.json` and the
+viewer manifest's `provenance.research` record `exa`, `keyless` or `off`. `swarm.py` owns
 `.swarm_worktrees/<arm>/`: it locks it against a concurrent run of the same arm,
 prunes deleted worktrees, discards leftovers of earlier runs (moving an
-uncommitted `experiments/swarm_<arm>/` aside to `conductor.stale-<time>/`) and
-reuses an arm branch an earlier run left without commits. Removing
-`.swarm_worktrees/` by hand is never required.
+uncommitted `experiments/swarm_<arm>/` aside to
+`experiments/swarm_<arm>.prev-<time>/`, where the Lab still discovers its
+recording, and marking a killed run `stopped`) and reuses an arm branch an
+earlier run left without commits. Removing `.swarm_worktrees/` by hand is never
+required. Agent attempts run in detached worktrees, so a run creates one branch
+(the arm branch); candidate tags are namespaced per run as
+`run/swarm_<arm>/<run_id[:8]>/<round>-<agent>`.
+
+Per-round arm commits hold only the small, append-only research state
+(ledger, results, critic, memory, assignments, boredom log, score cache).
+The viewer export, `runs/`, `exa_cache/`, `literature_cache/`, `llm_log.jsonl` and
+`research_log.jsonl` stay out of them; when the run ends one final commit adds
+`llm_log.jsonl.gz`, `research_log.jsonl.gz`, `runs.tar.gz`, `exa_cache.tar.gz` and
+`literature_cache.tar.gz` (after any `post_run` scoring commit). Rebuild a viewer
+export with `export_viewer.py <out>` from the out dir, or from the arm branch's
+`experiments/swarm_<arm>/` checkout: the exporter reads `llm_log.jsonl.gz` and
+`research_log.jsonl.gz` when the raw logs are absent (extract `runs.tar.gz`
+there too to get experiment log tails and diffs).
+
+Long runs (up to 50 rounds) survive crashes: after every committed round the
+swarm writes `resume_checkpoint.json` (round, arm commit, log byte lengths,
+published-event length). `swarm.py --resume <out>` continues a crashed or killed
+run with the same run id, ledger, score cache, memory mirror, arm branch and
+settings from `run.json`; it truncates a half-written round, cuts the published
+recording back to its checkpointed prefix so later publishes still append, and
+deletes that round's tags. past.dev memories from the abandoned round cannot be
+deleted remotely, so each write carries `run_epoch` and `written_at`, and recall
+drops same-run memories written after a checkpoint that a later resume rolled
+back to (`AUTORESEARCH_RUN_ROLLBACKS`). Limits: the abandoned memories still
+exist on past.dev and still count toward its storage and search ranking; memories
+written before this change carry no `written_at` and are never filtered; and
+past.dev's own write timestamps are not used, so the filter relies on the
+swarm host's clock. `--rounds N` extends the run; conflicting `--task`,
+`--arm`, `--seed`, `--llm`, `--model`, `--exa` or `--memory-backend` values are
+rejected. A worker whose LLM call fails after retries records a `crash` row
+for that attempt and the round goes on; if every worker fails, the run stops so
+it can be resumed once the provider recovers. A critic review whose LLM
+call fails is not turned into a crash row: it still stops the run, which can
+then be resumed from the last checkpoint. A failed novelty-check call leaves the
+round's candidates without a novelty score and the round goes on. A run killed during
+`post_run` scoring has all its rounds checkpointed; `--resume` reruns the
+scoring and finalization (and says so). SIGTERM stops a run cleanly
+(status `stopped`).
 
 `pyproject.toml` defines dependencies and `uv.lock` pins their resolved versions.
 `requirements.txt` exports the host runtime; `requirements-dev.txt` also
@@ -56,7 +103,7 @@ standard-library `unittest` runner.
 Build the isolated candidate image once:
 
 ```sh
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 ```
 
 For the Tinker backend, set `TINKER_API_KEY` and
@@ -93,8 +140,7 @@ agents and events, a gap-free `tick`, plus manifest, timeline, keyframes and
 entity files. The frontend can replay these with no backend.
 
 ```sh
-python3 export_viewer.py out/ --dest lab/data/runs                    # swarm.py --out dir
-python3 export_viewer.py ../ignobel/runs/full-s0 --dest lab/data/runs  # ignobel events.jsonl
+python3 export_viewer.py out/ --dest lab/data/runs  # swarm.py --out dir (any --task, including ignobel)
 ```
 
 Prompts, responses and reasoning only appear in `entities/llm_calls.json`,

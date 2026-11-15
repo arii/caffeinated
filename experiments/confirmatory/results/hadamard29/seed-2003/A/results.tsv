@@ -1,0 +1,36 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+432e4f0b8ad0117dd858c1f132989605c7ffce6b	0.348944	discard	[EXPLOIT] Add a deterministic Paley conference matrix with diagonal-sign coordinate ascent
+610805ec8a432fb692b8366bc0cb9cdd4b7012be	0.348944	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 32 while retaining the same gre
+b3f938a251276b2064d7800bae72e7711ec5608b	0.342880	keep	[EXPLOIT] After each single-flip local optimum, exhaustively find the best improving two-e
+d90db298f4ea073fbc9ebee9a78f88dc1087a9c5	0.348944	discard	[EXPLOIT] After each greedy local optimum, run 6,000 deterministic simulated-annealing fli
+b3f938a251276b2064d7800bae72e7711ec5608b	0.342880	keep	critic second-evaluation confirmation for After each single-flip local optimum, exhaustively find the best improving two-e
+05224149aed1ee2fbc22a7280b384a3aa15b0ab6		crash	[EXPLOIT] When both single- and pair-flip search stall, exhaustively test complementary fo
+5d2c68ebbaae7896b87cb50fda56fb4bd11b3ebd	0.342880	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 12 while retaining the incumben
+f62c45149cbce033ccedef2323dd16b2b1ec6dee	0.377461	discard	[EXPLOIT] Replace first-improvement single flips with steepest-ascent single flips while r
+90dfcbfed3783a446caefeeab51959eaa1f3fbc9	0.342880	discard	[EXPLOIT] When single- and pair-flip search stalls, exhaustively test three-entry flips wi
+082d14fe48908178987faa7c3a119d769ebd16f4	0.444282	discard	[EXPLOIT] Replace random local search with a bordered Paley-Hadamard matrix of order 28 an
+1cb0b2057802af7ba01ec1f157cee99c8df1b143	0.342880	duplicate	[EXPLOIT] Increase deterministic random restarts from 4 to 12 while retaining the establis
+9dfd1c0e7243095d09b2bb0775f2d5bbc9f80e1e	0.342338	discard	[EXPLOIT] After each pair-flip local optimum, apply up to four deterministic random four-e
+74c05c1074073cf5d8447e01a68415c72c0bc4a5		crash	[EXPLOIT] Escape the first pair-flip local optimum with a deterministic 96-step single-ent
+e7a3549fd2c9b7228537545a0b4c542bf73cc241	0.099786	keep	[EXPLOIT] Replace random entry-flip restarts with a Paley GF(27) Hadamard core of order 28
+af9d0dffd0f27ddd890fc7b3041c0939c8dec8d7	0.332371	discard	[EXPLOIT] After each pair-flip local optimum, apply six deterministic-seeded three-entry k
+b9a4e17a805da664bcefe3a3f440e92f20733a8b	0.342880	discard	[EXPLOIT] Double the seeded random restarts from four to eight while preserving the establ
+3180225c500e97b06bae8988d73f770e78243235	0.377461	discard	[EXPLOIT] Replace first-improvement single-entry flips with best-improvement flips selecte
+e7a3549fd2c9b7228537545a0b4c542bf73cc241	0.099786	keep	critic second-evaluation confirmation for Replace random entry-flip restarts with a Paley GF(27) Hadamard core of order 28
+e98f0694d64f5df27ac0df15b7d68a713a87d631	0.099786	discard	[EXPLOIT] Replace some independent border restarts with deterministic-seeded three-coordin
+f81c3979ddee01576735b0681462f0d624ed3899	0.099786	discard	[EXPLOIT] Increase deterministic seeded border restarts from 512 to 2048 while retaining t
+3ba0d87568a27af0b5d8d065df47d386eea2f878		crash	[EXPLOIT] After pairwise border ascent stalls, exhaustively test all three-coordinate flip
+fc6298f84cd9debee31bc24ccfd20ee6b3d91c2a	0.099786	discard	[EXPLOIT] Add a short deterministic tabu walk over pair flips from the incumbent border op
+881d1438343ce117a9bd929080931eaafce11de0		crash	[EXPLOIT] When pair-wise border optimization stalls, exhaustively search all triple-coordi
+adf214947b57dfa6a215660a6043bc7f5807ef67	0.099786	discard	[EXPLOIT] Double deterministic border restarts from 512 to 1024 while retaining the same c
+7b6bdc4289899bfacd52ccc8ca2116100a45cf8b	0.099786	discard	[EXPLOIT] Use a new deterministic random stream for the same 512 border restarts while pre
+04dfc398962687effb4d97beea657641b4606c68	0.099786	discard	[EXPLOIT] After each restart reaches a pair-wise optimum, apply two deterministic three-co
+6b04fbcfe115fa7c5a7bbb61c0e9a48a9f550076	0.099786	discard	[EXPLOIT] Add a deterministic, exact-verified exhaustive single- and two-entry-flip ascent
+117e6f1aa35a8faf0e99acf37b0761fcaedf93b7	0.099786	duplicate	[EXPLOIT] Double deterministic border restarts from 512 to 1024 while retaining the same c
+24797b909f37ac2caab221686fbb8bfcdd10d883	0.099786	discard	[EXPLOIT] After the existing restarts, run 64 deterministic three-coordinate kicks from th
+f16c2c3c034afb96dbeff232dd7c228fac252106	0.143252	discard	[EXPLOIT] Run a bounded deterministic tabu search over single- and paired border-coordinat
+fe8dc16c8e6052f29e66de172b63bdf1cae6738f	0.099786	discard	[EXPLOIT] After coordinate and pair ascent stalls, exhaustively test simultaneous flips of
+506b935e862a30bfc777e12e35976f4535f0601d	0.099786	duplicate	[EXPLOIT] Double deterministic border restarts from 512 to 1024 while retaining the same c
+7de45a8fde17b80f2c623ee3753f4fe7f3798259	0.099786	discard	[EXPLOIT] When coordinate and pair ascent stalls, exhaustively test simultaneous flips of 
+7dd5587dbe8bb6804c7c5134261bba4a63082f1a	0.099786	discard	[EXPLOIT] After the existing restarts, exhaustively apply best-improving simultaneous two-

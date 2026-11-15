@@ -1,0 +1,100 @@
+{
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "direction": "min",
+  "directives": {
+    "BOREDOM_SNAP": "Stop tweaking the same component; try a different mechanism (memory, dynamics, learning), grounded in world-model literature (Exa) and checked against past.dev.",
+    "CONVERGED": "Re-run the best model to confirm the score.",
+    "EXPLOIT": "One focused change to the current world model.",
+    "PARADIGM_BREAKOUT": "Change the approach family (e.g. explicit map memory or learned tabular dynamics from the public episode split)."
+  },
+  "domain": "testcase-playworld-mini",
+  "eps": 0.005,
+  "eps_note": "evaluator is deterministic over 200 episodes x 20 frames; 0.005 is 20 frames",
+  "fail_statuses": [
+    "crash"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "gate": {
+    "failed_min_distance": 0.25,
+    "snap_min_distance": 0.35
+  },
+  "k": 5,
+  "knn": 3,
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "min_attempts": 3,
+  "objective": "loss",
+  "params": {
+    "value": {
+      "ratio": 4,
+      "scale": "ratio"
+    }
+  },
+  "params_weight": 0.25,
+  "patience": 3,
+  "patience_unit": "round",
+  "required_mechanisms": [
+    "baseline",
+    "memory",
+    "dynamics",
+    "learning",
+    "rendering"
+  ],
+  "stuck": {
+    "depth": 2,
+    "min_fails": 2,
+    "window": 3
+  },
+  "thresholds": {
+    "breakout": 0.85,
+    "exit": 0.55,
+    "snap": 0.7
+  },
+  "trivial_distance": 0.05,
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "version": 3,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "dynamics": [
+      "movement",
+      "blocking",
+      "state_toggle"
+    ],
+    "learning": [
+      "tabular",
+      "from_public_data",
+      "neural"
+    ],
+    "memory": [
+      "window",
+      "map",
+      "episodic"
+    ],
+    "rendering": [
+      "unknown_fill",
+      "oob"
+    ]
+  },
+  "weights": [
+    0.45,
+    0.45,
+    0.1
+  ]
+}

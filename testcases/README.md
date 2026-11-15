@@ -9,34 +9,68 @@ on the host.
 | task | scope | editable file | baseline | reference |
 |---|---|---|---|---|
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
-| `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
-| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
-| `ignobel` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
+| `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | dev accuracy ≈ 0.1 (10 questions) | published full-BixBench accuracy 0.523 |
+| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | dev score ≈ 0.149 | dev-only `RECORD` 0.3598 from the original commit; source unavailable |
+| `ignobel` | Pre-registered expert study on real public data, graded for split-half consistency and committee-rated interest | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
-is a synthetic proxy, not PlayWorld, and uses the 8-frame-memory reference.
-Evaluators print `score`, `loss`, `record`, and `beats_reference`. Lower loss is
-better. A malformed or crashing candidate is scored as a crash.
+is a synthetic proxy, not PlayWorld. Its `RECORD = 0.3598` is a dev-only
+constant from the original commit, not a measured reference; the reference
+model source is not in the repo and cannot be graded on test. Split evaluators
+print `split`, `n_items`, `score`, `loss`, and `record`. Lower loss is better.
+A malformed or crashing candidate is scored as a crash.
+
+## Fair evaluation
+
+For tasks with `"held_out_test": true`, round-by-round swarm feedback uses only
+the development split. At run completion, `held_out.py` grades the baseline and
+best accepted commit once each on the test split and writes
+`<run>/held_out_test.json`; the Lab viewer exposes that result in its manifest.
+The artifact reports baseline-versus-best test results and includes a
+task-specific `reference_note`; `reference_test_loss` is null.
+Question text and public data remain visible to candidates, but
+test labels (BixBench) and test episodes (Playworld) are never used for swarm
+feedback.
+
+BixBench's 17 questions are divided into 10 development and 7 test questions.
+The published 0.523 accuracy is for full BixBench, so it is only context and is
+not directly comparable to this proxy's seven-question test split. Playworld's
+public training episodes use seeds 0–499, development uses 100,000–100,199,
+and test uses 300,000–300,199. Its `RECORD = 0.3598` is dev-only and comes from
+the original commit; the reference model source is not in the repo, so it
+cannot be graded on test. Likewise, the other references are proxies:
+Hadamard's exact optimum is task-specific, and Ig Nobel has no single
+reference score. BixBench also disables research and rejects source literals
+matching gold answers in the current split, apart from small integers, numbers
+stated in its public questions, and fixed conventional statistical constants
+(such as 0.05, 0.8, 0.975 and powers of ten from 1e-4 through 1e-12, matched
+relatively) to avoid false positives in standard analysis code.
+
+The BixBench test split has only seven questions. Held-out baseline and best
+accuracy results include a Wilson 95% confidence interval (`ci95`); report the
+interval alongside every seven-question accuracy value.
 
 ## Build the candidate image
 
 Build the pinned image once before running an evaluator or task swarm:
 
 ```sh
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 ```
 
 The image pins Python 3.11.12 and the CPU dependencies used by these tasks:
-NumPy, pandas, openpyxl, and SciPy. Candidate containers have no network, a
-read-only root filesystem, dropped Linux capabilities, no-new-privileges,
+NumPy, pandas, openpyxl, SciPy, statsmodels, and patsy. Candidate containers
+have no network, a read-only root filesystem, dropped Linux capabilities, no-new-privileges,
 resource limits, and only the task's editable file/public inputs plus a
 separate writable output mount. They receive no host environment secrets,
 grader, hidden answers, simulator, reference implementations, repository, or
 home directory. Docker being unavailable is a crash; candidates are never run
 on the host as a fallback.
 
-For BixBench, `prepare.py` downloads the public question/data files and keeps
+For BixBench, `prepare.py` downloads the public question/data files from a
+pinned `futurehouse/BixBench` revision, verifies each file's sha256 (a cached
+file that no longer matches is downloaded again), and keeps
 the answer key under `.cache/` on the host. The candidate receives only
 `questions.json` and the declared public `data/` files. For Playworld, the host
 generates context frames/actions and future actions for evaluation; hidden
@@ -53,25 +87,39 @@ headers and levels, the direction, and the predicted |ρ|. `external.py`
 downloads the dataset once (https, open-data hosts or URLs the run's Exa
 research cites, ≤ 5 MB, frozen in `.cache/raw` with its sha256), and
 `evaluate.py` runs the registered Spearman test: significant = p < 0.005 on
-all rows with the registered sign; replicated = the same sign with p < 0.05 in
-each of the two fixed hash halves. Each dataset gets one registered test per
+all rows with the registered sign; split-half consistency requires the same
+sign with p < 0.05 in each of the two fixed hash halves. Each dataset gets one registered test per
 run, so the swarm cannot fish through a dataset's columns, and a test's
 predicted effect size is frozen at its first registration. Trivial pairs fail.
-Loss = 1 − (replicated and significant). Every graded study (registration,
-citations, dataset sha256, rho/p/n overall and per half) is appended to
+Unconfirmed studies score 0. For a confirmed study, the host calls the
+two-judge committee during evaluation: score = `0.25 + 0.75 * committee_score`,
+where the committee score is the lower judge's `min(LAUGH, THINK)/10`; a
+targets-group flag sets score to 0. The swarm loss is `1 - score`, so
+split-half-consistent findings that are funny, thoughtful and not already well
+known score higher.
+Judge A uses `openai/gpt-oss-120b:peft:131072` and judge B uses
+`Qwen/Qwen3.5-397B-A17B:peft:262144`; neither is the Kimi generator model.
+The committee is on by default and needs `TINKER_API_KEY`; without it the
+evaluator raises rather than silently changing the objective. Set
+`IGNOBEL_COMMITTEE=off` to opt out explicitly: confirmed studies then score 1.0
+(gate-only scoring), and each graded study records `"committee": {"status":
+"off"}` and `"metric_variant": "gate-only"`. `swarm.py --llm fake` and the
+offline tests set it. With the key present, a committee failure (for example
+Tinker HTTP 402) is a `grader_error` scoring 0, and the error text includes the
+HTTP status. Before judging, one Exa
+search on the host-written headline supplies up to five title/URL/snippet
+results as prior-work data; established or textbook results must receive THINK
+≤ 3. Judges receive only a host-written abstract and search results, never the
+preregistration's question, hypothesis or mechanism. Every graded study,
+including per-judge scores and prior-work evidence, is appended to
 `<run>/ignobel_studies.jsonl`; after the run,
-`python3 testcases/ignobel/score_run.py --run <out>` sends the replicated
-studies to the same two-judge committee as `ignobel/` (`committee.py` reads the
-prompts from `ignobel/committee.py`; Tinker models `IGNOBEL_JUDGE_A_MODEL`,
-`IGNOBEL_JUDGE_B_MODEL`, defaults Kimi K3.1 Pro and Qwen3.5-397B) and writes
-`scores.jsonl`: laugh and think 1–10 on a grader-written abstract, each judge
-counts min(laugh, think), the lower judge wins, and a joke at a group's expense
-scores 0. The swarm is open-ended: `field` may be any snake_case field or subfield a lab
+`python3 testcases/ignobel/score_run.py --run <out>` reports cached verdicts in
+`scores.jsonl` without re-judging them. The swarm is open-ended: `field` may be any snake_case field or subfield a lab
 founds (logged as descriptor `other/<subfield>`), and each round `swarm.py` runs
 the task's `round_context.py` (task.json `round_context`) and appends its output
 to the task inputs: the lab notebook (every study registered so far this run
 and its result, so labs build on each other) and real datasets found on Zenodo
-and Hugging Face (`datasets.py`, ported from `ignobel/sources.py`) for the
+and Hugging Face (`datasets.py`) for the
 least-explored fields, with their columns. A registration can test a derived
 rate (`x_per` / `y_per`: a numeric column divided by another numeric column);
 the host computes it. When two labs report the same
@@ -89,6 +137,18 @@ EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task ignobel --rounds 1 --llm fake --no-push
 ```
+
+Each `task.json` lists `fake_edits`: a fixed trajectory of real edits to the
+editable file that the fake LLM applies in order, so a 15-round fake run
+improves the score and exercises the candidate `keep`, the critic and the
+fast-forward merge (`tests/test_testcases.py` runs one per task in CI):
+
+| task | dev baseline loss | reference | fake trajectory reaches |
+|---|---|---|---|
+| `hadamard19` | 0.0585 | 0 (known optimum) | 0 after 4 kept edits (tabu search scored by determinant ratios from the inverse, then budget, restarts and tenure) |
+| `bixbench_mini` | 0.9 | published full-BixBench accuracy 0.523 (not comparable) | 0 after 10 kept answer fixes (SEM, Cohen's d, Shapiro-Wilk, power, interaction F, logistic regressions) |
+| `playworld_mini` | 0.851 | dev-only `RECORD = 0.3598` from original commit; source unavailable | 0.277 (persistent map with dead reckoning, unlimited memory, blocking, switch/lamp toggling) |
+| `ignobel` | 1 (rare-steak smokers, not significant) | none: open-ended | 0: fruity candies are liked less (FiveThirtyEight candy power ranking), confirmed on the real public data; a second real registration (FiveThirtyEight flying etiquette) cannot beat a confirmed 0 |
 
 `--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
 Docker sandbox, loads `testcases/<task>/boredom_profile.json`, and uses the

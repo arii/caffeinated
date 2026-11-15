@@ -1,0 +1,49 @@
+{
+ "editable": "construct.py",
+ "deterministic": true,
+ "search_topic": "maximal determinant of 21x21 +1/-1 matrices (Hadamard maximal determinant problem)",
+ "brief": "a construction script (`construct.py`) that outputs a 21x21 matrix of +1/-1 entries; the score is log10|det| computed exactly, and the loss is log10(proven maximum 59392000000000) minus the score. Loss 0 means the proven optimum was matched",
+ "context_files": [],
+ "proxy_note": "proven maximum: OEIS A003432 a(20)=56640625, |det| = 2^20 * a(20)",
+ "fake_targets": [
+  [
+   "RESTARTS",
+   "search",
+   "restarts",
+   1
+  ],
+  [
+   "SEED",
+   "search",
+   "seed",
+   1
+  ],
+  [
+   "RESTARTS",
+   "search",
+   "restarts",
+   2
+  ],
+  [
+   "SEED",
+   "search",
+   "seed",
+   3
+  ],
+  [
+   "CONSTRUCTION",
+   "construction",
+   "circulant",
+   1
+  ],
+  [
+   "OBJECTIVE",
+   "objective",
+   "surrogate",
+   1
+  ]
+ ],
+ "order": 21,
+ "record_det": "59392000000000",
+ "known_optimum_loss": 0.0
+}

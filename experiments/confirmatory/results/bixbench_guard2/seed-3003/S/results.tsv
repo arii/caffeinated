@@ -1,0 +1,48 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+0fc35a5615d7402c58d12f56ebf942ae59f8e245	0.851852	keep	[EXPLOIT] Complete the bix-18 grouped descriptive statistics and correct circularity varia
+4457aed0deadc040ae1308a8ba2a4e33934c1a6e	0.851852	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by extracting ENO1's normal abundan
+cfd456c4bf36cdef0c059e0f6dddda91c4aec22e	0.777778	keep	[EXPLOIT] Answer the four bix-8 questions using the dataset's contingency table and signif
+6ec8290b04cefa504151c2af86595bd574fb44bd	0.740741	keep	[EXPLOIT] Answer all four bix-19 questions using pooled Cohen's d, two-sample power analys
+e3b39daabee420b8f7a942bd12c99ecc86f7160e		crash	[EXPLOIT] Answer all seven bix-51 questions with binary logistic regressions of PR respons
+c8010de442b1b14c56988ccc3358b8e879dc2107	0.555556	keep	[EXPLOIT] Add robust binomial logistic regressions for all seven bix-51 treatment-response
+f1ff8d285b56ff423af7deb4daa49f1d233bf365	0.555556	discard	[EXPLOIT] Answer the three bix-37 ENO1 questions directly from its proteomics differential
+171f7d04fa76fe8a08113d52ae94d04950af195c		crash	[EXPLOIT] Answer all seven bix-10 questions using COVID-19 adverse-event severity with an 
+7279a939549214aaa34babc76e45c462ccc3df7d	0.555556	discard	[EXPLOIT] Compute the four bix-52 chromosomal CpG-density and uniformity answers from dist
+f4fa932473dc6f78307a7dd90258db81d77aac3c	0.518519	keep	[EXPLOIT] Fit cubic and natural-spline swarming-area models to ΔrhlI frequencies and deriv
+7241359f38e0f311ca18bbec854049560f0ae7ea	0.518519	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+c7444d75fe1562919f738d9791b427ccf88e6faa	0.481481	keep	[EXPLOIT] Add the seven bix-10 COVID-19 severity answers using merged COVID-19 adverse eve
+8882b39206b032a244ef2ae78493a85d2677bfc5	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+8d85d5bf5e6bc754dcf4140af6e3fb4b73a685a4	0.481481	discard	[EXPLOIT] Answer the bix-41 questions with per-condition Dunnett comparisons against Strai
+da7814800afcfdf1562481ef616069eb88721aa5	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+52c991816c99da42c1042a4bf1155c1d6ae8c35d		crash	[EXPLOIT] Answer the three bix-41 questions using grouped Dunnett comparisons of each two-
+07c7a2fa736c6d13533504c87112fc2cbe61ef14	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+24f4824b155dbbedff65aaac0507d968bb1389c6		crash	[EXPLOIT] Answer the bix-41 questions with two-sided Dunnett comparisons of each co-cultur
+78d91b9992f34d5458f4fbee61e4980b95acf756	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+b77e77cef5988fd8a9f5a245f9a6ed2f0c0243e6		crash	[EXPLOIT] Answer the bix-41 questions with ratio-wise two-sided Dunnett tests against Stra
+b8bf0024c114411b3a8283c1e6a23610a998fc26	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+c503f044e1c21baed714961b39d116b0130aa504		crash	[EXPLOIT] Answer the bix-41 questions using ratio-wise two-sided Dunnett tests against Str
+e7066291b1a1ea85fa7bbd75792b0c86b5608f98	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+86faa462372aece92391a3c344dc7019427798cf		crash	[EXPLOIT] Answer the bix-41 questions using ratio-wise two-sided Dunnett tests against Str
+3536f708752f4e268592e4e85a34b2eee6ac8e25	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+4974a763678b81fc74b5b87d8cd6fc250b1dda3b		crash	[EXPLOIT] Answer the bix-41 questions using two-sided Dunnett tests of each mixed-strain c
+3a1beecf5921e546a342518699c3ff8f61db938a	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+76767182cd2fe7cf9d81283193f9c3721f2281e1		crash	[EXPLOIT] Answer the bix-41 questions using two-sided Dunnett comparisons of each mixed-st
+e84621601f9186b6265192f2baf8bfca6d49851f	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+dd3b3978d00ec5490bd7a4650e1b0e74eb6f2f90		crash	[EXPLOIT] Compute bix-27-q5 with PCA on the sample-by-gene log10(expression + 1) matrix an
+ff7fd63878b967a8fbb7eba75eb0b9d1c18a9c6f	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+8ab2dd15b6b386ea8a9893218f47eb597dece6f4		crash	[EXPLOIT] Answer the three bix-41 questions using ratio-wise two-sided Dunnett tests again
+96a44e164793d7ed2f72944e0adffa71dc5438a4	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+a71a5925ea7f19368ced90c8ce47df0fed0efc89	0.481481	discard	[EXPLOIT] Compute bix-27-q5 using PCA on the sample-by-gene log10(expression + 1) matrix a
+02a1f5fc7864f5a995772bfbcf59184fc7f012e4	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+baa0829f469cf6891bc25588d0994fbb9bb17401		crash	[EXPLOIT] Answer the three bix-41 questions using ratio-wise two-sided Dunnett tests again
+4610c135652eff62c00fb36d9ee18a9bb4f7fb3b	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+37aee2445c110f1caa525bf700038f8f3cfe62f3		crash	[EXPLOIT] Compute bix-27-q5 using PCA on the sample-by-gene log10(expression + 1) matrix a
+10f5cf3c3a855767ac3b5d78269da726f41b6f65	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+3ef4d51d7564e98048d3ed40fb6cd36e4ed799cd		crash	[EXPLOIT] Answer the bix-41 questions with ratio-wise two-sided Dunnett tests against Stra
+bd4672cf943f716f410b7cddbf442393d5bcaf83	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+cb567956dd5fb2d76ef42321b9e51bef182e47f2		crash	[EXPLOIT] Answer the three bix-41 questions using ratio-wise two-sided Dunnett tests again
+00f4815286e82bee5b615d5dd612fe47edf89544	0.481481	duplicate	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+6625b6f8052ebf20f566e9b980edcd10b133598d	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's proteomic differential-ab
+42bdbdf32c804b148faf59bf9e005e47417c4a83		crash	[EXPLOIT] Answer the three bix-41 questions using ratio-wise two-sided Dunnett tests again
+ceb353dd3fad787867c75c7342284734e21c15d0	0.481481	discard	[EXPLOIT] Answer the three bix-37 questions directly from ENO1's row in the tumor-versus-n

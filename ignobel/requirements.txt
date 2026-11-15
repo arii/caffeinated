@@ -1,8 +1,0 @@
-openai>=1.50
-fastembed>=0.4  # EMBED_BACKEND=local
-modal>=1.0
-exa-py>=1.5
-pydantic>=2.7
-pyyaml>=6.0
-numpy>=1.26
-pytest>=8.0

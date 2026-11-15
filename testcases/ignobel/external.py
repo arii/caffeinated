@@ -84,7 +84,10 @@ def registered_title(doi):
     quoted = urllib.parse.quote(doi, safe="/")
     for url, title_of in (
         ("https://api.crossref.org/works/", lambda d: (d["message"].get("title") or [""])[0]),
-        ("https://api.datacite.org/dois/", lambda d: (d["data"]["attributes"].get("titles") or [{}])[0].get("title", "")),
+        (
+            "https://api.datacite.org/dois/",
+            lambda d: (d["data"]["attributes"].get("titles") or [{}])[0].get("title", ""),
+        ),
     ):
         request = urllib.request.Request(
             url + quoted, headers={"User-Agent": "caffeinated-ignobel/1 (mailto:swarm@localhost)"}

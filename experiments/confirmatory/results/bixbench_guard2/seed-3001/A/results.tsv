@@ -1,0 +1,30 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+51245f90d010db3b3a172a13ec7fa7d4b0d00ee9		crash	[EXPLOIT] Replace the partial three-answer baseline with independent, deterministic statis
+9b32801351ce0744cf9179ad29aca718c7576b27	0.888889	keep	[EXPLOIT] Correct the rhlR- circularity calculation from sample standard deviation to the 
+358301f357c6394b01c8f0c0326595727ab4c4a6	0.925926	discard	[EXPLOIT] Add direct proteomic lookups for ENO1's normal abundance, adjusted p-value, and 
+008bf857d90ae964628f1433c42e26d90439d28c	0.888889	discard	[EXPLOIT] Add the two remaining bix-18 descriptive answers: circularity for the genotype w
+9b32801351ce0744cf9179ad29aca718c7576b27	0.888889	keep	critic second-evaluation confirmation for Correct the rhlR- circularity calculation from sample standard deviation to the 
+f88c316536b515846184cf4b2602ad7199e7d02b	0.629630	keep	[EXPLOIT] Replace the three-answer baseline with capsule-isolated implementations of all 4
+e887672ca03fb32f1d0c07ac6a41d666dbc14403	0.814815	discard	[EXPLOIT] Add deterministic bix-8 contingency-table, methylation-ratio, and gene-count ans
+08a20c7b70189f4abdfa811c94461638d9038b81	0.814815	discard	[EXPLOIT] Add deterministic NeuN effect-size, power, normality, and two-way ANOVA calculat
+d29d9c09212ee47f6680ce27694b9de55e95ddf9		crash	[EXPLOIT] Add all seven bix-51 logistic-regression answers using PR as the binary response
+f88c316536b515846184cf4b2602ad7199e7d02b	0.629630	keep	critic second-evaluation confirmation for Replace the three-answer baseline with capsule-isolated implementations of all 4
+a81e4a0262f46763a9262757901e5541d8941c25	0.592593	keep	[EXPLOIT] Compute Dunnett comparisons jointly across all two-strain co-culture groups inst
+09427a25ed81e74accab6fde33e6965c9af71e2c	0.629630	discard	[EXPLOIT] Use the complete m6A-by-DEG contingency table for the MeRIP-seq chi-square test 
+ad27b6ce1062a438775987d556f97e8e3c689b6a	0.666667	discard	[EXPLOIT] Compute Jackdaw genome-wide CpG density as total unique filtered sites divided b
+89fc347e08f09148681b13df12c77af27c1f11b9	0.629630	discard	[EXPLOIT] Align each bootstrap training clustering to the full-data cluster labels before 
+a81e4a0262f46763a9262757901e5541d8941c25	0.592593	keep	critic second-evaluation confirmation for Compute Dunnett comparisons jointly across all two-strain co-culture groups inst
+c42a00fa5007a324f14a5854f3ea240ad7bef23e	0.592593	discard	[EXPLOIT] Align each bootstrap training clustering to the full-data cluster labels with Hu
+c732d6186139c7e7eee7c9ba11b58fec66f9443c	0.592593	discard	[EXPLOIT] Use the complete m6A-status by DEG-status contingency table for the MeRIP-seq ch
+8e7c14d6d51689e180eb5d117c35e85d87ac8b34	0.629630	discard	[EXPLOIT] Compute the Jackdaw genome-wide CpG density as total unique filtered sites divid
+a63c7a0a5271877d60399dae3c372ead09ec47c1	0.518519	keep	[EXPLOIT] Replace the cubic regression-spline basis with an R-compatible natural spline ba
+a63c7a0a5271877d60399dae3c372ead09ec47c1	0.518519	keep	critic second-evaluation confirmation for Replace the cubic regression-spline basis with an R-compatible natural spline ba
+98024c464b33a13070075bf36e312334112e9c21	0.518519	discard	[EXPLOIT] Align each bootstrap training clustering to the full-data cluster labels with Hu
+25df7371cd7908148c2e6077a10944d2fe89e8c1	0.518519	discard	[EXPLOIT] Use the complete m6A-by-DEG contingency table for the MeRIP-seq independence tes
+944e67c65e5615984062bcfd8140f7bf669c1b4e	0.555556	discard	[EXPLOIT] Compute genome-wide Jackdaw CpG density as total filtered unique sites divided b
+cf6b066cb3ee2e2cd30d9cd5ca1d92be5ae3440c	0.518519	discard	[EXPLOIT] Restrict the Dunnett comparison family to genuine two-strain co-cultures by excl
+6fe4b9e7037bc7034a89d3b1933dc6b18470104d	0.518519	discard	[EXPLOIT] Align each bootstrap training clustering to the full-data reference labels with 
+451438fb8c7bd7475431475dba9d2c58ad6ff9c0	0.555556	discard	[EXPLOIT] Compute Jackdaw genome-wide CpG density as total unique filtered sites divided b
+bc79f2e5248af126e473dd01f830c24a71b3d354	0.518519	discard	[EXPLOIT] Use the complete m6A-by-DEG contingency table for the MeRIP-seq independence tes
+0d69fd6d764744545272a7b7ab75a76d5e907405	0.518519	discard	[EXPLOIT] Test genome-wide CpG uniformity against chromosome-length-proportional expected 

@@ -1,0 +1,37 @@
+{
+  "llm": {
+    "calls": 116,
+    "completion_tokens": 137636,
+    "models": {
+      "moonshotai/Kimi-K3.1-Pro:peft:262144": {
+        "calls": 116,
+        "completion_tokens": 137636,
+        "estimated_cost_usd": null,
+        "prompt_tokens": 498397
+      }
+    },
+    "prompt_tokens": 498397
+  },
+  "research_costs": {
+    "exa": {
+      "calls": 119,
+      "cost_usd": 0.761,
+      "latency_ms_p50": 414,
+      "records": 119
+    },
+    "past_dev": {
+      "cost_note": "not reported by past.dev API",
+      "cost_usd": null,
+      "recall": {
+        "latency_ms_p50": 577,
+        "records": 157
+      },
+      "records": 0,
+      "write": {
+        "latency_ms_p50": 340,
+        "records": 123
+      }
+    }
+  },
+  "run_dir": "/home/ubuntu/longruns2/out-ignobel"
+}

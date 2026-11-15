@@ -1,0 +1,53 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+eac14ac4fc575302e44ee52605e5d6bedab7d713		crash	[EXPLOIT] Replace the three-answer stub with deterministic, question-specific analyses for
+112e6a9743a534392b5a06fd020de0f38e9e1f35	0.851852	keep	[EXPLOIT] Complete the bix-18 descriptive analysis by deriving all five answers from genot
+b10f2e212843befd82d90daa26af908f26e7415e	0.925926	discard	[EXPLOIT] Answer the three bix-37 proteomics questions directly from the ENO1 row, includi
+882961a0416c094917bc139bc7a2d2a4c98cb7b7		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis: pooled Cohen's d, two-sample power, KD Sh
+112e6a9743a534392b5a06fd020de0f38e9e1f35	0.851852	keep	critic second-evaluation confirmation for Complete the bix-18 descriptive analysis by deriving all five answers from genot
+1bff649815cc7edc65a0080e9462e18f989f7b0d		crash	[EXPLOIT] Add a complete bix-51 binomial logistic-regression pipeline for all seven treatm
+d10c5b655b6097a19660f4de089fa9c0b1760641		crash	[EXPLOIT] Add a dependency-light bix-19 pipeline for pooled Cohen's d, exact two-sample po
+0f11664ad0b58110a97e8f7f1315dd29e8a1802f	0.777778	keep	[EXPLOIT] Add the complete bix-8 MeRIP-seq analysis using a contingency-table chi-square t
+de37d3c03de5ba9b90a128e0af6baf3d9d9e546e	0.851852	discard	[EXPLOIT] Add the complete bix-52 analysis using distinct filtered CpG sites, chromosome-l
+0f11664ad0b58110a97e8f7f1315dd29e8a1802f	0.777778	keep	critic second-evaluation confirmation for Add the complete bix-8 MeRIP-seq analysis using a contingency-table chi-square t
+09c3409424a1aae49bc473b6e7b20081125f51b1		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using maximum-likelihood log
+80d88256fb75d6145f46725ce146070eab669a91		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis using pooled Cohen's d, two-sample power, 
+7536b7dc850c0aaabf0439bc42b937c540e3dc3c	0.777778	discard	[EXPLOIT] Add the complete bix-37 proteomics analysis by directly extracting ENO1's normal
+804759946edc3986bc3387b0bbcf4f06977cd446		crash	[EXPLOIT] Add the complete bix-10 COVID-19 severity analysis using an ordinal logit and su
+2042ef577f19142e4f22e1243661273f62fdcf48	0.777778	discard	[EXPLOIT] Add the complete bix-52 analysis by filtering extreme-methylation sites, dedupli
+ce88111538bdde76b8a40607a2713eaf7b7a95b9		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis using pooled Cohen's d, two-sample power, 
+c585b5a4ef43247cc2bb9365909415a72ef284ff		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using age-only, BMI-only, an
+937513c3121cadecc1d1cbcdd1992bb4fc690ec0		crash	[EXPLOIT] Add a robust bix-10 pipeline with explicit numeric ordered-logit covariates and 
+09f8c92395cdafdc854f95de7cb09e7b7df29a9c		crash	[EXPLOIT] Add the complete bix-19 NeuN pipeline for pooled Cohen's d, two-sample power, KD
+a3c7006352dfa48fdf963fccf2e7f0081154f593		crash	[EXPLOIT] Add the complete bix-51 treatment-response pipeline using binary PR logistic reg
+df44d3180918d4fe46a0b4152f7e1140dd6f6086	0.777778	discard	[EXPLOIT] Add the complete bix-37 ENO1 proteomics pipeline for normal abundance, adjusted 
+4c694119a9c8217b361bed83224f0c57e2c12db7	0.777778	discard	[EXPLOIT] Add the complete bix-52 pipeline for distinct filtered CpG counts, chromosome-le
+90836b0e0b1f9350481332b4679d5684a80a5331		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using three deterministic bi
+495edf7c865f6c5d6f2580733b93316e301c34d3		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis with pooled Cohen's d, two-sample power, S
+5cfa396722c67279e9550bdc5ad4e61f97a0502d	0.777778	duplicate	[EXPLOIT] Add the complete bix-37 ENO1 proteomics analysis by extracting its normal abunda
+c091d6196118c5acbfa03c710976873bd4ac27f0	0.777778	discard	[EXPLOIT] Add the complete bix-52 age-related CpG analysis using distinct filtered sites, 
+f0f9835eb51f3e233502dc8ae485a3c445357c75		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using maximum-likelihood log
+13f14de89173d6bfe4ecd9de4c42139a41773d69		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis with pooled Cohen's d, two-sample power, S
+327579ab8013f6167fffa9b64828a22c3629dec4	0.777778	duplicate	[EXPLOIT] Add the complete bix-37 ENO1 proteomics analysis by extracting its normal abunda
+96618c23e8721211dc2a52526271aa4bf4c954bd	0.777778	discard	[EXPLOIT] Add the complete bix-52 age-related CpG analysis using distinct filtered sites, 
+165d4ea359bcf2faa8573f9c4a30119e3033650a		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using three maximum-likeliho
+f77fbf7c4bf6cf0556b0b07e81c0fd882b362a7a		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis with pooled Cohen's d, two-sample power, K
+69e3098dcbe6e9447c2666e6cef61c26aeafaeef	0.777778	duplicate	[EXPLOIT] Add the complete bix-37 ENO1 proteomics analysis, extracting normal abundance, a
+23c21a7324d4e23a0cbff521bbee2b0199665ec1		crash	[EXPLOIT] Add the complete bix-54 swarming analysis using quadratic, cubic, and natural cu
+30acc331580773733d2a56badec6f363b966f72f		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using three maximum-likeliho
+bf385dc1fb3de3f55679f4616fb5458652cbb830		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis using pooled Cohen's d, two-sample power, 
+c0b64d10c6d8d4073c6adfabdd22f013712baef8	0.777778	duplicate	[EXPLOIT] Add the complete bix-37 ENO1 proteomics analysis by extracting its normal abunda
+316433a7db1d9c3c3afa47185682bc1f711a1f29	0.777778	discard	[EXPLOIT] Add the complete bix-52 age-related CpG analysis using distinct filtered sites, 
+a21abeb3bebceb88dff6d3d6e703c6a9426cac0e	0.777778	discard	[EXPLOIT] Add the complete bix-37 proteomics analysis by extracting ENO1's normal abundanc
+fddc8d082102db5aa9d2d1e01e31c74b19e7747d		crash	[EXPLOIT] Add the complete bix-51 treatment-response analysis using age-only, BMI-only, an
+013bf0bd69666314306bd940285d7d934ee1685f		crash	[EXPLOIT] Add the complete bix-19 NeuN analysis using pooled Cohen's d, two-sample power, 
+be9d034bedca94fc58c6bf11f8c20298326a10db	0.740741	keep	[EXPLOIT] Add the complete bix-52 analysis using distinct filtered CpG sites, chromosome-l
+be9d034bedca94fc58c6bf11f8c20298326a10db	0.740741	keep	critic second-evaluation confirmation for Add the complete bix-52 analysis using distinct filtered CpG sites, chromosome-l
+4c91d60cd05979f7c712215ee3566e896a0306c0	0.740741	discard	[EXPLOIT] Add direct ENO1 proteomic lookups for normal abundance, adjusted differential-ab
+e8cdef852f878f47fa4e97a07ca38420cb09e453		crash	[EXPLOIT] Implement all seven bix-51 answers with PR-binary logistic regressions for age-o
+632f8dd6884d3e111f8a8ad6da96b2b333eb528c		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample power 
+e61095da9e0f5ff00414f40579699aed3ecc17d6		crash	[EXPLOIT] Implement all three bix-41 answers using two-sided Dunnett comparisons of each c
+4548745c759a2c67edccfe80df62dc5d270081cc		crash	[EXPLOIT] Add the complete bix-19 NeuN pipeline with pooled Cohen's d, two-sample power, K
+f8e6f41d8f12d6ad009db2d3dbe0ad0b579508f4		crash	[EXPLOIT] Implement all seven bix-51 answers with age-only, BMI-only, and combined BMI-age
+5ed9aac3e1f6f265bb0a7b2a2e9e6d2e293e981b	0.740741	discard	[EXPLOIT] Add the three bix-37 ENO1 proteomics answers by extracting its normal abundance,
+a68e95b45f6f8c9aa4e5a59934a4685999ededcb		crash	[EXPLOIT] Implement all three bix-41 answers using two-sided Dunnett comparisons of each c

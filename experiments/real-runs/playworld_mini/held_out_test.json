@@ -1,0 +1,22 @@
+{
+  "baseline": {
+    "commit": "47be2271b0812f50c377bdb7318703d439f3f5e6",
+    "loss": 0.87225,
+    "score": 0.12775,
+    "status": "ok"
+  },
+  "best": {
+    "commit": "c89facd3a37977061f7d9e80ffe426a75bb0e536",
+    "dev_loss": 0.28825,
+    "loss": 0.25349999999999995,
+    "score": 0.7465,
+    "status": "ok"
+  },
+  "evaluated_at": "2026-11-15T09:01:02.700522Z",
+  "n_items": 200,
+  "proxy_note": "synthetic proxy, not PlayWorld; RECORD = 0.3598 is dev-only",
+  "reference_note": "dev-only constant; reference model source not in repo, so it cannot be graded on test",
+  "reference_test_loss": null,
+  "split": "test",
+  "task": "playworld_mini"
+}

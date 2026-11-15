@@ -1,0 +1,25 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+4cbbdaec44c95a01b848b8c39e3252c326e25227		crash	[EXPLOIT] Replace the partial baseline with a dtype-aware, deterministic analysis pipeline
+8f13f1d8206b498ea47f110d6b8ec47ebd0e180e	0.851852	keep	[EXPLOIT] Complete the bix-18 descriptive answers and compute circularity SEM rather than 
+c13223ae1df9a3d6351a103ef0c6cab628985317	0.925926	discard	[EXPLOIT] Answer the three bix-37 proteomics questions by selecting ENO1 and reading its n
+23f2684f3a1a1302c95edb1ce4a6970ae3f624b3		crash	[EXPLOIT] Answer all seven bix-51 questions with binary logistic regressions using PR as t
+8f13f1d8206b498ea47f110d6b8ec47ebd0e180e	0.851852	keep	critic second-evaluation confirmation for Complete the bix-18 descriptive answers and compute circularity SEM rather than 
+cbd4d5b58a81a20a69098729f827a0dab3cfbca6	0.777778	keep	[EXPLOIT] Answer all four bix-19 questions using pooled Cohen's d, two-sample power analys
+fff27cc216758649ca3a1647a78ce0ef595197b8	0.851852	discard	[EXPLOIT] Answer the four bix-8 questions by separately parsing methylation direction and 
+bf93852f3f3896ba590c52d361263afd95f91632		crash	[EXPLOIT] Answer all seven bix-51 questions with binary logistic regressions using PR as t
+9606a3c9fe5aa994f320cf3f379af223b16cadfd		crash	[EXPLOIT] Answer the four bix-52 questions by filtering extreme methylation rows, deduplic
+cbd4d5b58a81a20a69098729f827a0dab3cfbca6	0.777778	keep	critic second-evaluation confirmation for Answer all four bix-19 questions using pooled Cohen's d, two-sample power analys
+354c312fbf724568ae434016bc08d57c6a353bcc	0.703704	keep	[EXPLOIT] Fill seven missing answers from direct MeRIP categorical counts and ENO1 proteom
+62c4186ca4cc58cc571229739407f2a090a39397	0.777778	discard	[EXPLOIT] Answer the four bix-52 questions by converting distinct filtered CpG counts to p
+93f8653364ab259f2966439a336f30f760a118f2	0.777778	discard	[EXPLOIT] Fill the three missing bix-37 answers by extracting ENO1's tabulated normal abun
+c6b79c6f7431fcd3fdcab6fbcdb29ab325bd21b3	0.777778	discard	[EXPLOIT] Fill seven missing answers from explicit MeRIP categories and the tabulated ENO1
+354c312fbf724568ae434016bc08d57c6a353bcc	0.703704	keep	critic second-evaluation confirmation for Fill seven missing answers from direct MeRIP categorical counts and ENO1 proteom
+69fd7676a6f0208c80cd0e678b57d01ccf9d2911	0.703704	discard	[EXPLOIT] Answer the four bix-52 questions by filtering extreme-methylation sites, dedupli
+212222daf3859e93158d1109b723d548f4b457e0	0.703704	discard	[EXPLOIT] Answer the bix-41 questions with two-sided Dunnett comparisons of every two-stra
+85437df6a080be1ae3c912d8be682cccdd593331		crash	[EXPLOIT] Compute the four Zebra Finch and Jackdaw CpG answers from distinct filtered site
+		reject	[EXPLOIT] proposal rejected after repair
+cd5b8d368e4e758ce030530352d4d433564d25d6		crash	[EXPLOIT] Compute distinct-site CpG chromosomal densities and the uniform-distribution chi
+0127b61c52bda20c18fb244b0024225940722693		crash	[EXPLOIT] Compute unique filtered CpG densities and a length-weighted chromosome-uniformit
+bf2425de923b9ef00ed2a6f7965191d1935ca8d7		crash	[EXPLOIT] Answer the three bix-41 questions using two-sided Dunnett comparisons of each mi
+		crash	[EXPLOIT] LLM call failed

@@ -1,0 +1,52 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+528e35bfece3dba3d77bf8d1104bfacf401d5673		crash	[EXPLOIT] Replace the partial three-answer script with typed, question-specific statistica
+e41a73913a95e6bf120527e09bb933a91121d17f	0.888889	keep	[EXPLOIT] Correct the rhlR- circularity calculation from the standard deviation to the sta
+cab00b3f806bd73c4f9c4696d291a73d0722d8a0	0.888889	discard	[EXPLOIT] Add the two remaining descriptive swarming summaries: circularity for the larges
+3bd636a8c71c7dcaf758d9ff38c466930d14d7a3	0.925926	discard	[EXPLOIT] Add typed proteomic-table lookups for ENO1's normal abundance, adjusted p-value,
+e41a73913a95e6bf120527e09bb933a91121d17f	0.888889	keep	critic second-evaluation confirmation for Correct the rhlR- circularity calculation from the standard deviation to the sta
+79edbe801cd4cf94e6198b2728d06c4d3eba85f3		crash	[EXPLOIT] Add the seven camrelizumab logistic-regression answers using the predictor sets 
+fce8ed86aa7f53e4f6e1788e20f0e88d1e7796dd	0.888889	discard	[EXPLOIT] Add complete-case COVID severity analyses that explicitly drop missing AESEV val
+c373fec7f08b3cb14f703a77d290d15c95a344af		crash	[EXPLOIT] Add the four NeuN analyses using pooled Cohen's d, two-sample power, Shapiro-Wil
+7d94e8645972fc9a7e76f040a578d8705efcf721	0.814815	keep	[EXPLOIT] Add the four MeRIP-seq answers using a chi-square independence test and explicit
+7d94e8645972fc9a7e76f040a578d8705efcf721	0.814815	keep	critic second-evaluation confirmation for Add the four MeRIP-seq answers using a chi-square independence test and explicit
+cabc50060f6888bc474d5afb5218bb8628b2841e	0.814815	discard	[EXPLOIT] Add the three ENO1 proteomics answers by selecting its gene row and applying the
+ba1763f9b1ed390d6f9d22ab99ec66e10aba24ce		crash	[EXPLOIT] Parse the seven bix-51 questions into their specified logistic-regression models
+c9f58e7a99a698893cae84abcc38a9bfbe6d3605		crash	[EXPLOIT] Add the four NeuN answers using pooled Cohen's d, two-sample power analysis, Sha
+d7eb324af3cd798788de9373bdc4aff08b22a7c9		crash	[EXPLOIT] Add the remaining descriptive swarming answers: wildtype-relative area, circular
+b185ae5fa7588fafb279792740933b920aa0b541		crash	[EXPLOIT] Add all seven bix-51 answers by fitting the explicitly specified simple and comb
+16d6954b01eb616ac9961867dc27c6a085c2fd80	0.814815	discard	[EXPLOIT] Add the four bix-52 answers by deduplicating filtered CpG sites and computing ch
+abd5730c14ef3cd285f0b955d38d4aa05afad68a	0.814815	discard	[EXPLOIT] Answer the three ENO1 proteomics questions by filtering the Tumor vs Normal tabl
+637b9f601a5901f56a72b0ba094b111aa3994ce1		crash	[EXPLOIT] Add all six BCG COVID-19 severity answers using patient-level COVID events, a mu
+91fe0b60cb6eff5b3ee257b7a0dc848cc9544e3c		crash	[EXPLOIT] Add all four NeuN answers using pooled Cohen's d, two-sample power analysis, Sha
+5df917afcd1638d2d51031d50ddcdc5aa1afee93		crash	[EXPLOIT] Answer the complete NeuN family using pooled-SD Cohen's d, two-sided independent
+2bf9621a079be75dd2c23a62ce91bb5d80807d16	0.814815	duplicate	[EXPLOIT] Add the three ENO1 proteomics answers by directly extracting its normal abundanc
+		crash	[EXPLOIT] LLM call failed
+90823a0c358c143152ef633c67e6284a5eaa8f0f		crash	[SNAP] Implement all four NeuN answers with pooled-SD Cohen's d, two-sample power analy
+fff7b0cd150fc216425b56af452a06aacd192734		crash	[SNAP] Add a complete NeuN statistical analysis: pooled-SD Cohen's d, two-sample power 
+42819fc390e6131d4f8edefd819b9104da3d4318		crash	[SNAP] Add the complete bix-19 NeuN family using pooled-SD effect size, two-sample powe
+120b5f3789c2015ad03f53d19e085943d2c0b376		crash	[SNAP] Answer the three bix-41 questions with two-sided Dunnett comparisons of each co-
+		reject	[BREAKOUT] proposal rejected after repair
+0e9d7b0c63c80ef9cf019c332005aa3608cdbeab		reject	[BREAKOUT] Filter extreme-methylation records, deduplicate CpG sites, and compute chromosom
+fb3dfbf60755c819e313f9acdd5931d200b0ad7a		reject	[BREAKOUT] Answer all seven bix-51 logistic-regression questions using model-specific compl
+5b21ef759034e88f56298df10730318cdd621b61		reject	[BREAKOUT] Interpret CpG density explicitly as distinct filtered sites divided by chromosom
+7e9a2feeed63e719064934b84e3737901848c0c8	0.814815	duplicate	[BREAKOUT] Answer the three bix-37 proteomics questions by filtering to the exact ENO1 gene
+c4dfea47f6bdadc781294e11e11b480659146bfb		reject	[BREAKOUT] Filter the adverse-event cohort to COVID-19 events and the requested patient-int
+11d39ab71b1931e60ede9b38982c9310c2e4739a		reject	[BREAKOUT] Handle missing COVID-19 severity explicitly before fitting the ordinal models an
+6a4b9f188e6e879179555604b8d58b0423f785f7		reject	[BREAKOUT] Answer scale- and rounding-sensitive questions using explicit proportions, signi
+dbf97b3ecfa2b108853b349b9e999b7841c360fc		reject	[BREAKOUT] Recover the BCG-CORONA outcomes by joining COVID-19 adverse events to screening 
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair
+ab2bc77558b6d6e0d0f38661f70ca41ca4ea65e9		reject	[BREAKOUT] Resolve CpG density units explicitly as unique filtered sites per chromosome bas
+		reject	[BREAKOUT] proposal rejected after repair
+ac351f5befb4a62a168c267fbd05b8b5064add78		reject	[BREAKOUT] Explicitly exclude missing COVID-19 severity and covariates before fitting the b
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair
+c07e85356edecca9d7ac88239849b6cab569be23		reject	[BREAKOUT] Fill six unanswered questions by direct extraction and simple aggregation from t
+6ce29bbc53b8b55ab7b2f1cd42c0f2e151805593		reject	[BREAKOUT] Normalize unique filtered CpG counts by chromosome length in base-pair units
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair
+6681c5c12f104e39dea47214f336dc69a04d5d0f		reject	[BREAKOUT] Add complete-case COVID-19 severity tables for the three subgroup chi-square que
+		reject	[BREAKOUT] proposal rejected after repair
+c9d67d6eb5aa01b7a3274050908484386af6b975		reject	[BREAKOUT] Answer unit- and precision-sensitive questions as proportions, significant figur
+		reject	[BREAKOUT] proposal rejected after repair

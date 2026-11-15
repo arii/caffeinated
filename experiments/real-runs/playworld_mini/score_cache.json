@@ -1,0 +1,157 @@
+{
+  "0a17d8028feec3ea18784457c76b2b1d0f4af90c": {
+    "commit": "99d7457632a7635fa745dd480414393257ab8d46",
+    "loss": 0.29174999999999995,
+    "status": "ok"
+  },
+  "13dd7039692d019ad1308257f24cc4dd0937ce94": {
+    "commit": "5facbea10c97a0490ff65666a45172e901f03414",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "187966957c1733ef39948685836ecc2eb3ce29d7": {
+    "commit": "4fc43b77155e2c2f5f6794a8f4a3111d00783066",
+    "loss": 0.29000000000000004,
+    "status": "ok"
+  },
+  "2263af0eb630bbc89dd12dead95ec3dd21df95d6": {
+    "commit": "202b3bbce68689594c2975d8167b9a21fd072613",
+    "loss": 0.31575,
+    "status": "ok"
+  },
+  "22fcf2a9030deb44d88f714cdf85bdb85ce19a75": {
+    "commit": "094fa659edc601d7950bf9dab3102b6aa140677f",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "2bdc7fd1cc01ee8f32437a301ec86f6894ef821e": {
+    "commit": "01e836cc99e417227d5cee18d07573a40ad3ef96",
+    "loss": 0.8512500000000001,
+    "status": "ok"
+  },
+  "3a5835e630fddd2bf9309c5e6ba950d2b0d3d589": {
+    "commit": "0fc64f524fe8aac4feb3c18236079611635c64c5",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "402c11808d821e222a59940d17a2f62444cf0c82": {
+    "commit": "9d6eda87a2c5c616f5fddf27b2313eb15bc283f7",
+    "loss": 0.31575,
+    "status": "ok"
+  },
+  "4f227d501e3977ab686666384bc02ba19eb28c48": {
+    "commit": "80451665dbad1b2b58def6ba330a221a543e27c6",
+    "loss": 0.35024999999999995,
+    "status": "ok"
+  },
+  "4fde5d4a0b24cf013c3d0d9083fce69bfe3d118e": {
+    "commit": "aee647bf9f5ec7c98ab2784bb93d7cbee07bec10",
+    "loss": 0.31125,
+    "status": "ok"
+  },
+  "5c0a4bb600f87fb49481a39b6ba8272bec0600a9": {
+    "commit": "e3a7ac00c0add702c4cfed6883caabc58c09217b",
+    "loss": 0.35024999999999995,
+    "status": "ok"
+  },
+  "6916bf089c6e6f3efbf759f58507c1c3bea8c113": {
+    "commit": "754ed39d70a34ce8a4ce1b3ebbe9c82d134f21b0",
+    "loss": 0.2955,
+    "status": "ok"
+  },
+  "69be363830fb356d18d3be2a14737827148c504f": {
+    "commit": "36151b535febb61a674320b22a1779df1584301c",
+    "loss": 0.3185,
+    "status": "ok"
+  },
+  "6c36ac55392a31e04ccd0eaa15da9bcfb655eb99": {
+    "commit": "da533a12913c0e680a7c35310420d9d3ad2d6eb2",
+    "loss": 0.85425,
+    "status": "ok"
+  },
+  "6eb0d56d7a0a2133d0f9daf1253e4e8e09545e31": {
+    "commit": "7c2fae24ba73099add278cbb8f1efa1f68f00d39",
+    "loss": 0.34299999999999997,
+    "status": "ok"
+  },
+  "75131ef38da4c08dc51c6b6f1f53d4ba66311ef0": {
+    "commit": "e47593b28be5e0a7557a4c736891a5ff34441021",
+    "loss": 0.2955,
+    "status": "ok"
+  },
+  "7c3e470cd7fdaa98b97768fad451c1cd5a603fa7": {
+    "commit": "7b6031900684e18a888fd594f024fce347c69175",
+    "loss": 0.3295,
+    "status": "ok"
+  },
+  "7fe8fae562bb729ab4575b90be88b97dcee352a6": {
+    "commit": "c89facd3a37977061f7d9e80ffe426a75bb0e536",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "94c0be1d78318171b73301edf69b2c5f8365c807": {
+    "commit": "a0b8da9b526e3361e60269f82eea753388b55d5e",
+    "loss": 0.3295,
+    "status": "ok"
+  },
+  "9869de4bfafbdf2ade64e9131a7ef30af971c349": {
+    "commit": "fa06834040cb4cef08f82ea5218c28a189d06d26",
+    "loss": 0.2955,
+    "status": "ok"
+  },
+  "9d4df0c8c4a47c5a5abc6d64bb808b52368a329f": {
+    "commit": "47be227",
+    "loss": 0.8512500000000001,
+    "status": "ok"
+  },
+  "a0aca0afcdf69052c1b47d5648a2a2b685eb4457": {
+    "commit": "c08511ab205273c04ed4f8e8ede9e37b22da601a",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "a192aafeddffe40b56ce192ee73c3b0792431d0b": {
+    "commit": "7c48688451b377dbed930617b63cf31d65254113",
+    "loss": 0.33125000000000004,
+    "status": "ok"
+  },
+  "a5f90bac3b33f0433e386ba4aec00c59b93e7afd": {
+    "commit": "874a592c2e2d1d89bc635b83e263ca9fcdf05108",
+    "loss": 0.32225000000000004,
+    "status": "ok"
+  },
+  "b8c019b02a45d0737dc65df98f8d794d44daa4d5": {
+    "commit": "c1a583e40496c4247bc51e7ec066a0b2669ff867",
+    "loss": 0.3295,
+    "status": "ok"
+  },
+  "bcb8452b15d6bf61f5f0f3995d642c9a55e852f3": {
+    "commit": "c8e6990e1bd68ecf7a47ba53df0e650c80bc35ab",
+    "loss": 0.982,
+    "status": "ok"
+  },
+  "be91db4af6493b8dbbff74be1b77d0aba06dd70d": {
+    "commit": "432d7196d8bbfcab1750565a5831b88517a6bd65",
+    "loss": 0.31575,
+    "status": "ok"
+  },
+  "c03273e3f4df076a1cc60092b37a823b8ec17308": {
+    "commit": "7c767364c7565d131d8662efa269612600bd043d",
+    "loss": 0.28825,
+    "status": "ok"
+  },
+  "d26b24b8a3ad34f0ee02867bad22040d2de7b3ff": {
+    "commit": "76dc8fc38d59eba4fc7079e4b2490038fbcc0e23",
+    "loss": 0.35950000000000004,
+    "status": "ok"
+  },
+  "e2ef18e82b4f43ef26750db5dac0875e38f7c4ca": {
+    "commit": "d4d1b92875993ae323d6b68ab2f17a866f3a2f66",
+    "loss": 0.31575,
+    "status": "ok"
+  },
+  "e3c55d8b2354c8b8a5f7691df2b34e954624424e": {
+    "commit": "7f3be7a37bddb2980f9efb740a1c6f94bccd1fc4",
+    "loss": 0.28825,
+    "status": "ok"
+  }
+}

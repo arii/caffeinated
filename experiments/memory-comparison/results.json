@@ -1,0 +1,30 @@
+{
+ "corpus_records": 419,
+ "probes": 40,
+ "results": [
+  {
+   "backend": "local (lexical TF-IDF over mirror)",
+   "n_probes": 40,
+   "hit@1": 0.3,
+   "hit@8": 0.825,
+   "mrr": 0.48023809523809524,
+   "recall_latency_ms_p50": 15.337458997237263,
+   "recall_latency_ms_p95": 18.49850799771957,
+   "mean_evidence_tokens": 692.4,
+   "api_calls": 0
+  },
+  {
+   "backend": "past.dev /recall",
+   "n_probes": 40,
+   "hit@1": 0.65,
+   "hit@8": 0.95,
+   "mrr": 0.7744047619047619,
+   "recall_latency_ms_p50": 561.9294979987899,
+   "recall_latency_ms_p95": 722.9871630006528,
+   "mean_evidence_tokens": 1030.95,
+   "api_calls": 41,
+   "ingest_latency_ms_p50": null,
+   "ingest_settle_s": 0.0
+  }
+ ]
+}

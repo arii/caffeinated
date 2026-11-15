@@ -1,0 +1,42 @@
+{
+  "attempt_count": 17,
+  "best_commit": "43d638531fbae192bac718255a0d8b29c34e33b5",
+  "best_loss": 0.0,
+  "cells_covered": [
+    "baseline/none",
+    "construction/block",
+    "construction/bordered",
+    "construction/circulant",
+    "construction/from_literature",
+    "search/annealing",
+    "search/budget",
+    "search/flip_greedy",
+    "search/pair_flip",
+    "search/restarts",
+    "search/tabu"
+  ],
+  "known_optimum_loss": 0.0,
+  "reason": "known_optimum_loss",
+  "round": 5,
+  "status_record": {
+    "B": 0.36,
+    "best_loss": 0.0,
+    "best_seq": 17,
+    "descriptor": {
+      "mechanism": "search",
+      "method": "tabu"
+    },
+    "directive": "One focused change to the current best construction.",
+    "disabled": false,
+    "frontier_stall": 0,
+    "frustration": 0.0,
+    "ledger_sha256": "f6381a2fc0ce60748f0eda036acf4fc0d0faddbd70c8ace59b0943acb3353ca1",
+    "n_rows": 19,
+    "profile_sha256": "f595ff5e73f418dc373f8dda4cde53ce30c78033526e73d850796d2c80cbea2e",
+    "profile_version": 3,
+    "regime": "EXPLOIT",
+    "stuck_cells": [],
+    "ts": "2026-11-15T08:14:40.248719Z",
+    "type": "status"
+  }
+}

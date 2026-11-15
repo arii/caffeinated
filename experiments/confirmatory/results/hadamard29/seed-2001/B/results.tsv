@@ -1,0 +1,41 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+271aa8a051577d97975799dffe7f8fc7668c7138	0.423657	discard	[EXPLOIT] Seed greedy search with the 29x29 diagonal-filled core of a Paley conference mat
+955d4e7947a25816f12a4ad42bbd829a7e44d901	0.348944	discard	[EXPLOIT] After each single-flip local optimum, exhaustively apply improving two-entry fli
+031388085d0065f4c8e2ea50b2f0e2b13ca0fc3d	0.369993	discard	[EXPLOIT] Increase deterministic restarts to 64 and use rank-one inverse updates for steep
+4fe79bb348830969c5f0bbd0ab6efbafc2c5da43	0.317876	keep	[EXPLOIT] Add deterministic simulated annealing over single-entry flips after greedy desce
+4fe79bb348830969c5f0bbd0ab6efbafc2c5da43	0.317876	keep	critic second-evaluation confirmation for Add deterministic simulated annealing over single-entry flips after greedy desce
+c0c44f067e4b16961699365b8d9e12d79bbda2ea	0.099786	keep	[EXPLOIT] Add a deterministic GF(27) Paley-Hadamard bordering search with 34 coordinate-as
+b24ee5408850591ed79ce03a78dcc34c8655570e	0.340374	discard	[EXPLOIT] Shorten the annealing cooling-and-reheat cycle from 200000 to 50000 moves.
+9270415d952f484308f7d394654fa6834f326f25	0.324033	discard	[EXPLOIT] Halve the annealing peak temperature from 0.03 to 0.015 while retaining the exis
+876ccbf303ae3f0ce81d3bd32eec556e641e3183	1.460497	discard	[EXPLOIT] Reserve the final three seconds for deterministic improving two-entry flips, fol
+c0c44f067e4b16961699365b8d9e12d79bbda2ea	0.099786	keep	critic second-evaluation confirmation for Add a deterministic GF(27) Paley-Hadamard bordering search with 34 coordinate-as
+42fc81adc14ac98485dc0e6d6403422f95743e88	0.099786	discard	[EXPLOIT] Add a bounded deterministic four-column destroy-and-repair beam search, retainin
+ff1835aa9956c5ba6ea69d89ab4ba8f2f25f67fc	0.099786	discard	[EXPLOIT] Mix coordinated two-entry flips into 25% of annealing proposals, using the rank-
+c688678fe157990345b324ebf40490be56e90658	0.099786	discard	[EXPLOIT] Lengthen the annealing cooling-and-reheat cycle from 200000 to 400000 moves.
+eb3533987946eba8fdc45048d4adf3ccd2486918	0.099786	discard	[EXPLOIT] Polish each Paley-border start with the best improving single-or-pair sign flip 
+a58533f770819dfbea7ebac62b6004fd1ed1552b	0.099786	discard	[EXPLOIT] Add a deadline-bounded, exactly verified two-entry-flip polish using Costas-deri
+6e7382b9862c4dc68e4f961ae805cf1ea039027a	0.099786	discard	[EXPLOIT] Shorten the annealing cooling-and-reheat cycle from 200000 to 100000 moves to di
+d536d62b920bd779ce92ca316ad76ee037e66d45	0.099786	discard	[EXPLOIT] Reserve 0.5 seconds for a deterministic single-entry-flip descent on the best an
+af2956cfdd3e3245f7b804223a2e8b4a893e0b4b	0.099786	discard	[EXPLOIT] Lower the annealing peak temperature from 0.03 to 0.02 while preserving the cool
+4084779acf91a08ba9ad208312561161a046e344	0.099786	discard	[EXPLOIT] Append a deterministic best-improvement two-entry row-flip polish using determin
+9090fce34e39963a973b14836d8d5baa7894d14f	0.099786	duplicate	[EXPLOIT] Lengthen the annealing cooling-and-reheat cycle from 200000 to 400000 moves.
+e9d566ae35d5e80d972150a3974ec8d0a182a830	0.099786	discard	[EXPLOIT] Reduce random restarts from four to one so nearly all of the fixed runtime is av
+880b6dc55e6a2c9554b9c96798cfed77afbe83d9	0.099786	discard	[EXPLOIT] Halve the annealing cycle's initial temperature from 0.03 to 0.015 while preserv
+62ec675076b697307a587d3532e5e97d06b9052e	0.099786	discard	[SNAP] Replace single-entry annealing with a 120000-proposal unconstrained mixed-neighb
+705df35a64dc65c1f88ca2d7b71f4bcd4f85dae2		crash	[SNAP] Add a deterministic, capped target-Gram column-extension search for the Ehlich-t
+475c29e0ab0561c838eb0148a310004e9210df97	0.069823	keep	[SNAP] Replace thermal single-flip annealing with best-admissible-move tabu search usin
+64727e170aaffa5f47093a9359f6a1b7b0a46024	0.099786	discard	[SNAP] Shorten each annealing cycle from 200000 to 50000 proposals so the fixed budget 
+475c29e0ab0561c838eb0148a310004e9210df97	0.069823	keep	critic second-evaluation confirmation for Replace thermal single-flip annealing with best-admissible-move tabu search usin
+1529b472e67faf41486cc293a96f4cca10510958	0.069823	discard	[EXPLOIT] Reserve a short final phase for deterministic Gram-prioritized disjoint pair-fli
+6144e7bdbfd22fd4aaf58eb93ce0d7fba819b1cd	0.099786	discard	[EXPLOIT] Shorten the tabu tenure base from 23 to 11 while retaining randomization, aspira
+059e12fe6aa11fc8504ecb6c3aedd4acc5fb5013	0.069823	discard	[EXPLOIT] On tabu stagnation, restart from the incumbent after flipping seven distinct ran
+8316810a563463307a34b0e071f177634d98577c	0.069823	discard	[EXPLOIT] Increase tabu tenure gradually during stagnation, from the incumbent base of 23 
+d5a690839f15863ada1795148abd742e0d410ec6	0.069823	discard	[EXPLOIT] Escape single-coordinate border optima with deterministic best-improving two-coo
+ff3b26b64535cb918d10d6bbd955691191e8721a	0.069823	discard	[EXPLOIT] Make tabu tenure grow deterministically with stagnation while retaining the incu
+2a6e92ed0f48d0c4d69073ca1900443ca92cb9c6	0.069823	discard	[EXPLOIT] Replace stagnant tabu resets with a seeded four-entry kick from the incumbent to
+11913d84aeed9374468626415a68b4afa770376c	0.069823	discard	[EXPLOIT] Add long-term flip-frequency diversification to tabu move selection during stagn
+bb412287b8879cd54d0092717ba8319c8a15ee54	0.069823	discard	[SNAP] Give the tabu search an explicit 480000-move budget with a deadline guard
+85b188e6986db1b4a25134d9befe14edca764b6c	0.069823	discard	[SNAP] Increase the Paley-border sign optimization from 34 to exactly 256 deterministic
+		crash	[SNAP] LLM call failed
+		crash	[SNAP] LLM call failed

@@ -1,13 +1,19 @@
 {
   "domain": "testcase-ignobel-mini",
-  "version": 2,
+  "version": 3,
   "direction": "min",
   "objective": "loss",
   "eps": 0.02,
-  "eps_note": "loss is 1 - (replicated and significant), 0 or 1; any confirmed study beats an unconfirmed one",
+  "eps_note": "loss is 1 - score; unconfirmed or group-targeting studies score 0, confirmed studies score 0.25 + 0.75 * committee score (or 1 in explicit gate-only mode, IGNOBEL_COMMITTEE=off)",
   "k": 5,
   "knn": 3,
   "patience": 5,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
   "levels": [
     "mechanism",
     "method"
@@ -100,6 +106,18 @@
       "ratio": 4
     }
   },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
   "fail_statuses": [
     "crash"
   ],

@@ -1,0 +1,787 @@
+{
+  "primary": [
+    {
+      "comparison": "B - A",
+      "metric": "best_loss",
+      "seeds": [],
+      "diffs": [],
+      "n_pairs": 0,
+      "b_better": 0,
+      "ties": 0,
+      "p_signflip": null
+    },
+    {
+      "comparison": "S - A",
+      "metric": "heldout_acc",
+      "seeds": [
+        3001,
+        3002,
+        3003
+      ],
+      "diffs": [
+        0.16666666666666666,
+        0.16666666666666666,
+        0.2777777777777778
+      ],
+      "mean": 0.20370370370370372,
+      "sd": 0.06415002990995843,
+      "min": 0.16666666666666666,
+      "max": 0.2777777777777778,
+      "n_pairs": 3,
+      "b_better": 3,
+      "ties": 0,
+      "p_signflip": 0.25,
+      "p_holm": 1.0
+    },
+    {
+      "comparison": "S - B",
+      "metric": "heldout_acc",
+      "seeds": [
+        3001,
+        3002,
+        3003
+      ],
+      "diffs": [
+        0.2777777777777778,
+        0.16666666666666666,
+        0.2777777777777778
+      ],
+      "mean": 0.24074074074074073,
+      "sd": 0.06415002990995843,
+      "min": 0.16666666666666666,
+      "max": 0.2777777777777778,
+      "n_pairs": 3,
+      "b_better": 3,
+      "ties": 0,
+      "p_signflip": 0.25,
+      "p_holm": 1.0
+    },
+    {
+      "comparison": "B - A",
+      "metric": "heldout_acc",
+      "seeds": [
+        3001,
+        3002,
+        3003
+      ],
+      "diffs": [
+        -0.1111111111111111,
+        0.0,
+        0.0
+      ],
+      "mean": -0.037037037037037035,
+      "sd": 0.06415002990995841,
+      "min": -0.1111111111111111,
+      "max": 0.0,
+      "n_pairs": 3,
+      "b_better": 0,
+      "ties": 2,
+      "p_signflip": 1.0,
+      "p_holm": 1.0
+    }
+  ],
+  "hadamard29": {
+    "per_seed": {},
+    "by_arm": {}
+  },
+  "bixbench_numeric": {
+    "per_seed": {
+      "3001": {
+        "S": {
+          "best_loss": 0.5925925925925926,
+          "rounds": 48,
+          "rounds_completed": 48,
+          "rounds_to_best": "26",
+          "keeps": 2,
+          "evaluated": 48,
+          "rejected": 0,
+          "duplicates": 0,
+          "candidate_attempts": 48,
+          "critic_confirmations": 0,
+          "distinct_evaluated_cells": 7,
+          "regime_counts": "{\"EXPLOIT\": 48}",
+          "llm_calls": 48,
+          "prompt_tokens": 693825,
+          "completion_tokens": 65375,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 24,
+            "candidate_failed": 4
+          },
+          "status": "finished",
+          "wall_s": 1787.6791851520538,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "fcd481a449e7636ccb3fbc3a060e04e45c6d95d0",
+            "dev": {
+              "accuracy": 0.4074074074074074,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.3333333333333333,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.3333333333333333,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.3333333333333333,
+          "heldout_unguarded_acc": 0.3333333333333333,
+          "dev_acc": 0.4074074074074074
+        },
+        "B": {
+          "best_loss": 0.8148148148148149,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "2",
+          "keeps": 2,
+          "evaluated": 23,
+          "rejected": 23,
+          "duplicates": 2,
+          "candidate_attempts": 48,
+          "critic_confirmations": 2,
+          "distinct_evaluated_cells": 13,
+          "regime_counts": "{\"BOREDOM_SNAP\": 1, \"EXPLOIT\": 5, \"PARADIGM_BREAKOUT\": 6}",
+          "llm_calls": 91,
+          "prompt_tokens": 1232032,
+          "completion_tokens": 109381,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 11,
+            "candidate_failed": 3
+          },
+          "status": "finished",
+          "wall_s": 2646.1377108097076,
+          "llm_failed_slots": {
+            "5": 1
+          },
+          "heldout": {
+            "commit": "7d94e8645972fc9a7e76f040a578d8705efcf721",
+            "dev": {
+              "accuracy": 0.18518518518518517,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.05555555555555555,
+          "heldout_unguarded_acc": 0.05555555555555555,
+          "dev_acc": 0.18518518518518517
+        },
+        "A": {
+          "best_loss": 0.5925925925925926,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "4",
+          "keeps": 4,
+          "evaluated": 48,
+          "rejected": 0,
+          "duplicates": 0,
+          "candidate_attempts": 48,
+          "critic_confirmations": 4,
+          "distinct_evaluated_cells": 6,
+          "regime_counts": "{\"EXPLOIT\": 12}",
+          "llm_calls": 51,
+          "prompt_tokens": 706724,
+          "completion_tokens": 74501,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "candidate_failed": 3,
+            "answer_literal": 21
+          },
+          "status": "finished",
+          "wall_s": 1958.5884580612183,
+          "llm_failed_slots": {
+            "5": 1
+          },
+          "heldout": {
+            "commit": "29b88f497ae6cac1ca91bcd38fcf2a8d6f1f0f7c",
+            "dev": {
+              "accuracy": 0.4074074074074074,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.16666666666666666,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.16666666666666666,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.16666666666666666,
+          "heldout_unguarded_acc": 0.16666666666666666,
+          "dev_acc": 0.4074074074074074
+        }
+      },
+      "3002": {
+        "B": {
+          "best_loss": 0.7407407407407407,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "6",
+          "keeps": 3,
+          "evaluated": 31,
+          "rejected": 14,
+          "duplicates": 3,
+          "candidate_attempts": 48,
+          "critic_confirmations": 3,
+          "distinct_evaluated_cells": 15,
+          "regime_counts": "{\"BOREDOM_SNAP\": 2, \"EXPLOIT\": 7, \"PARADIGM_BREAKOUT\": 3}",
+          "llm_calls": 90,
+          "prompt_tokens": 1223007,
+          "completion_tokens": 99813,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "candidate_failed": 3,
+            "answer_literal": 11
+          },
+          "status": "finished",
+          "wall_s": 2498.085793018341,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "97d56ea1516e95cc762f3b7222ea6016e5769ea5",
+            "dev": {
+              "accuracy": 0.25925925925925924,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.05555555555555555,
+          "heldout_unguarded_acc": 0.05555555555555555,
+          "dev_acc": 0.25925925925925924
+        },
+        "S": {
+          "best_loss": 0.7777777777777778,
+          "rounds": 48,
+          "rounds_completed": 48,
+          "rounds_to_best": "2",
+          "keeps": 1,
+          "evaluated": 48,
+          "rejected": 0,
+          "duplicates": 0,
+          "candidate_attempts": 48,
+          "critic_confirmations": 0,
+          "distinct_evaluated_cells": 5,
+          "regime_counts": "{\"EXPLOIT\": 48}",
+          "llm_calls": 48,
+          "prompt_tokens": 700804,
+          "completion_tokens": 62321,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 29,
+            "candidate_failed": 4
+          },
+          "status": "finished",
+          "wall_s": 1695.1802480220795,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "f2b6a1164b961563808c0ed87e4eb72b3b5cb9d9",
+            "dev": {
+              "accuracy": 0.2222222222222222,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.2222222222222222,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.2222222222222222,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.2222222222222222,
+          "heldout_unguarded_acc": 0.2222222222222222,
+          "dev_acc": 0.2222222222222222
+        },
+        "A": {
+          "best_loss": 0.7407407407407407,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "10",
+          "keeps": 3,
+          "evaluated": 44,
+          "rejected": 0,
+          "duplicates": 4,
+          "candidate_attempts": 48,
+          "critic_confirmations": 3,
+          "distinct_evaluated_cells": 6,
+          "regime_counts": "{\"EXPLOIT\": 12}",
+          "llm_calls": 51,
+          "prompt_tokens": 686297,
+          "completion_tokens": 55018,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 22,
+            "candidate_failed": 7
+          },
+          "status": "finished",
+          "wall_s": 1035.048644065857,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "be9d034bedca94fc58c6bf11f8c20298326a10db",
+            "dev": {
+              "accuracy": 0.25925925925925924,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.05555555555555555,
+          "heldout_unguarded_acc": 0.05555555555555555,
+          "dev_acc": 0.25925925925925924
+        }
+      },
+      "3003": {
+        "S": {
+          "best_loss": 0.5925925925925926,
+          "rounds": 48,
+          "rounds_completed": 48,
+          "rounds_to_best": "15",
+          "keeps": 3,
+          "evaluated": 48,
+          "rejected": 0,
+          "duplicates": 0,
+          "candidate_attempts": 48,
+          "critic_confirmations": 0,
+          "distinct_evaluated_cells": 7,
+          "regime_counts": "{\"EXPLOIT\": 48}",
+          "llm_calls": 48,
+          "prompt_tokens": 719308,
+          "completion_tokens": 61805,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 22,
+            "candidate_failed": 3
+          },
+          "status": "finished",
+          "wall_s": 1782.1533348560333,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "90dd45907b44c4d02e1c07a2d6a8c278828fb0db",
+            "dev": {
+              "accuracy": 0.4074074074074074,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.3333333333333333,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.3333333333333333,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.3333333333333333,
+          "heldout_unguarded_acc": 0.3333333333333333,
+          "dev_acc": 0.4074074074074074
+        },
+        "B": {
+          "best_loss": 0.7777777777777778,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "2",
+          "keeps": 2,
+          "evaluated": 26,
+          "rejected": 21,
+          "duplicates": 1,
+          "candidate_attempts": 48,
+          "critic_confirmations": 2,
+          "distinct_evaluated_cells": 13,
+          "regime_counts": "{\"BOREDOM_SNAP\": 2, \"EXPLOIT\": 5, \"PARADIGM_BREAKOUT\": 5}",
+          "llm_calls": 90,
+          "prompt_tokens": 1225114,
+          "completion_tokens": 101661,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 14,
+            "candidate_failed": 2
+          },
+          "status": "finished",
+          "wall_s": 2826.605458021164,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "70c0a92be565001a4f2b5d93c4bbad2983bb1b05",
+            "dev": {
+              "accuracy": 0.2222222222222222,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.05555555555555555,
+          "heldout_unguarded_acc": 0.05555555555555555,
+          "dev_acc": 0.2222222222222222
+        },
+        "A": {
+          "best_loss": 0.7777777777777778,
+          "rounds": 12,
+          "rounds_completed": 12,
+          "rounds_to_best": "12",
+          "keeps": 2,
+          "evaluated": 43,
+          "rejected": 0,
+          "duplicates": 5,
+          "candidate_attempts": 48,
+          "critic_confirmations": 2,
+          "distinct_evaluated_cells": 4,
+          "regime_counts": "{\"EXPLOIT\": 12}",
+          "llm_calls": 50,
+          "prompt_tokens": 682188,
+          "completion_tokens": 52300,
+          "exa_calls": 0,
+          "exa_cost_usd": 0.0,
+          "crash_reasons": {
+            "answer_literal": 21,
+            "candidate_failed": 3
+          },
+          "status": "finished",
+          "wall_s": 1543.4482109546661,
+          "llm_failed_slots": {},
+          "heldout": {
+            "commit": "05e85f8f6c8890a3b4754f0789d7142d58b3ff30",
+            "dev": {
+              "accuracy": 0.2222222222222222,
+              "status": "ok"
+            },
+            "heldout": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok"
+            },
+            "heldout_unguarded": {
+              "accuracy": 0.05555555555555555,
+              "status": "ok",
+              "answer_literal_qids": []
+            }
+          },
+          "heldout_acc": 0.05555555555555555,
+          "heldout_unguarded_acc": 0.05555555555555555,
+          "dev_acc": 0.2222222222222222
+        }
+      }
+    },
+    "by_arm": {
+      "A": {
+        "heldout_acc": {
+          "n": 3,
+          "mean": 0.0925925925925926,
+          "sd": 0.06415002990995841,
+          "min": 0.05555555555555555,
+          "max": 0.16666666666666666
+        },
+        "heldout_unguarded_acc": {
+          "n": 3,
+          "mean": 0.0925925925925926,
+          "sd": 0.06415002990995841,
+          "min": 0.05555555555555555,
+          "max": 0.16666666666666666
+        },
+        "dev_acc": {
+          "n": 3,
+          "mean": 0.2962962962962963,
+          "sd": 0.09799078929868854,
+          "min": 0.2222222222222222,
+          "max": 0.4074074074074074
+        },
+        "best_loss": {
+          "n": 3,
+          "mean": 0.7037037037037037,
+          "sd": 0.09799078929868855,
+          "min": 0.5925925925925926,
+          "max": 0.7777777777777778
+        },
+        "prompt_tokens": {
+          "n": 3,
+          "mean": 691736.3333333334,
+          "sd": 13141.293099742252,
+          "min": 682188,
+          "max": 706724
+        },
+        "completion_tokens": {
+          "n": 3,
+          "mean": 60606.333333333336,
+          "sd": 12109.632625861666,
+          "min": 52300,
+          "max": 74501
+        },
+        "llm_calls": {
+          "n": 3,
+          "mean": 50.666666666666664,
+          "sd": 0.5773502691896257,
+          "min": 50,
+          "max": 51
+        },
+        "exa_calls": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        },
+        "candidate_attempts": {
+          "n": 3,
+          "mean": 48.0,
+          "sd": 0.0,
+          "min": 48,
+          "max": 48
+        },
+        "distinct_evaluated_cells": {
+          "n": 3,
+          "mean": 5.333333333333333,
+          "sd": 1.1547005383792515,
+          "min": 4,
+          "max": 6
+        },
+        "keeps": {
+          "n": 3,
+          "mean": 3.0,
+          "sd": 1.0,
+          "min": 2,
+          "max": 4
+        },
+        "rejected": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        },
+        "duplicates": {
+          "n": 3,
+          "mean": 3.0,
+          "sd": 2.6457513110645907,
+          "min": 0,
+          "max": 5
+        }
+      },
+      "B": {
+        "heldout_acc": {
+          "n": 3,
+          "mean": 0.05555555555555555,
+          "sd": 0.0,
+          "min": 0.05555555555555555,
+          "max": 0.05555555555555555
+        },
+        "heldout_unguarded_acc": {
+          "n": 3,
+          "mean": 0.05555555555555555,
+          "sd": 0.0,
+          "min": 0.05555555555555555,
+          "max": 0.05555555555555555
+        },
+        "dev_acc": {
+          "n": 3,
+          "mean": 0.2222222222222222,
+          "sd": 0.037037037037037035,
+          "min": 0.18518518518518517,
+          "max": 0.25925925925925924
+        },
+        "best_loss": {
+          "n": 3,
+          "mean": 0.7777777777777778,
+          "sd": 0.03703703703703709,
+          "min": 0.7407407407407407,
+          "max": 0.8148148148148149
+        },
+        "prompt_tokens": {
+          "n": 3,
+          "mean": 1226717.6666666667,
+          "sd": 4721.383942588585,
+          "min": 1223007,
+          "max": 1232032
+        },
+        "completion_tokens": {
+          "n": 3,
+          "mean": 103618.33333333333,
+          "sd": 5075.433117807123,
+          "min": 99813,
+          "max": 109381
+        },
+        "llm_calls": {
+          "n": 3,
+          "mean": 90.33333333333333,
+          "sd": 0.5773502691896257,
+          "min": 90,
+          "max": 91
+        },
+        "exa_calls": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        },
+        "candidate_attempts": {
+          "n": 3,
+          "mean": 48.0,
+          "sd": 0.0,
+          "min": 48,
+          "max": 48
+        },
+        "distinct_evaluated_cells": {
+          "n": 3,
+          "mean": 13.666666666666666,
+          "sd": 1.1547005383792515,
+          "min": 13,
+          "max": 15
+        },
+        "keeps": {
+          "n": 3,
+          "mean": 2.3333333333333335,
+          "sd": 0.5773502691896257,
+          "min": 2,
+          "max": 3
+        },
+        "rejected": {
+          "n": 3,
+          "mean": 19.333333333333332,
+          "sd": 4.725815626252609,
+          "min": 14,
+          "max": 23
+        },
+        "duplicates": {
+          "n": 3,
+          "mean": 2.0,
+          "sd": 1.0,
+          "min": 1,
+          "max": 3
+        }
+      },
+      "S": {
+        "heldout_acc": {
+          "n": 3,
+          "mean": 0.2962962962962963,
+          "sd": 0.06415002990995841,
+          "min": 0.2222222222222222,
+          "max": 0.3333333333333333
+        },
+        "heldout_unguarded_acc": {
+          "n": 3,
+          "mean": 0.2962962962962963,
+          "sd": 0.06415002990995841,
+          "min": 0.2222222222222222,
+          "max": 0.3333333333333333
+        },
+        "dev_acc": {
+          "n": 3,
+          "mean": 0.345679012345679,
+          "sd": 0.10691671651659736,
+          "min": 0.2222222222222222,
+          "max": 0.4074074074074074
+        },
+        "best_loss": {
+          "n": 3,
+          "mean": 0.6543209876543209,
+          "sd": 0.10691671651659738,
+          "min": 0.5925925925925926,
+          "max": 0.7777777777777778
+        },
+        "prompt_tokens": {
+          "n": 3,
+          "mean": 704645.6666666666,
+          "sd": 13168.69865754902,
+          "min": 693825,
+          "max": 719308
+        },
+        "completion_tokens": {
+          "n": 3,
+          "mean": 63167.0,
+          "sd": 1929.5108188346599,
+          "min": 61805,
+          "max": 65375
+        },
+        "llm_calls": {
+          "n": 3,
+          "mean": 48.0,
+          "sd": 0.0,
+          "min": 48,
+          "max": 48
+        },
+        "exa_calls": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        },
+        "candidate_attempts": {
+          "n": 3,
+          "mean": 48.0,
+          "sd": 0.0,
+          "min": 48,
+          "max": 48
+        },
+        "distinct_evaluated_cells": {
+          "n": 3,
+          "mean": 6.333333333333333,
+          "sd": 1.1547005383792515,
+          "min": 5,
+          "max": 7
+        },
+        "keeps": {
+          "n": 3,
+          "mean": 2.0,
+          "sd": 1.0,
+          "min": 1,
+          "max": 3
+        },
+        "rejected": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        },
+        "duplicates": {
+          "n": 3,
+          "mean": 0.0,
+          "sd": 0.0,
+          "min": 0,
+          "max": 0
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+commit	loss	status	description
+a6b2a67	0.348944	keep	baseline
+536b0c15c7947ae546c636b865f6c61e370a2506		crash	[EXPLOIT] Add a deterministic GF(27) Paley-Hadamard bordered candidate optimized by coordi
+ac903e9ca8522644f00f1381c8952e9ba5a7d70e	0.348944	discard	[EXPLOIT] Use the deterministic circulant matrix as one structured restart while retaining
+157c3f43be62c4a8e2660334a0e5614854d27089	0.348944	discard	[EXPLOIT] After single-entry greedy convergence, escape local optima with improving two-en
+08fa7795db9fde9aa88a267e245830092f1c9bdc	0.348944	discard	[EXPLOIT] Increase deterministic random restarts from 4 to 16 while retaining the same gre
+		reject	[EXPLOIT] proposal rejected after repair
+		reject	[EXPLOIT] proposal rejected after repair
+ac4a26f4e9749387ade1f1daba4e42afd9c8c038	0.348944	discard	[EXPLOIT] Optimize a stable slogdet objective and add a deterministic radius-3 whole-colum
+788e757b023690f226dda19e13fd510b4a093489	0.377180	discard	[EXPLOIT] Add deterministic simulated annealing with rank-one log-determinant updates betw
+c424b3945f76a0ddecf4f6341d8528d34e31b477	0.214579	keep	[EXPLOIT] Add a deterministic bordered two-circulant block candidate with coordinate-ascen
+920ef66348dd3d231dfc947ee714e5f6a5146e67	0.335361	discard	[EXPLOIT] Add a deterministic short-tenure tabu walk after each single-flip local optimum,
+bee5302388fa4f26a5c2f5b4706947078debe649	0.382778	discard	[EXPLOIT] Replace row-major first-improvement entry flips with deterministic steepest-asce
+edac0fcd62f48eeed1d47d58838aa7ed9f48c3ff	0.348944	discard	[EXPLOIT] Escape each single-flip local optimum with deterministic first-improvement two-e
+c424b3945f76a0ddecf4f6341d8528d34e31b477	0.214579	keep	critic second-evaluation confirmation for Add a deterministic bordered two-circulant block candidate with coordinate-ascen
+e13af7ac955288beeace6b71aef6b7fc7f1122e0	0.214579	discard	[EXPLOIT] After each structured single-bit local optimum, polish the 28 circulant bits wit
+5eb0fd00c06f5d00f1ddb9593d6ceadd76b7dcd6	0.214579	discard	[EXPLOIT] Increase deterministic bordered two-circulant coordinate-ascent restarts from 8 
+66f3560aac381c5a79c393000b486a39857ff7bd	0.214579	discard	[EXPLOIT] Reallocate the four unstructured random-restart budgets to deterministic steepes
+3d4981b60548fc7131076c4b04ea5994b3160762	0.214579	discard	[EXPLOIT] After each two-circulant bit optimum, run deterministic coordinate ascent over t
+188073698303bfb4003c0d845e016490324430fd	0.214579	discard	[EXPLOIT] After each two-circulant bit optimum, run deterministic coordinate ascent over t
+4afcdae77dc7be7829cc850c996f2b061263ef94	0.214579	discard	[EXPLOIT] After each 28-bit two-circulant single-flip optimum, try deterministic first-imp
+495e1ed5bfb732288e8306f9d4aa5a3a68e571af	0.276727	discard	[EXPLOIT] Replace random two-circulant restarts with a deterministic bank of padded, shift
+a45476fc44900fecd2210fe3058b4cad0ac4a152	0.214579	duplicate	[EXPLOIT] Increase the deterministic bordered two-circulant search from 8 to 64 random res
+0de128ef99d543560c922438fcabf069b156971f	0.877937	discard	[SNAP] Replace the unstructured and bordered-circulant searches with a Paley symmetric 
+bcf7f122b9eb5a47ebf57c17064464c8b3f2aa96	0.214579	discard	[SNAP] Guide structured restarts with a determinant/condition-number surrogate, then po
+e4d07dcbf48e9ecd4f980f093c1c9e98a96fa05f	0.110252	keep	[SNAP] Add a deterministic Paley-Hadamard order-28 candidate with alternating exact opt
+2ad6b7e7e48dc6ee510d792b9056136c3f70d33a	0.214579	discard	[SNAP] Use log-determinant ascent with an off-diagonal Gram penalty as an orthogonality
+e4d07dcbf48e9ecd4f980f093c1c9e98a96fa05f	0.110252	keep	critic second-evaluation confirmation for Add a deterministic Paley-Hadamard order-28 candidate with alternating exact opt
+29348bf9eac8c4bbd6177dceb063115f2d7f45fa	0.110252	discard	[EXPLOIT] Escape each Paley border-spin local optimum with deterministic best-improvement 
+36d2366c72f1b796490d1f6a59dfd321b0c30a7a	0.110252	discard	[EXPLOIT] Polish the incumbent with steepest-ascent single-entry flips over all 841 positi
+476097105dbe8f4416db1554926cf81a49062dcc	0.110252	discard	[EXPLOIT] Add a deterministic Williamson four-circulant Hadamard core of order 28, optimiz
+028cc913774f012d00aabd235affc1dfc9b34f9a	0.099786	keep	[EXPLOIT] Increase deterministic Paley border-spin restarts from 64 to 256 to sample more 
+028cc913774f012d00aabd235affc1dfc9b34f9a	0.099786	keep	critic second-evaluation confirmation for Increase deterministic Paley border-spin restarts from 64 to 256 to sample more 
+e39013047c4f18602a7fe9109e57f2657ed8478d	0.099786	discard	[EXPLOIT] Escape each Paley border-spin single-flip optimum by exhaustively testing improv
+237ba9ff3978d1a36ead2e6d1018dfd3313a9ca6	0.099786	discard	[EXPLOIT] Increase deterministic Paley border-spin restarts from 256 to 2048 while retaini
+ffa7a0d0429a68ef66563bd72cbbb022f425f1ba	0.099786	discard	[EXPLOIT] Replace the symmetric two-circulant block search with the bordered B^T/-A^T cons
+3e4326a0ec2626ada3987948d4d6644a51ab84e9	0.099786	discard	[EXPLOIT] Polish the best Paley-bordered candidate with deterministic steepest-ascent sing
+f2316133bc400449e8d0d7563fdc355ac332d387	0.099786	discard	[EXPLOIT] Increase the deterministic Paley border-spin search from 256 to 1024 independent
+509e4b39caabc7d94cb121e7b89d82da8ad55675	0.099786	discard	[EXPLOIT] Polish the incumbent with at most 12 deterministic tangent log-determinant surro
+26425f0dbfafea5f329ae91ab811c687d48c7aec	0.099786	discard	[EXPLOIT] Polish the incumbent with deterministic full-matrix best-improvement flips using
+c4af6428e6d67fd8977fd583f0dbc3365a5c8765	0.099786	discard	[EXPLOIT] Replace border-spin coordinate ascent with a bounded deterministic tabu walk tha
+		reject	[SNAP] proposal rejected after repair
+a95d50aecedd5706bc4b57e940dced83b50d0f02	0.099786	discard	[SNAP] Use an eight-step budget for exhaustive full-matrix pair-flip polishing of the P
+		reject	[SNAP] proposal rejected after repair
+		crash	[SNAP] LLM call failed

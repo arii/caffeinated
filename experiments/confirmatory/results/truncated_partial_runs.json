@@ -1,0 +1,166 @@
+{
+ "hadamard29": {
+  "2001": {
+   "common_round": 9,
+   "clean_rounds": {
+    "A": 15,
+    "B": 9
+   },
+   "A": {
+    "loss_at_common": 0.09978617745260365,
+    "loss_at_clean": 0.09978617745260365,
+    "lost_slots_in_common": 4
+   },
+   "B": {
+    "loss_at_common": 0.06982295407516048,
+    "loss_at_clean": 0.06982295407516048,
+    "lost_slots_in_common": 6
+   }
+  },
+  "2002": {
+   "common_round": 10,
+   "clean_rounds": {
+    "A": 13,
+    "B": 10
+   },
+   "A": {
+    "loss_at_common": 0.06982295407516048,
+    "loss_at_clean": 0.06982295407516048,
+    "lost_slots_in_common": 2
+   },
+   "B": {
+    "loss_at_common": 0.09978617745260365,
+    "loss_at_clean": 0.09978617745260365,
+    "lost_slots_in_common": 1
+   }
+  },
+  "2003": {
+   "common_round": 6,
+   "clean_rounds": {
+    "A": 8,
+    "B": 6
+   },
+   "A": {
+    "loss_at_common": 0.09978617745260365,
+    "loss_at_clean": 0.09978617745260365,
+    "lost_slots_in_common": 0
+   },
+   "B": {
+    "loss_at_common": 0.09978617745260365,
+    "loss_at_clean": 0.09978617745260365,
+    "lost_slots_in_common": 0
+   }
+  }
+ },
+ "bixbench_guard2": {
+  "3001": {
+   "candidate_budget": 24,
+   "clean_rounds": {
+    "A": 6,
+    "B": 8,
+    "S": 24
+   },
+   "A": {
+    "round": 6,
+    "dev_loss": 0.5185185185185186,
+    "heldout_acc": 0.0,
+    "heldout_status": "crash",
+    "heldout_unguarded_acc": 0.3333333333333333,
+    "held_literals": [
+     "bix-52-q3"
+    ],
+    "lost_slots": 0
+   },
+   "B": {
+    "round": 6,
+    "dev_loss": 0.6666666666666667,
+    "heldout_acc": 0.2777777777777778,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.2777777777777778,
+    "held_literals": [],
+    "lost_slots": 0
+   },
+   "S": {
+    "round": 24,
+    "dev_loss": 0.5555555555555556,
+    "heldout_acc": 0.0,
+    "heldout_status": "crash",
+    "heldout_unguarded_acc": 0.3333333333333333,
+    "held_literals": [
+     "bix-52-q3"
+    ],
+    "lost_slots": 0
+   }
+  },
+  "3002": {
+   "candidate_budget": 20,
+   "clean_rounds": {
+    "A": 9,
+    "B": 5,
+    "S": 26
+   },
+   "A": {
+    "round": 5,
+    "dev_loss": 0.7037037037037037,
+    "heldout_acc": 0.16666666666666666,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.16666666666666666,
+    "held_literals": [],
+    "lost_slots": 0
+   },
+   "B": {
+    "round": 5,
+    "dev_loss": 0.7037037037037037,
+    "heldout_acc": 0.3333333333333333,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.3333333333333333,
+    "held_literals": [],
+    "lost_slots": 1
+   },
+   "S": {
+    "round": 20,
+    "dev_loss": 0.4444444444444444,
+    "heldout_acc": 0.4444444444444444,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.4444444444444444,
+    "held_literals": [],
+    "lost_slots": 0
+   }
+  },
+  "3003": {
+   "candidate_budget": 28,
+   "clean_rounds": {
+    "A": 10,
+    "B": 7,
+    "S": 46
+   },
+   "A": {
+    "round": 7,
+    "dev_loss": 0.7037037037037037,
+    "heldout_acc": 0.16666666666666666,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.16666666666666666,
+    "held_literals": [],
+    "lost_slots": 0
+   },
+   "B": {
+    "round": 7,
+    "dev_loss": 0.7037037037037037,
+    "heldout_acc": 0.16666666666666666,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.16666666666666666,
+    "held_literals": [],
+    "lost_slots": 0
+   },
+   "S": {
+    "round": 28,
+    "dev_loss": 0.4814814814814815,
+    "heldout_acc": 0.2777777777777778,
+    "heldout_status": "ok",
+    "heldout_unguarded_acc": 0.2777777777777778,
+    "held_literals": [],
+    "lost_slots": 0
+   }
+  }
+ }
+}

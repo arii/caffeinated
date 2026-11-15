@@ -1,0 +1,12 @@
+{
+  "query": "Why does coffee spill when walking?",
+  "n": 3,
+  "recorded": "2026-11-15",
+  "responses": {
+    "https://api.openalex.org/works?search=Why+does+coffee+spill+when+walking%3F&per-page=3&select=id%2Ctitle%2Cpublication_year%2Cdoi%2Cabstract_inverted_index": "openalex_works.json",
+    "https://export.arxiv.org/api/query?search_query=all%3Acoffee+AND+all%3Aspill+AND+all%3Awalking&max_results=3": "arxiv_three_terms.xml",
+    "https://export.arxiv.org/api/query?search_query=all%3Acoffee+AND+all%3Aspill&max_results=3": "arxiv_two_terms.xml",
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=Why+does+coffee+spill+when+walking%3F&retmode=json&retmax=3&sort=relevance": "pubmed_esearch.json",
+    "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=22680548&retmode=xml": "pubmed_efetch.xml"
+  }
+}

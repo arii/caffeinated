@@ -1,0 +1,4 @@
+{"agent": "worker-1", "cell": "other/standard_error", "idea": "Compute the requested SEM rather than the sample standard deviation", "round": 8, "ts": "2026-11-15T09:03:35.030991Z"}
+{"agent": "worker-2", "cell": "other/sem_estimator", "idea": "Compute the requested standard error of the mean rather than the sample standard", "round": 8, "ts": "2026-11-15T09:03:55.789056Z"}
+{"agent": "worker-1", "cell": "other/standard_error_correction", "idea": "Compute the requested SEM rather than the sample standard deviation for rhlR- ci", "round": 9, "ts": "2026-11-15T09:05:20.765416Z"}
+{"agent": "worker-2", "cell": "other/sem_estimation", "idea": "Compute the requested standard error of the mean rather than the sample standard", "round": 9, "ts": "2026-11-15T09:06:05.664449Z"}
