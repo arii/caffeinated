@@ -123,13 +123,13 @@ def build(recording):
         for work in judged.get("prior_work") or []:
             if work.get("url"):
                 node(
-                    "cite:" + work["url"],
+                    "prior:" + work["url"],
                     "prior work",
                     work.get("title") or work["url"],
                     url=work["url"],
                 )
                 edges.append(
-                    {"source": sid, "target": "cite:" + work["url"], "kind": "prior work (Exa)"}
+                    {"source": sid, "target": "prior:" + work["url"], "kind": "prior work (Exa)"}
                 )
     for event in recording.get("events") or []:
         study_id = (event.get("refs") or {}).get("study_id")
