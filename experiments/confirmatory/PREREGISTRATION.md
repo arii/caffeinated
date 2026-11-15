@@ -41,3 +41,14 @@ stopped and the not-yet-started arms relaunched with more parallel jobs in sibli
 (`conf-hadamard29-r2-s2003`, `-s2002B`, `conf-bixbench-numeric-guard-s3003`, `-s3002AS`). Arms already
 running kept going and are summarized by `report.py` from their run directories. Arms, seeds, rounds,
 model and source commits (hadamard29 a6b2a67, bixbench_numeric 7442255) are unchanged.
+
+## Scope change (01:05 PST, before any result was inspected)
+The main Tinker key hit a billing block (HTTP 402) at 08:53 UTC; all arms were stopped. On the last
+(backup) key the scope is reduced to bixbench_numeric A/B/S seeds 3001-3003 (priority) and hadamard29
+A/B seeds 2001-2003. Arms are resumed with `swarm.py --resume` from their last round checkpoint; rounds
+that never completed are dropped. Arms where the 402 hit an early completed round were restarted fresh
+(bixbench 3002 A in `conf-bixbench-numeric-guard-s3002A-fresh`; hadamard 2003 A/B in
+`conf-hadamard29-r2-s2003-fresh`). Worker slots lost to 402s inside completed rounds are reported as
+`llm_failed_slots` (bixbench 3001 A and B: one slot each in round 5). With 3 pairs the smallest
+two-sided sign-flip p is 0.25, so the confirmatory tests cannot reach significance; results are
+reported per seed with mean and spread only, and the Holm column is kept for completeness.

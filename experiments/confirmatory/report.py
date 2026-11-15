@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT / "experiments"))
 import ab  # noqa: E402
 
 ERROR = re.compile(r"^error: ([a-z_]+):", re.M)
+LLM_FAILED = re.compile(r"^round (\d+): \S+ LLM call failed", re.M)
 
 
 def rows(out):
@@ -69,6 +70,17 @@ def crash_reasons(run_dir):
         if match:
             reasons[match.group(1)] += 1
     return dict(reasons)
+
+
+def llm_failed_slots(run_dir, completed):
+    """Worker slots lost to provider errors (e.g. Tinker 402) inside completed rounds."""
+    lost = Counter()
+    for name in ("stderr.log", "stderr.resume.log"):
+        path = Path(run_dir).parent / name
+        if path.exists():
+            text = path.read_text(encoding="utf-8", errors="replace")
+            lost.update(int(r) for r in LLM_FAILED.findall(text) if int(r) <= completed)
+    return dict(sorted(lost.items()))
 
 
 def wall_seconds(run_dir):
@@ -193,6 +205,7 @@ def collect(outs, grade):
         run_json = json.loads((run_dir / "run.json").read_text())
         entry["status"] = run_json.get("status")
         entry["wall_s"] = wall_seconds(run_dir)
+        entry["llm_failed_slots"] = llm_failed_slots(run_dir, entry["rounds_completed"])
         if grade:
             report = heldout(run_dir)
             entry["heldout"] = report
