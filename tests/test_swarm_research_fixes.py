@@ -263,6 +263,80 @@ class PromptFeedbackAndRuleTests(unittest.TestCase):
         self.assertIn("rejected 1x: ungrounded: missing source", feedback)
         self.assertNotIn("validation idea 1", feedback)
 
+    def test_invalid_proposal_validation_failure_is_in_next_round_feedback(self):
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        valid = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        invalid = {**valid, "source_ids": ["not-a-source-id"]}
+        status = {"swarm_B": 0.0, "regime": "EXPLOIT"}
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = llm.LLMClient(mode="fake", log_path=output / "llm_log.jsonl")
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(client, "call", side_effect=[invalid, valid]),
+                patch.object(
+                    swarm, "local_candidate_precheck", return_value=["pre-check rejection"]
+                ),
+                patch.object(swarm, "assigned_cell_repair", return_value=None),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status=status,
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+            next_round_values = swarm.common_values(
+                "worker-1",
+                5,
+                "exploit",
+                {"swarm_B": 0.0, "regime": "EXPLOIT"},
+                0.0,
+                base_commit,
+                1.0,
+                profile,
+                events=[],
+                out_dir=output,
+            )
+        self.assertEqual(result["status"], "reject")
+        self.assertIn("round 4", next_round_values["own_feedback"])
+        self.assertIn(
+            "source_ids must use the S<number> or D<round>_<number> format",
+            next_round_values["own_feedback"],
+        )
+
 
 class LocalPrecheckTests(unittest.TestCase):
     def test_snap_grounding_rule_applies_without_profile_source_requirement(self):
