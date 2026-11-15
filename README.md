@@ -8,6 +8,8 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 
 **Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)**, built by Team caffeinated: Ariel Anders, Jialin Feng, Neeraj Shah and Masha Baidachna.
 
+Artificial Scientist Swarms (ASS) prevents research agents from stalling by giving them a deterministic boredom meter grounded in psychology. Unlike standard agents that endlessly loop on diminishing returns, our swarm tracks stagnation, novelty deficit, and overload to trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks before tackling an Ig Nobel Prize hunt, agents search via Exa, share an experiment ledger on past.dev, and pre-register tests on real public data before a two-judge committee and final IgJudge select the winner.
+
 - Live demo: https://arii.github.io/caffeinated
 - Repository: https://github.com/arii/caffeinated
 
