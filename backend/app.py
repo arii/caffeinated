@@ -395,7 +395,10 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
 
     @app.get("/api/recordings/{run_id}/artifacts/{artifact_path:path}")
     def recording_artifact(run_id: str, artifact_path: str):
-        raw = holder["recordings"].artifact(run_id, artifact_path)
+        try:
+            raw = holder["recordings"].artifact(run_id, artifact_path)
+        except ValueError as error:
+            raise HTTPException(413, "Artifact too large") from error
         if raw is None:
             raise HTTPException(404, "Artifact not found")
         return Response(

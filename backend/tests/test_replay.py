@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+import zipfile
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
@@ -8,7 +9,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from backend.app import create_app
-from backend.replay import RecordingCatalog, build_recording
+from backend.replay import ARTIFACT_MAX_BYTES, RecordingCatalog, build_recording
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -154,6 +155,48 @@ class ReplayTests(unittest.TestCase):
                 self.assertEqual(len(rows), 4)
                 self.assertEqual(c.get("/api/recordings/" + rows[0]["id"]).status_code, 200)
                 self.assertFalse(c.get("/api/health").json()["executionEnabled"])
+
+    def test_zip_artifacts_are_served_confined_to_the_recording(self):
+        sample = ROOT / "data/replays/swarm-viewer-sample-runs.zip"
+        with zipfile.ZipFile(sample) as z:
+            name = next(n for n in z.namelist() if n.endswith(".diff"))
+            expected = z.read(name).decode()
+        rid, relative = name.removeprefix("runs/").split("/artifacts/")
+        with tempfile.TemporaryDirectory() as d:
+            archive = Path(d) / "bundle.zip"
+            archive.write_bytes(sample.read_bytes())
+            with zipfile.ZipFile(archive, "a") as z:
+                z.writestr(f"runs/{rid}/secret.txt", "secret")
+                z.writestr(f"runs/{rid}/artifacts/big.log", "x" * (ARTIFACT_MAX_BYTES + 1))
+            with (
+                patch.dict(os.environ, {"LAB_RECORDINGS_ZIP": str(archive)}),
+                TestClient(create_app(Path(d) / "state", runner=False)) as c,
+            ):
+                url = f"/api/recordings/{rid}/artifacts/"
+                response = c.get(url + relative)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.text, expected)
+                self.assertTrue(response.headers["content-type"].startswith("text/plain"))
+                self.assertEqual(response.headers["x-content-type-options"], "nosniff")
+                for bad in (
+                    "../secret.txt",
+                    "..%2Fsecret.txt",
+                    "runs/../../secret.txt",
+                    "%2Fetc%2Fpasswd",
+                    "runs%5C..%5C..%5Csecret.txt",
+                    "runs/none.diff",
+                    "runs",
+                    "runs/x%00.diff",
+                ):
+                    self.assertEqual(c.get(url + bad).status_code, 404, bad)
+                self.assertEqual(c.get(url + "big.log").status_code, 413)
+                self.assertEqual(
+                    c.get("/api/recordings/nope/artifacts/" + relative).status_code, 404
+                )
+        catalog = RecordingCatalog(sample)
+        self.assertIsNone(catalog.artifact(rid, "/" + relative))
+        self.assertIsNone(catalog.artifact(rid, "runs/../../manifest.json"))
+        self.assertIsNotNone(catalog.artifact(rid, "runs/./" + relative.split("/", 1)[1]))
 
     def test_read_only_api_serves_recordings_with_cache_and_rejects_execution(self):
         with tempfile.TemporaryDirectory() as d, TestClient(create_app(d, runner=False)) as c:

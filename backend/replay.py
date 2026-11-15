@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import os
+import posixpath
 import re
 import shlex
 import time
@@ -594,6 +595,9 @@ def entity_delta(previous, current):
     return changed
 
 
+ARTIFACT_MAX_BYTES = 2_000_000
+
+
 class RecordingCatalog:
     """Recordings from a sample archive plus swarm viewer directories.
 
@@ -844,18 +848,43 @@ class RecordingCatalog:
         return self.cache[rid]
 
     def artifact(self, rid, relative):
-        """Exported artifact bytes, confined to a directory run's artifacts/ folder."""
+        """Exported artifact bytes, confined to the recording's artifacts/ folder; None if absent.
+
+        Raises ValueError when the artifact exceeds ARTIFACT_MAX_BYTES.
+        """
         self._scan()
-        if rid not in self.directory_runs:
+        if rid in self.directory_runs:
+            root = (self.directory_runs[rid][0] / "artifacts").resolve()
+            try:
+                path = (root / relative).resolve()
+            except (OSError, RuntimeError, ValueError):
+                return None
+            if not path.is_relative_to(root) or not path.is_file():
+                return None
+            if path.stat().st_size > ARTIFACT_MAX_BYTES:
+                raise ValueError("Artifact too large")
+            return path.read_bytes()
+        if rid not in self.manifests:
             return None
-        root = (self.directory_runs[rid][0] / "artifacts").resolve()
-        try:
-            path = (root / relative).resolve()
-        except (OSError, RuntimeError, ValueError):
+        name = posixpath.normpath(relative)
+        if (
+            not relative
+            or "\x00" in relative
+            or "\\" in relative
+            or name.startswith(("/", ".."))
+            or ".." in name.split("/")
+        ):
             return None
-        if not path.is_relative_to(root) or not path.is_file():
-            return None
-        return path.read_bytes()
+        with zipfile.ZipFile(self.archive) as z:
+            try:
+                info = z.getinfo(f"runs/{rid}/artifacts/{name}")
+            except KeyError:
+                return None
+            if info.is_dir():
+                return None
+            if info.file_size > ARTIFACT_MAX_BYTES:
+                raise ValueError("Artifact too large")
+            return z.read(info)
 
     def list(self):
         self._scan()
