@@ -1201,6 +1201,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             verdict = {
                 "verdict": row.get("verdict"),
                 "accepted": accepted,
+                "vetoed": bool(row.get("vetoed")),
                 "replicate_score": row.get("replicate_score"),
                 "why": info.get("why"),
             }
@@ -1330,6 +1331,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         },
         "provenance": {
             "llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
+            "critic_model": run_artifact.get("critic_model", "unknown"),
             "exa": "live"
             if any(r.get("type") == "query" and not r.get("disabled") for _, r in research)
             else "off",

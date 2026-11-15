@@ -27,6 +27,7 @@ def autoresearch_run(root):
                 "profile_path": "boredom_profile.json",
                 "profile_sha256": profile["_hash"],
                 "status": "finished",
+                "critic_model": "critic-model",
             }
         ),
         encoding="utf-8",
@@ -230,6 +231,41 @@ class ExportViewerTests(unittest.TestCase):
         }
         return run_dir, events, manifest, timeline, entities
 
+    def test_critic_veto_is_exposed_in_verdict_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            ledger_path = out / "ledger.jsonl"
+            ledger = [json.loads(line) for line in ledger_path.read_text().splitlines()]
+            ledger[1]["status"] = "discard"
+            ledger[1].pop("accepted", None)
+            ledger[1].pop("verdict", None)
+            ledger.append(
+                {
+                    "seq": 3,
+                    "round": 1,
+                    "kind": "critic",
+                    "agent": "critic",
+                    "status": "discard",
+                    "score": 0.5,
+                    "commit": "c1",
+                    "accepted": False,
+                    "vetoed": True,
+                    "verdict": "contradicted",
+                }
+            )
+            write_jsonl(ledger_path, ledger)
+
+            _, events, _, _, _ = self.export(out, root / "dest")
+
+        verdict = next(
+            event
+            for event in events
+            if event["type"] == "verdict.issued" and event["payload"].get("vetoed")
+        )
+        self.assertFalse(verdict["payload"]["accepted"])
+        self.assertTrue(verdict["payload"]["vetoed"])
+
     def test_autoresearch_export_matches_schema(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -256,6 +292,7 @@ class ExportViewerTests(unittest.TestCase):
                 set(manifest["provenance"]),
                 {
                     "llm",
+                    "critic_model",
                     "llm_mode",
                     "exa",
                     "research",
@@ -266,6 +303,7 @@ class ExportViewerTests(unittest.TestCase):
                     "artifacts",
                 },
             )
+            self.assertEqual(manifest["provenance"]["critic_model"], "critic-model")
 
             ids = {key for table in entities.values() for key in table}
             for event in events:

@@ -11,6 +11,7 @@ import time
 import unittest
 from contextlib import suppress
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import export_viewer
@@ -21,6 +22,91 @@ from test_testcases import DOCKER_AVAILABLE, DOCKER_SKIP_REASON
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = ROOT / "testcases/hadamard19/boredom_profile.json"
+
+
+class CriticDecisionTests(unittest.TestCase):
+    def test_contradicting_verdict_vetoes_numeric_acceptance_but_support_does_not(self):
+        profile = meter.load_profile(PROFILE)
+        provisional = swarm.critic_accepts(profile, 0.04, 0.04, 0.05, "ok")
+        self.assertTrue(provisional)
+
+        accepted, vetoed = swarm.apply_critic_verdict(provisional, {"verdict": "contradicted"})
+        self.assertFalse(accepted)
+        self.assertTrue(vetoed)
+
+        accepted, vetoed = swarm.apply_critic_verdict(provisional, {"verdict": "replicated"})
+        self.assertTrue(accepted)
+        self.assertFalse(vetoed)
+
+    def test_resume_restores_persisted_critic_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            (out / "run.json").write_text(
+                json.dumps(
+                    {
+                        "branch": "swarm-B",
+                        "repo": str(out),
+                        "status": "running",
+                        "task": "hadamard19",
+                        "arm": "B",
+                        "seed": 7,
+                        "llm": "tinker",
+                        "model": "worker-model",
+                        "critic_model": "critic-model",
+                        "exa": "off",
+                        "literature": "off",
+                        "memory_backend": "local",
+                        "rounds": 2,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            args = SimpleNamespace(
+                resume=str(out),
+                out=None,
+                task=None,
+                exa=None,
+                literature=None,
+                arm=None,
+                seed=None,
+                llm=None,
+                model=None,
+                critic_model=None,
+                memory_backend=None,
+                rounds=None,
+                viewer_dest=None,
+                no_viewer=False,
+                no_push=False,
+            )
+            with patch.object(swarm, "read_checkpoint", return_value={"round": 1}):
+                swarm.resolve_run_args(args)
+        self.assertEqual(args.critic_model, "critic-model")
+
+    def test_critic_tsv_migrates_existing_rows_for_veto_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "critic.tsv"
+            path.write_text(
+                "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\n"
+                "1\told\t0.1\t0.1\ttrue\treplicated\tok\n",
+                encoding="utf-8",
+            )
+            swarm.update_critic_tsv(
+                path,
+                {
+                    "round": 2,
+                    "commit": "new",
+                    "v1": 0.05,
+                    "v2": 0.05,
+                    "accepted": False,
+                    "verdict": "contradicted",
+                    "why": "does not hold",
+                    "vetoed": True,
+                },
+            )
+            with path.open(encoding="utf-8", newline="") as stream:
+                rows = list(csv.DictReader(stream, delimiter="\t"))
+        self.assertEqual(rows[0]["vetoed"], "")
+        self.assertEqual(rows[1]["vetoed"], "true")
 
 
 class FakeLLMTests(unittest.TestCase):

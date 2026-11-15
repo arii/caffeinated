@@ -32,8 +32,9 @@ round's assignment (`role`: exploit, divergent, scout).
 5. gate      boredom gate (regime rules) + prior-art check (Exa) → rejected proposals are logged
 6. commit    one git commit per candidate with Descriptor/Source/Prior-art trailers
 7. evaluate  task evaluator in a network-less Docker sandbox → dev loss
-8. critic    if a candidate beats best − accept_margin: second-seed run;
-             accept iff mean(run1, run2) < best − accept_margin → verdict + lesson
+8. critic    each arm's LLM critic reviews a provisional improvement; evaluator
+             confirmation run; accept iff the numeric rule passes and verdict
+             is not "contradicted" → verdict + lesson
 9. record    ledger.jsonl, results.tsv, critic.tsv, memory writes, round tags
 ```
 
@@ -66,7 +67,8 @@ targets-group studies score 0. If the committee is unavailable, confirmed
 studies retain score 1.0. One Exa search on the host-written headline provides
 prior-work data to the judges, who see only the host-written abstract and
 search results, not the preregistration's question, hypothesis or mechanism;
-established or textbook relationships are capped at THINK 3.
+established or textbook relationships are capped at THINK 3. The judges use
+gpt-oss-120b and Qwen3.5, neither the Kimi generator model.
 The complete committee result is stored with `ignobel_studies.jsonl`, and the
 post-run `score_run.py` report reuses the in-run cached verdicts.
 
@@ -88,12 +90,17 @@ reproducible.
 
 | Arm | Boredom Meter | Exa | Memory |
 |---|---|---|---|
-| A | off (fixed 3 exploit / 1 divergent, critic without LLM) | on | past.dev |
+| A | off (fixed 3 exploit / 1 divergent) | on | past.dev |
 | B | on | on | past.dev |
 | C | on | off | past.dev |
 | D | on | on | local file |
 
 All arms share the task evaluator and budget, so A vs B isolates the meter.
+Every arm calls the LLM critic for provisional improvements. Deterministic tasks
+reuse the first evaluation score, making the second run a confirmation rather
+than an independent replicate. A `contradicted` verdict vetoes numeric
+acceptance. `--critic-model` selects the critic (including novelty) model;
+omitting it uses `--model`.
 
 ## Shared memory
 
@@ -107,7 +114,7 @@ lead.
 
 `--llm tinker` (base-model sampling only, no training), `--llm openai`, or
 `--llm fake` (offline, deterministic plumbing checks). Every call is logged
-in `llm_log.jsonl` with prompt hash, prompt, response and any returned
+in `llm_log.jsonl` with prompt hash, actual role model, prompt, response and any returned
 reasoning.
 
 ## Outputs of a run (`--out`)

@@ -304,6 +304,7 @@ class LLMClient:
         *,
         mode="openai",
         model=None,
+        role_models=None,
         log_path="llm_log.jsonl",
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
@@ -321,6 +322,11 @@ class LLMClient:
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
+        self.role_models = {
+            str(role).upper(): value
+            for role, value in (role_models or {}).items()
+            if value is not None
+        }
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
@@ -352,11 +358,16 @@ class LLMClient:
         digest = prompt_sha(prompt)
         started = time.monotonic()
         usage = None
-        model = self.model
+        model = self.role_models.get(role.upper(), self.model)
         self.request_attempts = []
         if self.replay:
             previous = next(
-                (record for record in self.records if record.get("prompt_sha") == digest),
+                (
+                    record
+                    for record in self.records
+                    if record.get("prompt_sha") == digest
+                    and record.get("role", role.upper()) == role.upper()
+                ),
                 None,
             )
             if previous is None:
@@ -371,9 +382,9 @@ class LLMClient:
         else:
             try:
                 if self.mode == "tinker":
-                    response, usage = self._request_tinker(prompt)
+                    response, usage = self._request_tinker(prompt, model=model)
                 else:
-                    response, usage = self._request(prompt)
+                    response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
@@ -397,11 +408,11 @@ class LLMClient:
         self.records.append(record)
         return response
 
-    def _tinker_completion(self, prompt):
+    def _tinker_completion(self, prompt, model=None):
         """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
         base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 8192,
             "temperature": 0.3,
@@ -452,12 +463,12 @@ class LLMClient:
             usage["reasoning"] = reasoning
         return content, usage
 
-    def _request_tinker(self, prompt):
+    def _request_tinker(self, prompt, model=None):
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         request_prompt = prompt
         for attempt in range(2):
             started = time.monotonic()
-            content, attempt_usage = self._tinker_completion(request_prompt)
+            content, attempt_usage = self._tinker_completion(request_prompt, model=model)
             reasoning = attempt_usage.pop("reasoning", "")
             record = {
                 "response": content,
@@ -484,11 +495,11 @@ class LLMClient:
                     + "\nReturn a single valid JSON object only."
                 )
 
-    def _request(self, prompt):
+    def _request(self, prompt, model=None):
         api_key = os.environ.get("OPENAI_API_KEY")
         base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         payload = {
-            "model": self.model,
+            "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
         }

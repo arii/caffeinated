@@ -8,6 +8,9 @@ gets the lower judge's score, or 0 if either judge flags it. Verdicts are
 cached by (model, prompt and user message), so a run grades the same abstract
 and prior-work evidence the same way every time.
 
+Judge A uses gpt-oss-120b and judge B uses Qwen3.5; neither is the Kimi
+generator model.
+
 `score_run.py` writes a post-run report from the cached in-run verdicts.
 """
 
@@ -32,7 +35,7 @@ import prepare
 import research
 
 DEFAULT_MODELS = {
-    "a": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+    "a": "openai/gpt-oss-120b:peft:131072",
     "b": "Qwen/Qwen3.5-397B-A17B:peft:262144",
 }
 UNTRUSTED_NOTE = (
@@ -183,6 +186,37 @@ def _clamp(value):
         return 1
 
 
+def _last_verdict_object(content):
+    candidates = []
+    starts = []
+    quoted = False
+    escaped = False
+    for index, char in enumerate(content):
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                quoted = False
+            continue
+        if char == '"':
+            quoted = True
+        elif char == "{":
+            starts.append(index)
+        elif char == "}" and starts:
+            start = starts.pop()
+            try:
+                value = json.loads(content[start : index + 1])
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict) and "laugh" in value and "think" in value:
+                candidates.append((start, value))
+    if not candidates:
+        raise ValueError("no committee verdict JSON object containing laugh and think")
+    return max(candidates, key=lambda item: item[0])[1]
+
+
 def _complete(model, system, user):
     """One Tinker chat completion (OpenAI-compatible endpoint), seed 0, no reasoning knobs."""
     import llm
@@ -231,13 +265,11 @@ def _complete(model, system, user):
 
 
 def _ask(model, system, user, task_dir):
-    import llm
-
     key = hashlib.sha256(json.dumps([model, system, user]).encode()).hexdigest()[:24]
     cache = Path(task_dir) / ".cache" / "committee" / f"{key}.json"
     if cache.is_file():
         return json.loads(cache.read_text(encoding="utf-8"))
-    data = llm.first_json_object(_complete(model, system, user))
+    data = _last_verdict_object(_complete(model, system, user))
     verdict = {
         "laugh": _clamp(data.get("laugh")),
         "think": _clamp(data.get("think")),

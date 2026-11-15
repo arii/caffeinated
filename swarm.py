@@ -1787,6 +1787,14 @@ def critic_accepts(profile, first_score, second_score, previous_best, status):
     )
 
 
+def apply_critic_verdict(accepted, verdict):
+    vetoed = (
+        isinstance(verdict, dict)
+        and str(verdict.get("verdict") or "").strip().casefold() == "contradicted"
+    )
+    return (False if vetoed else accepted), vetoed
+
+
 def prepare_task(task_dir, context_files):
     sandbox.prepare_task(task_dir, context_files)
 
@@ -2108,30 +2116,47 @@ def write_result_memory(
 def update_critic_tsv(path, record):
     path = Path(path)
     is_new = not path.exists() or path.stat().st_size == 0
+    columns = (
+        "round",
+        "commit",
+        "run1_loss",
+        "run2_loss",
+        "accepted",
+        "verdict",
+        "why",
+        "vetoed",
+    )
+    if not is_new:
+        with path.open(newline="", encoding="utf-8") as stream:
+            reader = csv.DictReader(stream, delimiter="\t")
+            existing_columns = list(reader.fieldnames or ())
+            existing_rows = list(reader)
+        if "vetoed" not in existing_columns:
+            existing_columns.append("vetoed")
+            for row in existing_rows:
+                row["vetoed"] = ""
+            with path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=existing_columns, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(existing_rows)
+        columns = tuple(existing_columns)
     with path.open("a", newline="", encoding="utf-8") as stream:
-        writer = csv.writer(stream, delimiter="\t")
         if is_new:
-            writer.writerow(
-                (
-                    "round",
-                    "commit",
-                    "run1_loss",
-                    "run2_loss",
-                    "accepted",
-                    "verdict",
-                    "why",
-                )
-            )
+            writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t")
+            writer.writeheader()
+        else:
+            writer = csv.DictWriter(stream, fieldnames=columns, delimiter="\t")
         writer.writerow(
-            (
-                record["round"],
-                record["commit"],
-                "" if record["v1"] is None else f"{record['v1']:.6f}",
-                "" if record["v2"] is None else f"{record['v2']:.6f}",
-                str(record["accepted"]).lower(),
-                record["verdict"],
-                record["why"],
-            )
+            {
+                "round": record["round"],
+                "commit": record["commit"],
+                "run1_loss": "" if record["v1"] is None else f"{record['v1']:.6f}",
+                "run2_loss": "" if record["v2"] is None else f"{record['v2']:.6f}",
+                "accepted": str(record["accepted"]).lower(),
+                "verdict": record["verdict"],
+                "why": record["why"],
+                "vetoed": str(record.get("vetoed", False)).lower(),
+            }
         )
 
 
@@ -2499,7 +2524,17 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
             raise
 
 
-RESUMED_SETTINGS = ("task", "arm", "seed", "llm", "model", "exa", "literature", "memory_backend")
+RESUMED_SETTINGS = (
+    "task",
+    "arm",
+    "seed",
+    "llm",
+    "model",
+    "critic_model",
+    "exa",
+    "literature",
+    "memory_backend",
+)
 RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
 
 
@@ -2717,6 +2752,7 @@ def _orchestrate(args, publish_state, cleanup):
                 "rounds": args.rounds,
                 "workers": len(AGENTS),
                 "llm": args.llm,
+                "critic_model": args.critic_model,
                 "exa": "on" if exa_enabled else "off",
                 "literature": args.literature,
                 "research": research_source,
@@ -2739,19 +2775,30 @@ def _orchestrate(args, publish_state, cleanup):
     llm_client = llm.LLMClient(
         mode=args.llm,
         model=args.model,
+        role_models={
+            "CRITIC": args.critic_model,
+            "CRITIC_NOVELTY": args.critic_model,
+        },
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
         seed=args.seed,
         fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
     )
-    provenance.update({"seed": args.seed, "model": llm_client.model})
+    critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
+    provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
     run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
-    run_artifact.update({"model": llm_client.model, "memory_backend": memory_backend})
+    run_artifact.update(
+        {
+            "model": llm_client.model,
+            "critic_model": critic_model,
+            "memory_backend": memory_backend,
+        }
+    )
     _write_run_artifact(out_dir, run_artifact)
     if not critic_path.exists():
         critic_path.write_text(
-            "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\n",
+            "round\tcommit\trun1_loss\trun2_loss\taccepted\tverdict\twhy\tvetoed\n",
             encoding="utf-8",
         )
 
@@ -3012,6 +3059,7 @@ def _orchestrate(args, publish_state, cleanup):
                     "accepted": accepted,
                     "verdict": "",
                     "why": "",
+                    "vetoed": False,
                     "novelty": provisional_best.get("novelty"),
                 }
                 verdict = critic_review(
@@ -3028,6 +3076,8 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 critic_record["verdict"] = str(verdict.get("verdict") or "untested-in-source")
                 critic_record["why"] = str(verdict.get("why") or "")
+                accepted, critic_record["vetoed"] = apply_critic_verdict(accepted, verdict)
+                critic_record["accepted"] = accepted
                 write_memory_item(
                     "verdict",
                     f"verdict-{args.arm}-{round_num}-{provisional_best['agent']}",
@@ -3038,6 +3088,7 @@ def _orchestrate(args, publish_state, cleanup):
                         "round": round_num,
                         "commit": provisional_best["commit"],
                         "accepted": accepted,
+                        "vetoed": critic_record["vetoed"],
                     },
                     backend=memory_backend,
                     mirror=memory_mirror,
@@ -3070,6 +3121,7 @@ def _orchestrate(args, publish_state, cleanup):
                     "predicted_delta": provisional_best.get("predicted_delta"),
                     "verdict": critic_record["verdict"],
                     "accepted": accepted,
+                    "vetoed": critic_record["vetoed"],
                     "novelty": provisional_best.get("novelty"),
                 }
                 if accepted:
@@ -3321,6 +3373,7 @@ def build_parser():
         help="CPU benchmark to run with its sandboxed evaluator",
     )
     parser.add_argument("--model")
+    parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), help="default on")
     parser.add_argument(

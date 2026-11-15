@@ -59,12 +59,15 @@ flowchart TB
   answer-valued source literals using the host-side gold key.
 - **The meter cannot be gamed by a model.** B is recomputed from the ledger
   and profile; responses carry `ledger_sha256` / `profile_sha256`.
-- **Claims are checked twice.** A new best must survive a second-seed critic
-  run; SNAP/BREAKOUT ideas must cite a source.
+- **Claims are checked twice.** A new best must survive evaluator confirmation
+  and an LLM critic verdict; `contradicted` vetoes acceptance. Deterministic
+  tasks reuse the first score, so confirmation is not an independent replicate.
+  SNAP/BREAKOUT ideas must cite a source.
 - **Ig Nobel optimizes for interesting findings.** Confirmed studies are judged
   in-loop by two committee judges using only a host-written abstract and
   optional Exa prior-work evidence; an established or textbook result is
-  capped at THINK 3, while targeting a group scores zero.
+  capped at THINK 3, while targeting a group scores zero. The judges use
+  gpt-oss-120b and Qwen3.5; neither is the Kimi generator model.
 - **The viewer side is read-only.** The API reads exported files, holds no
   credentials and cannot start runs.
 
@@ -95,7 +98,7 @@ not alter the event stream.
 
 | Vendor | Role | Notes |
 |---|---|---|
-| Tinker | LLM researcher (Kimi K3.1 Pro) | sampling only, no fine-tuning |
+| Tinker | Kimi K3.1 Pro generator; Ig Nobel judges (gpt-oss-120b, Qwen3.5) | sampling only; judges are independent of the Kimi generator |
 | Exa | scouting and prior-art checks | outside the meter's scoring path |
 | past.dev | shared memory across agents and runs | `local` fallback for offline runs |
 | Hugging Face | BixBench data (one-time `prepare.py`) | |
@@ -108,7 +111,7 @@ not alter the event stream.
   [`testcases/README.md`](../testcases/README.md)).
 - **Ig Nobel:** the swarm task `swarm.py --task ignobel`: expert labs
   pre-register one Spearman test per real public dataset, the host grades
-  significance and split-half replication, then a two-judge LAUGH/THINK
+  significance and split-half consistency, then a two-judge LAUGH/THINK
   committee scores each confirmed study during evaluation. Its score contributes
   `0.25 + 0.75 * committee_score` to swarm reward (zero for targeting a group);
   `score_run.py` reports the cached verdicts after the run. It uses the same
