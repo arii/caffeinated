@@ -1,0 +1,6 @@
+commit	val_bpb	memory_gb	status	description	agent	round	descriptor	kind
+7017194	0.995814	44.0	keep	baseline	baseline	0	"{""mechanism"": ""baseline"", ""method"": ""none""}"	baseline
+0a05a827441c2e9aefd4d07659bf21882e509f8d	1.008638	66.5	discard	[EXPLOIT] Deepen the GPT from 8 to 10 layers while keeping width rules fixed.	worker-1	1	"{""mechanism"": ""architecture"", ""method"": ""depth"", ""params"": {""value"": 10.0}}"	candidate
+0625269ea1dda427c19d904c55984389c265f03e	0.996168	44.0	discard	[EXPLOIT] Shorten linear LR warmdown from 50% to 40% of training.	worker-2	1	"{""mechanism"": ""lr_schedule"", ""method"": ""warmdown"", ""params"": {""value"": 0.4}}"	candidate
+d4fe291f8508257ba08ccc5eeb39c7ecd54a5937	0.997037	44.0	discard	[EXPLOIT] Halve Muon weight decay to reduce regularization in short training.	worker-3	1	"{""mechanism"": ""optimizer"", ""method"": ""weight_decay"", ""params"": {""value"": 0.1}}"	candidate
+e6fd66719670f39f2abdb8d5557d5c2a9f033d05	0.995096	44.0	discard	[EXPLOIT] Raise the lm_head Adam learning rate from 0.004 to 0.006.	worker-4	1	"{""mechanism"": ""optimizer"", ""method"": ""unembed_lr"", ""params"": {""value"": 0.006}}"	candidate
