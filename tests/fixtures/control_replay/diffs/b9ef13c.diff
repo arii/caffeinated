@@ -1,7 +1,0 @@
-diff --git a/train.py b/train.py
-index 5383d0a..0fb6d7f 100644
---- a/train.py
-+++ b/train.py
-@@ -199 +199 @@ class GPT(nn.Module):
--        short_window = long_window // 2
-+        short_window = long_window // 4

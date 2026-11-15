@@ -7,6 +7,9 @@ test('snapshot contract rejects invalid lifecycle and measurements',()=>{
  assert.ok(SnapshotSchema.safeParse(snapshot).success);
  for(const patch of [{status:'invented'},{progress:1.1},{value:NaN},{agents:[{id:'x'}]}])assert.equal(SnapshotSchema.safeParse({...snapshot,...patch}).success,false);
 });
+test('recorded snapshots accept every native swarm arm',()=>{
+ for(const arm of ['A','B','C','D'])assert.ok(SnapshotSchema.safeParse({...snapshot,config:{...snapshot.config,mode:'recorded',arm}}).success);
+});
 test('reconnect ignores stale snapshots but permits explicit run selection',()=>{
  assert.equal(acceptSnapshot(snapshot,{...snapshot,lastSequence:2}),snapshot);
  const newer={...snapshot,lastSequence:4};assert.equal(acceptSnapshot(snapshot,newer),newer);

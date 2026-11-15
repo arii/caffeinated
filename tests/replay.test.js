@@ -1,6 +1,23 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {frameAt,advanceTick,eventsThrough} from '../src/engine/replay.ts';
+import {frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
+test('live playback waits at the current end while finished recordings stop',()=>{
+ assert.equal(playbackContinues({live:true,totalTicks:10},10),true);
+ assert.equal(playbackContinues({live:true,totalTicks:0},0),true);
+ assert.equal(playbackContinues({live:true,totalTicks:20},10),true);
+ assert.equal(playbackContinues({live:false,totalTicks:10},10),false);
+ assert.equal(playbackContinues({totalTicks:0},0),false);
+ assert.equal(playbackContinues({live:false,totalTicks:20},10),true);
+});
+test('live recording refresh requires a changed version of the selected run',()=>{
+ const current={id:'live-run',live:true,contentVersion:'one'};
+ assert.equal(recordingChanged(current,{...current,contentVersion:'two'}),true);
+ assert.equal(recordingChanged(current,{...current,live:false,contentVersion:'two'}),true);
+ assert.equal(recordingChanged(current,current),false);
+ assert.equal(recordingChanged(current),false);
+ assert.equal(recordingChanged(current,{...current,id:'other',contentVersion:'two'}),false);
+ assert.equal(recordingChanged({...current,live:false},{...current,contentVersion:'two'}),false);
+});
 test('seeking backwards discards future observations and accepts sparse frames',()=>{
  const frames=[{tick:-1,snapshot:{results:[]}},{tick:2,snapshot:{results:['baseline']}},{tick:8,snapshot:{results:['baseline','discovery']}}];
  assert.deepEqual(frameAt(frames,9).snapshot.results,['baseline','discovery']);

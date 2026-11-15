@@ -1,29 +1,24 @@
 #!/usr/bin/env python3
-"""OpenAI, Tinker, queue, and offline clients for swarm JSON prompts."""
+"""OpenAI, Tinker, and offline clients for swarm JSON prompts."""
 
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
-import tempfile
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from runtime_env import load_local_env
 
-
 ROOT = Path(__file__).resolve().parent
 load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
-FAKE_TARGETS = (
-    ("MATRIX_LR", "optimizer", "matrix_lr", 0.001),
-    ("WARMDOWN_RATIO", "lr_schedule", "warmdown", 0.05),
-    ("EMBEDDING_LR", "optimizer", "embed_lr", 0.01),
-    ("TOTAL_BATCH_SIZE", "batch", "total_batch", 1),
-)
+TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
+TINKER_TIMEOUT_SECONDS = 900
+TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
 def timestamp():
@@ -71,21 +66,6 @@ def append_log(path, record):
         stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
 
 
-def atomic_write_text(path, text):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        delete=False,
-    ) as stream:
-        temporary = Path(stream.name)
-        stream.write(text)
-    os.replace(temporary, path)
-
-
 def fill_placeholders(template, values):
     for name, value in values.items():
         template = template.replace("{" + name + "}", str(value))
@@ -94,6 +74,10 @@ def fill_placeholders(template, values):
 
 def render_prompt(role, values, prompt_dir=DEFAULT_PROMPT_DIR):
     prompt_dir = Path(prompt_dir)
+    values = {
+        **values,
+        "program": (ROOT / "program.md").read_text(encoding="utf-8"),
+    }
     common = (prompt_dir / "common.md").read_text(encoding="utf-8")
     common = fill_placeholders(common, values)
     role_file = prompt_dir / f"{role.casefold()}.md"
@@ -105,35 +89,58 @@ def render_prompt(role, values, prompt_dir=DEFAULT_PROMPT_DIR):
 def fake_response(role, values):
     role = role.upper()
     if role == "SCOUT_QUERY":
-        bottleneck = "small GPT validation loss under a fixed training budget"
+        bottleneck = values.get("task_brief", "the current CPU benchmark loss")
         return {
             "paper_query": f"recent methods for {bottleneck}",
-            "code_query": f"GitHub small GPT {bottleneck}",
+            "code_query": f"GitHub benchmark methods for {bottleneck}",
             "bottleneck": bottleneck,
         }
     if role == "SCOUT_PICK":
         source_match = re.search(r"\bS\d+\b", str(values.get("sources", "")))
         return {
             "source_id": source_match.group(0) if source_match else "S1",
-            "why": "Most directly testable small-GPT training change.",
+            "why": "Most directly testable benchmark change.",
         }
     if role == "SCOUT_LEAD":
         return {
-            "recipe": "Change one optimizer learning-rate parameter.",
-            "claimed_effect": "The source reports improved training efficiency.",
+            "recipe": "Change one task-specific search parameter.",
+            "claimed_effect": "The source reports improved benchmark performance.",
             "predicted_delta": -0.001,
-            "risk": "The short budget may hide the effect.",
+            "risk": "The small benchmark may not expose the effect.",
+        }
+    if role == "CRITIC_NOVELTY":
+        try:
+            candidates = json.loads(str(values.get("candidates") or "[]"))
+        except json.JSONDecodeError:
+            candidates = []
+        return {
+            "scores": [
+                {
+                    "agent": item.get("agent"),
+                    "novelty": 0.5,
+                    "closest": None,
+                    "why": "Offline runs cannot judge prior art.",
+                }
+                for item in candidates
+                if isinstance(item, dict)
+            ]
         }
     if role == "CRITIC":
         return {
             "verdict": "replicated",
-            "why": "The seed-43 result matches the candidate run.",
+            "why": "The second evaluation matches the candidate run.",
             "lesson": None,
         }
     if role in ("WORKER_PROPOSE", "WORKER_REPAIR"):
         assigned = values.get("assigned_cell")
         if assigned and assigned != "none":
-            return fake_assigned_proposal(assigned, str(values["train_py"]), values.get("assigned_descriptor"))
+            return fake_assigned_proposal(
+                assigned,
+                str(values.get("candidate_source", "")),
+                values.get("assigned_descriptor"),
+                values.get("fake_edits", []),
+                fake_targets=values.get("fake_targets", []),
+            )
         proposal = values.get("proposal")
         if role == "WORKER_REPAIR" and isinstance(proposal, dict):
             return proposal
@@ -144,21 +151,32 @@ def fake_response(role, values):
                 parsed_proposal = None
             if isinstance(parsed_proposal, dict):
                 return parsed_proposal
-        train_py = str(values.get("train_py") or "")
+        candidate_source = str(values.get("candidate_source") or "")
         fake_edits = values.get("fake_edits") or []
         if fake_edits:
             agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
-            target_index = (
-                (int(agent_match.group(1)) - 1) % len(fake_edits)
-                if agent_match
-                else 0
-            )
-            target = fake_edits[target_index]
+            target_index = (int(agent_match.group(1)) - 1) % len(fake_edits) if agent_match else 0
+            target_index = (target_index + values.get("fake_offset", 0)) % len(fake_edits)
+            # A previous kept edit may have consumed this exact old text.
+            # Select the next applicable canned edit rather than aborting a run.
+            for offset in range(len(fake_edits)):
+                index = (target_index + offset) % len(fake_edits)
+                target = fake_edits[index]
+                if (
+                    isinstance(target.get("old"), str)
+                    and target["old"]
+                    and candidate_source.count(target["old"]) == 1
+                    and target["old"] != target.get("new")
+                ):
+                    target_index = index
+                    break
+            else:
+                raise ValueError("fake worker could not find a unique task edit")
             old = target["old"]
             new = target["new"]
             if not isinstance(old, str) or not isinstance(new, str):
                 raise ValueError("fake task edits must contain string old/new values")
-            if not old or train_py.count(old) != 1 or old == new:
+            if not old or candidate_source.count(old) != 1 or old == new:
                 raise ValueError("fake worker could not find a unique task edit")
             return {
                 "descriptor": target["descriptor"],
@@ -169,127 +187,89 @@ def fake_response(role, values):
                 "predicted_delta": -0.001,
                 "edits": [{"old": old, "new": new}],
             }
-        if not train_py:
-            train_py = (ROOT / "train.py").read_text(encoding="utf-8")
-        targets = tuple(tuple(item) for item in values.get("fake_targets") or ()) or FAKE_TARGETS
-        agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
-        target_index = (int(agent_match.group(1)) - 1) % len(targets) if agent_match else 0
-        name, mechanism, method, increment = targets[target_index]
-        match = re.search(
-            rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
-            rf"(?P<rhs>[^\n]*)$",
-            train_py,
-        )
-        if not match:
-            for offset in range(len(targets)):
-                name, mechanism, method, increment = targets[
-                    (target_index + offset) % len(targets)
-                ]
-                match = re.search(
-                    rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
-                    rf"(?P<rhs>[^\n]*)$",
-                    train_py,
-                )
-                if match:
-                    break
-        if not match:
-            raise ValueError("fake worker could not find a supported knob")
-        old = match.group(0)
-        rhs = match.group("rhs")
-        value_text, marker, comment = rhs.partition("#")
-        value_text = value_text.strip()
-        if name == "TOTAL_BATCH_SIZE":
-            exponent_match = re.fullmatch(r"2\s*\*\*\s*(\d+)", value_text)
-            exponent = int(exponent_match.group(1)) if exponent_match else 19
-            new_value = f"2**{max(1, exponent - 1)}"
-            numeric_value = float(2 ** max(1, exponent - 1))
-        else:
-            current = float(re.match(r"[+-]?\d+(?:\.\d*)?", value_text).group(0))
-            new_number = current + increment
-            new_value = f"{new_number:.6g}"
-            numeric_value = new_number
-        suffix = f"{marker}{comment}" if marker else ""
-        new = f"{match.group('prefix')}{new_value}"
-        if suffix:
-            new += f" #{comment}" if marker else suffix
-        return {
-            "descriptor": {
-                "mechanism": mechanism,
-                "method": method,
-                "params": {"value": numeric_value},
-            },
-            "idea": f"Adjust {name.lower()} to {new_value}",
-            "rationale": "A small controlled change tests an untried descriptor cell.",
-            "lead_id": None,
-            "source_ids": [],
-            "predicted_delta": -0.001,
-            "edits": [{"old": old, "new": new}],
-        }
+        fake_targets = values.get("fake_targets") or []
+        if fake_targets:
+            agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
+            target_index = (int(agent_match.group(1)) - 1) % len(fake_targets) if agent_match else 0
+            target_index = (target_index + values.get("fake_offset", 0)) % len(fake_targets)
+            name, mechanism, method, increment = fake_targets[target_index]
+            match = re.search(
+                rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
+                rf"(?P<value>[+-]?\d+(?:\.\d+)?)\s*$",
+                candidate_source,
+            )
+            if match is None:
+                raise ValueError(f"fake worker could not find task knob {name}")
+            value = float(match.group("value")) + float(increment)
+            number = int(value) if value.is_integer() else value
+            old = match.group(0)
+            new = f"{match.group('prefix')}{number:g}"
+            return {
+                "descriptor": {
+                    "mechanism": mechanism,
+                    "method": method,
+                    "params": {"value": number},
+                },
+                "idea": f"Adjust {name.lower()} to {number:g}",
+                "rationale": "A controlled task-specific edit tests one descriptor cell.",
+                "lead_id": None,
+                "source_ids": [],
+                "predicted_delta": -0.001,
+                "edits": [{"old": old, "new": new}],
+            }
+        raise ValueError("fake worker requires task-specific fake_edits")
     raise ValueError(f"no fake response for role {role}")
 
 
-def fake_assigned_proposal(cell, train_py, descriptor=None):
+def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(), fake_targets=()):
     mechanism, method = cell.split("/")
-    knobs = {
-        "architecture/depth": ("DEPTH", 1),
-        "architecture/width": ("ASPECT_RATIO", 8),
-        "architecture/head_dim": ("HEAD_DIM", 16),
-        "optimizer/matrix_lr": ("MATRIX_LR", 0.002),
-        "optimizer/embed_lr": ("EMBEDDING_LR", 0.02),
-        "optimizer/unembed_lr": ("UNEMBEDDING_LR", 0.001),
-        "optimizer/weight_decay": ("WEIGHT_DECAY", 0.02),
-        "lr_schedule/warmup": ("WARMUP_RATIO", 0.02),
-        "lr_schedule/warmdown": ("WARMDOWN_RATIO", 0.02),
-        "lr_schedule/final_lr": ("FINAL_LR_FRAC", 0.02),
-    }
-    if cell in knobs:
-        name, increment = knobs[cell]
-        match = re.search(rf"(?m)^{name}\s*=\s*([\d.]+)", train_py)
+    value = (descriptor or {}).get("params", {}).get("value")
+    target = next(
+        (
+            item
+            for item in fake_edits
+            if item.get("descriptor", {}).get("mechanism") == mechanism
+            and item.get("descriptor", {}).get("method") == method
+        ),
+        None,
+    )
+    if target is None and fake_targets:
+        target = next(
+            (item for item in fake_targets if item[1] == mechanism and item[2] == method),
+            None,
+        )
+        if target is None:
+            return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
+        name, _, _, increment = target
+        match = re.search(
+            rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
+            rf"(?P<value>[+-]?\d+(?:\.\d+)?)\s*$",
+            candidate_source,
+        )
         if match is None:
             raise ValueError(f"fake assigned cell cannot find {name}")
-        value = float(match.group(1)) + increment
-        value = (descriptor or {}).get("params", {}).get("value", value)
-        old, new = match.group(0), f"{name} = {value:g}"
+        value = float(match.group("value")) + float(increment)
+        number = int(value) if value.is_integer() else value
+        old = match.group(0)
+        new = f"{match.group('prefix')}{number:g}"
+    elif target is not None:
+        old, new = target["old"], target["new"]
+        if not old or candidate_source.count(old) != 1 or old == new:
+            return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
     else:
-        edits = {
-            "architecture/family": ("x = F.relu(x).square()", "x = F.gelu(x)"),
-            "architecture/mlp": ("4 * config.n_embd", "3 * config.n_embd"),
-            "architecture/norm": ("return F.rms_norm(x, (x.size(-1),))", "return F.layer_norm(x, (x.size(-1),))"),
-            "attention/family": ("q, k = norm(q), norm(k)", "q, k = norm(q) * 0.9, norm(k)"),
-            "attention/softcap": ("causal=True, window_size=window_size", "causal=True, window_size=window_size, softcap=30.0"),
-            "attention/window": ('WINDOW_PATTERN = "SSSL"', 'WINDOW_PATTERN = "SLLL"'),
-            "data/ordering": ("x, y, epoch = next(train_loader)  # prefetch first batch", "next(train_loader)  # skip the first training batch\nx, y, epoch = next(train_loader)  # prefetch first batch"),
-            "data/sequence": ("config = build_model_config(DEPTH)", "MAX_SEQ_LEN //= 2\nconfig = build_model_config(DEPTH)"),
-            "optimizer/adam_beta": ("ADAM_BETAS = (0.8, 0.95)", "ADAM_BETAS = (0.85, 0.95)"),
-            "optimizer/family": ("kind='muon', params=group_params, lr=matrix_lr,", "kind='adamw', params=group_params, lr=matrix_lr, betas=adam_betas, eps=1e-10,"),
-        }
-        if cell == "batch/total_batch":
-            match = re.search(r"TOTAL_BATCH_SIZE\s*=\s*2\*\*(\d+)", train_py)
-            if match is None:
-                raise ValueError("fake assigned cell cannot find TOTAL_BATCH_SIZE")
-            old, new = match.group(0), f"TOTAL_BATCH_SIZE = 2**{int(match.group(1)) - 1}"
-        elif cell in edits:
-            old, new = edits[cell]
-        else:
-            raise ValueError(f"fake worker does not support assigned cell {cell}")
-        value = None
-    if cell == "architecture/mlp":
-        match = re.search(r"self.c_fc = nn.Linear\(config.n_embd, (\d+) \* config.n_embd", train_py)
-        if match is None:
-            raise ValueError("fake assigned cell cannot find the MLP width")
-        width = match.group(1)
-        old = "\n".join(line for line in train_py.splitlines() if f"{width} * config.n_embd" in line)
-        new = old.replace(f"{width} * config.n_embd", f"{int(width) + 1} * config.n_embd")
-    elif cell not in knobs and old not in train_py and new in train_py:
-        old, new = new, old
-    if old not in train_py or old == new:
-        raise ValueError(f"fake assigned edit unavailable for {cell}")
+        return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
+    assigned_value = value or (descriptor or {}).get("params", {}).get("value")
     return {
-        "descriptor": {"mechanism": mechanism, "method": method,
-                       **({"params": {"value": value}} if value is not None else {})},
+        "descriptor": {
+            "mechanism": mechanism,
+            "method": method,
+            **({"params": {"value": assigned_value}} if assigned_value is not None else {}),
+        },
         "idea": f"Test assigned {cell}",
         "rationale": "Implement the conductor-assigned descriptor cell.",
-        "lead_id": None, "source_ids": [], "predicted_delta": -0.001,
+        "lead_id": None,
+        "source_ids": [],
+        "predicted_delta": -0.001,
         "edits": [{"old": old, "new": new}],
     }
 
@@ -303,33 +283,21 @@ class LLMClient:
         log_path="llm_log.jsonl",
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
-        arm=None,
-        queue_dir=None,
-        queue_timeout=3600,
+        seed=None,
     ):
         self.mode = mode.casefold()
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
         self.replay = replay
-        self.arm = arm or os.environ.get("AUTORESEARCH_ARM")
-        self.queue_dir = Path(queue_dir or "llm_queue")
-        self.queue_timeout = float(queue_timeout)
-        if self.queue_timeout <= 0:
-            raise ValueError("--queue-timeout must be greater than zero")
-        self.call_counts = {}
+        self.seed = seed
+        self.sampling_seed = None
         self.records = read_log(self.log_path)
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
-        self.tinker_service = None
-        self.tinker_sampler = None
-        self.tinker_renderer = None
-        self.tinker_tokenizer = None
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
-        elif self.mode == "queue":
-            self.model = "devin-queue"
         elif self.mode == "tinker":
             if not replay and not self.model:
                 raise ValueError("set --model or TINKER_MODEL for Tinker requests")
@@ -341,13 +309,19 @@ class LLMClient:
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY is required for OpenAI requests")
         elif self.mode != "openai":
-            raise ValueError("LLM mode must be openai, tinker, fake, or queue")
+            raise ValueError("LLM mode must be openai, tinker, or fake")
 
     def call(self, role, *, agent, round_num, values):
         prompt_values = dict(values)
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
         prompt_values["role"] = role.casefold()
+        if self.seed is not None:
+            # Key by role/worker/round, so arm-specific extra calls do not shift
+            # the common random numbers for later matched calls.
+            key = f"{self.seed}:{role}:{agent}:{round_num}"
+            self.sampling_seed = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % (2**31)
+            prompt_values["fake_offset"] = self.seed + round_num - 1
         prompt = render_prompt(role, prompt_values, self.prompt_dir)
         digest = prompt_sha(prompt)
         started = time.monotonic()
@@ -364,10 +338,6 @@ class LLMClient:
             response = previous.get("response")
             model = previous.get("model", model)
             usage = previous.get("usage")
-        elif self.mode == "queue":
-            response = self._queue_request(
-                role, agent=agent, round_num=round_num, prompt=prompt
-            )
         elif self.mode == "fake":
             response = fake_response(role, prompt_values)
         elif self.mode == "tinker":
@@ -387,6 +357,7 @@ class LLMClient:
             "response": response,
             "latency_ms": int((time.monotonic() - started) * 1000),
             "usage": usage,
+            "seed": self.sampling_seed,
         }
         if self.request_attempts:
             record["attempts"] = self.request_attempts
@@ -395,71 +366,58 @@ class LLMClient:
         return response
 
     def _tinker_completion(self, prompt):
-        try:
-            import tinker
-        except ImportError as error:
-            raise RuntimeError("Tinker requires Python 3.11+ and pip install tinker") from error
-        if self.tinker_sampler is None:
-            if self.model.split(":")[0] == "moonshotai/Kimi-K3.1-Pro":
-                try:
-                    from tml_renderers import renderers
-                except ImportError as error:
-                    raise RuntimeError(
-                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; "
-                        "see program_swarm.md"
-                    ) from error
-                self.tinker_renderer = renderers.KimiK31Pro.low()
-            self.tinker_service = tinker.ServiceClient()
-            self.tinker_sampler = self.tinker_service.create_sampling_client(
-                base_model=self.model
-            ).result()
-            if self.tinker_renderer is None:
-                self.tinker_tokenizer = self.tinker_sampler.get_tokenizer()
-        if self.tinker_renderer is not None:
-            from tml_renderers import chat
-            from tml_renderers.tinker import token_spans_to_tinker_model_input
-
-            spans, parser = self.tinker_renderer.render_for_completion(
-                chat.MessageList.from_openai_chat_dicts(
-                    [{"role": "user", "content": prompt}]
-                )
-            )
-            model_input = token_spans_to_tinker_model_input(spans)
-            stop = self.tinker_renderer.stop()
-        else:
-            tokens = self.tinker_tokenizer.apply_chat_template(
-                [{"role": "user", "content": prompt}],
-                tokenize=True,
-                add_generation_prompt=True,
-            )
-            model_input = tinker.types.ModelInput.from_ints(tokens)
-            stop = [self.tinker_tokenizer.eos_token_id]
-        sequence = self.tinker_sampler.sample(
-            prompt=model_input,
-            num_samples=1,
-            sampling_params=tinker.types.SamplingParams(
-                max_tokens=8192, temperature=0.3, stop=stop
-            ),
-        ).result().sequences[0]
-        usage = {
-            "prompt_tokens": len(model_input.to_ints()),
-            "completion_tokens": len(sequence.tokens),
+        """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
+        base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 8192,
+            "temperature": 0.3,
+            "reasoning_effort": os.environ.get("TINKER_REASONING_EFFORT", "low"),
         }
-        usage["total_tokens"] = sum(usage.values())
-        if self.tinker_renderer is not None:
+        if self.sampling_seed is not None:
+            payload["seed"] = self.sampling_seed
+        request = Request(
+            f"{base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {os.environ.get('TINKER_API_KEY', '')}",
+                "Content-Type": "application/json",
+                "User-Agent": "caffeinated-swarm",
+            },
+            method="POST",
+        )
+        for attempt in range(3):
             try:
-                messages = chat.MessageList(
-                    parser.parse_tokens(sequence.tokens).messages
-                ).to_openai_chat_dicts()
-                content = "\n".join(
-                    message.get("content") or "" for message in messages
-                    if message.get("role") == "assistant"
-                )
-            except ValueError:
-                content = ""
-        else:
-            content = self.tinker_tokenizer.decode(sequence.tokens, skip_special_tokens=True)
-            content = content.rsplit("</think>", 1)[-1]
+                with urlopen(request, timeout=TINKER_TIMEOUT_SECONDS) as http_response:
+                    response = json.loads(http_response.read().decode("utf-8"))
+                break
+            except HTTPError as error:
+                if error.code in TRANSIENT_HTTP and attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                detail = error.read().decode("utf-8", "replace")[:300]
+                raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
+            except URLError as error:
+                if attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                raise RuntimeError(f"Tinker request failed: {error.reason}") from error
+            except json.JSONDecodeError as error:
+                raise RuntimeError("Tinker returned invalid JSON") from error
+        try:
+            message = response["choices"][0]["message"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError("Tinker returned no completion message") from error
+        content = message.get("content") or ""
+        reasoning = str(message.get("reasoning_content") or "").strip()
+        raw_usage = response.get("usage") or {}
+        usage = {
+            key: int(raw_usage.get(key) or 0)
+            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+        }
+        if reasoning:
+            usage["reasoning"] = reasoning
         return content, usage
 
     def _request_tinker(self, prompt):
@@ -468,11 +426,14 @@ class LLMClient:
         for attempt in range(2):
             started = time.monotonic()
             content, attempt_usage = self._tinker_completion(request_prompt)
+            reasoning = attempt_usage.pop("reasoning", "")
             record = {
                 "response": content,
                 "latency_ms": int((time.monotonic() - started) * 1000),
                 "usage": attempt_usage,
             }
+            if reasoning:
+                record["reasoning"] = reasoning
             self.request_attempts.append(record)
             for key in usage:
                 usage[key] += attempt_usage.get(key, 0)
@@ -485,79 +446,22 @@ class LLMClient:
                         f"Tinker returned invalid JSON after one retry: {error}"
                     ) from error
                 request_prompt = (
-                    prompt + "\nYour previous response could not be parsed: "
-                    + str(error) + "\nReturn a single valid JSON object only."
+                    prompt
+                    + "\nYour previous response could not be parsed: "
+                    + str(error)
+                    + "\nReturn a single valid JSON object only."
                 )
-
-    def _queue_request(self, role, *, agent, round_num, prompt):
-        self.queue_dir.mkdir(parents=True, exist_ok=True)
-        role_name = role.casefold()
-        counter_key = (round_num, role_name, agent)
-        call_number = self.call_counts.get(counter_key, 0) + 1
-        call_id = f"r{round_num}-{role_name}-{agent}-{call_number}"
-        while (
-            (self.queue_dir / f"{call_id}.prompt.json").exists()
-            or (self.queue_dir / f"{call_id}.response.json").exists()
-        ):
-            call_number += 1
-            call_id = f"r{round_num}-{role_name}-{agent}-{call_number}"
-        self.call_counts[counter_key] = call_number
-        request = {
-            "call_id": call_id,
-            "role": role.upper(),
-            "agent": agent,
-            "round": round_num,
-            "arm": self.arm,
-            "prompt": prompt,
-        }
-        prompt_path = self.queue_dir / f"{call_id}.prompt.json"
-        response_path = self.queue_dir / f"{call_id}.response.json"
-        error_path = self.queue_dir / f"{call_id}.error.txt"
-        atomic_write_text(
-            prompt_path,
-            json.dumps(request, sort_keys=True, ensure_ascii=False) + "\n",
-        )
-        deadline = time.monotonic() + self.queue_timeout
-        invalid_signature = None
-        while True:
-            try:
-                signature = (
-                    response_path.stat().st_mtime_ns,
-                    response_path.stat().st_size,
-                )
-            except FileNotFoundError:
-                signature = None
-            if signature is not None and signature != invalid_signature:
-                try:
-                    response = json.loads(response_path.read_text(encoding="utf-8"))
-                    if not isinstance(response, dict):
-                        raise ValueError("response must be a JSON object")
-                except (OSError, json.JSONDecodeError, ValueError) as error:
-                    invalid_signature = signature
-                    atomic_write_text(
-                        error_path,
-                        f"invalid JSON response: {error}\n",
-                    )
-                else:
-                    error_path.unlink(missing_ok=True)
-                    return response
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise RuntimeError(
-                    f"timed out waiting for LLM response {call_id}"
-                )
-            time.sleep(min(2, remaining))
 
     def _request(self, prompt):
         api_key = os.environ.get("OPENAI_API_KEY")
-        base_url = os.environ.get(
-            "OPENAI_BASE_URL", "https://api.openai.com/v1"
-        ).rstrip("/")
+        base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
         }
+        if self.sampling_seed is not None:
+            payload["seed"] = self.sampling_seed
         request = Request(
             f"{base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),

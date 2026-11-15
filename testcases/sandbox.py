@@ -1,10 +1,8 @@
 """Run untrusted testcase candidates in disposable, network-isolated containers."""
 
-from dataclasses import dataclass
 import importlib.util
 import json
 import os
-from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import subprocess
@@ -12,6 +10,8 @@ import sys
 import tempfile
 import threading
 import uuid
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = Path(__file__).resolve().parent
@@ -58,11 +58,7 @@ def _trusted_env():
 
 def prepare_task(task_dir, context_files, required_files=()):
     task_dir = Path(task_dir).resolve()
-    missing = [
-        name
-        for name in (*context_files, *required_files)
-        if not (task_dir / name).exists()
-    ]
+    missing = [name for name in (*context_files, *required_files) if not (task_dir / name).exists()]
     prepare = task_dir / "prepare.py"
     if missing and prepare.exists():
         result = subprocess.run(
@@ -78,14 +74,10 @@ def prepare_task(task_dir, context_files, required_files=()):
             detail = result.stderr.strip() or result.stdout.strip()
             raise RuntimeError(f"task preparation failed: {detail}")
         missing = [
-            name
-            for name in (*context_files, *required_files)
-            if not (task_dir / name).exists()
+            name for name in (*context_files, *required_files) if not (task_dir / name).exists()
         ]
     if missing:
-        raise FileNotFoundError(
-            "missing testcase inputs: " + ", ".join(map(str, missing))
-        )
+        raise FileNotFoundError("missing testcase inputs: " + ", ".join(map(str, missing)))
 
 
 def docker_available():
@@ -107,9 +99,7 @@ def docker_available():
 
 def _safe_relative_path(value):
     path = PurePosixPath(str(value))
-    if path.is_absolute() or not path.parts or any(
-        part in ("", ".", "..") for part in path.parts
-    ):
+    if path.is_absolute() or not path.parts or any(part in ("", ".", "..") for part in path.parts):
         raise ValueError(f"unsafe testcase path: {value}")
     return Path(*path.parts)
 
@@ -156,9 +146,7 @@ def _read_limited(stream, limit, result, key):
 
 
 def _run_bounded(command, timeout_s):
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     captured = {}
     readers = [
         threading.Thread(
@@ -233,8 +221,7 @@ def _remove_container(docker, name):
         ) from error
     if result.returncode and "No such container" not in result.stderr:
         raise SandboxUnavailable(
-            "sandbox_unavailable: could not remove container: "
-            + result.stderr.strip()
+            "sandbox_unavailable: could not remove container: " + result.stderr.strip()
         )
 
 
@@ -462,9 +449,7 @@ def evaluate_task(task_dir, candidate_source, **kwargs):
     sys.modules[module_name] = module
     try:
         spec.loader.exec_module(module)
-        return module.evaluate_source(
-            candidate_source, task_dir=task_dir, **kwargs
-        )
+        return module.evaluate_source(candidate_source, task_dir=task_dir, **kwargs)
     except SandboxUnavailable as error:
         return {
             "score": 0.0,

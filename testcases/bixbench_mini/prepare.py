@@ -4,7 +4,12 @@ Data comes from the public futurehouse/BixBench dataset on Hugging Face and is c
 .cache/ (gitignored) so benchmark answers never get committed. evaluate.py runs this
 automatically on first use.
 """
-import io, json, shutil, urllib.request, zipfile
+
+import io
+import json
+import shutil
+import urllib.request
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -37,14 +42,22 @@ def main():
     (HERE / "data").mkdir(exist_ok=True)
     for uuid, filename in CAPSULES.values():
         with zipfile.ZipFile(io.BytesIO(fetch(f"CapsuleFolder-{uuid}.zip"))) as z:
-            member = next(n for n in z.namelist() if n.startswith("CapsuleData-") and n.endswith("/" + filename))
+            member = next(
+                n
+                for n in z.namelist()
+                if n.startswith("CapsuleData-") and n.endswith("/" + filename)
+            )
             with z.open(member) as src, open(HERE / "data" / filename, "wb") as dst:
                 shutil.copyfileobj(src, dst)
     questions, key = {}, {}
     for line in fetch("BixBench.jsonl").decode().splitlines():
         r = json.loads(line)
         if r["short_id"] in CAPSULES:
-            questions[r["question_id"]] = {"question": r["question"], "data": f"data/{CAPSULES[r['short_id']][1]}", "paper": r.get("paper")}
+            questions[r["question_id"]] = {
+                "question": r["question"],
+                "data": f"data/{CAPSULES[r['short_id']][1]}",
+                "paper": r.get("paper"),
+            }
             key[r["question_id"]] = parse_key(r)
     (HERE / "questions.json").write_text(json.dumps(questions, indent=1, ensure_ascii=False))
     (HERE / ".cache" / "answers.json").write_text(json.dumps(key, indent=1))

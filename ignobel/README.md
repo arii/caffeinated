@@ -1,10 +1,11 @@
-# ignobel: a simulated research community
+# Artificial Scientist Swarms: Ig Nobel community
 
-About ten LLM agents, each an expert in a different field with a private lab, try to
-produce research worthy of an Ig Nobel prize: work that makes people laugh, then think.
-The only thing steering an agent during a run is its own private boredom meter. A
-committee scores every study after the run. Control arms test whether boredom-timed
-exploration beats randomly timed exploration.
+The supplied roster has three researchers with private datasets and a statistician who
+requests measurements from other labs. They propose work intended to make people laugh,
+then think. Each agent's private boredom meter and its arm's policy select exploration,
+refinement or a study; memories, conversations and instrument budgets shape the work.
+A separate committee scores study abstracts after the run. Control arms compare
+boredom-timed exploration with randomly timed exploration.
 
 ## Quick start (no keys)
 
@@ -17,12 +18,15 @@ MOCK=1 python validate.py                                            # judge che
 MOCK=1 pytest -q
 ```
 
-Running the same command twice gives a byte-identical `events.jsonl`. Add `--out DIR` to keep
-several runs, and `--resume` to continue a crashed run from its last saved round.
+With the same inputs and configuration, repeating the mock command gives byte-identical
+`events.jsonl`. A fresh run replaces the selected output directory; use `--out DIR` to
+keep several runs. `--resume` continues from the last saved round, truncating events
+from an incomplete round. `--rounds` is the target total round count.
 
 `MOCK=1` swaps in a fake LLM, seeded embeddings and canned search results. Study code never
 runs on the host: mock mode runs it in a local Docker container (no network, read-only, only the
-study's files and a copy of its dataset), real mode in a Modal sandbox. Docker must be running for
+study's files and permitted dataset or requested measurements), real mode in a Modal sandbox.
+Docker must be running for
 mock runs and tests that run studies; if no sandbox is available the run stops with
 `lab.SandboxUnavailable`. Real runs read keys from the environment; see `.env.example`.
 
@@ -30,7 +34,7 @@ mock runs and tests that run studies; if no sandbox is available the run stops w
 
 | file | job |
 |---|---|
-| `events.py` | append one JSON line per action to `events.jsonl` (schema in `events.md`) |
+| `events.py` | append one JSON line per action to `events.jsonl` ([schema](events.md)) |
 | `llm.py` | JSON chat, embeddings, disk cache, token cap, prompt log, mock mode |
 | `agents.yaml`, `agents.py` | agent definitions and the six one-call LLM methods |
 | `memory.py` | private stores, shared store (control arm), past.dev backend, `share()` |
@@ -52,7 +56,11 @@ mock runs and tests that run studies; if no sandbox is available the run stops w
 | shared_memory | boredom | one store for all | no |
 | no_exchange | boredom | private | no |
 
-## Notes for whoever wires in real services
+The no_exchange arm disables item exchange, not conversations. All arms select from
+the same roster and policy configuration; the single arm always uses one agent.
+See the [datasets guide](data/README.md) for private instruments and committee fixtures.
+
+## Meter and implementation notes
 
 - Every meter weight and threshold lives in `../boredom_meter/profiles/ignobel.json` under
   `agent_meter` (none in code or `config.yaml`). B = weighted self-repetition (vs. the round-0
@@ -64,10 +72,12 @@ mock runs and tests that run studies; if no sandbox is available the run stops w
   The meter is private: never in any prompt, never shared, and the committee is not consulted.
   Tune the profile after a small real run.
 - `python meter_adapter.py runs/full-s0/events.jsonl status|gate` runs the shared meter on a run.
-- When an odd number of agents snap, the one left over talks to the farthest non-snapping agent.
+- When an odd number of agents snap, the one left over talks to the farthest non-snapper
+  if one exists. Pairing uses distance between memory centroids.
 - `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call is marked TODO
   until checked against the Modal docs. `memory.PastDevMemory` follows the request shapes in the
   team's existing past.dev client and is also marked TODO pending the docs.
 - `data/winners.csv` and `data/controls.csv` hold placeholders; replace them with real abstracts.
-- Mock mode never writes to `data/seed_cache/`; real Exa results are cached there and committed so
-  every arm starts from the same libraries.
+- Mock mode never writes to `data/seed_cache/`. Real Exa results are cached there (or under
+  EXA_CACHE_DIR); reuse a chosen cache snapshot to compare arms. The search client writes
+  cache files but does not commit them.

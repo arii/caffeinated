@@ -3,16 +3,16 @@
 
 import argparse
 import csv
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -20,11 +20,10 @@ from urllib.request import Request, urlopen
 from boredom import commit_message, source_trailers
 from research import read_log
 
-
 DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
-RESULT_COLUMNS = {"commit", "val_bpb", "memory_gb", "status", "description"}
+RESULT_COLUMNS = {"commit", "loss", "status", "description"}
 MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
 _ENSURED_AUDIENCES = set()
 
@@ -51,10 +50,17 @@ def commit_timestamp(commit, repo):
         return utc_now()
 
 
-def commit_train_diff(commit, repo):
+def commit_candidate_diff(commit, repo):
     try:
         result = subprocess.run(
-            ["git", "show", "--format=", commit, "--", "train.py"],
+            [
+                "git",
+                "show",
+                "--format=",
+                commit,
+                "--",
+                os.environ.get("AUTORESEARCH_TARGET", "candidate.py"),
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -155,7 +161,11 @@ def arm_run_scope(arm=None, run_id=None):
     run_id = run_id or os.environ.get("AUTORESEARCH_RUN_ID")
     if not run_id:
         raise ValueError("arm-scoped pastdev memory requires --run-id or AUTORESEARCH_RUN_ID")
-    return {"arm": str(arm).upper(), "run_id": run_id}
+    scope = {"arm": str(arm).upper(), "run_id": run_id}
+    task = os.environ.get("AUTORESEARCH_TASK")
+    if task:
+        scope["task"] = task
+    return scope
 
 
 def append_jsonl(path, record):
@@ -198,8 +208,9 @@ def append_mirror(mirror, payload, source_id):
     append_jsonl(mirror, record)
 
 
-def append_write_log(log, memory_id, mem_type, author, backend, latency_ms,
-                     completed_ms, audience=None):
+def append_write_log(
+    log, memory_id, mem_type, author, backend, latency_ms, completed_ms, audience=None
+):
     record = {
         "type": "write",
         "ts": utc_now(),
@@ -238,8 +249,7 @@ def run_data_point(arm, row, repo, research_log):
     commit = str(row.get("commit", ""))
     description = str(row.get("description") or "")
     status = str(row.get("status") or "")
-    value = parse_float(row.get("val_bpb"))
-    memory_gb = row.get("memory_gb")
+    value = parse_float(row.get("loss"))
     regime = regime_for(description)
     timestamp = commit_timestamp(commit, repo)
     cited_ids, _ = source_trailers(commit_message(commit, repo))
@@ -248,8 +258,7 @@ def run_data_point(arm, row, repo, research_log):
     content_lines = [
         f"autoresearch {arm} run {commit}, {timestamp}",
         f"Idea: {description}",
-        f"Outcome: {status} (val_bpb {row.get('val_bpb')}, "
-        f"memory {memory_gb if memory_gb not in (None, '') else 'n/a'} GB)",
+        f"Outcome: {status} (loss {row.get('loss')})",
     ]
     if regime:
         content_lines.append(f"Regime: {regime}")
@@ -270,11 +279,11 @@ def run_data_point(arm, row, repo, research_log):
             )
         content_lines.append("Sources: " + "; ".join(source_descriptions))
 
-    diff = commit_train_diff(commit, repo)
+    diff = commit_candidate_diff(commit, repo)
     if diff is not None:
         if len(diff) > 3000:
             diff = diff[:3000] + "... [truncated]"
-        content_lines.extend(["train.py diff:", diff])
+        content_lines.extend(["candidate diff:", diff])
 
     return {
         "id": f"run:{arm}:{commit}",
@@ -284,7 +293,7 @@ def run_data_point(arm, row, repo, research_log):
         "metadata": {
             "arm": arm,
             "commit": commit,
-            "val_bpb": value,
+            "loss": value,
             "status": status,
             "regime": regime,
             "sources": cited_ids,
@@ -317,19 +326,14 @@ def api_request(method, path, payload=None, api_key=None):
     except HTTPError as error:
         raise RuntimeError(f"past.dev returned HTTP {error.code}") from error
     except URLError as error:
-        raise RuntimeError(
-            f"past.dev request failed: {safe_text(error.reason)}"
-        ) from error
+        raise RuntimeError(f"past.dev request failed: {safe_text(error.reason)}") from error
     try:
         result = json.loads(response_body)
     except json.JSONDecodeError as error:
-        raise RuntimeError(
-            f"past.dev returned invalid JSON: {safe_text(response_body)}"
-        ) from error
+        raise RuntimeError(f"past.dev returned invalid JSON: {safe_text(response_body)}") from error
     if not isinstance(result, dict):
         raise RuntimeError(
-            f"unexpected past.dev response for {method} {path}: "
-            f"{safe_text(response_body)}"
+            f"unexpected past.dev response for {method} {path}: {safe_text(response_body)}"
         )
     return result
 
@@ -347,8 +351,7 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
         raise RuntimeError(
-            "unexpected past.dev ingestion response: "
-            f"{safe_text(json.dumps(response))}"
+            f"unexpected past.dev ingestion response: {safe_text(json.dumps(response))}"
         )
     if not wait:
         return None
@@ -366,9 +369,7 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
         if remaining <= 0:
             raise RuntimeError(f"timed out waiting for ingestion {ingestion_id}")
         time.sleep(min(interval, remaining))
-        result = api_request(
-            "GET", f"/ingest/{quote(str(ingestion_id), safe='')}", api_key=api_key
-        )
+        result = api_request("GET", f"/ingest/{quote(str(ingestion_id), safe='')}", api_key=api_key)
         status = result.get("status")
         if status == "completed":
             return int((time.monotonic() - started_at) * 1000)
@@ -377,25 +378,39 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
             raise RuntimeError(f"ingestion failed: {safe_text(failure)}")
         if status != "processing":
             raise RuntimeError(
-                "unexpected past.dev ingestion status: "
-                f"{safe_text(json.dumps(result))}"
+                f"unexpected past.dev ingestion status: {safe_text(json.dumps(result))}"
             )
 
 
-def write(type, id, content, author, metadata, timestamp=None, wait=False,
-          *, backend=None, mirror=None, log=None, arm=None, run_id=None):
+def write(
+    type,
+    id,
+    content,
+    author,
+    metadata,
+    timestamp=None,
+    wait=False,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+):
     mem_type = type
     memory_id = id
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
     when = timestamp or utc_now()
-    payload = memory_payload(
-        mem_type, memory_id, content, author, metadata, when
-    )
+    payload = memory_payload(mem_type, memory_id, content, author, metadata, when)
     if backend == "pastdev":
-        scope = arm_run_scope(arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id"))
+        scope = arm_run_scope(
+            arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
+        )
         payload["metadata"].update(scope or {})
+        if scope and not memory_id.startswith("run:"):
+            payload["id"] = f"{memory_id}@{scope['run_id'][:12]}"
     ingestion_id = None
     completed_ms = None
     audience = None
@@ -419,9 +434,7 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
         started_at = time.monotonic()
         response = api_request("POST", "/ingest", payload, api_key=api_key)
         latency_ms = int((time.monotonic() - started_at) * 1000)
-        completed_ms = wait_for_ingestion(
-            response, wait, api_key=api_key, started_at=started_at
-        )
+        completed_ms = wait_for_ingestion(response, wait, api_key=api_key, started_at=started_at)
         source_id = response.get("sourceId") or memory_id
         ingestion_id = response.get("ingestionId")
         append_mirror(mirror_path, payload, source_id)
@@ -448,8 +461,7 @@ def remember(args):
     arm = args.arm or os.environ.get("AUTORESEARCH_ARM") or "boredom"
     row = {
         "commit": args.commit,
-        "val_bpb": args.val_bpb,
-        "memory_gb": args.memory_gb,
+        "loss": args.loss,
         "status": args.status,
         "description": args.description,
     }
@@ -546,14 +558,10 @@ def sync(args):
         api_key=api_key,
     )
     latency_ms = int((time.monotonic() - started_at) * 1000)
-    completed_ms = wait_for_ingestion(
-        response, args.wait, api_key=api_key, started_at=started_at
-    )
+    completed_ms = wait_for_ingestion(response, args.wait, api_key=api_key, started_at=started_at)
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
-        raise RuntimeError(
-            f"unexpected past.dev batch response: {safe_text(json.dumps(response))}"
-        )
+        raise RuntimeError(f"unexpected past.dev batch response: {safe_text(json.dumps(response))}")
     response_items = response.get("items") or []
     ordinals = [
         response_item.get("ordinal")
@@ -612,9 +620,7 @@ def read_mirror(mirror):
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError as error:
-                raise ValueError(
-                    f"invalid JSON in {path}, line {line_number}"
-                ) from error
+                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
     return records
 
 
@@ -685,8 +691,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
     ]
     documents = [word_tokens(record.get("content")) for record in records]
     document_frequency = {
-        word: sum(word in document for document in documents)
-        for word in query_words
+        word: sum(word in document for document in documents) for word in query_words
     }
     inverse_frequency = {
         word: math.log((len(records) + 1) / (frequency + 1)) + 1
@@ -694,11 +699,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
     }
     scored = []
     for index, (record, document) in enumerate(zip(records, documents)):
-        score = sum(
-            inverse_frequency[word]
-            for word in query_words
-            if word in document
-        )
+        score = sum(inverse_frequency[word] for word in query_words if word in document)
         if score <= 0:
             continue
         metadata = record.get("metadata") or {}
@@ -716,8 +717,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
                         {
                             "sourceId": source_id,
                             "label": record.get("label", ""),
-                            "author": record.get("author")
-                            or metadata.get("author"),
+                            "author": record.get("author") or metadata.get("author"),
                             "type": metadata.get("type") or record.get("type"),
                         }
                     ],
@@ -736,8 +736,7 @@ def normalize_pastdev_results(response, mirror):
     raw_results = response.get("results")
     if not isinstance(raw_results, list):
         raise RuntimeError(
-            "unexpected past.dev recall response: "
-            f"{safe_text(json.dumps(response))}"
+            f"unexpected past.dev recall response: {safe_text(json.dumps(response))}"
         )
     mirror_index = mirror_source_index(mirror)
     results = []
@@ -746,14 +745,15 @@ def normalize_pastdev_results(response, mirror):
         sources = []
         for source in result.get("sources") or []:
             author, mem_type = source_author_type(source, mirror_index)
-            sources.append(
-                {
-                    "sourceId": source.get("sourceId", ""),
-                    "label": source.get("label", ""),
-                    "author": author,
-                    "type": mem_type,
-                }
-            )
+            normalized = {
+                "sourceId": source.get("sourceId", ""),
+                "label": source.get("label", ""),
+                "author": author,
+                "type": mem_type,
+            }
+            if source.get("scope"):
+                normalized["scope"] = source["scope"]
+            sources.append(normalized)
         results.append(
             {
                 "rank": result.get("rank", index),
@@ -766,16 +766,43 @@ def normalize_pastdev_results(response, mirror):
     return results
 
 
-def scoped_pastdev_response(response, mirror, scope):
+CROSS_RUN_TYPES = {"lesson", "verdict"}
+CROSS_RUN_FAILED_STATUSES = {"discard", "crash", "reject", "duplicate"}
+
+
+def scope_decision(metadata, scope):
+    """Return "same_run", "cross_run", or the reason a memory is out of scope.
+
+    Same-arm memories of the current run are always visible. Lessons, verdicts
+    and failed results from earlier runs of the same task and arm are reused;
+    claims, leads, assignments and kept results stay limited to their run.
+    """
+    metadata = metadata if isinstance(metadata, dict) else {}
+    if metadata.get("arm") is None or not metadata.get("run_id"):
+        return "unscoped"
+    if str(metadata["arm"]).upper() != scope["arm"]:
+        return "foreign_arm"
+    task = scope.get("task")
+    if task and metadata.get("task") not in (None, task):
+        return "foreign_task"
+    if metadata["run_id"] == scope["run_id"]:
+        return "same_run"
+    if not task or metadata.get("task") != task:
+        return "untagged_task"
+    mem_type = metadata.get("type")
+    if mem_type in CROSS_RUN_TYPES or (
+        mem_type == "result" and metadata.get("status") in CROSS_RUN_FAILED_STATUSES
+    ):
+        return "cross_run"
+    return "run_only"
+
+
+def scoped_pastdev_response(response, mirror, scope, stats=None):
     mirror_index = mirror_source_index(mirror)
-
-    def matches(metadata):
-        metadata = metadata if isinstance(metadata, dict) else {}
-        return (
-            ("arm" not in metadata or str(metadata["arm"]).upper() == scope["arm"])
-            and ("run_id" not in metadata or metadata["run_id"] == scope["run_id"])
-        )
-
+    stats = {} if stats is None else stats
+    stats.setdefault("same_run_kept", 0)
+    stats.setdefault("cross_run_kept", 0)
+    stats.setdefault("dropped_reasons", {})
     results = []
     raw_results = response.get("results")
     if not isinstance(raw_results, list):
@@ -783,16 +810,49 @@ def scoped_pastdev_response(response, mirror, scope):
     for result in raw_results:
         sources = []
         for source in result.get("sources") or []:
-            record = mirror_index.get(str(source.get("sourceId") or ""))
-            if record is not None and all(matches(item.get("metadata")) for item in (record, source, result)):
-                sources.append(source)
+            record = mirror_index.get(str(source.get("sourceId") or "")) or {}
+            metadata = {}
+            for item in (result, source, record):
+                if isinstance(item.get("metadata"), dict):
+                    metadata.update(item["metadata"])
+            decision = scope_decision(metadata, scope)
+            if decision in ("same_run", "cross_run"):
+                stats[f"{decision}_kept"] += 1
+                sources.append({**source, "scope": decision})
+            else:
+                reasons = stats["dropped_reasons"]
+                reasons[decision] = reasons.get(decision, 0) + 1
         if sources:
             results.append({**result, "sources": sources})
     return {**response, "results": results}, len(raw_results) - len(results)
 
 
-def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-            mirror=None, log=None, arm=None, run_id=None):
+def merge_same_run_mirror(results, local_results, limit):
+    """Interleave same-run mirror hits so notes not yet indexed are visible."""
+    local_first = (limit + 1) // 2
+    merged, seen = [], set()
+    for result in [*local_results[:local_first], *results, *local_results[local_first:]]:
+        ids = {source.get("sourceId") for source in result.get("sources") or []}
+        if ids & seen:
+            continue
+        seen.update(ids)
+        merged.append(result)
+    return [{**result, "rank": rank} for rank, result in enumerate(merged[:limit], 1)]
+
+
+def _recall(
+    query,
+    agent,
+    limit=8,
+    query_timestamp=None,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+    log_agent=None,
+):
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
@@ -803,13 +863,15 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     audience = None
     recall_identity = agent
     dropped_count = 0
+    dropped_source_ids = []
+    dropped_tags = []
+    scope_stats = {}
+    local_same_run = 0
     if backend == "none":
         results = []
         used_tokens = 0
     elif backend == "local":
-        results, used_tokens = local_recall_results(
-            query, limit, cutoff, mirror_path
-        )
+        results, used_tokens = local_recall_results(query, limit, cutoff, mirror_path)
     else:
         scope = arm_run_scope(arm, run_id)
         api_key = api_key_for_arm(arm)
@@ -825,7 +887,29 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             api_key=api_key,
         )
         if scope:
-            response, dropped_count = scoped_pastdev_response(response, mirror_path, scope)
+            raw_sources = [
+                source
+                for result in response.get("results", [])
+                for source in result.get("sources", [])
+            ]
+            response, dropped_count = scoped_pastdev_response(
+                response, mirror_path, scope, scope_stats
+            )
+            retained_ids = {
+                source.get("sourceId")
+                for result in response.get("results", [])
+                for source in result.get("sources", [])
+                if source.get("sourceId")
+            }
+            for source in raw_sources:
+                source_id = source.get("sourceId")
+                if source_id and source_id not in retained_ids:
+                    dropped_source_ids.append(str(source_id))
+                    tags = source.get("tags") or []
+                    for tag in tags if isinstance(tags, list) else [tags]:
+                        tag_id = tag.get("id") or tag.get("tagId") if isinstance(tag, dict) else tag
+                        if isinstance(tag_id, str):
+                            dropped_tags.append(tag_id)
         raw_response = response
         results = normalize_pastdev_results(response, mirror_path)
         if cutoff is not None:
@@ -836,6 +920,41 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             ]
         used_tokens = response.get("usedEvidenceTokens", 0)
         pending = pending_count(response.get("pending"))
+        if scope:
+            local_results, _ = local_recall_results(
+                query, len(read_mirror(mirror_path)) or limit, cutoff, mirror_path
+            )
+            local_index = mirror_source_index(mirror_path)
+            local_results = [
+                result
+                for result in local_results
+                if all(
+                    scope_decision(
+                        (local_index.get(str(source.get("sourceId"))) or {}).get("metadata"),
+                        scope,
+                    )
+                    == "same_run"
+                    for source in result.get("sources") or []
+                )
+            ][:limit]
+            for result in local_results:
+                for source in result.get("sources") or []:
+                    source["scope"] = "same_run"
+            remote_ids = {
+                source.get("sourceId")
+                for result in results
+                for source in result.get("sources") or []
+            }
+            results = merge_same_run_mirror(results, local_results, limit)
+            local_only = [
+                result
+                for result in results
+                if not {source.get("sourceId") for source in result.get("sources") or []}
+                & remote_ids
+            ]
+            local_same_run = len(local_only)
+            if local_only and isinstance(raw_response, dict):
+                raw_response = {**raw_response, "localSameRun": local_only}
 
     latency_ms = int((time.monotonic() - started_at) * 1000)
     source_ids = []
@@ -851,7 +970,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     log_record = {
         "type": "recall",
         "ts": utc_now(),
-        "agent": agent,
+        "agent": log_agent or agent,
         "backend": backend,
         "query": query,
         "latency_ms": latency_ms,
@@ -861,7 +980,18 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         "authors": authors,
         "pending": pending,
         "dropped_count": dropped_count,
+        "dropped_source_ids": list(dict.fromkeys(dropped_source_ids))[:20],
+        "dropped_tags": list(dict.fromkeys(dropped_tags))[:20],
     }
+    if scope_stats:
+        log_record.update(
+            {
+                "same_run_kept": scope_stats["same_run_kept"],
+                "cross_run_kept": scope_stats["cross_run_kept"],
+                "dropped_reasons": scope_stats["dropped_reasons"],
+                "local_same_run": local_same_run,
+            }
+        )
     if audience:
         log_record["audience"] = audience
     append_recall_log(log_path, log_record)
@@ -876,8 +1006,19 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     return recall_result
 
 
-def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-           mirror=None, log=None, arm=None, run_id=None):
+def recall(
+    query,
+    agent,
+    limit=8,
+    query_timestamp=None,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+    log_agent=None,
+):
     result = _recall(
         query,
         agent,
@@ -888,6 +1029,7 @@ def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         log=log,
         arm=arm,
         run_id=run_id,
+        log_agent=log_agent,
     )
     result.pop("_raw_response", None)
     return result
@@ -926,10 +1068,7 @@ def recall_command(args):
             content = str(item.get("content") or "")[:300]
             print(f"#{item['rank']} {occurred_at} [{item['kind']}] {content}")
             for source in item.get("sources") or []:
-                print(
-                    f"   from: {source.get('sourceId', '')} — "
-                    f"{source.get('label', '')}"
-                )
+                print(f"   from: {source.get('sourceId', '')} — {source.get('label', '')}")
     return 0
 
 
@@ -983,10 +1122,9 @@ def build_parser():
 
     remember_parser = subparsers.add_parser("remember")
     remember_parser.add_argument("--commit", required=True)
-    remember_parser.add_argument("--val-bpb", required=True)
+    remember_parser.add_argument("--loss", required=True)
     remember_parser.add_argument("--status", required=True)
     remember_parser.add_argument("--description", required=True)
-    remember_parser.add_argument("--memory-gb", type=float)
     remember_parser.add_argument("--arm")
     remember_parser.add_argument("--repo", default=".")
     remember_parser.add_argument("--research-log", default="research_log.jsonl")

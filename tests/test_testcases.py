@@ -1,24 +1,37 @@
 import csv
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import Mock, patch
 
-from boredom import descriptor_meter as meter
 import swarm
+from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
-DOCKER_AVAILABLE = sandbox.docker_available()
+DOCKER_DAEMON_AVAILABLE = sandbox.docker_available()
+DOCKER_IMAGE_AVAILABLE = (
+    DOCKER_DAEMON_AVAILABLE
+    and subprocess.run(
+        ["docker", "image", "inspect", "caffeinated-testcases:py311-v1"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode
+    == 0
+)
+DOCKER_AVAILABLE = DOCKER_IMAGE_AVAILABLE
+DOCKER_SKIP_REASON = "Docker daemon and caffeinated-testcases:py311-v1 image required"
 
 
 def evaluate(task):
@@ -57,9 +70,42 @@ class EvaluatorTests(unittest.TestCase):
     def test_profiles_are_valid(self):
         for profile in TESTCASES.glob("*/boredom_profile.json"):
             with self.subTest(profile=profile.parent.name):
-                meter.load_profile(profile)
+                loaded = meter.load_profile(profile)
+                task = json.loads((profile.parent / "task.json").read_text(encoding="utf-8"))
+                for edit in task.get("fake_edits", []):
+                    meter.validate_descriptor(loaded, edit["descriptor"])
+                for target in task.get("fake_targets", []):
+                    meter.validate_descriptor(loaded, {"mechanism": target[1], "method": target[2]})
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_fake_edit_changes_each_task_score(self):
+        for task_name in ("hadamard19", "bixbench_mini", "playworld_mini"):
+            task_dir = TESTCASES / task_name
+            config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+            source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+            if task_name == "hadamard19":
+                candidates = [
+                    source.replace("CONSTRUCTION = 0", "CONSTRUCTION = 1", 1),
+                    source.replace("OBJECTIVE = 0", "OBJECTIVE = 1", 1),
+                ]
+            else:
+                index = 1 if task_name == "bixbench_mini" else 0
+                edit = config["fake_edits"][index]
+                candidates = [source.replace(edit["old"], edit["new"], 1)]
+            baseline = sandbox.evaluate_task(task_dir, source)
+            self.assertEqual(baseline["status"], "ok")
+            candidate_results = [
+                sandbox.evaluate_task(task_dir, candidate) for candidate in candidates
+            ]
+            self.assertTrue(
+                any(
+                    result["status"] == "ok" and result["loss"] != baseline["loss"]
+                    for result in candidate_results
+                ),
+                task_name,
+            )
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_baseline_score_is_unchanged(self):
         result = evaluate("hadamard19")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -68,7 +114,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(values["beats_reference"], "false")
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_baseline_score_is_unchanged(self):
         result = evaluate("bixbench_mini")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -77,7 +123,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertAlmostEqual(float(values["loss"]), 1 - 2 / 17, places=5)
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_playworld_baseline_score_is_unchanged(self):
         result = evaluate("playworld_mini")
         values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
@@ -85,31 +131,27 @@ class EvaluatorTests(unittest.TestCase):
         self.assertAlmostEqual(float(values["score"]), 0.149, places=3)
         self.assertEqual(values["network_isolated"], "true")
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_non_pm1_matrix(self):
-        source = (
-            "import json\n"
-            'print(json.dumps({"matrix": [[2] * 19] * 19}))\n'
-        )
+        source = 'import json\nprint(json.dumps({"matrix": [[2] * 19] * 19}))\n'
         result = task_evaluation("hadamard19", source)
         self.assertEqual(result["status"], "crash")
         self.assertEqual(result["reason"], "invalid_output")
         self.assertEqual(result["score"], 0.0)
         self.assertIn("error:", result["stderr"])
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_valid_output_followed_by_crash(self):
-        source = (
-            (TESTCASES / "hadamard19" / "construct.py").read_text(encoding="utf-8")
-            + "\nraise SystemExit(3)\n"
-        )
+        source = (TESTCASES / "hadamard19" / "construct.py").read_text(
+            encoding="utf-8"
+        ) + "\nraise SystemExit(3)\n"
         result = task_evaluation("hadamard19", source)
         self.assertEqual(result["status"], "crash")
         self.assertEqual(result["reason"], "candidate_failed")
         self.assertIn("status 3", result["stderr"])
         self.assertEqual(result["score"], 0.0)
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_candidate_cannot_read_answer_key_or_host_keys(self):
         task_dir = TESTCASES / "bixbench_mini"
         sandbox.prepare_task(
@@ -172,7 +214,7 @@ class EvaluatorTests(unittest.TestCase):
         )
         self.assertTrue(answer_path.exists())
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_playworld_candidate_cannot_import_grader_or_reach_network(self):
         source = """
 import json
@@ -219,7 +261,7 @@ def predict(context_frames, context_actions, future_actions):
         self.assertEqual(probe["host_paths"], [False])
         self.assertFalse(probe["hidden_future_frames"])
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_busy_candidate_times_out_and_container_is_removed(self):
         result = task_evaluation("hadamard19", "while True:\n    pass\n", timeout_s=1)
         self.assertEqual(result["status"], "crash")
@@ -259,12 +301,8 @@ class SwarmTaskModeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
             (task_dir / "data").mkdir()
-            (task_dir / "questions.json").write_text(
-                '{"q1": "mean of a?"}', encoding="utf-8"
-            )
-            (task_dir / "data" / "t.csv").write_text(
-                "a,b\n" + "1,2\n" * 50, encoding="utf-8"
-            )
+            (task_dir / "questions.json").write_text('{"q1": "mean of a?"}', encoding="utf-8")
+            (task_dir / "data" / "t.csv").write_text("a,b\n" + "1,2\n" * 50, encoding="utf-8")
             context = swarm.build_task_context(
                 task_dir, ["questions.json", "data/t.csv", "missing.csv"]
             )
@@ -274,17 +312,16 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertNotIn("missing.csv", context)
 
     def test_spreadsheet_preview_survives_missing_excel_engine(self):
-        pandas = __import__("pandas")
+        pandas = types.ModuleType("pandas")
+        pandas.read_excel = Mock(side_effect=ImportError("Missing openpyxl"))
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "data.xlsx"
             path.write_bytes(b"")
-            with patch.object(
-                pandas, "read_excel", side_effect=ImportError("Missing openpyxl")
-            ):
+            with patch.dict(sys.modules, {"pandas": pandas}):
                 preview = swarm.preview_file(path)
             self.assertIn("preview unavailable", preview)
 
-    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_llm_swarm_scores_candidates_with_task_evaluator(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory) / "repo"
@@ -315,8 +352,7 @@ class SwarmTaskModeTests(unittest.TestCase):
                 key: value
                 for key, value in os.environ.items()
                 if not any(
-                    marker in key.upper()
-                    for marker in ("KEY", "TOKEN", "SECRET", "PASSWORD")
+                    marker in key.upper() for marker in ("KEY", "TOKEN", "SECRET", "PASSWORD")
                 )
             }
             env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
@@ -344,14 +380,12 @@ class SwarmTaskModeTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-            with (out_dir / "results.tsv").open(
-                newline="", encoding="utf-8"
-            ) as stream:
+            with (out_dir / "results.tsv").open(newline="", encoding="utf-8") as stream:
                 rows = list(csv.DictReader(stream, delimiter="\t"))
             self.assertEqual(rows[0]["description"], "baseline")
             self.assertEqual(len(rows), 5)
             for row in rows:
-                self.assertLess(float(row["val_bpb"]), 0.2)
+                self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
 
 

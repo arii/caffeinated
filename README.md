@@ -2,14 +2,15 @@
 
 A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
 
-Backend team: start with the [integration guide](docs/backend-integration.md) for the bundle format, runnable payload example, event mapping, and `LAB_RECORDINGS_ZIP` setup.
+Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
 - **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
-- **Autoresearch runner:** [swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md).
+- **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
+- **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run
 
@@ -22,6 +23,21 @@ npm run dev
 ```
 
 Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so no credentials or separate archive import are needed. Vite runs on 5175 and the local recording API on 8765. Separate terminals can use `npm run dev:frontend` and `npm run dev:backend`.
+
+### Watch a swarm run
+
+Run research in a separate clone because `swarm.py` creates Git branches/worktrees:
+
+```sh
+git clone /path/to/caffeinated /tmp/swarm-research
+cd /tmp/swarm-research
+docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
+```
+
+For live research, run `make setup && . .venv/bin/activate` (or `pip install -r requirements.txt` in any Python 3.10+ venv; no PyTorch is needed), put `TINKER_API_KEY`, `EXA_API_KEY` and `PAST_API_KEY` in `.env` (see `.env.example`), then `python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker`. Missing keys or a missing sandbox image are reported before any worktree is created. Details: [quickstart](docs/autoresearch-backend.md#quickstart).
+
+Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. The picker refreshes every four seconds, including while viewing finished recordings. Live recordings also reload when changed, preserving the playhead. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
 
@@ -49,7 +65,7 @@ The source bundle is `data/replays/swarm-viewer-sample-runs.zip`. It contains th
 
 Responses support gzip and ETags. The browser loads a recording once and handles play, pause, seek, camera mode, and pace locally. No server call is needed for each playback tick. Default run creation is disabled on this replay branch.
 
-The normalized source contract is documented in [the swarm viewer API proposal](docs/swarm-viewer-api.md). Our two recording endpoints are a small replay adapter over that format; they do not claim to implement every proposed `/api/v1` endpoint. See [the current integration design](docs/lab-backend-design.md) for the handoff boundary.
+The normalized source contract is documented in [the swarm-viewer/v1 contract](docs/swarm-viewer-api.md). Our two recording endpoints are a small replay adapter over that format; they do not claim to implement every proposed `/api/v1` endpoint. See [the current integration design](docs/lab-backend-design.md) for the handoff boundary.
 
 The timeline interaction follows the user’s [History in 3D](https://github.com/mashathepotato/history-in-3D) project: continuous scrubbing, play/pause, and a scene tied to a selected historical moment. Here, the timeline is research-event ticks rather than historical years.
 
@@ -63,6 +79,6 @@ npm run test:backend
 npm run build
 ```
 
-Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The retained upstream runner tests have separate training/test dependencies; see `program_swarm.md` and `testcases/README.md` when working on those components.
+Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The research swarm has its own checks (`make setup && make check`); see [the backend guide](docs/autoresearch-backend.md) and `testcases/README.md`.
 
 The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.
