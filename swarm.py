@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 import tarfile
+import urllib.parse
 import uuid
 from contextlib import ExitStack, contextmanager, redirect_stdout, suppress
 from datetime import datetime, timezone
@@ -591,6 +592,22 @@ def hard_rules(profile, events, agent, role, status, deterministic):
     stuck = meter.stuck_cells(profile, events)
     if stuck:
         rules.append("Avoid stuck cells: " + ", ".join(sorted(stuck)) + ".")
+    peer = next(
+        (
+            event
+            for event in reversed(attempts)
+            if event.get("agent") not in (agent, None) and event.get("description")
+        ),
+        None,
+    )
+    if regime not in ("EXPLOIT", "CONVERGED") and role != "exploit" and peer:
+        directive = profile.get("peer_directive")
+        if directive:
+            rules.append(
+                directive.replace("{peer}", str(peer["agent"])).replace(
+                    "{idea}", str(peer["description"])
+                )
+            )
     if deterministic:
         rules.append(
             "Do not resubmit code identical to an already-scored version; the edit must change "
@@ -1413,6 +1430,19 @@ def descriptor_trailer(descriptor):
     return f"{mechanism}/{method}" + (f" value={float(value):g}" if value is not None else "")
 
 
+def idea_trailer(descriptor):
+    extra = {
+        "idea": descriptor.get("idea"),
+        "params": {
+            name: value
+            for name, value in (descriptor.get("params") or {}).items()
+            if name != "value"
+        },
+    }
+    extra = {key: value for key, value in extra.items() if value}
+    return [f"Descriptor-Idea: {json.dumps(extra, sort_keys=True)}"] if extra else []
+
+
 def commit_candidate(
     *,
     repo,
@@ -1441,6 +1471,7 @@ def commit_candidate(
         f"Agent: {agent}",
         f"Round: {round_num}",
         f"Descriptor: {descriptor_trailer(proposal['descriptor'])}",
+        *idea_trailer(proposal["descriptor"]),
         f"Prior-art: {prior_art}",
         f"Source: {','.join(source_ids) if source_ids else 'none'}",
         f"Lead: {lead_id or 'none'}",
@@ -1518,8 +1549,56 @@ def gate_candidate(
     return result == 0, record
 
 
+def dig(data, path):
+    for key in path.split("."):
+        if not isinstance(data, dict):
+            return None
+        data = data.get(key)
+    return data
+
+
+def normalize_url(url):
+    """Lowercase the case-insensitive scheme and host of a URL; keep its path case."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return url
+    return urllib.parse.urlunsplit(
+        parts._replace(scheme=parts.scheme.lower(), netloc=parts.netloc.lower())
+    )
+
+
+def describe_idea(profile, proposal, source_text):
+    """Add idea tags and confidence params from a JSON editable file, per profile `idea_fields`."""
+    spec = profile.get("idea_fields")
+    if not spec:
+        return
+    try:
+        data = json.loads(apply_edits_to_text(source_text, proposal["edits"]))
+    except (EditError, ValueError):
+        return
+    tags = []
+    for field in spec.get("tags", []):
+        value = dig(data, field["path"])
+        if not isinstance(value, str) or not value.strip():
+            continue
+        if field.get("words"):
+            words = re.findall(r"[a-z][a-z0-9]{2,}", value.casefold())
+            tags.extend(f"{field['tag']}:{word}" for word in words)
+        else:
+            tags.append(f"{field['tag']}:{normalize_url(value.strip())}")
+    descriptor = proposal["descriptor"]
+    if tags:
+        descriptor["idea"] = sorted(set(tags))
+    for name, path in (spec.get("params") or {}).items():
+        value = dig(data, path)
+        if isinstance(value, (int, float)) and math.isfinite(value):
+            descriptor.setdefault("params", {})[name] = abs(float(value))
+
+
 def local_candidate_precheck(*, repo, out_dir, profile, role, proposal, cited_sources, source_text):
     out_dir = Path(out_dir)
+    describe_idea(profile, proposal, source_text)
     events = meter.read_ledger(out_dir / "ledger.jsonl")
     reasons = []
     if not boredom.is_disabled():

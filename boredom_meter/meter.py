@@ -110,6 +110,11 @@ def validate_descriptor(profile, descriptor):
                 if value not in node:
                     raise ValueError(f"{level}='{value}' not in profile vocab {node}")
                 node = None
+    idea = descriptor.get("idea")
+    if idea is not None and (
+        not isinstance(idea, list) or not all(isinstance(tag, str) for tag in idea)
+    ):
+        raise ValueError("descriptor idea must be a list of tag strings")
     for name, value in (descriptor.get("params") or {}).items():
         spec = profile.get("params", {}).get(name)
         if spec is None:
@@ -142,16 +147,31 @@ def param_distance(profile, a, b):
     return total / len(names)
 
 
-def distance(profile, a, b):
-    """Hierarchical descriptor distance in [0, 1]."""
+def level_distance(profile, a, b):
     weights = profile["level_weights"]
     for level, weight in zip(profile["levels"], weights):
         if a[level] != b[level]:
             return weight
     residual = profile.get("params_weight", weights[-1] / 2)
-    return round(
-        residual * param_distance(profile, a.get("params") or {}, b.get("params") or {}), 9
-    )
+    return residual * param_distance(profile, a.get("params") or {}, b.get("params") or {})
+
+
+def distance(profile, a, b, ideas=True):
+    """Hierarchical descriptor distance in [0, 1], blended with idea-tag Jaccard distance
+    when the profile sets `idea_weight` and both descriptors carry `idea` tags."""
+    d = level_distance(profile, a, b)
+    w = profile.get("idea_weight", 0.0)
+    if ideas and w and a.get("idea") and b.get("idea"):
+        tags_a, tags_b = set(a["idea"]), set(b["idea"])
+        d = (1 - w) * d + w * (1 - len(tags_a & tags_b) / len(tags_a | tags_b))
+    return round(d, 9)
+
+
+def safe_pick(profile, d):
+    """A descriptor whose declared confidence param exceeds the profile's `safe_param` bound."""
+    spec = profile.get("safe_param")
+    value = (d.get("params") or {}).get(spec["name"]) if spec else None
+    return value is not None and value > spec["above"]
 
 
 def sparseness(profile, d, archive):
@@ -284,6 +304,7 @@ def fold(profile, events, agent=None):
             trivial_hist.append(
                 nearest < profile["trivial_distance"]
                 or e.get("status") in profile.get("trivial_statuses", [])
+                or safe_pick(profile, d)
             )
             fail_hist.append(failed)
             cell_hist.append(d[head])
@@ -440,7 +461,10 @@ def gate(profile, events, descriptor, agent=None, sources=None, role=None):
             (event for event in attempts if event.get("seq") == st["best_seq"]),
             None,
         )
-        if best_event is None or distance(profile, descriptor, best_event["descriptor"]) != 0:
+        if (
+            best_event is None
+            or distance(profile, descriptor, best_event["descriptor"], ideas=False) != 0
+        ):
             reasons.append("converged: confirmation runs only")
         if g.get("require_sources") and not sources:
             reasons.append("ungrounded: cite at least one research source id")

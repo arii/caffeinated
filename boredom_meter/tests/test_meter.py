@@ -657,5 +657,52 @@ class ResearchFindingsTest(unittest.TestCase):
         )
 
 
+class IdeaNoveltyTest(unittest.TestCase):
+    def setUp(self):
+        self.profile = meter.load_profile(ROOT.parent / "testcases/ignobel/boredom_profile.json")
+
+    def test_same_variables_under_a_new_field_label_are_near_duplicates(self):
+        old = {
+            "mechanism": "food_science",
+            "method": "new_population",
+            "idea": ["data:a", "var:price"],
+        }
+        relabelled = {**old, "mechanism": "acoustics"}
+        fresh = {**old, "idea": ["data:b", "var:shell"]}
+        gate_min = self.profile["gate"]["snap_min_distance"]
+        self.assertLess(meter.distance(self.profile, old, relabelled), gate_min)
+        self.assertGreater(meter.distance(self.profile, old, fresh), gate_min)
+        self.assertEqual(meter.distance(self.profile, old, relabelled, ideas=False), 1.0)
+
+    def test_descriptors_without_idea_tags_keep_the_level_distance(self):
+        a = {"mechanism": "food_science", "method": "new_population"}
+        self.assertEqual(meter.distance(self.profile, a, {**a, "mechanism": "acoustics"}), 1.0)
+
+    def test_confident_safe_picks_count_as_trivial(self):
+        events = [
+            {
+                "seq": n,
+                "agent": "worker-1",
+                "status": "keep",
+                "score": 0.0,
+                "descriptor": {
+                    "mechanism": field,
+                    "method": "new_population",
+                    "params": {"confidence": confidence},
+                },
+            }
+            for n, (field, confidence) in enumerate(
+                [("food_science", 0.7), ("acoustics", 0.8), ("ecology", 0.2)], 1
+            )
+        ]
+        self.assertAlmostEqual(meter.status(self.profile, events)["trivial_rate"], 2 / 3, places=3)
+
+    def test_idea_tags_must_be_strings(self):
+        with self.assertRaises(ValueError):
+            meter.validate_descriptor(
+                self.profile, {"mechanism": "ecology", "method": "new_population", "idea": [1]}
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

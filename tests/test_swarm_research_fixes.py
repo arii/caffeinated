@@ -1949,3 +1949,73 @@ class AdversarialReviewRegressionTests(unittest.TestCase):
         self.assertEqual(candidate["status"], "reject")
         self.assertFalse(candidate["llm_error"])
         self.assertTrue(candidate["reasons"][0].startswith("worker_call_budget:"))
+
+
+class IgnobelIdeaDescriptorTest(unittest.TestCase):
+    def test_malformed_dataset_url_keeps_its_text(self):
+        self.assertEqual(swarm.normalize_url("https://[x.org/d.csv"), "https://[x.org/d.csv")
+
+    def setUp(self):
+        self.profile = meter.load_profile(ROOT / "testcases/ignobel/boredom_profile.json")
+
+    def test_prereg_variables_dataset_and_confidence_join_the_descriptor(self):
+        source = json.dumps({"predicted_rho": 0.1, "dataset": {"url": "", "x": "", "y": ""}})
+        new = json.dumps(
+            {
+                "predicted_rho": -0.62,
+                "dataset": {"url": "HTTPS://X.org/D.csv", "x": "Shell size", "y": "Price"},
+            }
+        )
+        proposal = {
+            "descriptor": {"mechanism": "ecology", "method": "new_population"},
+            "edits": [{"old": source, "new": new}],
+        }
+        swarm.describe_idea(self.profile, proposal, source)
+        self.assertEqual(
+            proposal["descriptor"]["idea"],
+            ["data:https://x.org/D.csv", "var:price", "var:shell", "var:size"],
+        )
+        self.assertEqual(proposal["descriptor"]["params"], {"confidence": 0.62})
+        meter.validate_descriptor(self.profile, proposal["descriptor"])
+        message = "\n".join(
+            [
+                "study",
+                "",
+                f"Descriptor: {swarm.descriptor_trailer(proposal['descriptor'])}",
+                *swarm.idea_trailer(proposal["descriptor"]),
+            ]
+        )
+        self.assertEqual(
+            boredom.descriptor_from_message(message, "", self.profile), proposal["descriptor"]
+        )
+
+    def test_unparseable_prereg_leaves_the_descriptor_alone(self):
+        proposal = {"descriptor": {"mechanism": "ecology", "method": "x"}, "edits": []}
+        swarm.describe_idea(self.profile, proposal, "not json")
+        self.assertEqual(proposal["descriptor"], {"mechanism": "ecology", "method": "x"})
+
+    def test_bored_divergent_workers_are_asked_to_build_on_a_peer(self):
+        events = [
+            {
+                "seq": 1,
+                "kind": "candidate",
+                "agent": "worker-2",
+                "status": "keep",
+                "score": 0.0,
+                "description": "[EXPLOIT] Hermit crabs {pick} bigger shells",
+                "descriptor": {"mechanism": "animal_behavior", "method": "new_population"},
+            }
+        ]
+        snap = swarm.hard_rules(
+            self.profile, events, "worker-1", "divergent", {"regime": "BOREDOM_SNAP"}, False
+        )
+        self.assertIn('worker-2 last tried "[EXPLOIT] Hermit crabs {pick} bigger shells"', snap)
+        for role, regime in (("exploit", "BOREDOM_SNAP"), ("divergent", "EXPLOIT")):
+            rules = swarm.hard_rules(
+                self.profile, events, "worker-1", role, {"regime": regime}, False
+            )
+            self.assertNotIn("Build on a colleague", rules)
+        own = swarm.hard_rules(
+            self.profile, events, "worker-2", "divergent", {"regime": "BOREDOM_SNAP"}, False
+        )
+        self.assertNotIn("Build on a colleague", own)
