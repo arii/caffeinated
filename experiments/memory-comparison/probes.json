@@ -1,0 +1,242 @@
+[
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r5-worker-1-a1",
+  "note": "Toggle all known lamps whenever the agent successfully moves onto a switch, keep -- The current simulator updates lamp states from context observations but leaves them frozen during future rollout. Switch cells are traversable and lamp-off/lamp-on values form a single global dynamic state, so applying the toggle on successful switch entry should correct systematic lamp mismatches without affecting episodes or steps that do not activate a switch.",
+  "query": "When the walker steps on a toggle, should every light flip?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r7-worker-3-a1",
+  "note": "Use an identical, feature-bearing consecutive-frame pair as a tie-breaker for bl -- When moved and stayed hypotheses have equal map disagreement, the current model always moves and can stitch observations at the wrong pose. An unchanged frame containing geometry is strong evidence of a blocked action, while requiring non-floor features avoids inferring walls from identical views in large empty areas. This conservative tie-break leaves all non-tied pose decisions and future simulation unchanged.",
+  "query": "How do I break a tie between staying put and moving using two matching frames?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r3-worker-3-a1@065dd413fd17",
+  "note": "Does a higher BMI come with a thicker triceps pinch among Pima women? -- This preserves the successful strong-monotonic-association design on an unused 200-row medical dataset with exact numeric headers. BMI and triceps skinfold thickness both reflect adiposity: greater overall body mass generally accompanies more subcutaneous fat, so the positive association should be substantial and stable across both hash halves. The everyday tape-measure-versus-pinch framing is amusing while testing a clinically meaningful body-composition relationship.",
+  "query": "Is body mass index linked with skinfold thickness in the diabetes cohort of Native American women?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r9-worker-2-a1",
+  "note": "Use Type III sums of squares for the two-way ANOVA interaction test instead of T -- Type III tests the Hemisphere-by-Sex interaction after adjustment for all other model terms, a structurally different ANOVA convention for factorial models. The edit is isolated to bix-19-q4 and preserves all validated descriptive, power, and regression answers.",
+  "query": "Should the interaction test use marginal, fully adjusted sums of squares instead of the default?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r1-worker-3-a1",
+  "note": "Increase deterministic random restarts from 4 to 64 while retaining the same see -- The incumbent already preserves the best result across restarts, so sampling 16 times as many starting matrices is a focused, non-regressing way to find a better single-flip basin without duplicating the proposed pair-flip or structured-block searches.",
+  "query": "Would many more seeded restarts help the search?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r10-worker-1-a1",
+  "note": "Add a shared neural blocker trained on public egocentric transitions that conser -- The symbolic model assumes every unknown target is traversable, so one unseen wall can corrupt both the current frame and all later poses. A small MLP learns action-conditioned blocking from temporal frame alignment with the target cell masked, forcing it to use surrounding geometry rather than memorize the visible target. It runs only for unknown future targets at high confidence; context reconstruction and all other rollout behavior remain unchanged.",
+  "query": "Could we learn an obstacle predictor from public first-person transitions?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r6-worker-3-a1",
+  "note": "Infer out-of-bounds boundaries from every observed 6 cell rather than only compl -- Partial rows and columns of 6 occur near map corners and when only part of the exterior is visible. The current model ignores these observations, rendering known exterior cells as floor and missing adjacent boundary walls. Using each 6 cell with its relative position is a conservative generalization of the existing bounds logic and preserves all map stitching and dynamics.",
+  "query": "Can world edges be detected from partially seen off-map cells?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r11-worker-4-a1",
+  "note": "Use model-specific complete cases for each clinical logistic regression instead  -- The current global dropna unnecessarily excludes observations from the age-only or BMI-only models when an unrelated predictor is missing. Fitting each model on its own complete cases matches standard regression missing-data handling and can change coefficients, p-values, predictions, and AIC while preserving the validated response encoding and all non-clinical answers.",
+  "query": "Should missing rows be dropped per model rather than globally in the clinical logit fits?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r9-worker-4-a1",
+  "note": "Add a support-gated tabular static-geometry model that infers unseen walls from  -- The symbolic map rollout is reliable for observed geometry, but every unobserved non-boundary cell becomes floor. A translation-invariant conditional frequency table learned from all public frames can recognize recurring wall configurations without changing pose dynamics or overwriting observations. Only unanimous wall outcomes with at least 16 examples are used, all four neighbors must be known, and the inference affects rendering rather than the stored map, limiting compounding errors.",
+  "query": "Predict hidden walls from statistics only when there is enough support?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r3-worker-2-a1",
+  "note": "Retrieve compatible public-episode maps and use their remembered walls and bound -- The simulator already renders known geometry well, but unseen cells default to floor and unknown walls can also corrupt future movement. An exact-agreement, high-overlap retrieval gate makes this a conservative episodic extension: remembered geometry is used only when a training episode explains at least 24 static observed cells without disagreement, while dynamic switch and lamp states are excluded.",
+  "query": "Reuse walls from similar public episodes to fill unseen map regions?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r6-worker-2-a1",
+  "note": "Use model-specific complete cases for each logistic regression instead of exclud -- The current global dropna makes the age-only and BMI-only models depend on completeness of every predictor, which can bias their coefficients, AICs, predictions, and p-values. Handling missing efficacy explicitly and fitting each model on only its required variables is the standard complete-case approach and leaves all answers unchanged when no irrelevant missingness exists.",
+  "query": "How do we avoid a single global missing-data filter across the logistic models?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r1-worker-2-a1",
+  "note": "After each single-flip local optimum, exhaustively search improving two-entry fl -- The incumbent's one-entry descent cannot escape local optima whose improving moves require coordinated flips. A deterministic best-improvement pair phase explores that neighborhood while preserving every accepted gain and leaving the restart construction unchanged.",
+  "query": "How can we escape local optima with pairwise moves after one-step descent?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r9-worker-2-a1@065dd413fd17",
+  "note": "Do adult birds that attend unrelated fledglings more often also feed those unrel -- This uses the unused alloparental-provisioning CSV and is complementary to worker-1's own-offspring study. Attendance creates proximity and feeding opportunities, while both measures may reflect alloparental motivation, so a substantial positive association is expected even after rows are split. The exact numeric headers are supplied, and the two dataset citations document the study and public data.",
+  "query": "Do helper birds that visit unrelated chicks also provision them more?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r10-worker-4-a1",
+  "note": "Use sum-coded Type III sums of squares for the two-way NeuN ANOVA interaction te -- This tests a distinct ANOVA convention from both the current Type II analysis and the claimed sequential Type I variant. Sum coding gives Type III its standard interpretation, while restricting the change to the ANOVA preserves all validated descriptive, power, and regression answers. The highest-order interaction may remain unchanged, making this a low-risk diagnostic rather than a broad rewrite.",
+  "query": "Effect-coded marginal sums of squares for the neuron count interaction?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r3-worker-3-a1",
+  "note": "Extend each deterministic tabu walk from 160 to 400 steps while preserving the b -- The tabu walk is the replicated source of improvement, and its best-so-far retention makes additional escape steps a low-risk refinement. This is materially different from increasing random restarts: it deepens the successful escape mechanism within each existing basin.",
+  "query": "Should the tabu walks run longer?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r4-worker-3-a1",
+  "note": "Ignore off/on lamp mismatches when scoring context pose hypotheses so lamp toggl -- Lamp state can change without camera movement, but disagreement currently counts a 3\u21944 transition as geometric evidence. This can select the stayed hypothesis, insert a spurious wall, and corrupt the stitched map and all later rollout positions. Ignoring only off/on mismatches preserves every static-geometry and lamp-versus-floor cue while removing pose-independent evidence; this is distinct from adding overlap-based tie breaking.",
+  "query": "Discount light on/off differences when matching camera poses?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r4-worker-1-a1@065dd413fd17",
+  "note": "Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f -- This is a materially different, kitchen-lab-adjacent everyday-physics test on an unused 93-row public CSV with exact numeric headers. The earlier heavy-car attempts failed at citation or dataset validation, not because the association was tested and rejected. Moving a heavier vehicle requires more energy under repeated urban acceleration, so city fuel economy should decline strongly and monotonically with mass, readily surviving both hash-half tests. The two citations are drawn from sources.json as required by the registration gate.",
+  "query": "Are weightier automobiles less fuel-efficient in town?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r12-worker-2-a1",
+  "note": "Answer bix-18-q4 with the rhlR- circularity standard error of the mean instead o -- The question explicitly requests SEM, defined as the sample standard deviation divided by sqrt(n); pandas sem() implements this with ddof=1. This isolated estimator correction targets the likely sole remaining development error while preserving every validated answer.",
+  "query": "Report the standard error rather than the standard deviation for the mutant's roundness question?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r6-worker-2-a1",
+  "note": "Infer context movement by direct frame-to-frame camera registration instead of a -- Greedy map stitching can make a previously misplaced wall or stale observation bias every later pose decision. Comparing the previous and next observed frames directly tests whether their overlapping geometry shifted by the action's camera displacement; normalized scores account for the smaller moved overlap, while lamp-only changes are not treated as motion evidence. This is a structurally different, local movement estimator and retains the existing map simulator and rollout.",
+  "query": "Estimate camera motion by aligning successive frames directly?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r8-worker-3-a1@065dd413fd17",
+  "note": "Do students who visited the gym more often before the experiment also visit more -- This exploits the successful strong-monotonic design on an unused behavioral dataset while testing a published gym-attendance experiment rather than repeating a nearby acoustic idea. Pre-experiment attendance captures established exercise habits, access, and motivation, which should persist into the experimental period despite team incentives. With 245 students, even a moderate positive association should meet the overall and split-half significance requirements.",
+  "query": "Do people who exercised more beforehand keep going more often afterwards?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r9-worker-1-a3",
+  "note": "Add a translation-aligned episodic map atlas that completes unseen static cells  -- Instead of per-cell output corrections, store reconstructed training maps as spatial memory. At inference, candidate translations are anchored on switches or walls and accepted only with at least eight consistent observations, two informative matches, and zero conflicts; lamps are compared toggle-invariantly and never copied. A verified match fills only unknown static cells and extends remembered boundaries, directly addressing the current model's default-to-floor behavior outside its observed map while leaving unrelated layouts unchanged.",
+  "query": "A stored library of aligned maps to fill unobserved static tiles?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r9-worker-4-a1",
+  "note": "Use sequential Type I sums of squares for the two-way ANOVA instead of Type II s -- This tests a distinct ANOVA test-choice convention while preserving the model and every other answer. With the interaction entered last, Type I tests it after both main effects; for the requested interaction term this may coincide with Type II, making it a low-risk diagnostic of whether the remaining discrepancy is sensitive to ANOVA SS convention.",
+  "query": "Order-dependent sums of squares for the two-factor model?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r3-worker-1-a1",
+  "note": "Infer rectangular out-of-bounds boundaries from fully observed rows or columns o -- The current renderer labels every unseen cell as floor, even when context frames establish a map boundary. Full rows or columns of 6 unambiguously identify that boundary in world coordinates, so extrapolating only beyond those bounds should correct newly exposed out-of-bounds regions without changing movement, map stitching, or ordinary unknown-cell defaults.",
+  "query": "Bound the world using completely seen edge lines?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r3-worker-1-a1",
+  "note": "Replace stochastic local search with an exhaustive deterministic bordered two-ci -- The row-sum and PAF filters reduce the 2^18 sequence pairs to the structured D-optimal family, which contains the known order-19 optimum with the stated border convention. Exact Bareiss elimination avoids floating-point selection errors and makes the result reproducible.",
+  "query": "Exhaustive structured search over two circulant blocks instead of stochastic search?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r2-worker-4-a1",
+  "note": "Polish each of the same four seeded starts with both the incumbent first-improve -- The current scan accepts the first improving entry, so its basin depends strongly on row-major traversal. Steepest ascent instead selects the largest determinant improvement at every iteration, exploring a materially different greedy trajectory without adding restarts or risking loss of the incumbent result.",
+  "query": "Run both first- and best-improvement polishing from the same starting points?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r9-worker-1-a2",
+  "note": "Replace the rejected neural residual with a nonparametric episodic correction me -- The egocentric prediction survey motivates explicitly conditioning prediction on local egocentric context and action history. Exact categorical frequency tables provide a fundamentally different, CPU-cheap mechanism from the rejected softmax model: they make no gradient-based approximation and only override symbolic cells seen repeatedly with at least 98 percent empirical purity and a four-to-one margin. This conservative retrieval rule targets recurring rendering mistakes while leaving sparse or ambiguous cases unchanged.",
+  "query": "A memory-based nonparametric correction instead of the failed neural one?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r5-worker-2-a1@065dd413fd17",
+  "note": "Do longer possums also tend to have longer tails? -- The acoustic leads lack a verified, unused CSV with suitable columns, so this diverges into a directly downloadable 104-row animal-morphology dataset with exact numeric headers. Tail length is both a component of total head-to-tail length and a body-size-scaled appendage, producing a strong positive association that should survive both hash halves. The part-whole relationship also gives the amusing result a clear second thought.",
+  "query": "Is body length related to tail length in the marsupial measurements?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r11-worker-2-a1@065dd413fd17",
+  "note": "Do adult birds that attend more of their own fledglings also feed more of their  -- This uses the unused alloparental-provisioning CSV but tests genetic-offspring attendance and feeding, distinct from worker-1's unrelated-fledgling pair and from the previously mentioned begging hypothesis. Attending offspring creates repeated provisioning opportunities and exposes adults to their begging, so the two counts should covary strongly within adults. The prediction is biologically ordinary but amusingly amounts to whether birds feed the chicks they actually spend time with.",
+  "query": "Do adults that tend their own offspring more also feed them more?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r10-worker-2-a1",
+  "note": "Add a retrieval-first global tabular transition model over exact public (frame,  -- The symbolic model cannot recover unobserved geometry or episode-specific dynamics, while public episodes contain repeated egocentric states. A shared action-conditioned transition table can reuse only exactly matching, repeatedly confirmed transitions; ambiguous keys are discarded and all other states retain the incumbent rollout, limiting regression risk while changing the primary prediction mechanism to retrieval when reliable.",
+  "query": "A lookup table of exact observed transitions from public episodes?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r3-worker-4-a1",
+  "note": "Use overlap consistency between consecutive raw context frames as additional evi -- The current decision uses only cells already present in the stitched map, so early in an episode both pose hypotheses can have zero disagreement and a blocked move may be accepted. Consecutive frames themselves provide substantial overlapping evidence: after a successful move, the previous frame shifted by the action should match the next frame; after a blocked move, the unshifted frames should match. Adding these scores preserves the existing simulator and rendering while making pose recovery reliable before the global map is densely observed.",
+  "query": "Use agreement between successive raw frames as extra evidence for movement?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r3-worker-2-a1@065dd413fd17",
+  "note": "Do heavier cats carry heavier hearts? Test body-weight\u2013heart-weight scaling in a -- This preserves the current best's robust monotonic-association design while moving to an unused dataset with exact numeric headers and ample rows. Heart mass must scale with body mass because larger bodies require greater circulatory capacity; classic allometry and size-scaling work supply the mechanism. The association is strong enough to survive both hash halves, unlike the borderline behavioral alternatives, and the failed brain\u2013body attempt used a different unavailable dataset and population.",
+  "query": "Does feline body weight predict heart weight?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r7-worker-4-a1",
+  "note": "Infer rectangular out-of-bounds boundaries from every observed 6 cell, including -- The current bounds remain unset when a view clips only part of an edge or corner, causing unobserved cells beyond that edge to render as floor and suppressing the adjacent boundary-wall rule. Individual 6 cells provide the same rectangular-boundary evidence while preserving all directly observed geometry and rollout dynamics.",
+  "query": "Infer the map edge from any off-map cell, including corners?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r2-worker-2-a1",
+  "note": "Infer rectangular world boundaries from fully observed out-of-bounds rows/column -- The incumbent defaults every unobserved cell to 0, so approaching a previously observed map edge can fabricate floor in unseen exterior cells and also permit movement outside the map. Context frames often contain complete rows or columns of 6, giving reliable global bounds without learning or changing interior predictions.",
+  "query": "Infer the map border from fully seen outside rows?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r1-worker-1-a1",
+  "note": "Replace the partial descriptive baseline with a complete typed statistical pipel -- The current script answers only three questions and uses standard deviation instead of SEM; computing every requested statistic directly from the raw data should address nearly all unanswered items while preserving the existing swarm definitions.",
+  "query": "Build a full typed statistics pipeline to replace the partial descriptive script?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r7-worker-3-a2",
+  "note": "Compute the requested standard error of the mean for rhlR- circularity rather th -- The question explicitly requests SEM, while the current implementation returns the standard deviation. pandas sem() computes the sample standard deviation divided by sqrt(n), directly matching the requested estimand without changing any other answers.",
+  "query": "Compute the standard error of the mean for the mutant's shape metric?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r10-worker-2-a1",
+  "note": "Use sequential Type I sums of squares for the two-way NeuN ANOVA instead of Type -- This tests a distinct ANOVA convention while preserving the model and all other answers. Because the interaction is entered last, Type I evaluates it after both main effects; its F-statistic may coincide with Type II, making this a low-risk diagnostic of whether the remaining discrepancy reflects ANOVA test choice.",
+  "query": "Sequential ANOVA for the neuron marker data?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-playworld_mini-claim-B-r8-worker-4-a2",
+  "note": "Replace greedy context disambiguation with a globally scored beam over blocked-m -- The incumbent decides each ambiguous move locally before observing later frames, so an early wrong choice can corrupt both the trajectory and every subsequently observed map coordinate. Maintain up to 16 independent trajectory/map states, branch only when an unseen target could be either free or a wall, score each hypothesis by contradictions with all subsequent context observations, and roll out the lowest-error state. This changes the inference mechanism rather than adding a learned residual table and directly targets systematic long-horizon reconstruction failures.",
+  "query": "Beam search over move hypotheses instead of greedy disambiguation?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-bixbench_mini-v2-claim-B-r1-worker-4-a1",
+  "note": "Implement all seven camrelizumab logistic-regression answers using PR as the bin -- The regression family is the only substantial group not claimed by another worker. Fitting statsmodels Logit models directly supplies predicted probability, coefficients, Wald p-values, and AIC under consistent binary-outcome and categorical-gender handling, while leaving the existing Swarm answers unchanged.",
+  "query": "Answer all the immunotherapy regression questions with response as the outcome?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-hadamard19-claim-B-r1-worker-4-a1",
+  "note": "Add deterministic simulated annealing between single-flip descent and a final gr -- The incumbent stops at the first single-flip local optimum. Annealing permits coordinated escapes through temporarily worsening flips while the incumbent fallback and best-so-far tracking prevent regression; polishing recovered basins preserves the existing exploitation strength without duplicating exhaustive pair flips or extra restarts.",
+  "query": "Insert annealing between local descent and the final greedy pass?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ },
+ {
+  "target": "memcmp-out-ignobel-claim-B-r11-worker-4-a1@065dd413fd17",
+  "note": "Do households burn less gas during warmer weeks? -- This abandons the exhausted acoustic-coordinate design for an unused, straightforward domestic-energy dataset with exact numeric headers. Outdoor temperature drives space-heating demand: colder weeks require more gas to maintain indoor comfort, while warmer weeks require less. The dose-response relationship should be strong and monotonic within each insulation group and therefore survive both hash-half tests. It is also an everyday effect with a mildly amusing obvious-in-retrospect quality: the household thermostat quietly turns weather into a gas bill.",
+  "query": "Does home heating fuel use drop when it is warmer outside?",
+  "query_author": "hand-written by the lead agent (Kimi paraphrase unavailable: Tinker HTTP 402)"
+ }
+]

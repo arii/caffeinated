@@ -36,5 +36,11 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
   present in these records, so committee scoring has not been run on them. The
   committee-scored rerun is blocked: both Tinker keys return HTTP 402.
 
+- **past.dev vs local memory:** on the same 419 real swarm memories and 40 paraphrased probes,
+  past.dev retrieves the target first 0.65 of the time versus 0.30 for local lexical TF-IDF
+  (hit@8 0.95 vs 0.825), at 562 ms vs 15 ms median latency. Probes were hand-written (Kimi was
+  blocked), which favours semantic retrieval; see
+  [`experiments/memory-comparison/`](../experiments/memory-comparison/README.md).
+
 Run artifacts (ledgers, results, held-out grades, study records, cost) are committed under
 [`experiments/real-runs/`](../experiments/real-runs/README.md).
