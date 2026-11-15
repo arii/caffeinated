@@ -152,8 +152,55 @@ def test_studies_run_on_the_real_dataset_and_carry_evidence(tmp_path):
     for e in studies:
         ev = e.payload["evidence"]
         assert ev["datasets"][0]["url"].startswith("https://huggingface.co/datasets/")
+        assert ev["read"] == ["d1"] and ev["traceable"] == 1.0
+        assert all(t["column"].startswith("d1.") for t in ev["trace"].values())
         assert ev["supported"] == (e.payload["ok"] and e.payload["replicated"])
         assert "rows(" in e.payload["code"] and "instrument(" not in e.payload["code"]
+
+
+def test_trace_values_counts_only_reported_values_that_are_dataset_cells(tmp_path):
+    import lab
+    f = tmp_path / "d1.csv"
+    f.write_text("a,b,label\n1.5,10,x\n2.5,20,y\n2.5,30,x\n,40,y\n", encoding="utf-8")
+    ds = [("d1", f, ["a", "b", "label"])]
+    raw = lab.trace_values({"x": [1.5, 2.5, 2.5], "y": [10.0, 20.0, 30.0]}, ds)
+    assert raw == {"share": 1.0, "weakest": 1.0, "arrays": {"x": {"column": "d1.a", "share": 1.0}, "y": {"column": "d1.b", "share": 1.0}}}
+    # a cell backs one reported value: 2.5 is in the column twice, not three times
+    assert lab.trace_values({"x": [2.5, 2.5, 2.5], "y": [10.0, 20.0, 30.0]}, ds)["arrays"]["x"]["share"] == 0.6667
+    derived = lab.trace_values({"x": [10.0, 20.0, 30.0], "y": [15.0, 50.0, 75.0]}, ds)
+    assert derived["share"] == 0.5 and derived["arrays"]["y"] == {"column": None, "share": 0.0}
+    made_up = lab.trace_values({"group_a": [0.1, 0.2, 0.3], "group_b": [5.1, 5.2, float("nan")]}, ds)
+    assert made_up["share"] == 0.0
+    lopsided = lab.trace_values({"group_a": [10.0, 20.0, 30.0, 40.0], "group_b": [7.7]}, ds)
+    assert lopsided["share"] == 0.8 and lopsided["weakest"] == 0.0
+    assert lab.trace_values(None, ds) == {"share": 0.0, "weakest": 0.0, "arrays": {}}
+
+
+@requires_sandbox
+def test_made_up_or_unread_results_are_not_supported(tmp_path):
+    import llm
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    a = w.agents[0]
+    res = llm.LLMResult(data={}, tokens=0, latency_ms=0, model="mock")
+    fake = ("from lab_runtime import report_corr\n"
+            "x = [i + 0.123 for i in range(60)]\nreport_corr(x, [2 * v + 0.001 for v in x], '+', 0.9)\n")
+    half = ("from lab_runtime import rows, report_corr\n"
+            "d = rows('d1', ['sepallengthcm', 'petallengthcm'])\n"
+            "y = [r[1] if i < 5 else r[1] * 3.3 + 0.017 for i, r in enumerate(d)]\n"
+            "report_corr([r[0] for r in d], y, '+', 0.9)\n")
+    real = ("from lab_runtime import rows, report_corr\n"
+            "d = rows('d1', ['sepallengthcm', 'petallengthcm'])\n"
+            "report_corr([r[0] for r in d], [r[1] for r in d], '+', 0.9)\n")
+    for code in (fake, half, real):
+        w._run_study(a, {"code": code}, res, 1)
+    ev = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"]
+    assert all(p["ok"] and p["replicated"] for p in ev)
+    made_up, derived, measured = (p["evidence"] for p in ev)
+    assert made_up["read"] == [] and made_up["traceable"] == 0.0 and not made_up["supported"]
+    assert derived["read"] == ["d1"] and derived["traceable"] > 0.5 and not derived["supported"]
+    assert measured["traceable"] == 1.0 and measured["supported"]
+    assert measured["trace"]["x"]["column"] == "d1.sepallengthcm"
 
 
 def _daughter(name="onsager"):

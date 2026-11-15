@@ -107,6 +107,11 @@ def body(e: dict, run: Path, agents: dict) -> str:
             data = "; ".join(f"{link(d.get('url'), d.get('title'))} ({esc(d.get('rows'))} rows)" for d in ev.get("datasets", []))
             cites = "".join(f"<li>{esc(c['id'])}: {link(c.get('url'), c.get('title'))}</li>" for c in ev.get("citations", []))
             tag = "<span class=ok>supported by real data</span>" if ev.get("supported") else "<span class=bad>not supported</span>"
+            if "traceable" in ev:
+                cols = "; ".join(f"{esc(k)}: {v['share']:.0%}" + (f" from {esc(v['column'])}" if v.get("column") else "")
+                                 for k, v in ev.get("trace", {}).items())
+                tag += (f" — {ev['traceable']:.0%} of reported values found in the loaded data"
+                        f"{' (' + cols + ')' if cols else ''}{'' if ev.get('read') else '; the code did not open a dataset'}")
             proof = f"<div>{tag}. Data: {data or 'none'}</div><details><summary>{len(ev.get('citations', []))} cited sources</summary><ul>{cites}</ul></details>"
         plot = ""
         if p.get("plot_path") and (run / p["plot_path"]).exists():

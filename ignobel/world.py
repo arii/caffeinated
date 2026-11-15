@@ -195,11 +195,14 @@ class World:
         evidence = {}
         if a.spec.family:  # what this result rests on: real datasets (with DOI/URL) and sources the agent really has
             known = a.known_sources()
+            trace = lab.trace_values(out["stats"] if out["ok"] else None, real)
             cited = dict.fromkeys((idea.citations if idea else []) + re.findall(r"S\d+", abstract))
             evidence = {"evidence": {
                 "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")} for d in a.datasets],
                 "citations": [known[c] for c in cited if c in known],
-                "supported": bool(a.datasets and out["ok"] and verdict["replicated"])}}
+                "read": out["read"], "traceable": trace["share"], "trace": trace["arrays"],
+                "supported": bool(out["ok"] and verdict["replicated"] and out["read"]
+                                  and trace["weakest"] > float(self.cfg.get("traceable_share", 0.5)))}}
         self.log.append(round, a.name, "study_result", {
             **evidence,
             "study_id": study_id, "idea_id": rec.idea_id, "title": idea.title if idea else "",

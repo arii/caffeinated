@@ -4,12 +4,14 @@ Study code is written by agents and never runs on the host. Both modes: 120s tim
 no network, no API keys, only the study's own files (and dataset copy) visible.
 Mock mode: a local Docker container (read-only, no capabilities). Real mode: a Modal sandbox.
 """
+import csv
 import json
 import os
 import shutil
 import subprocess
 import tempfile
 import uuid
+from collections import Counter
 from pathlib import Path
 
 import llm
@@ -71,17 +73,59 @@ def dataset_path(agent) -> Path | None:
     return p if p.is_absolute() else HERE / p
 
 
-def _parse(stdout: str) -> tuple[dict | None, int]:
-    result, calls = None, 0
+def _parse(stdout: str) -> tuple[dict | None, int, list[str]]:
+    result, calls, read = None, 0, []
     for line in stdout.splitlines():
         if line.startswith("@@CALLS "):
             calls = int(line.split()[1])
+        elif line.startswith("@@READ "):
+            read.append(line[len("@@READ "):].strip())
         elif line.startswith("@@RESULT "):
             try:
                 result = json.loads(line[len("@@RESULT "):])
             except json.JSONDecodeError:
                 result = None
-    return result, calls
+    return result, calls, read
+
+
+def _cell(v) -> float | None:
+    """A number as a comparable key (10 significant digits, so CSV parsers that differ in the last bit agree)."""
+    try:
+        x = float(f"{float(v):.10g}")
+    except (TypeError, ValueError):
+        return None
+    return x if x == x and abs(x) != float("inf") else None
+
+
+def trace_values(result: dict | None, datasets: list[tuple]) -> dict:
+    """How much of what a study reported is found in the datasets it was given.
+
+    Each reported array is matched against every dataset column, one cell backing one reported value,
+    and keeps its best column. Values the code derived (ratios, logs, group means) or made up do not trace.
+    Returns {share, weakest, arrays: {array: {column, share}}}: `share` is over all reported values and
+    `weakest` is the lowest share of any one array, so a made-up comparison group cannot hide behind a
+    large real one. `datasets` is [(name, csv path, [columns])].
+    """
+    arrays = {k: Counter(c for c in map(_cell, v) if c is not None)
+              for k in ("group_a", "group_b", "x", "y") if isinstance(v := (result or {}).get(k), list)}
+    sizes = {k: len(result[k]) for k in arrays}
+    columns: dict[str, Counter] = {}
+    for name, src, _ in datasets:
+        with open(src, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                for col, v in row.items():
+                    if (c := _cell(v)) is not None:
+                        columns.setdefault(f"{name}.{col}", Counter())[c] += 1
+    out, matched = {}, 0
+    for k, vals in arrays.items():
+        hits = {col: sum((vals & cells).values()) for col, cells in columns.items()}
+        col = max(hits, key=lambda c: (hits[c], c), default=None)
+        n = hits.get(col, 0)
+        matched += n
+        out[k] = {"column": col if n else None, "share": round(n / sizes[k], 4) if sizes[k] else 0.0}
+    total = sum(sizes.values())
+    return {"share": round(matched / total, 4) if total else 0.0,
+            "weakest": min((a["share"] for a in out.values()), default=0.0), "arrays": out}
 
 
 def _run_docker(workdir: Path) -> tuple[str, str, int]:
@@ -172,7 +216,7 @@ def _svg_plot(result: dict, path: Path) -> None:
 
 def run_study(code: str, agent, measurements: list[list[float]] | None = None,
               plot_path: str | Path | None = None, datasets: list[tuple] | None = None) -> dict:
-    """Execute study code for `agent`. Returns {ok, stats, plot_path, stderr, calls}.
+    """Execute study code for `agent`. Returns {ok, stats, plot_path, stderr, calls, read}.
 
     `stats` is the raw @@RESULT dict (groups or x/y plus the agent's prediction);
     stats.check() turns it into a verdict. Instrument calls are charged to agent.budget_left.
@@ -199,7 +243,7 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
         stdout, stderr, rc = (_run_docker if _sandbox() == "docker" else _run_modal)(workdir)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
-    result, calls = _parse(stdout)
+    result, calls, read = _parse(stdout)
     stderr = stderr.replace(str(workdir), "<sandbox>")  # keep temp paths out of the event log
     agent.budget_left = max(0, agent.budget_left - calls)
     ok = rc == 0 and result is not None
@@ -209,7 +253,8 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
         out_plot = str(plot_path)
     if not ok and not stderr:
         stderr = "no @@RESULT line printed"
-    return {"ok": ok, "stats": result, "plot_path": out_plot, "stderr": stderr[-2000:], "calls": calls}
+    return {"ok": ok, "stats": result, "plot_path": out_plot, "stderr": stderr[-2000:], "calls": calls,
+            "read": sorted({n for n in read if n in spec["datasets"]})}
 
 
 def request_measurement(requester, owner, spec: dict) -> dict:

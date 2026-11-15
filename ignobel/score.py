@@ -24,6 +24,7 @@ def score_events(events_path: str | Path, out_path: str | Path | None = None, se
                "seed": ev.seed, "replicated": p.get("replicated"), **verdict}
         if "evidence" in p:  # daughter labs: only results that held up on real data can be candidates
             row.update(title=p.get("title", ""), supported=p["evidence"]["supported"],
+                       traceable=p["evidence"].get("traceable"),
                        datasets=[d["url"] for d in p["evidence"]["datasets"]],
                        citations=[c["url"] for c in p["evidence"]["citations"]])
         rows.append(row)
@@ -50,6 +51,8 @@ def main(argv=None) -> int:
     print(f"scored {len(rows)} studies -> {out}")
     for r in sorted(rows, key=lambda r: -r["score"]):
         flag = " REJECTED" if r["rejected"] else ""
+        if r.get("traceable") is not None:
+            flag += f" traceable={r['traceable']:.0%}"
         if r.get("supported") is False:
             flag += " (not supported by real data)"
         print(f"  {r['score']:2d}  r{r['round']} {r['study_id']:24s} A={r['score_a']} B={r['score_b']}{flag}")

@@ -2,7 +2,8 @@
 
 Reads spec.json written by lab.py: {dataset, instruments: {name: column}, budget, measurements,
 datasets: {name: {file, columns}}}. `datasets` are real public datasets the agent loaded itself.
-Prints '@@CALLS n' after each instrument call and '@@RESULT {...}' once at the end.
+Prints '@@CALLS n' after each instrument call, '@@READ name' when a loaded dataset is first opened,
+and '@@RESULT {...}' once at the end.
 """
 import csv
 import json
@@ -10,6 +11,7 @@ import json
 with open("spec.json", encoding="utf-8") as _f:
     SPEC = json.load(_f)
 _calls = 0
+_read = set()
 
 
 class BudgetExceeded(RuntimeError):
@@ -55,6 +57,9 @@ def datasets() -> dict:
 def _dataset(name: str) -> dict:
     if name not in SPEC.get("datasets", {}):
         raise KeyError(f"unknown dataset {name!r}; have {list(SPEC.get('datasets', {}))}")
+    if name not in _read:
+        _read.add(name)
+        print(f"@@READ {name}", flush=True)
     return SPEC["datasets"][name]
 
 

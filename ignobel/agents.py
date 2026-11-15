@@ -324,6 +324,9 @@ class Agent:
                    "value (a category or a number). Example: x, y = zip(*rows('d1', ['dose', 'response'])).\n"
                    "path(dataset) -> the CSV file, if you prefer pandas. numpy, scipy and pandas are installed.\n"
                    "Use only the real columns listed in your datasets; never simulate or make up data.\n"
+                   "The values you report are checked against the dataset: the result counts only if most of the "
+                   "values in each list you report are cells of one of its columns, so report measured columns, "
+                   "not numbers you derived from them.\n"
                    "Finish with exactly one report(group_a, group_b, direction, effect_size) (two lists of numbers) "
                    "or report_corr(x, y, direction, effect_size) (two lists of equal length).")
             req = "requests must be []."

@@ -25,7 +25,12 @@ Each round a daughter chooses her own research steps (`research` events):
   datasets) and `load` downloads one into `<run>/data/<agent>/`. A daughter cannot run a study
   until she has loaded one. Study code reads it in the sandbox (`lab_runtime.rows`, or pandas).
 - **Evidence:** each `study_result` lists the datasets and sources it rests on, and
-  `supported: true` only if the code ran on real data and the result replicated. `score.py` ranks
+  `supported: true` only if the result replicated, the code opened a loaded dataset, and in each
+  array it reported more than `traceable_share` (half) of the values are cells of one column of
+  that data. The host does this check after the sandbox exits (`lab.trace_values`); `traceable`
+  (the share over all reported values) and the column each array came from are in the event and
+  the trace. Derived values (ratios, logs, group means) do not trace, so a study that reports a
+  derived array is shown with its share but is not eligible. `score.py` ranks
   supported studies; the top one is the community's Ig Nobel candidate.
 
 Real runs execute studies in the `caffeinated-testcases:py311-v1` image (numpy, pandas, scipy; the
