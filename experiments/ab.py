@@ -16,7 +16,9 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
+TASKS = ("hadamard19", "bixbench_mini", "playworld_mini", "ignobel")
+DEFAULT_TASKS = TASKS[:3]
+MAX_ROUNDS = 30
 FIELDS = (
     "task",
     "seed",
@@ -311,8 +313,8 @@ def run_experiment(args):
         raise ValueError("seeds must be distinct integers in [0, 2**31)")
     if len(set(args.tasks)) != len(args.tasks):
         raise ValueError("tasks must be distinct")
-    if not 1 <= args.rounds <= 10:
-        raise ValueError("rounds must be between 1 and 10")
+    if not 1 <= args.rounds <= MAX_ROUNDS:
+        raise ValueError(f"rounds must be between 1 and {MAX_ROUNDS}")
     if args.exa_max_calls < 1:
         raise ValueError("exa-max-calls must be positive")
     if args.jobs < 1:
@@ -455,7 +457,7 @@ def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=str(ROOT))
     parser.add_argument("--out", required=True, help="new output directory; never reuse a run")
-    parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
+    parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(DEFAULT_TASKS))
     parser.add_argument("--seeds", nargs="+", type=int, required=True)
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument(
