@@ -11,10 +11,7 @@ if command -v "$uv_command" >/dev/null 2>&1; then
     if [ ! -x .venv/bin/python ]; then
         "$uv_command" venv --python "$python_command" --seed .venv
     fi
-    # The exports list the PyTorch CPU index as an extra index; pip merges indexes
-    # the same way, while uv would otherwise take every package it hosts from it.
-    "$uv_command" pip install --python .venv/bin/python --index-strategy unsafe-best-match \
-        -r requirements-dev.txt
+    "$uv_command" pip install --python .venv/bin/python -r requirements-dev.txt
     "$uv_command" pip check --python .venv/bin/python
 else
     "$python_command" -m venv .venv

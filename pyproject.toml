@@ -10,12 +10,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tinker = [
-    "tinker==0.39.0; python_version >= '3.11'",
-    "tml-renderers==0.4.1; python_version >= '3.11'",
-    # tml-renderers imports torch without declaring it; the CPU build is enough.
-    "torch>=2.10; python_version >= '3.11'",
-]
 viewer = [
     "fastapi>=0.115,<1",
     "uvicorn>=0.30,<1",
@@ -26,14 +20,6 @@ dev = [
     "vulture==2.16",
     "deptry==0.25.1",
 ]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[tool.uv.sources]
-torch = { index = "pytorch-cpu" }
 
 [tool.ruff]
 target-version = "py310"

@@ -130,9 +130,7 @@ def preflight(args, memory_backend, exa_enabled):
     problems = []
     if not args.replay:
         if args.llm == "tinker":
-            model = args.model or os.environ.get("TINKER_MODEL")
-            problems.append(llm.tinker_setup_problem(model))
-            if not model:
+            if not (args.model or os.environ.get("TINKER_MODEL")):
                 problems.append("set --model or TINKER_MODEL (in the environment or .env)")
             if not os.environ.get("TINKER_API_KEY"):
                 problems.append("TINKER_API_KEY is required for --llm tinker (environment or .env)")
