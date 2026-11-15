@@ -116,6 +116,63 @@ class OllamaTests(unittest.TestCase):
         ]:
             self.assertIn(setting, swarm.RESUMED_SETTINGS)
 
+    def test_failed_generation_keeps_usage_for_cost_audit(self):
+        response = Response(
+            {
+                "message": {"content": "{"},
+                "done_reason": "length",
+                "eval_count": 600,
+                "prompt_eval_count": 200,
+            }
+        )
+        with patch("llm.urlopen", return_value=response), self.assertRaises(llm.LLMError):
+            self.client.call(
+                "WORKER_PROPOSE",
+                agent="worker-1",
+                round_num=1,
+                values={"supervisor_instruction": "Use seed 42."},
+            )
+        record = json.loads(self.client.log_path.read_text())
+        self.assertEqual(record["usage"]["completion_tokens"], 600)
+        self.assertIn("token limit", record["error"])
+        self.assertIsNone(record["response"])
+
+    def test_supervisor_cannot_assign_unknown_or_duplicate_workers(self):
+        self.client.last_call_id = "plan"
+        with (
+            patch.object(swarm, "TASK", {"brief": "test"}),
+            patch("swarm.recall_memory", return_value={"results": []}),
+            patch("swarm.git") as git,
+            patch("swarm.vocab_with_extensions", return_value={}),
+            patch.object(
+                self.client,
+                "call",
+                return_value={
+                    "tasks": [
+                        {"agent": "worker-1", "instruction": "A"},
+                        {"agent": "worker-1", "instruction": "B"},
+                    ]
+                },
+            ),
+        ):
+            git.return_value.stdout = "SEED = 1"
+            with self.assertRaisesRegex(ValueError, "duplicate worker"):
+                swarm.plan_local_workers(
+                    self.client,
+                    ["worker-1", "worker-2"],
+                    1,
+                    {},
+                    {"regime": "EXPLOIT"},
+                    "base",
+                    1,
+                    Path(self.temp.name),
+                    Path(self.temp.name),
+                    "local",
+                    "memory",
+                    "log",
+                    "B",
+                )
+
     def test_local_runs_cannot_trigger_paid_committee_hook(self):
         with (
             patch.dict("os.environ", {"TINKER_API_KEY": "not-a-real-key"}),

@@ -106,7 +106,7 @@ test('team roster adds the critic and conductor on standby until they act',()=>{
  assert.deepEqual(teamRoster(all,[all[1]]).map(a=>a.id),['c','k']);
 });
 test('boredom regime chip and component bars degrade when fields are missing',()=>{
- assert.deepEqual(regimeLabel('PARADIGM_BREAKOUT'),{label:'Paradigm breakout',tone:'breakout',description:'4 divergent slots; the gate requires a top-level mechanism not used recently.'});
+ assert.deepEqual(regimeLabel('PARADIGM_BREAKOUT'),{label:'Paradigm breakout',tone:'breakout',description:'All workers explore; the gate requires a top-level mechanism not used recently.'});
  assert.deepEqual(regimeLabel('SOMETHING_NEW'),{label:'Something new',tone:'calm',description:''});
  assert.equal(regimeLabel(undefined).label,'');
  assert.deepEqual(boredomComponents({stagnation:0.5,repetition:2,bad:'x'}),[{key:'repetition',label:'repetition',value:100},{key:'stagnation',label:'stagnation',value:50}]);
