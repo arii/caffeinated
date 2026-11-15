@@ -573,6 +573,21 @@ class PISteeringTests(unittest.TestCase):
             research_start=0,
         )
 
+    def test_supervised_run_skips_extra_pi_even_when_stuck(self):
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory") as recall,
+        ):
+            steers = self.run_pi(
+                client=SimpleNamespace(
+                    supervised=True,
+                    call=lambda *args, **kwargs: self.fail("duplicate supervisor call"),
+                ),
+                out_dir=tmp,
+            )
+        self.assertEqual(steers, {})
+        recall.assert_not_called()
+
     def test_no_stuck_agent_skips_the_pi_call(self):
         with (
             tempfile.TemporaryDirectory() as tmp,
