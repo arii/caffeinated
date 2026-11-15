@@ -3,8 +3,8 @@ import asyncio
 import json
 import os
 import random
-import uuid
 import re
+import uuid
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +14,6 @@ import boredom
 import events
 import families as families_mod
 import lab
-import llm
 import memory
 import policy as policy_mod
 import search
@@ -48,6 +47,7 @@ class World:
         self.spawned_specs: list[dict] = []
         self.founders = founders
         self.round_done = -1
+        self.status_counts: dict[str, int] = {}
 
     def _pastdev_run(self):
         """One past.dev tag per run directory, so a resumed run keeps its identities and audiences."""
@@ -60,15 +60,22 @@ class World:
         mem = memory.make_memory(self.memory_backend, spec.name, self.shared, pastdev=self.pastdev)
         return agents_mod.Agent(spec, mem, self.cfg, self.seed)
 
-    def _hypothesis(self, a, idea, status: str) -> None:
-        """past.dev only: one stable record per idea; the study result supersedes the proposal."""
+    def _hypothesis(self, a, idea, round: int, status: str) -> None:
+        """Write the current hypothesis and an individually dated status record."""
         if self.pastdev is None or idea is None:
             return
         p = idea.prediction
-        a.memory.write(Item(id=f"{a.name}-{idea.idea_id}-hyp", kind="hypothesis", source_agent=a.name,
-                            text=f"Hypothesis {idea.idea_id} by lab {a.name}: {idea.title}. {idea.hypothesis} "
+        a.memory.write(Item(id=f"{idea.idea_id}-hyp", kind="hypothesis", source_agent=a.name,
+                            text=f"Hypothesis {idea.idea_id} (lab {a.name}): {idea.title}. {idea.hypothesis} "
                                  f"Predicted {p.direction} effect {p.effect_size}. Status: {status}",
                             meta={"idea_id": idea.idea_id}))
+        status_number = self.status_counts.get(idea.idea_id, 0) + 1
+        self.status_counts[idea.idea_id] = status_number
+        a.memory.write(Item(
+            id=f"{idea.idea_id}-status-{status_number}", kind="status", source_agent=a.name,
+            text=f'Round {round}: lab {a.name}\'s hypothesis {idea.idea_id} "{idea.title}" is {status}.',
+            meta={"idea_id": idea.idea_id, "round": round, "status": status},
+        ))
 
     def _add_agent(self, spec):
         a = self._make_agent(spec)
@@ -81,6 +88,7 @@ class World:
         st = {"round_done": self.round_done, "events_bytes": self.log.size(), "research_bytes": self.bib.size(),
               "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
               "agents": {a.name: a.to_state() for a in self.agents},
+              "status_counts": self.status_counts,
               "spawned_specs": self.spawned_specs,
               "mothers": {m.name: m.to_state() for m in self.mothers}}
         if self.shared is not None:
@@ -99,6 +107,7 @@ class World:
             return False
         st = json.loads(f.read_text(encoding="utf-8"))
         self.round_done = st["round_done"]
+        self.status_counts = st.get("status_counts", {})
         if "events_bytes" in st:
             self.log.truncate(st["events_bytes"])
         self.bib.truncate(st.get("research_bytes", 0))
@@ -138,7 +147,7 @@ class World:
                                                 "method": idea.method, "source_urls": idea.source_urls},
                         tokens=res.tokens, latency_ms=res.latency_ms)
         self.log.append(round, a.name, "prediction", {"idea_id": idea.idea_id, **idea.prediction.model_dump()})
-        self._hypothesis(a, idea, f"proposed in round {round}, a guess, not tested yet.")
+        self._hypothesis(a, idea, round, "proposed, not tested yet")
 
     def _encounters(self, acting: list, wanderers: set[str]) -> list[tuple]:
         """Chance meetings. Each wanderer bumps into a random free colleague from any department;
@@ -188,6 +197,7 @@ class World:
                 self.log.append(round, owner.name, "measurement_request",
                                 {"requester": a.name, "instrument": req.get("instrument"), "error": str(e)})
         study_id = f"{a.name}-r{round}-s{len(a.studies) + 1}"
+        self._hypothesis(a, idea, round, "testing")
         plot_rel = Path("plots") / f"{study_id}.svg"  # relative to the run dir so same seed => same file
         real = [(d["name"], self.out / d["file"], [c["name"] for c in d["columns"]]) for d in a.datasets]
         out = lab.run_study(spec.get("code", ""), a, measurements, plot_path=self.out / plot_rel, datasets=real)
@@ -212,9 +222,9 @@ class World:
         a.memory.write(Item(id=f"{a.name}-{study_id}", kind="result" if verdict["replicated"] else "failure",
                             text=abstract or f"{study_id}: {verdict['reason']}", source_agent=a.name,
                             meta={"study_id": study_id, **info}))
-        self._hypothesis(a, idea, f"tested in round {round} ({study_id}): "
-                                  + (f"replicated, effect {info['effect_size']}, p={info['p']}." if info["replicated"]
-                                     else f"not replicated ({verdict['reason']})."))
+        status = f"{'replicated' if info['replicated'] else 'not replicated'} " \
+                 f"(effect {info['effect_size']}, p={info['p']}; {verdict['reason']})"
+        self._hypothesis(a, idea, round, status)
         evidence = {}
         if a.spec.family:  # what this result rests on: real datasets (with DOI/URL) and sources the agent really has
             known = a.known_sources()
@@ -266,6 +276,19 @@ class World:
                                         meta={"url": s["url"], "sid": s["id"], "title": s["title"], "tool": tool}))
                 return {"tool": tool, "query": query,
                         "results": [{"id": s["id"], "title": s["title"], "url": s["url"]} for s in recs]}
+            if tool == "alphafold":
+                recs, lead = self.bib.alphafold(a.name, query)
+                for s in recs:
+                    a.memory.write(Item(id=f"{a.name}-{s['id']}", kind="library", source_agent=a.name,
+                                        text=f"{s['title']}. {' '.join(s.get('highlights') or [])[:500]}",
+                                        meta={"url": s["url"], "sid": s["id"], "title": s["title"], "tool": tool}))
+                existing = next((i for i, item in enumerate(a.leads) if item["id"] == lead["id"]), None)
+                if existing is None:
+                    a.leads.append(lead)
+                    existing = len(a.leads) - 1
+                return {"tool": tool, "query": query,
+                        "results": [{"id": s["id"], "title": s["title"], "url": s["url"]} for s in recs],
+                        "lead": f"D{existing + 1}", "lead_title": lead["title"]}
             if tool == "read":
                 m = re.search(r"S\d+", str(step.get("source", "")))
                 src = a.known_sources().get(m.group(0)) if m else None

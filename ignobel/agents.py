@@ -79,6 +79,8 @@ def load_specs(path: str | Path = HERE / "agents.yaml", n: int | None = None) ->
 
 def _parse_prediction(d: dict, fallback_seed: int) -> Prediction:
     p = d.get("prediction") or {}
+    if not isinstance(p, dict):
+        p = {}
     direction = "+" if str(p.get("direction", "+")).strip().startswith("+") else "-"
     try:
         eff = abs(float(p.get("effect_size", 0.3)))
@@ -87,7 +89,46 @@ def _parse_prediction(d: dict, fallback_seed: int) -> Prediction:
     return Prediction(direction=direction, effect_size=round(eff, 3))
 
 
-STEP_NAMES = ("exa", "openalex", "arxiv", "pubmed", "datasets", "read", "load")
+STEP_NAMES = ("exa", "openalex", "arxiv", "pubmed", "alphafold", "datasets", "read", "load")
+
+
+def _idea_fields(data: dict) -> dict:
+    """Flatten common response envelopes and normalize idea-field variants."""
+    if not isinstance(data, dict):
+        return {}
+    fields, current = {}, data
+    while isinstance(current, dict):
+        fields = {**fields, **current}
+        nested = next((current.get(key) for key in
+                       ("study", "idea", "proposal", "result", "data", "response", "output")
+                       if isinstance(current.get(key), dict)), None)
+        if nested is None and len(current) == 1:
+            nested = next(iter(current.values()))
+            if not isinstance(nested, dict):
+                break
+        if not isinstance(nested, dict):
+            break
+        current = nested
+
+    aliases = {
+        "title": ("title", "idea_title", "study_title"),
+        "idea": ("idea", "idea_text", "study_idea", "research_question", "question", "text", "description"),
+        "hypothesis": ("hypothesis", "hypothesis_text", "null_hypothesis"),
+    }
+    for target, names in aliases.items():
+        if isinstance(fields.get(target), str) and fields[target].strip():
+            continue
+        for name in names:
+            value = fields.get(name)
+            if isinstance(value, str) and value.strip():
+                fields[target] = value
+                break
+    return fields
+
+
+def _idea_text(value) -> str:
+    text = " ".join(str(value or "").split())
+    return "" if text.casefold() in {"untitled", "untitled idea", "none", "n/a"} else text
 
 
 def _steps(data: dict) -> list[dict]:
@@ -211,16 +252,22 @@ class Agent:
                              max_tokens=max_tokens, mock_context=self._mock_ctx(**ctx))
 
     def _new_idea(self, data: dict, kind: str, round: int, source_urls: list[str]) -> Idea:
-        text = str(data.get("idea") or data.get("title") or "untitled idea")
+        data = _idea_fields(data)
+        idea_number = len(self.ideas) + 1
+        idea_text = _idea_text(data.get("idea"))
+        title = _idea_text(data.get("title"))
+        hypothesis = _idea_text(data.get("hypothesis"))
+        title = title or idea_text[:60] or hypothesis[:60] or f"{self.name} idea {idea_number}"
+        text = idea_text or title
         known = self.known_sources()
         cited = [c for c in dict.fromkeys(re.findall(r"S\d+", json.dumps(data.get("citations") or []))) if c in known]
         if cited:  # only sources this agent really has; their URLs came from an API, not from the model
             source_urls = [known[c]["url"] for c in cited]
         idea = Idea(
             citations=cited,
-            idea_id=f"{self.name}-i{len(self.ideas) + 1}", round=round, kind=kind,
-            title=str(data.get("title") or text[:60]), text=text,
-            hypothesis=str(data.get("hypothesis", "")), method=str(data.get("method", "")),
+            idea_id=f"{self.name}-i{idea_number}", round=round, kind=kind,
+            title=title, text=text,
+            hypothesis=hypothesis, method=str(data.get("method", "")),
             prediction=_parse_prediction(data, self.run_seed), source_urls=source_urls,
         )
         idea.embedding = llm.embed([idea.text])[0].tolist()
@@ -289,6 +336,7 @@ class Agent:
                 f"Datasets loaded: {', '.join(d['name'] for d in self.datasets) or 'none'}\n"
                 "Each step is one JSON object with a \"do\" field:\n"
                 '- {"do": "exa"} or "openalex", "arxiv", "pubmed", with "query": search published papers\n'
+                '- {"do": "alphafold", "query": "..."}: predicted protein structure and per-residue confidence from AlphaFold DB\n'
                 '- {"do": "read", "source": "S12", "question": "..."}: read one source for a specific fact or number\n'
                 '- {"do": "datasets", "query": "..."}: look for a real public dataset (Zenodo, Hugging Face); '
                 "short queries of 2-4 plain words work best\n"

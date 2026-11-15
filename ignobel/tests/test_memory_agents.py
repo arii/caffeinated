@@ -1,6 +1,6 @@
 import agents
 import memory
-from memory import Item, LocalMemory, SharedMemory, PastDevMemory, share
+from memory import Item, LocalMemory, PastDevMemory, SharedMemory, share
 
 
 def _fill(mem, who, texts, kind="library"):
@@ -129,3 +129,80 @@ def test_agent_methods_return_valid_shapes():
     b = agents.Agent(spec, LocalMemory(), {})
     b.load_state(st)
     assert b.current_idea().idea_id == idea2.idea_id
+
+
+def test_new_idea_unwraps_nested_fields_and_never_uses_untitled():
+    spec = agents.AgentSpec(name="biology4", field="biology", family="biology", seed_queries=[])
+    a = agents.Agent(spec, LocalMemory(), {})
+    question = "Can a protein's predicted confidence reveal a silly pattern?"
+    idea = a._new_idea({"study": {"question": question, "null_hypothesis": "There is no pattern."}},
+                       "propose", 4, [])
+    assert idea.idea_id == "biology4-i1"
+    assert idea.title == question[:60] and idea.text == question
+    assert idea.hypothesis == "There is no pattern."
+
+    idea = a._new_idea({"title": "untitled idea", "idea": "untitled",
+                        "hypothesis": "Protein confidence varies by residue."}, "refine", 5, [])
+    assert idea.title == "Protein confidence varies by residue."
+    idea = a._new_idea({"response": {"study": {}}}, "refine", 6, [])
+    assert idea.idea_id == "biology4-i3" and idea.title == "biology4 idea 3"
+    assert all("untitled" not in item.title.casefold() for item in a.ideas)
+
+
+def test_hypothesis_statuses_have_distinct_private_pastdev_ids(monkeypatch, tmp_path):
+    import world as world_mod
+
+    fake, run = _past_run(monkeypatch, tmp_path)
+    spec = agents.AgentSpec(name="fleming", field="biology", family="biology", seed_queries=[])
+    a = agents.Agent(spec, PastDevMemory("fleming", run), {})
+    idea = a._new_idea({"title": "A residue-level confidence test", "idea": "A hypothesis about pLDDT."},
+                       "propose", 0, [])
+    world = world_mod.World.__new__(world_mod.World)
+    world.pastdev = run
+    world.status_counts = {}
+    world._hypothesis(a, idea, 0, "proposed, not tested yet")
+    world._hypothesis(a, idea, 1, "testing")
+    run.flush()
+
+    assert world.status_counts == {idea.idea_id: 2}
+    assert f"fam-t-{idea.idea_id}-hyp" in fake.points
+    assert fake.points[f"fam-t-{idea.idea_id}-hyp"]["content"].startswith(
+        f"Hypothesis {idea.idea_id} (lab fleming): A residue-level confidence test.")
+    for number, status in ((1, "proposed, not tested yet"), (2, "testing")):
+        point = fake.points[f"fam-t-{idea.idea_id}-status-{number}"]
+        assert point["metadata"]["kind"] == "status"
+        assert point["metadata"]["idea_id"] == idea.idea_id
+        assert point["metadata"]["round"] == number - 1
+        assert point["metadata"]["status"] == status
+        assert point["identity"] == "fam-t-fleming"
+        assert point["audience"] == "fam-t-private-fleming"
+        assert point["timestamp"]
+
+
+def test_recall_forwards_occurrence_window_and_sort(monkeypatch, tmp_path):
+    fake, run = _past_run(monkeypatch, tmp_path)
+    run.recall("lab", "status history", 10, at="2025-01-01T00:00:00Z",
+               occurred_from="2024-01-01T00:00:00Z", occurred_to="2024-01-02T00:00:00Z",
+               sort="chronological")
+    body = next(call[2] for call in fake.calls if call[1] == "/recall")
+    assert body == {
+        "query": "status history", "identity": "fam-t-lab", "limit": 10,
+        "queryTimestamp": "2025-01-01T00:00:00Z",
+        "occurredFrom": "2024-01-01T00:00:00Z",
+        "occurredTo": "2024-01-02T00:00:00Z",
+        "sort": "chronological",
+    }
+
+
+def test_status_counts_survive_world_state_resume(tmp_path):
+    import run_arm
+
+    out = tmp_path / "status-state"
+    world = run_arm.build_world("full", 1, 0, out, roster="flat")
+    world.log.append(0, "quill", "idea", {})
+    world.status_counts = {"quill-i1": 2}
+    world.save_state()
+
+    resumed = run_arm.build_world("full", 1, 0, out, roster="flat")
+    assert resumed.load_state()
+    assert resumed.status_counts == {"quill-i1": 2}

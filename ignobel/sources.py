@@ -16,14 +16,14 @@ import contextlib
 import csv
 import hashlib
 import io
-from itertools import zip_longest
 import json
+import math
 import os
 import re
-import shutil
 import threading
 import time
 import xml.etree.ElementTree as ET
+from itertools import zip_longest
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.error import HTTPError, URLError
@@ -37,7 +37,8 @@ HERE = Path(__file__).parent
 CACHE_DIR = Path(os.environ.get("RESEARCH_CACHE_DIR", HERE / "data" / "research_cache"))
 MAX_CALLS = int(os.environ.get("RESEARCH_MAX_CALLS", "600") or 0)
 UA = "ignobel-research/0.1 (https://github.com/arii/caffeinated)"
-HOSTS = ("api.openalex.org", "export.arxiv.org", "eutils.ncbi.nlm.nih.gov", "zenodo.org", "huggingface.co")
+HOSTS = ("api.openalex.org", "export.arxiv.org", "eutils.ncbi.nlm.nih.gov", "zenodo.org", "huggingface.co",
+         "rest.uniprot.org", "alphafold.ebi.ac.uk")
 HOST_SUFFIXES = (".huggingface.co", ".hf.co")  # Hugging Face file CDN
 LITERATURE = ("exa", "openalex", "arxiv", "pubmed")
 MAX_FILE_BYTES = 8_000_000
@@ -113,6 +114,115 @@ def _json(url: str, **kw):
         return json.loads(_http(url, **kw).decode("utf-8", errors="replace"))
     except json.JSONDecodeError as e:
         raise ResearchError(f"{urlsplit(url).hostname} returned invalid JSON") from e
+
+
+def _uniprot_records(query: str) -> list[dict]:
+    if re.fullmatch(r"[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z0-9]{3}[0-9])?", query.upper()):
+        return [{"primaryAccession": query.upper()}]
+    params = {"query": query, "fields": "accession,protein_name,organism_name,gene_names",
+              "size": 3, "format": "json"}
+    records = _json("https://rest.uniprot.org/uniprotkb/search?" + urlencode(params)).get("results") or []
+    if not records:
+        raise ResearchError(f"UniProt found no proteins for {query!r}")
+    return records
+
+
+def _alphafold_model(query: str) -> dict:
+    errors = []
+    for record in _uniprot_records(query):
+        accession = str(record.get("primaryAccession") or record.get("accession") or "").upper()
+        if not accession:
+            continue
+        try:
+            predictions = _json(f"https://alphafold.ebi.ac.uk/api/prediction/{quote(accession)}")
+        except ResearchError as e:
+            errors.append(str(e))
+            continue
+        if isinstance(predictions, dict):
+            predictions = [predictions]
+        if predictions:
+            return next((p for p in predictions if p.get("uniprotAccession") == accession), predictions[0])
+    details = f": {'; '.join(errors)}" if errors else ""
+    raise ResearchError(f"AlphaFold DB has no prediction for {query!r}{details}")
+
+
+def _mock_alphafold_model(query: str) -> dict:
+    return {
+        "entryId": "AF-P69905-F1",
+        "uniprotAccession": "P69905",
+        "uniprotDescription": "Hemoglobin subunit alpha",
+        "organismScientificName": "Homo sapiens",
+        "sequence": "M" * 142,
+        "globalMetricName": "pLDDT",
+        "globalMetricValue": 98.06,
+        "pdbUrl": "https://alphafold.ebi.ac.uk/mock/AF-P69905-F1-model.pdb",
+        "plddtDocUrl": "https://alphafold.ebi.ac.uk/mock/AF-P69905-F1-confidence.json",
+        "modelCreatedDate": "2025-08-01T00:00:00Z",
+    }
+
+
+def _alphafold_hit_and_lead(model: dict) -> tuple[dict, dict]:
+    accession = str(model.get("uniprotAccession") or "")
+    entry = str(model.get("entryId") or model.get("modelEntityId") or f"AF-{accession}-F1")
+    confidence_url = str(model.get("plddtDocUrl") or "")
+    pdb_url = str(model.get("pdbUrl") or "")
+    if not accession or not confidence_url or not pdb_url or not _allowed(confidence_url) or not _allowed(pdb_url):
+        raise ResearchError("AlphaFold prediction is missing a valid confidence or PDB URL")
+    sequence = model.get("sequence") or model.get("uniprotSequence") or ""
+    length = len(sequence) or max(0, int(model.get("sequenceEnd") or 0) - int(model.get("sequenceStart") or 1) + 1)
+    metric_name = str(model.get("globalMetricName") or "pLDDT").casefold()
+    mean = (model.get("globalMetricValue", model.get("globalMeanPlddt", "unknown"))
+            if metric_name == "plddt" else model.get("globalMeanPlddt", "unknown"))
+    protein = _clean(model.get("uniprotDescription") or model.get("proteinName") or f"protein {accession}")
+    organism = _clean(model.get("organismScientificName") or "unknown organism")
+    title = f"AlphaFold model {entry}: {protein} ({organism})"
+    entry_url = f"https://alphafold.ebi.ac.uk/entry/{quote(entry)}"
+    summary = f"Sequence length: {length} residues. Global mean pLDDT: {mean}. PDB model: {pdb_url}."
+    hit = {"title": title, "url": entry_url,
+           "published": str(model.get("modelCreatedDate") or "")[:10], "text": summary}
+    lead = {
+        "id": f"alphafold:{accession}:{confidence_url}",
+        "title": f"{title} per-residue confidence (pLDDT)",
+        "url": entry_url,
+        "license": "CC BY 4.0",
+        "bytes": 0,
+        "about": summary,
+        "file_url": confidence_url,
+        "format": "alphafold_confidence_json",
+        "preview": ["residue_number", "plddt", "confidence_category"],
+    }
+    return hit, lead
+
+
+def _confidence_category(plddt: float) -> str:
+    if plddt < 50:
+        return "very_low"
+    if plddt < 70:
+        return "low"
+    if plddt < 90:
+        return "confident"
+    return "very_high"
+
+
+def _confidence_csv(data: dict | list) -> bytes:
+    if isinstance(data, dict):
+        residues = data.get("residueNumber") or data.get("residue_number")
+        scores = data.get("confidenceScore") or data.get("plddt")
+    elif isinstance(data, list):
+        residues = [row.get("residueNumber", row.get("residue_number")) for row in data if isinstance(row, dict)]
+        scores = [row.get("confidenceScore", row.get("plddt")) for row in data if isinstance(row, dict)]
+    else:
+        residues, scores = [], []
+    if not isinstance(residues, list) or not isinstance(scores, list) or not residues or len(residues) != len(scores):
+        raise ResearchError("AlphaFold confidence data has an unsupported shape")
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(("residue_number", "plddt", "confidence_category"))
+    for residue, score in zip(residues, scores):
+        value = _num(str(score))
+        if value is not None:
+            writer.writerow((residue, value, _confidence_category(value)))
+    return out.getvalue().encode("utf-8")
 
 
 def _clean(text) -> str:
@@ -247,6 +357,15 @@ class Bibliography:
         hits = {"openalex": _openalex, "arxiv": _arxiv, "pubmed": _pubmed}[tool](query, n)
         return self.add(agent, tool, query, hits)
 
+    def alphafold(self, agent: str, query: str) -> tuple[list[dict], dict]:
+        """Resolve a protein name or UniProt accession to an AlphaFold source and pLDDT lead."""
+        query = _clean(query)[:200]
+        if not query:
+            raise ResearchError("empty query")
+        model = _mock_alphafold_model(query) if llm.MOCK else _alphafold_model(query)
+        hit, lead = _alphafold_hit_and_lead(model)
+        return self.add(agent, "alphafold", query, [hit]), lead
+
     def get(self, sid: str) -> dict | None:
         for r in ar.read_log(self.path):
             if r.get("type") == "source" and r.get("id") == sid:
@@ -294,7 +413,7 @@ def _num(x: str) -> float | None:
         v = float(x)
     except (TypeError, ValueError):
         return None
-    return v if v == v and abs(v) != float("inf") else None
+    return v if math.isfinite(v) else None
 
 
 def profile(header: list[str], rows: list[list[str]]) -> tuple[list[dict], list[list[str]]]:
@@ -377,6 +496,11 @@ MOCK_LEAD = {"id": "hf:scikit-learn/iris:Iris.csv", "title": "Iris flower measur
              "file_url": "https://huggingface.co/datasets/scikit-learn/iris/resolve/main/Iris.csv"}
 
 
+def _mock_confidence_data() -> dict:
+    scores = [round(40 + (i * 37 % 60), 2) for i in range(1, 143)]
+    return {"residueNumber": list(range(1, len(scores) + 1)), "confidenceScore": scores}
+
+
 def find_datasets(query: str, n: int = 3, skip=()) -> list[dict]:
     """Up to `n` candidate real datasets for `query` that are not in `skip` (ids the lab already has),
     alternating between providers, each with a preview of its column names."""
@@ -408,11 +532,15 @@ def find_datasets(query: str, n: int = 3, skip=()) -> list[dict]:
 def fetch_dataset(lead: dict, dest: Path) -> dict:
     """Download a lead's CSV, keep the analysable columns, write it to `dest`. Returns the dataset record."""
     if llm.MOCK:
-        raw = PUBLIC_IRIS.read_bytes()
+        raw = (_confidence_csv(_mock_confidence_data()) if lead.get("format") == "alphafold_confidence_json"
+               else PUBLIC_IRIS.read_bytes())
     else:
         if lead.get("bytes", 0) > MAX_FILE_BYTES:
             raise ResearchError("file too large")
-        raw = _http(lead["file_url"], max_bytes=MAX_FILE_BYTES)
+        if lead.get("format") == "alphafold_confidence_json":
+            raw = _confidence_csv(_json(lead["file_url"]))
+        else:
+            raw = _http(lead["file_url"], max_bytes=MAX_FILE_BYTES)
     header, rows = _table(raw)
     truncated = len(rows) > MAX_ROWS
     cols, clean = profile(header, rows[:MAX_ROWS])

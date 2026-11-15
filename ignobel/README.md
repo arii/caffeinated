@@ -21,6 +21,9 @@ Each round a daughter chooses her own research steps (`research` events):
   Exa search and reading go through the team's autoresearch `research.py`, vendored unchanged as
   `autoresearch_research.py`. Every source gets an S id in `<run>/research_log.jsonl`; an idea or
   abstract can only cite S ids its author really holds, so a made-up citation is dropped.
+- **Protein structures:** `alphafold` resolves a protein or gene name (or UniProt accession) to an
+  AlphaFold DB model and offers per-residue pLDDT confidence as a loadable table with
+  `residue_number`, `plddt`, and `confidence_category` columns.
 - **Data:** `datasets` finds real public datasets (Zenodo CSV deposits with a DOI, Hugging Face CSV
   datasets) and `load` downloads one into `<run>/data/<agent>/`. A daughter cannot run a study
   until she has loaded one. Study code reads it in the sandbox (`lab_runtime.rows`, or pandas).

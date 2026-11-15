@@ -7,14 +7,14 @@ import json
 import statistics
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import memory
 
 
 def _t(ts: str) -> float:
-    return datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()  # noqa: FURB162 (python 3.10 rejects Z)
+    return datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
 
 
 def _tokens(text: str) -> int:
@@ -70,22 +70,48 @@ def main(run_dir: str) -> int:
         "stranger_sees_owner_private": any(probe["id"] in r["sourceIds"] for r in stranger_read),
     }
 
-    # supersession and time travel on a hypothesis that got a study result
-    tested = [w for w in hyp if w["superseding"]] or [w for w in writes if w["superseding"]]
-    if tested:
-        w = tested[0]
-        lab = run.authors[w["id"]]
-        first = min(_t(x["ts"]) for x in writes if x["id"] == w["id"])
-        before = datetime.fromtimestamp(first + 1).astimezone().isoformat()
-        q = f"current status of hypothesis {w['id'].removeprefix(f'fam-{tag}-{lab}-').removesuffix('-hyp')} by lab {lab}"
-        now_read = run.recall(lab, q, 5)
-        then_read = run.recall(lab, q, 5, at=before)
+    # Time travel across individually dated status records and the stable current hypothesis.
+    status_groups = {}
+    prefix = f"fam-{tag}-"
+    for write in writes:
+        source_id = write["id"]
+        stem, separator, number = source_id.removeprefix(prefix).rpartition("-status-")
+        if separator and number.isdigit():
+            status_groups.setdefault(stem, []).append(write)
+    histories = [(idea_id, sorted(records, key=lambda w: int(w["id"].rsplit("-status-", 1)[1])))
+                 for idea_id, records in status_groups.items() if len(records) >= 2]
+    if histories:
+        idea_id, history_writes = histories[0]
+        lab = run.authors[history_writes[0]["id"]]
+        status_ids = {w["id"] for w in history_writes}
+        first_write = history_writes[0]
+        first_id = first_write["id"]
+        first_time = first_write.get("occurredAt") or first_write["ts"]
+        occurred_to = datetime.fromtimestamp(_t(first_time) + 1, timezone.utc).isoformat().replace(
+            "+00:00", "Z")
+        history_query = f"status history of hypothesis {idea_id}"
+        history = run.recall(lab, history_query, 20, sort="chronological")
+        early = run.recall(lab, history_query, 20, occurred_to=occurred_to)
+        current_id = f"{prefix}{idea_id}-hyp"
+        current_query = f"current status of hypothesis {idea_id}"
+        current = run.recall(lab, current_query, 5)
+
+        def display(records, wanted):
+            return [{"content": r["content"][:300], "occurredAt": r["occurredAt"],
+                     "sourceIds": [sid for sid in r["sourceIds"] if sid in wanted],
+                     "supersededAt": r["supersededAt"]}
+                    for r in records if set(r["sourceIds"]) & wanted]
+
+        early_statuses = display(early, status_ids)
         result["time_travel"] = {
-            "lab": lab, "source_id": w["id"], "query": q, "as_of": before,
-            "now": [{"content": r["content"][:300], "supersededAt": r["supersededAt"], "excerpts": r["excerpts"]}
-                    for r in now_read if w["id"] in r["sourceIds"]],
-            "as_of_then": [{"content": r["content"][:300], "supersededAt": r["supersededAt"]}
-                           for r in then_read if w["id"] in r["sourceIds"]],
+            "lab": lab, "idea_id": idea_id,
+            "history_query": history_query, "history_sort": "chronological",
+            "history": display(history, status_ids),
+            "occurred_to": occurred_to, "first_status_source_id": first_id,
+            "early_status": early_statuses,
+            "only_first_status": [sid for r in early_statuses for sid in r["sourceIds"]] == [first_id],
+            "current_query": current_query, "current_status_source_id": current_id,
+            "current_status": display(current, {current_id}),
         }
 
     # tokens: one read vs re-reading every note a lab can see

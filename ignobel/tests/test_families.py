@@ -1,13 +1,14 @@
-import os
 import asyncio
-import json
 import filecmp
-from pathlib import Path
+import json
+import os
+
+import pytest
+from conftest import requires_sandbox
 
 import events
 import families
 import run_arm
-from conftest import requires_sandbox
 
 
 def _cfg(**over):
@@ -119,7 +120,8 @@ def test_daughters_research_real_sources_and_load_a_public_dataset(tmp_path):
     asyncio.run(w.round0())
     evs = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "research"]
     assert {e.payload["tool"] for e in evs} >= {"datasets", "load"} and {e.agent for e in evs} == {a.name for a in w.agents}
-    log = [json.loads(l) for l in open(tmp_path / "research_log.jsonl")]
+    with (tmp_path / "research_log.jsonl").open() as f:
+        log = [json.loads(line) for line in f]
     sids = {r["id"] for r in log if r["type"] == "source"}
     for a in w.agents:
         d = a.datasets[0]
@@ -129,6 +131,54 @@ def test_daughters_research_real_sources_and_load_a_public_dataset(tmp_path):
         idea = a.current_idea()
         assert idea.citations and set(idea.citations) <= set(a.known_sources())  # only sources she really has
         assert a.can_run()
+
+
+def test_alphafold_mock_registers_source_and_loads_confidence_lead(tmp_path, monkeypatch):
+    import agents
+    import sources
+    from memory import LocalMemory
+    from world import World
+
+    monkeypatch.setattr(sources.llm, "MOCK", True)
+    monkeypatch.setattr(sources, "_json", lambda *args, **kwargs: pytest.fail("MOCK called the network"))
+    monkeypatch.setattr(sources, "_http", lambda *args, **kwargs: pytest.fail("MOCK called the network"))
+    world = World.__new__(World)
+    world.bib = sources.Bibliography(tmp_path)
+    world.cfg = {"max_datasets": 2}
+    world.out = tmp_path
+    agent = agents.Agent(
+        agents.AgentSpec(name="mendel", field="biology", family="biology", seed_queries=[]),
+        LocalMemory(), {},
+    )
+
+    step = agents._steps({"steps": [{"do": "alphafold", "query": "hemoglobin"}]})[0]
+    result = world._do_step(agent, step)
+    assert result["results"][0]["id"].startswith("S")
+    source = world.bib.get(result["results"][0]["id"])
+    assert source["title"].startswith("AlphaFold model AF-P69905-F1:")
+    assert "sequence length: 142" in source["highlights"][0].lower()
+    assert "global mean plddt: 98.06" in source["highlights"][0].lower()
+    assert "model.pdb" in source["highlights"][0]
+    assert result["lead"] == "D1"
+
+    loaded = world._do_step(agent, {"tool": "load", "lead": result["lead"]})
+    assert "error" not in loaded
+    assert {c["name"] for c in agent.datasets[0]["columns"]} == {
+        "residue_number", "plddt", "confidence_category",
+    }
+    assert agent.datasets[0]["rows"] == 142
+
+
+def test_uniprot_name_resolution_does_not_treat_ten_letters_as_an_accession(monkeypatch):
+    import sources
+
+    urls = []
+    monkeypatch.setattr(sources, "_json", lambda url: urls.append(url) or
+                        {"results": [{"primaryAccession": "P69905"}]})
+    assert sources._uniprot_records("hemoglobin")[0]["primaryAccession"] == "P69905"
+    assert "query=hemoglobin" in urls[0]
+    assert sources._uniprot_records("A0A0B4J2F0") == [{"primaryAccession": "A0A0B4J2F0"}]
+    assert len(urls) == 1
 
 
 def test_made_up_citations_and_leads_are_rejected(tmp_path):
@@ -228,8 +278,9 @@ def test_loading_two_leads_in_one_plan_keeps_their_ids(tmp_path):
 
 
 def test_unsafe_links_and_bad_cells_are_dropped(tmp_path, monkeypatch):
-    import sources
     import trace
+
+    import sources
     assert "href" not in trace.link("javascript:alert(1)", "x") and "href" in trace.link("https://doi.org/10.1/x", "x")
     assert not sources._allowed("https://evil.example/x")
     try:
@@ -241,6 +292,7 @@ def test_unsafe_links_and_bad_cells_are_dropped(tmp_path, monkeypatch):
     (tmp_path / "d.csv").write_text("a,b\n1,2\nnan,3\n4,inf\n5,6\n")
     monkeypatch.chdir(tmp_path)
     import importlib
+
     import lab_runtime
     assert importlib.reload(lab_runtime).rows("d", ["a", "b"]) == [(1.0, 2.0), (5.0, 6.0)]
 

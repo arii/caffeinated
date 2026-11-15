@@ -8,8 +8,8 @@ import queue
 import threading
 import time
 from datetime import datetime, timezone
-from typing import Literal, Protocol
 from pathlib import Path
+from typing import Literal, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 import llm
 
-Kind = Literal["idea", "hypothesis", "prediction", "result", "failure", "library"]
+Kind = Literal["idea", "hypothesis", "prediction", "result", "failure", "status", "library"]
 
 
 class Item(BaseModel):
@@ -73,7 +73,7 @@ class SharedMemory(LocalMemory):
 
 
 API_BASE = os.environ.get("PAST_BASE_URL", "https://api.past.dev").rstrip("/") + "/api/v1"
-REMOTE_KINDS = {"idea", "hypothesis", "result", "failure"}  # papers stay in the lab's local library
+REMOTE_KINDS = {"idea", "hypothesis", "result", "failure", "status"}  # papers stay in the lab's local library
 
 
 def _api(method: str, path: str, body: dict | None = None, key: str | None = None) -> dict:
@@ -188,8 +188,9 @@ class PastDevRun:
                     self.pending[payload["id"]] = ing
                 self._log({"type": "write", "id": payload["id"], "identity": payload["identity"],
                            "audience": payload["audience"], "label": payload["label"], "ingestionId": ing,
-                           "superseding": bool(prev), "ms": round((time.monotonic() - started) * 1000)})
-            except Exception as e:  # a failed write must not stop the run; it is logged
+                           "occurredAt": payload["timestamp"], "superseding": bool(prev),
+                           "ms": round((time.monotonic() - started) * 1000)})
+            except Exception as e:  # a failed write must not stop the run; it is logged  # noqa: BLE001
                 self._log({"type": "write_error", "id": payload["id"], "error": str(e)[:300]})
                 with self.lock:
                     self.pending.pop(payload["id"], None)
@@ -202,7 +203,8 @@ class PastDevRun:
         for sid, ing in waiting:
             try:
                 status = self._status(ing)
-            except Exception:
+            except Exception as e:  # noqa: BLE001
+                self._log({"type": "poll_error", "id": sid, "error": str(e)[:300]})
                 continue
             if status in ("completed", "failed"):
                 with self.lock:
@@ -214,14 +216,22 @@ class PastDevRun:
         with self.lock:
             return self.source_id(item_id) in self.pending
 
-    def recall(self, reader: str, query: str, k: int, at: str | None = None) -> list[dict]:
+    def recall(self, reader: str, query: str, k: int, at: str | None = None, *,
+               occurred_from: str | None = None, occurred_to: str | None = None,
+               sort: str | None = None) -> list[dict]:
         body = {"query": query, "identity": self.ident(reader), "limit": k}
         if at:
             body["queryTimestamp"] = at
+        if occurred_from:
+            body["occurredFrom"] = occurred_from
+        if occurred_to:
+            body["occurredTo"] = occurred_to
+        if sort:
+            body["sort"] = sort
         started = time.monotonic()
         try:
             resp = _api("POST", "/recall", body, self.key)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._log({"type": "recall_error", "reader": reader, "error": str(e)[:300]})
             return []
         out, foreign = [], 0
@@ -236,6 +246,7 @@ class PastDevRun:
                         "sourceIds": sids, "authors": sorted({self.authors.get(s, "?") for s in sids}),
                         "excerpts": [x for s in sources for x in (s.get("excerpts") or [])][:2]})
         self._log({"type": "recall", "reader": reader, "query": query[:200], "at": at,
+                   "occurred_from": occurred_from, "occurred_to": occurred_to, "sort": sort,
                    "ms": round((time.monotonic() - started) * 1000), "n": len(out), "foreign": foreign,
                    "tokens": sum(len(r["content"]) // 4 for r in out),
                    "authors": sorted({a for r in out for a in r["authors"]}),

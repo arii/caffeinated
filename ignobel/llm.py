@@ -106,11 +106,11 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     import openai
     for attempt in range(2):  # a cut-off reply is retried once with double the budget
         try:
-            resp = _openai_call(lambda client: client.chat.completions.create(
+            resp = _openai_call(lambda client, token_budget=budget: client.chat.completions.create(
                 model=model,
                 messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
                 response_format={"type": "json_object"},
-                max_completion_tokens=budget,
+                max_completion_tokens=token_budget,
                 seed=seed,
             ))
         except openai.UnprocessableEntityError as e:
@@ -341,7 +341,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
     if kind == "refine":
         # A sensible scientist keeps the idea, sharpens the hypothesis, and predicts what it saw last time.
         prompt = ctx.get("_prompt", "")
-        m = re.search(r"study: (.*?)(?:\nLast study|\nReturn)", prompt, re.S)
+        m = re.search(r"study: (.*?)(?:\nLast study|\nReturn)", prompt, re.DOTALL)
         text = m.group(1).strip() if m else _pick(_IDEAS, h).format(noun=noun, method=method)
         seen = re.search(r"actual effect=(-?[0-9.]+) \(([+-])\)", prompt)
         if seen:
@@ -365,7 +365,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
         return {"lesson": _pick(_LESSONS, h)}
     if kind == "research_plan":
         query = _pick(ctx.get("queries") or [noun], h)
-        paper = {"tool": _pick(("openalex", "arxiv", "pubmed", "exa"), h, 8), "query": query}
+        paper = {"tool": _pick(("openalex", "arxiv", "pubmed", "exa", "alphafold"), h, 8), "query": query}
         if not ctx.get("datasets"):
             first = {"tool": "load", "lead": "D1"} if ctx.get("leads") else {"tool": "datasets", "query": query}
             return {"steps": [first, paper], "why": "mock: a study needs real data"}
