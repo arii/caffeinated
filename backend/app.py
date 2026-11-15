@@ -359,6 +359,7 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
         holder["manager"] = Manager(directory, runner)
         holder["openai"] = openai_launch.Launcher(Path(directory) / "openai-runs")
         yield
+        holder["openai"].close()
         holder["manager"].close()
 
     app = FastAPI(title="Lab Environment", lifespan=lifespan)
