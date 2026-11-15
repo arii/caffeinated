@@ -41,7 +41,9 @@ def esc(x) -> str:
 
 
 def link(url, text=None) -> str:
-    return f"<a href='{esc(url or '#')}'>{esc(text or url or 'link')}</a>"
+    if not str(url or "").lower().startswith(("https://", "http://")):  # never emit javascript: or data: links
+        return esc(text or url or "")
+    return f"<a href='{esc(url)}' rel='noopener noreferrer'>{esc(text or url)}</a>"
 
 
 def body(e: dict, run: Path, agents: dict) -> str:
