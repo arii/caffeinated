@@ -384,6 +384,52 @@ export function createWorld(THREE) {
   scientist(4.1, 2.1, -.18, 'PIP', '#e5b58d', '#eab19b');
   scientist(-4.6, -2.5, .2, 'MILO', '#bc8b62', '#b4b6d5');
 
+
+  // Replay agents: one little figure per swarm agent, walking to the station of its current role.
+  const agentFigures = new Map();
+  const roleColors = { exploit: '#9dc17a', divergent: '#e9c46a', scout: '#e9926a', critic: '#7d9bc7', conductor: '#b48ed1', worker: '#9dc17a', baseline: '#9dc17a' };
+  function agentHome(agent, index) {
+    const role = agent.kind === 'Conductor' ? 'conductor' : agent.role;
+    const spot = role === 'scout' ? [0, -8.4] : role === 'critic' ? [6.6, -2.2] : role === 'conductor' ? [2.2, heroZ + 1.6] : [-6.6, .8];
+    const ring = (index % 4) - 1.5;
+    return new THREE.Vector3(spot[0] + ring * .95, 0, spot[1] + (role === 'scout' ? Math.abs(ring) * .3 : ring * .7));
+  }
+  function drawAgentLabel(fig, agent) {
+    const ctx = fig.canvas.getContext('2d');
+    ctx.clearRect(0, 0, 256, 96);
+    ctx.fillStyle = '#fff8e9ee'; ctx.beginPath(); ctx.roundRect(4, 4, 248, 88, 18); ctx.fill();
+    ctx.fillStyle = '#4c604d'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(agent.id, 128, 34);
+    ctx.fillStyle = roleColors[agent.role] || '#9dc17a'; ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(String(agent.role).toUpperCase(), 128, 58);
+    ctx.fillStyle = '#e4e8d2'; ctx.fillRect(28, 70, 200, 10);
+    ctx.fillStyle = agent.boredom >= 70 ? '#e8a37f' : '#9dc17a'; ctx.fillRect(28, 70, 2 * Math.min(100, agent.boredom || 0), 10);
+    fig.texture.needsUpdate = true;
+  }
+  function syncAgents(list = []) {
+    const ids = new Set(list.map(a => a.id));
+    for (const [id, fig] of agentFigures) if (!ids.has(id)) { scene.remove(fig.group); agentFigures.delete(id); }
+    list.forEach((agent, index) => {
+      let fig = agentFigures.get(agent.id);
+      if (!fig) {
+        const group = new THREE.Group();
+        const body = new THREE.MeshStandardMaterial({ color: roleColors[agent.role] || '#9dc17a', roughness: .8 });
+        const head = new THREE.Mesh(new THREE.BoxGeometry(.42, .38, .38), new THREE.MeshStandardMaterial({ color: '#e5b58d', roughness: .9 }));
+        head.position.y = 1.05; group.add(head);
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(.5, .62, .32), body); torso.position.y = .55; group.add(torso);
+        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 96;
+        const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthWrite: false })); sprite.scale.set(1.5, .56, 1); sprite.position.y = 1.75; group.add(sprite);
+        fig = { group, body, canvas, texture, target: agentHome(agent, index), key: '' };
+        group.position.copy(fig.target); scene.add(group); agentFigures.set(agent.id, fig);
+      }
+      fig.target = agentHome(agent, index);
+      fig.body.color.set(roleColors[agent.kind === 'Conductor' ? 'conductor' : agent.role] || '#9dc17a');
+      const key = `${agent.role}|${agent.boredom}`;
+      if (key !== fig.key) { fig.key = key; drawAgentLabel(fig, agent); }
+    });
+  }
+
   // Subtle airborne motes soften the hard geometric architecture.
   const dustPositions = new Float32Array(100 * 3);
   for (let i = 0; i < 100; i++) {
@@ -453,10 +499,11 @@ export function createWorld(THREE) {
       if (item.type === 'wave') o.rotation.z = -.45 + Math.sin(time * 2 + item.phase) * .18;
       if (item.type === 'scientist') o.rotation.z = Math.sin(time * .7 + item.phase) * .012;
     }
+    for (const fig of agentFigures.values()) { fig.group.position.lerp(fig.target, Math.min(1, delta * 2.2)); fig.group.position.y = Math.abs(Math.sin(time * 6 + fig.target.x)) * (fig.group.position.distanceTo(fig.target) > .1 ? .12 : .02); }
     for (const bubble of bubbles) bubble.object.position.y = bubble.baseY + ((time * .15 + bubble.phase) % 1) * bubble.height;
     dust.rotation.y = Math.sin(time * .025) * .025;
     mintGlow.emissiveIntensity = .15 + Math.sin(time * 1.4) * .03;
   }
   update(0);
-  return { scene, camera, interactables, colliders, update, bounds: { minX: -13.6, maxX: 13.6, minZ: -15.4, maxZ: 15.2 } };
+  return { scene, camera, interactables, colliders, update, syncAgents, bounds: { minX: -13.6, maxX: 13.6, minZ: -15.4, maxZ: 15.2 } };
 }
