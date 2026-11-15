@@ -5,6 +5,7 @@
   "objective": "loss",
   "eps": 0.02,
   "eps_note": "loss is 1 - (replicated and significant), 0 or 1; any confirmed study beats an unconfirmed one",
+  "open_ended": true,
   "k": 5,
   "knn": 3,
   "patience": 5,

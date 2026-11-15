@@ -379,6 +379,17 @@ class ConvergedTest(unittest.TestCase):
         self.assertGreaterEqual(state["frontier_stall"], 3 * self.profile["patience"])
         self.assertEqual(state["regime"], "CONVERGED")
 
+    def test_open_ended_profile_never_converges(self):
+        profile = dict(self.profile, open_ended=True)
+        events = autoresearch_ledger()
+        self.assertNotEqual(meter.status(profile, events)["regime"], "CONVERGED")
+        best = events[meter.status(self.profile, events)["best_seq"] - 1]["descriptor"]
+        descriptor = next(e["descriptor"] for e in events if e["descriptor"] != best)
+        blocked = meter.gate(self.profile, events, descriptor, sources=["s1"])["reasons"]
+        self.assertIn("converged: confirmation runs only", blocked)
+        reasons = meter.gate(profile, events, descriptor, sources=["s1"])["reasons"]
+        self.assertNotIn("converged: confirmation runs only", reasons)
+
     def test_does_not_enter_when_a_top_level_cell_is_unvisited(self):
         events = autoresearch_ledger(include_all=False)
         state = meter.status(self.profile, events)

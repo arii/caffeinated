@@ -268,8 +268,6 @@ def acceptance_reference(best_val, baseline_val):
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
-    if regime == "CONVERGED" and open_ended():
-        regime = "PARADIGM_BREAKOUT"
     agent_status = {agent: meter.status(profile, events, agent=agent) for agent in agents}
     per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
