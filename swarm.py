@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 import uuid
-from contextlib import contextmanager, redirect_stdout
+from contextlib import ExitStack, contextmanager, redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -122,36 +122,151 @@ def unique_tag(repo, base):
     return f"{base}-{index}"
 
 
-def ensure_clean_worktree(path):
-    status = git_text(path, "status", "--porcelain")
+SANDBOX_BUILD = f"docker build -t {sandbox.SANDBOX_IMAGE} -f testcases/Dockerfile testcases"
+
+
+def preflight(args, memory_backend, exa_enabled):
+    """Fail before any branch or worktree exists when the run cannot start."""
+    problems = []
+    if not args.replay:
+        if args.llm == "tinker":
+            model = args.model or os.environ.get("TINKER_MODEL")
+            problems.append(llm.tinker_setup_problem(model))
+            if not model:
+                problems.append("set --model or TINKER_MODEL (in the environment or .env)")
+            if not os.environ.get("TINKER_API_KEY"):
+                problems.append("TINKER_API_KEY is required for --llm tinker (environment or .env)")
+        elif args.llm == "openai":
+            if not (args.model or os.environ.get("OPENAI_MODEL")):
+                problems.append("set --model or OPENAI_MODEL for --llm openai")
+            if not os.environ.get("OPENAI_API_KEY"):
+                problems.append("OPENAI_API_KEY is required for --llm openai")
+        if memory_backend == "pastdev" and not memory.api_key_for_arm(args.arm):
+            problems.append(
+                f"PAST_API_KEY is required for the pastdev memory backend (arm {args.arm} "
+                "default); set it in the environment or .env, or pass --memory-backend local"
+            )
+        if exa_enabled and not os.environ.get("EXA_API_KEY"):
+            problems.append(
+                f"EXA_API_KEY is required for Exa search (arm {args.arm}); set it in the "
+                "environment or .env, or pass --exa off"
+            )
+    if not sandbox.docker_available():
+        problems.append("Docker is not running; candidate code is scored in a Docker sandbox")
+    elif (
+        subprocess.run(
+            ["docker", "image", "inspect", sandbox.SANDBOX_IMAGE],
+            capture_output=True,
+            check=False,
+        ).returncode
+        != 0
+    ):
+        problems.append(f"sandbox image {sandbox.SANDBOX_IMAGE} is missing; fix: {SANDBOX_BUILD}")
+    problems = [problem for problem in problems if problem]
+    if problems:
+        raise RuntimeError("cannot start:\n  - " + "\n  - ".join(problems))
+
+
+@contextmanager
+def arm_lock(worktree_root):
+    """Keep two runs from sharing (and cleaning) the same arm's worktrees."""
+    worktree_root.mkdir(parents=True, exist_ok=True)
+    path = worktree_root / ".lock"
+    for _ in range(2):
+        try:
+            descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                owner = int(path.read_text(encoding="utf-8").strip() or 0)
+            except (OSError, ValueError):
+                owner = 0
+            if owner and owner != os.getpid() and pid_alive(owner):
+                raise RuntimeError(
+                    f"another swarm.py run (pid {owner}) is using {worktree_root}; "
+                    "wait for it to finish or run from a separate clone"
+                ) from None
+            path.unlink(missing_ok=True)
+            continue
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(f"{os.getpid()}\n")
+        break
+    else:
+        raise RuntimeError(f"could not lock {worktree_root}")
+    try:
+        yield
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def is_worktree_root(path):
+    result = git(path, "rev-parse", "--show-toplevel", check=False)
+    return result.returncode == 0 and Path(result.stdout.strip()).resolve() == path.resolve()
+
+
+def reset_owned_worktree(repo, path, commit, keep=None):
+    """Check out commit detached in a swarm-owned worktree, discarding leftovers of old runs.
+
+    keep, a path relative to the worktree, is moved aside to <worktree>.stale-<time>/ instead
+    of being deleted when it holds uncommitted files.
+    """
+    if path.exists() and not is_worktree_root(path):
+        shutil.rmtree(path)
+    if not path.exists():
+        git(repo, "worktree", "add", "--force", "--detach", str(path), commit)
+        return
+    status = git_text(path, "status", "--porcelain", "--untracked-files=all", "--ignored")
     if status:
-        raise RuntimeError(f"worktree {path} has uncommitted changes")
+        print(f"swarm.py: discarding leftovers of an earlier run in {path}", file=sys.stderr)
+        kept = path / keep if keep else None
+        if kept and kept.exists() and git_text(path, "status", "--porcelain", "--", keep):
+            archive = path.parent / f"{path.name}.stale-{datetime.now():%Y%m%d-%H%M%S}" / keep
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(kept), str(archive))
+            print(f"swarm.py: moved uncommitted {keep} to {archive}", file=sys.stderr)
+        git(path, "reset", "--hard", "--quiet")
+        git(path, "clean", "-ffdx", "--quiet")
+    git(path, "switch", "--quiet", "--detach", commit)
+
+
+def arm_branch(repo, arm, start_commit):
+    """Return a fresh arm branch, reusing one an earlier run left without commits."""
+    base = f"swarm-{arm}-{datetime.now().strftime('%Y%m%d')}"
+    existing = set(git_text(repo, "branch", "--list", "--format=%(refname:short)").splitlines())
+    branch, index = base, 1
+    while branch in existing:
+        if git_text(repo, "rev-parse", branch) == start_commit:
+            return branch
+        index += 1
+        branch = f"{base}-{index}"
+    git(repo, "branch", branch, start_commit)
+    return branch
 
 
 def create_arm_worktrees(repo, arm, start_commit):
     worktree_root = repo / ".swarm_worktrees" / arm
     conductor = worktree_root / "conductor"
     agents_root = worktree_root
-    branch = unique_branch(repo, f"swarm-{arm}-{datetime.now().strftime('%Y%m%d')}")
-    git(repo, "branch", branch, start_commit)
-    conductor.parent.mkdir(parents=True, exist_ok=True)
-    if conductor.exists():
-        ensure_clean_worktree(conductor)
-        git(conductor, "switch", "--detach", start_commit)
-        git(conductor, "switch", branch)
-    else:
-        git(repo, "worktree", "add", str(conductor), branch)
+    git(repo, "worktree", "prune")
+    reset_owned_worktree(repo, conductor, start_commit, keep=f"experiments/swarm_{arm}")
+    branch = arm_branch(repo, arm, start_commit)
+    git(conductor, "switch", "--quiet", branch)
     return branch, conductor, agents_root
 
 
 def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num, attempt):
     path = agents_root / agent
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        ensure_clean_worktree(path)
-        git(path, "switch", "--detach", base_commit)
-    else:
-        git(repo, "worktree", "add", "--detach", str(path), base_commit)
+    reset_owned_worktree(repo, path, base_commit)
     branch = unique_branch(repo, f"swarm-{arm}-r{round_num}-{agent}-a{attempt}")
     git(path, "switch", "-c", branch)
     return path, branch
@@ -1977,7 +2092,7 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
         print(f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr)
 
 
-def _orchestrate(args, publish_state):
+def _orchestrate(args, publish_state, cleanup):
     if args.rounds < 1 or args.rounds > 50:
         raise ValueError("--rounds must be between 1 and 50")
     prompt_dir = configure_task(args)
@@ -1992,6 +2107,13 @@ def _orchestrate(args, publish_state):
         args.arm != "C" and os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
     )
     effective_no_push = args.no_push or args.llm == "fake"
+    memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
+    if memory_override:
+        memory_backend = memory.selected_backend(memory_override, args.arm)
+    else:
+        memory_backend = "local" if args.arm == "D" else "pastdev"
+    preflight(args, memory_backend, exa_enabled)
+    cleanup.enter_context(arm_lock(repo / ".swarm_worktrees" / args.arm))
     branch, conductor, agents_root = create_arm_worktrees(repo, args.arm, start_commit)
     if args.out:
         out_dir = Path(args.out).resolve()
@@ -2039,11 +2161,6 @@ def _orchestrate(args, publish_state):
     critic_path = out_dir / "critic.tsv"
     memory_mirror = out_dir / "memory.jsonl"
     memory_log = out_dir / "memory_log.jsonl"
-    memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
-    if memory_override:
-        memory_backend = memory.selected_backend(memory_override, args.arm)
-    else:
-        memory_backend = "local" if args.arm == "D" else "pastdev"
     llm_client = llm.LLMClient(
         mode=args.llm,
         model=args.model,
@@ -2440,25 +2557,28 @@ def _orchestrate(args, publish_state):
 def orchestrate(args):
     publish_state = {}
     terminal_status = "finished"
-    try:
-        return _orchestrate(args, publish_state)
-    except BaseException:
-        terminal_status = "stopped"
-        raise
-    finally:
-        out_dir = publish_state.get("out_dir")
-        if out_dir:
-            run_path = Path(out_dir) / "run.json"
-            if run_path.exists():
-                try:
-                    run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
-                    run_artifact["status"] = terminal_status
-                    _write_run_artifact(out_dir, run_artifact)
-                except Exception as error:
-                    print(f"viewer run status update failed: {error}", file=sys.stderr)
-            publish_viewer_state(
-                out_dir, publish_state.get("dest"), final=True, status=terminal_status
-            )
+    with ExitStack() as cleanup:
+        try:
+            return _orchestrate(args, publish_state, cleanup)
+        except BaseException:
+            terminal_status = "stopped"
+            raise
+        finally:
+            _finish_publish(publish_state, terminal_status)
+
+
+def _finish_publish(publish_state, terminal_status):
+    out_dir = publish_state.get("out_dir")
+    if out_dir:
+        run_path = Path(out_dir) / "run.json"
+        if run_path.exists():
+            try:
+                run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
+                run_artifact["status"] = terminal_status
+                _write_run_artifact(out_dir, run_artifact)
+            except Exception as error:
+                print(f"viewer run status update failed: {error}", file=sys.stderr)
+        publish_viewer_state(out_dir, publish_state.get("dest"), final=True, status=terminal_status)
 
 
 def build_parser():

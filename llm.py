@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,44 @@ from runtime_env import load_local_env
 ROOT = Path(__file__).resolve().parent
 load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
+TINKER_SETUP_FIX = "make setup && . .venv/bin/activate (or: pip install -r requirements.txt)"
+TINKER_PYTHON_FIX = "rm -rf .venv && make setup && . .venv/bin/activate"
+KIMI_RENDERED_MODEL = "moonshotai/Kimi-K3.1-Pro"
+MIN_TORCH = (2, 10)
+
+
+def uses_kimi_renderer(model):
+    return str(model or "").split(":")[0] == KIMI_RENDERED_MODEL
+
+
+def _version_tuple(text):
+    return tuple(int(part) for part in re.findall(r"\d+", text.split("+")[0])[:2])
+
+
+def tinker_setup_problem(model=None, python_version=None):
+    """Return a fix-it message when this interpreter cannot run --llm tinker, else None."""
+    from importlib import metadata
+
+    python_version = tuple(python_version or sys.version_info[:2])
+    if python_version < (3, 11):
+        running = ".".join(map(str, python_version))
+        return f"--llm tinker needs Python 3.11+ (this is {running}); fix: {TINKER_PYTHON_FIX}"
+    needed = ["tinker"]
+    if uses_kimi_renderer(model):
+        needed += ["tml-renderers", "torch"]
+    versions = {}
+    for name in needed:
+        try:
+            versions[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            versions[name] = None
+    missing = [name for name, version in versions.items() if version is None]
+    if missing:
+        return f"--llm tinker is missing {', '.join(missing)}; fix: {TINKER_SETUP_FIX}"
+    torch_version = versions.get("torch")
+    if torch_version and _version_tuple(torch_version) < MIN_TORCH:
+        return f"Kimi K3.1 needs torch>=2.10 (found {torch_version}); fix: {TINKER_SETUP_FIX}"
+    return None
 
 
 def timestamp():
@@ -370,14 +409,17 @@ class LLMClient:
         try:
             import tinker
         except ImportError as error:
-            raise RuntimeError("Tinker requires Python 3.11+ and pip install tinker") from error
+            raise RuntimeError(
+                tinker_setup_problem(self.model) or f"cannot import tinker: {error}"
+            ) from error
         if self.tinker_sampler is None:
-            if self.model.split(":")[0] == "moonshotai/Kimi-K3.1-Pro":
+            if uses_kimi_renderer(self.model):
                 try:
                     from tml_renderers import renderers
                 except ImportError as error:
                     raise RuntimeError(
-                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; see program.md"
+                        tinker_setup_problem(self.model)
+                        or f"Kimi K3.1 renderer import failed ({error}); fix: {TINKER_SETUP_FIX}"
                     ) from error
                 self.tinker_renderer = renderers.KimiK31Pro.low()
             self.tinker_service = tinker.ServiceClient()
