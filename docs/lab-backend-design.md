@@ -72,3 +72,7 @@ Tests should cover duplicate/out-of-order events, partial JSONL writes, process 
 ## Integration baseline
 
 Ari branch fetched for this merge: `autoresearch` at `4d437ad` (includes Tinker merge `e910c31` and gate/meter fixes through `772cc01`). See `program_swarm.md` for authoritative runner/Tinker setup. Its Tinker orchestration environment is separate from the PyTorch training environment; do not solve their version difference by changing training dependencies indiscriminately.
+
+## Merge verification
+
+On the combined frontend/autoresearch branch: production frontend build succeeded; 11 frontend tests, 64 autoresearch tests (including mocked Tinker adapter tests), and 23 standalone meter tests passed. Python checks used a separate Python 3.12 environment with matplotlib; no training stack or live Tinker/Modal/Exa/past.dev calls were launched. These checks establish code/protocol compatibility, not live-service readiness.

@@ -1,4 +1,13 @@
-# BioLab / Environment studies
+# Lab Environment + Autoresearch
+
+The selected first-person Lab Environment and Ari’s autoresearch swarm now share this branch. The frontend still uses its synthetic demo adapter; live backend-to-avatar integration is the next planned step.
+
+- Frontend setup and environment design: below.
+- Research runner, training requirements, and original project documentation: [Autoresearch upstream README](docs/autoresearch-upstream.md).
+- Swarm orchestration and Tinker setup: [Swarm protocol](program_swarm.md).
+- Backend lifecycle and next implementation steps: [Backend design](docs/lab-backend-design.md).
+
+## Frontend environment studies
 
 Four distinct first-person laboratories on one shared engine. Pick a visual direction before expanding the scientific simulation adapters.
 
