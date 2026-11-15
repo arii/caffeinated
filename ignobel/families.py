@@ -1,9 +1,10 @@
 """Mother agents and their daughter labs.
 
-A mother is a department (biology, chemistry, physics). It does no research itself: it starts
-the run with the daughter labs in families.yaml and, when its daughters' mean boredom reaches
-`spawn_threshold`, spawns a new daughter in a subfield none of them covers. Each daughter is an
-ordinary Agent with its own expertise, private dataset and boredom meter.
+A mother is a department (biology, chemistry, physics). It does no research itself. A run starts
+with only the mothers: they talk, then each founds daughter labs in subfields it picks. When its
+daughters' mean boredom reaches `spawn_threshold`, a mother founds another daughter in a subfield
+none of them covers. Each daughter is an ordinary Agent with its own expertise, private dataset
+and boredom meter.
 """
 import csv
 import hashlib
@@ -48,9 +49,8 @@ class DaughterDef(BaseModel):
 
 
 class Mother:
-    def __init__(self, name: str, field: str, daughters: list[DaughterDef]):
+    def __init__(self, name: str, field: str):
         self.name, self.field = name, field
-        self.initial = daughters
         self.daughters: list[str] = []  # names of living daughter agents
         self.spawned = 0
         self.last_spawn_round = -10**6
@@ -68,15 +68,37 @@ class Mother:
                 "You do no research yourself; you start new daughter labs, each a specialist "
                 f"in one subfield of {self.field}.")
 
-    def propose_daughter(self, round: int, daughters: list, seed: int, taken: set[str]):
-        """One LLM call -> (DaughterDef, LLMResult). Falls back to a generic lab if the reply is unusable."""
+    def talk(self, others: list[str], history: list[str], seed: int):
+        """One turn in the mothers' opening meeting. No agenda: whatever is on this mother's mind."""
+        hist = "\n".join(history[-6:]) or "(nobody has spoken yet)"
+        user = (f"You are meeting the heads of the {', '.join(others)} departments over coffee. "
+                f"Nothing is on the agenda.\nSo far:\n{hist}\n"
+                "Say what is on your mind in 2-3 sentences: something that puzzles you, something you "
+                "would like to ask them, or a reply to what was said. Return JSON {text}.")
+        res = llm.chat_json(llm.MODEL_CHEAP, self.system_prompt(), user, kind="talk", seed=seed,
+                            mock_context={"topic": f"{self.field} and its neighbours"})
+        return str(res.data.get("text", "")), res
+
+    def propose_daughter(self, round: int, daughters: list, seed: int, taken: set[str],
+                         meeting: list[str] | None = None):
+        """One LLM call -> (DaughterDef, LLMResult). Falls back to a generic lab if the reply is unusable.
+
+        With `meeting` (the opening conversation) this founds a lab; otherwise the daughters are bored."""
         lines = []
         for d in daughters:
             recent = "; ".join(i.title for i in d.ideas[-3:]) or "no ideas yet"
             lines.append(f"- {d.name} ({d.spec.field}): recent ideas: {recent}")
+        labs = "\n".join(lines) or "- none yet"
+        if meeting is not None:
+            why = ("You just talked with the other department heads:\n" + "\n".join(meeting) + "\n"
+                   f"Your daughter labs so far:\n{labs}\n"
+                   f"Found one new daughter lab in a subfield of {self.field} of your choosing, "
+                   "different from the labs you already have. ")
+        else:
+            why = (f"Your daughter labs are bored; their ideas keep repeating:\n{labs}\n"
+                   f"Start one new daughter lab in a subfield of {self.field} that none of them covers. ")
         user = (
-            f"Your daughter labs are bored; their ideas keep repeating:\n" + "\n".join(lines) + "\n"
-            f"Start one new daughter lab in a subfield of {self.field} that none of them covers. "
+            why +
             "Return JSON with keys: name (one lowercase word, a scientist's surname), field, "
             "seed_queries (3 web search queries), methods (3-4), instruments (3-4 items). "
             "Instruments are what the lab can measure; each is {name (snake_case), description (with unit), "
@@ -121,7 +143,7 @@ def _to_daughter(data: dict, mother: Mother, taken: set[str]) -> DaughterDef:
 def load(path: str | Path = HERE / "families.yaml") -> list[Mother]:
     with open(path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)["mothers"]
-    return [Mother(m["name"], m["field"], [DaughterDef(**d) for d in m["daughters"]]) for m in raw]
+    return [Mother(m["name"], m["field"]) for m in raw]
 
 
 def make_dataset(cols: list[Column], path: Path, seed_text: str, rows: int = ROWS) -> None:
@@ -154,16 +176,3 @@ def to_spec(d: DaughterDef, mother: Mother, data_dir: Path, run_seed: int) -> Ag
                      dataset=str(path.resolve()), methods=d.methods, budget_per_round=d.budget_per_round,
                      instruments=[Instrument(name=c.name, column=c.name, description=c.description)
                                   for c in d.instruments])
-
-
-def initial_specs(mothers: list[Mother], data_dir: Path, run_seed: int, n: int | None = None) -> list[AgentSpec]:
-    """Starting daughters, interleaved across mothers so --agents N keeps every department."""
-    order = []
-    for i in range(max(len(m.initial) for m in mothers)):
-        order += [(m, m.initial[i]) for m in mothers if i < len(m.initial)]
-    order = order[:n] if n else order
-    specs = []
-    for m, d in order:
-        m.daughters.append(d.name)
-        specs.append(to_spec(d, m, data_dir, run_seed))
-    return specs

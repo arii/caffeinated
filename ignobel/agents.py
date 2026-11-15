@@ -191,12 +191,16 @@ class Agent:
         urls = cur.source_urls if cur else []
         return self._new_idea(res.data, "refine", round, urls), res
 
-    def talk(self, other: str, other_field: str, history: list[str], topic: str) -> tuple[str, llm.LLMResult]:
-        """One conversational turn with another scientist."""
-        hist = "\n".join(history[-4:]) or "(start of conversation)"
-        user = (f"You are talking with {other}, an expert in {other_field}, about: {topic}.\n"
-                f"Conversation so far:\n{hist}\nReply in 2-3 sentences. Return JSON {{text}}.")
-        res = self._call("talk", user, topic=topic)
+    def talk(self, other: str, other_field: str, history: list[str]) -> tuple[str, llm.LLMResult]:
+        """One turn of a chance conversation. No topic is set; it goes wherever it goes."""
+        hist = "\n".join(history[-4:]) or "(you have just bumped into each other)"
+        idea = self.current_idea()
+        doing = idea.title if idea else "nothing in particular yet"
+        user = (f"You bumped into {other}, an expert in {other_field}, at the coffee machine. "
+                f"You are currently working on: {doing}.\nConversation so far:\n{hist}\n"
+                "Reply in 2-3 sentences. Talk about whatever comes up: your work, theirs, or something "
+                "neither of you planned. Return JSON {text}.")
+        res = self._call("talk", user, topic=doing)
         return str(res.data.get("text", "")), res
 
     def write_study_code(self, peers: list[dict]) -> tuple[dict, llm.LLMResult]:

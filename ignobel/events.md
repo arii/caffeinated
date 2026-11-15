@@ -20,12 +20,12 @@ One JSON object per line. Every line has exactly these keys:
 - `prediction` {idea_id, direction:"+"|"-", effect_size: float} numeric prediction for that idea
 - `boredom` {B, similarity, unsurprise, failure, regime:"EXPLOIT"|"BOREDOM_SNAP", action} private meter, logged for analysis only
 - `snap` {partner: str|null, source:{title,url,snippet}} boredom-driven exploration; partner null when unpaired
-- `talk` {partner, turn:int, text} one turn of a 3-turn conversation
+- `talk` {partner, turn:int, text} one turn of a conversation: a chance meeting between two agents (`talk_turns` turns), or the mothers' round-0 meeting (agent = mother, partner = the other mothers)
 - `share` {receiver, offered:[item_id], kept:[item_id]} at most 3 items per conversation direction
 - `measurement_request` {requester, instrument, args, n, budget_left} owner ran an instrument for another agent
 - `study_result` {study_id, idea_id, ok, replicated, stats:{...}, prediction, abstract, plot_path, stderr, novelty:{score, sources:[...]}} one study
 - `lesson` {text} the agent's rewritten private lessons note
-- `spawn` {daughter, field, field_B, instruments:[name]} a mother (agent = mother name) started a new daughter lab because its daughters' mean boredom reached `spawn_threshold`
+- `spawn` {daughter, field, reason, field_B?, instruments:[name]} a mother (agent = mother name) started a daughter lab: `reason` is `founded` (round 0, after the mothers' meeting) or `bored` (its daughters' mean boredom reached `spawn_threshold`; `field_B` is that mean)
 
 Search-backed events (seed, snap, study_result.novelty) always carry source URLs in `payload`.
 

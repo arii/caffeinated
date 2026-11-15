@@ -65,7 +65,8 @@ def body(e: dict, run: Path, agents: dict) -> str:
         return (f"shares memories with <b>{esc(p.get('receiver'))}</b>: offered {len(p.get('offered', []))}, "
                 f"kept {len(p.get('kept', []))}")
     if t == "spawn":
-        return (f"field boredom {esc(p.get('field_B'))} → new daughter lab <b>{esc(p.get('daughter'))}</b> "
+        why = "founds" if p.get("reason") == "founded" else f"field boredom {esc(p.get('field_B'))} →"
+        return (f"{why} new daughter lab <b>{esc(p.get('daughter'))}</b> "
                 f"in <b>{esc(p.get('field'))}</b><div>instruments: {esc(', '.join(p.get('instruments', [])))}</div>")
     if t == "seed":
         rows = "".join(f"<li><a href='{esc(s.get('url', '#'))}'>{esc(s.get('title') or s.get('url'))}</a></li>"
@@ -95,6 +96,7 @@ def render(run: Path) -> str:
     state = run / "state.json"
     if state.exists():
         for name, raw in (json.loads(state.read_text()).get("mothers") or {}).items():
+            family[name] = name
             for d in raw.get("daughters", []):
                 family[d] = name
     for e in evs:

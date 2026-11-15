@@ -30,7 +30,9 @@ ARMS = {
 
 def build_world(arm: str, n_agents: int | None, seed: int, out: str | Path, cfg: dict | None = None,
                 memory_backend: str | None = None, roster: str | None = None) -> World:
-    """roster: families (mothers spawn daughter labs, families.yaml) or flat (agents.yaml); default from config."""
+    """roster: families (mothers found daughter labs, families.yaml) or flat (agents.yaml); default from config.
+
+    With families, n caps the number of daughters founded after the mothers' opening meeting."""
     cfg = cfg or config.load()
     spec = ARMS[arm]
     n = spec.get("agents", n_agents)
@@ -38,7 +40,7 @@ def build_world(arm: str, n_agents: int | None, seed: int, out: str | Path, cfg:
     mothers = None
     if roster == "families":
         mothers = families.load()
-        specs = families.initial_specs(mothers, Path(out) / "data", seed, n)
+        specs = []
     elif roster == "flat":
         specs = agents.load_specs(n=n or 4)
     else:
@@ -53,14 +55,14 @@ def build_world(arm: str, n_agents: int | None, seed: int, out: str | Path, cfg:
     if backend == "local" and (memory_backend or os.environ.get("MEMORY_BACKEND")) == "pastdev":
         backend = "pastdev"
     return World(arm, seed, specs, pol, backend, spec["exchange"], out, cfg,
-                 mothers=mothers, spawn=spec.get("spawn", True))
+                 mothers=mothers, spawn=spec.get("spawn", True), founders=n)
 
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--arm", choices=sorted(ARMS), default="full")
     p.add_argument("--agents", type=int, default=None,
-                   help="starting agents (default: every daughter in families.yaml, or 4 for --roster flat)")
+                   help="starting agents (default: initial_daughters per mother, or 4 for --roster flat)")
     p.add_argument("--roster", choices=["families", "flat"], default=None, help="default: config.yaml roster")
     p.add_argument("--rounds", type=int, default=3)
     p.add_argument("--seed", type=int, default=0)

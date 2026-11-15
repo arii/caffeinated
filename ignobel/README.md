@@ -9,16 +9,19 @@ exploration beats randomly timed exploration.
 ## Agents: mothers and daughters
 
 Agents come in families (`families.yaml`, `families.py`). A **mother** is a department (biology,
-chemistry, physics). It does no research. It starts the run with its **daughter** labs: molecular,
-cellular and plant biology; organic and physical chemistry; quantum physics and mechanics. Each
-daughter is an individual expert with its own methods, search queries, private dataset (generated
-from a hidden recipe in the yaml) and private boredom meter.
+chemistry, physics). It does no research. A run starts with only the mothers: in round 0 they talk
+with no agenda (`mother_talk_rounds`), then each founds `initial_daughters` **daughter** labs in
+subfields it picks itself, inspired by the conversation. Each daughter is an individual expert with
+its own methods, search queries, private dataset (generated from a hidden recipe its mother invents)
+and private boredom meter. `--agents N` caps how many daughters are founded.
 
 - When a mother's daughters' mean boredom reaches `spawn_threshold`, the mother spawns a new
   daughter in a subfield none of them covers (one LLM call; at most `max_daughters`, one per
   `spawn_cooldown` rounds). The newborn seeds its library and proposes an idea that round, then acts
-  like the others. Logged as a `spawn` event.
-- Bored daughters meet: pairing prefers daughters from different mothers (`cross_family_bonus`).
+  like the others. Founding and later births are both `spawn` events (`reason` founded or bored).
+- Meetings are chance encounters. Each round a daughter wanders with probability `wander_prob`
+  (always, if she is bored) and bumps into a random free colleague from any department. Nothing
+  matches them by field, and the conversation has no set topic.
 - `roster: flat` in `config.yaml` (or `--roster flat`) uses the old flat list in `agents.yaml`.
 
 `python trace.py <run_dir>` writes `<run_dir>/trace.html`: every event of a run on one page, filterable by agent and event type, with each study's stats, plot and code.

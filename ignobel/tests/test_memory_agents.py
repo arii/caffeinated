@@ -81,7 +81,7 @@ def test_agent_methods_return_valid_shapes():
     assert idea.prediction.direction in "+-" and idea.embedding and res.tokens > 0
     idea2, _ = a.refine(1)
     assert idea2.idea_id != idea.idea_id and a.current_idea() is idea2
-    text, _ = a.talk("ikeda", "food physics", [], "toast")
+    text, _ = a.talk("ikeda", "food physics", [])
     assert text
     code, _ = a.write_study_code(peers=[])
     assert "lab_runtime" in code["code"] and code["requests"] == []

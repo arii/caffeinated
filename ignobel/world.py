@@ -26,7 +26,7 @@ from policy import Action
 class World:
     def __init__(self, arm: str, run_seed: int, specs: list, policy_fn, memory_backend: str,
                  exchange: bool, out_dir: str | Path, cfg: dict, mothers: list | None = None,
-                 spawn: bool = False):
+                 spawn: bool = False, founders: int | None = None):
         self.arm, self.seed, self.cfg = arm, run_seed, cfg
         self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
@@ -41,6 +41,7 @@ class World:
         self.mothers = mothers or []
         self.spawn = spawn and bool(self.mothers)
         self.spawned_specs: list[dict] = []
+        self.founders = founders
         self.round_done = -1
 
     def _make_agent(self, spec):
@@ -114,35 +115,30 @@ class World:
                         tokens=res.tokens, latency_ms=res.latency_ms)
         self.log.append(round, a.name, "prediction", {"idea_id": idea.idea_id, **idea.prediction.model_dump()})
 
-    def _pair(self, snappers: list) -> list[tuple]:
-        """Greedy pairing by greatest distance between library centroids; an odd one out gets the
-        farthest non-snapper as a conversation partner."""
-        cents = {a.name: a.memory.centroid() for a in self.agents}
-        bonus = float(self.cfg.get("cross_family_bonus", 1.0))
-        dist = lambda x, y: (1.0 - llm.cosine(cents[x.name], cents[y.name])
-                             + (bonus if x.spec.family and y.spec.family and x.spec.family != y.spec.family else 0.0))
-        pool = list(snappers)
+    def _encounters(self, acting: list, wanderers: set[str]) -> list[tuple]:
+        """Chance meetings. Each wanderer bumps into a random free colleague from any department;
+        nobody is matched by field or distance, and nobody has two meetings in one round."""
+        busy: set[str] = set()
         pairs = []
-        while len(pool) >= 2:
-            best = max(((dist(x, y), x.name, y.name) for i, x in enumerate(pool) for y in pool[i + 1:]),
-                       key=lambda t: (t[0], t[1], t[2]))
-            x, y = self.by_name[best[1]], self.by_name[best[2]]
-            pairs.append((x, y))
-            pool = [p for p in pool if p not in (x, y)]
-        if pool:
-            others = [a for a in self.agents if a not in snappers]
-            if others:
-                partner = max(others, key=lambda o: (dist(pool[0], o), o.name))
-                pairs.append((pool[0], partner))
+        order = [a for a in acting if a.name in wanderers]
+        self.rng.shuffle(order)
+        for a in order:
+            if a.name in busy:
+                continue
+            free = [b for b in acting if b is not a and b.name not in busy]
+            if not free:
+                continue
+            b = self.rng.choice(free)
+            busy |= {a.name, b.name}
+            pairs.append((a, b))
         return pairs
 
     def _converse(self, a, b) -> list[tuple]:
-        topic = f"{self._topic(a)} / {self._topic(b)}"
         history: list[str] = []
         turns = []
         for i in range(int(self.cfg.get("talk_turns", 3))):
             speaker, other = (a, b) if i % 2 == 0 else (b, a)
-            text, res = speaker.talk(other.name, other.spec.field, history, topic)
+            text, res = speaker.talk(other.name, other.spec.field, history)
             history.append(f"{speaker.name}: {text}")
             turns.append((speaker, other, i + 1, text, res))
         return turns
@@ -195,7 +191,47 @@ class World:
         return f"study {study_id}: ok={out['ok']} replicated={verdict['replicated']} ({verdict['reason']})"
 
     # ------------------------------------------------------------ rounds
+    async def _found(self) -> None:
+        """Round 0 of a families run: the mothers talk, then each founds its first daughter labs."""
+        history: list[str] = []
+        names = [m.name for m in self.mothers]
+        for i in range(int(self.cfg.get("mother_talk_rounds", 2))):
+            for m in self.mothers:
+                others = [x for x in names if x != m.name]
+                text, res = m.talk(others, history, self.seed)
+                history.append(f"{m.name}: {text}")
+                self.log.append(0, m.name, "talk", {"partner": ", ".join(others), "turn": len(history),
+                                                    "text": text}, tokens=res.tokens, latency_ms=res.latency_ms)
+        k = int(self.cfg.get("initial_daughters", 2))
+        cap = self.founders if self.founders is not None else k * len(self.mothers)
+        taken = set(self.by_name)
+        for _ in range(k):
+            todo = self.mothers[:max(0, cap - len(self.agents))]
+            if not todo:
+                break
+            defs = await self._gather([
+                (lambda m=m: m.propose_daughter(0, [self.by_name[d] for d in m.daughters], self.seed, taken,
+                                                meeting=history)) for m in todo])
+            for m, (d, res) in zip(todo, defs):
+                self._birth(m, d, res, 0, taken, {"reason": "founded"})
+
+    def _birth(self, m, d, res, r: int, taken: set[str], info: dict):
+        while d.name in taken:  # two mothers picked the same name this round
+            d.name = f"{d.name}{m.name[:3]}"
+        taken.add(d.name)
+        spec = families_mod.to_spec(d, m, self.out / "data", self.seed)
+        a = self._add_agent(spec)
+        m.daughters.append(a.name)
+        m.spawned += 1
+        self.spawned_specs.append(spec.model_dump())
+        self.log.append(r, m.name, "spawn", {"daughter": a.name, "field": spec.field, **info,
+                                             "instruments": [i.name for i in spec.instruments]},
+                        tokens=res.tokens, latency_ms=res.latency_ms)
+        return a
+
     async def round0(self) -> None:
+        if self.mothers and not self.agents:
+            await self._found()
         seed_mod.seed_libraries(self.agents, self.log, self.cfg)
         results = await self._gather([
             (lambda a=a: a.propose(0, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in self.agents])
@@ -218,7 +254,9 @@ class World:
         if self.spawn:
             await self._spawn(r, {a.name: comp_B for a, comp_B in Bs.items()})
         snappers = [a for a in acting if actions[a.name] == Action.SNAP]
-        pairs = self._pair(snappers)
+        p = float(self.cfg.get("wander_prob", 0.15))
+        wanderers = {a.name for a in acting if actions[a.name] == Action.SNAP or self.rng.random() < p}
+        pairs = self._encounters(acting, wanderers)
         partner_of = {}
         for x, y in pairs:
             partner_of[x.name], partner_of[y.name] = y.name, x.name
@@ -279,19 +317,8 @@ class World:
             for m, _ in ready])
         born = []
         for (m, field_B), (d, res) in zip(ready, defs):
-            while d.name in taken:  # two mothers picked the same name this round
-                d.name = f"{d.name}{m.name[:3]}"
-            taken.add(d.name)
-            spec = families_mod.to_spec(d, m, self.out / "data", self.seed)
-            a = self._add_agent(spec)
-            m.daughters.append(a.name)
-            m.spawned += 1
             m.last_spawn_round = r
-            self.spawned_specs.append(spec.model_dump())
-            self.log.append(r, m.name, "spawn", {"daughter": a.name, "field": spec.field, "field_B": field_B,
-                                                 "instruments": [i.name for i in spec.instruments]},
-                            tokens=res.tokens, latency_ms=res.latency_ms)
-            born.append(a)
+            born.append(self._birth(m, d, res, r, taken, {"reason": "bored", "field_B": field_B}))
         seed_mod.seed_libraries(born, self.log, self.cfg, round=r)
         results = await self._gather([
             (lambda a=a: a.propose(r, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in born])
