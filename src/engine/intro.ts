@@ -16,7 +16,7 @@ export interface IntroConfig{
 type Row=Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v as Row[]:v&&typeof v==='object'?Object.values(v as Row) as Row[]:[];
 const str=(v:unknown)=>typeof v==='string'?v:'';
-/** Each study citation paired with the Exa source card it came from (matched by URL), plus past.dev memory traffic. */
+/** Match study citations to Exa source cards by URL when available, plus count past.dev memory traffic. */
 export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
  const sources=rows(r?.entities?.sources),byUrl=new Map(sources.map(s=>[str(s.url),s]).filter(([u])=>u) as [string,Row][]);
  const citations=rows(r?.entities?.studies).flatMap(st=>(Array.isArray(st.citations)?st.citations:[]).map(c=>{const url=str(c),s=byUrl.get(url);return {study:str(st.question)||str(st.headline)||str(st.id),url,sourceId:s?String(s.id??s.source_id??''):'',title:s?str(s.title):''};}));

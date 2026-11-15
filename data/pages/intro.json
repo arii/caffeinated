@@ -2,7 +2,7 @@
   "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): an artificial scientist swarm that notices when it is bored and changes approach."},
   "tools": [
     {"kind": "llm", "name": "Language model", "tinkerName": "Tinker", "detail": "{model} powers the researchers' language-model calls.", "tinkerDetail": "{model} runs through Tinker, the researchers' language-model provider.", "fakeName": "LLM", "fakeDetail": "A simulated model drives the researchers for this plumbing demo.", "fakeSuffix": "(fake LLM in this recording)", "unverifiedDetail": "A language model helps researchers plan and evaluate ideas.", "unknownSuffix": "(model not verified in this recording)"},
-    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; every citation links to its Exa result.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
+    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; each source card links to the Exa result it came from.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"kind": "memory", "name": "past.dev", "detail": "Shared memory helps agents recall earlier attempts and share what they learn.", "localSuffix": "(local memory in this recording)", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
   ],

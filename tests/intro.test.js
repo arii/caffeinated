@@ -28,9 +28,10 @@ test('intro tool claims follow fake, Exa and memory provenance',()=>{
  assert.match(html,/\(fake LLM in this recording\)/);
  assert.match(html,/\(off in this recording\)/);
  assert.match(html,/\(local memory in this recording\)/);
+ assert.ok(html.includes('Searches prior work and public datasets when enabled; each source card links to the Exa result it came from.'));
  assert.doesNotMatch(html,/Kimi|Thinking Machines/);
 });
-test('each Ig Nobel citation links back to the Exa source card it came from',()=>{
+test('study citations link to matching Exa source cards when available',()=>{
  const r={events:[{tick:1,type:'question.asked',payload:{kind:'search'}},{tick:2,type:'question.asked',payload:{kind:'recall',backend:'pastdev'}}],entities:{sources:[{id:'S1',title:'Steak and risk',url:'https://doi.org/10.1/x'}],studies:[{id:'study:1',question:'Steak?',citations:['https://doi.org/10.1/x','https://doi.org/10.2/y']}]}};
  const t=researchTrail(r);
  assert.deepEqual(t.citations.map(c=>c.sourceId),['S1','']);
