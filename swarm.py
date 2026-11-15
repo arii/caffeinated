@@ -744,8 +744,9 @@ HYPOTHESIS_STATUS = {
 
 
 def hypothesis_id(arm, idea):
-    text = " ".join(REGIME_PREFIX_RE.sub("", str(idea or "")).casefold().split())
-    return f"hyp-{arm}-{hashlib.sha1(text[:80].encode('utf-8')).hexdigest()[:12]}"
+    text = " ".join(REGIME_PREFIX_RE.sub("", str(idea or "")).casefold().split())[:80]
+    key = f"{os.environ.get('AUTORESEARCH_TASK', '')}\n{text}"
+    return f"hyp-{arm}-{hashlib.sha1(key.encode('utf-8')).hexdigest()[:12]}"
 
 
 def write_hypothesis(idea, status, author, round_num, detail="", *, backend, mirror, log, arm):
@@ -2142,8 +2143,8 @@ def worker_attempts(
         for query in (memory_queries if not getattr(llm_client, "supervised", False) else [])
     ]
     if not recalls:
-        recalls = [{"results": []} for _ in range(3)]
-    recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
+        recalls = [{"results": []} for _ in memory_queries]
+    recalled_results = "\n".join(memory_text(result) for result in (recalls[0], *recalls[2:]))
     known_leads = known_lead_records(all_leads, lead, recalls[1])
     recalled_leads = render_leads_for_prompt(known_leads)
     current_base = base_commit
@@ -3995,7 +3996,9 @@ def _orchestrate(args, publish_state, cleanup):
         export_viewer.autoresearch_run_id(args.arm, run_id)
     )
     viewer_run_dir = None if viewer_dest is None else viewer_dest / viewer_run_id
+    pre_resume_mirror = []
     if resume is not None:
+        pre_resume_mirror = memory.read_mirror(out_dir / "memory.jsonl")
         restore_checkpoint(out_dir, resume["checkpoint"])
         if viewer_run_dir is not None:
             restore_viewer(viewer_run_dir, resume["checkpoint"]["viewer"])
@@ -4141,7 +4144,13 @@ def _orchestrate(args, publish_state, cleanup):
         keyless=research_source == "keyless",
     ):
         if memory_rollbacks and memory.selected_backend(memory_backend, args.arm) == "pastdev":
-            memory.rollback_memories(memory_mirror, memory_rollbacks, arm=args.arm, log=memory_log)
+            memory.rollback_memories(
+                memory_mirror,
+                memory_rollbacks,
+                arm=args.arm,
+                log=memory_log,
+                records=pre_resume_mirror,
+            )
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,

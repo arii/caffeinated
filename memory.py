@@ -602,16 +602,17 @@ def delete_data_points(ids, api_key=None):
     return deleted
 
 
-def rollback_memories(mirror=None, rollbacks=None, *, arm=None, log=None):
+def rollback_memories(mirror=None, rollbacks=None, *, arm=None, log=None, records=None):
     """On resume, remove from past.dev what the rolled-back rounds wrote.
 
     A stable-id memory (a hypothesis) that had a version before the checkpoint gets that
-    version back; anything else written after the checkpoint is deleted.
+    version back; anything else written after the checkpoint is deleted. `records` is the
+    mirror as it was before the checkpoint restore truncated it.
     """
     rollbacks = run_rollbacks() if rollbacks is None else rollbacks
     mirror_path = selected_mirror(mirror)
     versions = {}
-    for record in read_mirror(mirror_path):
+    for record in read_mirror(mirror_path) if records is None else records:
         source_id = str(record.get("sourceId") or record.get("id") or "")
         if source_id:
             versions.setdefault(source_id, []).append(record)
