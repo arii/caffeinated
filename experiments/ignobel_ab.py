@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import analyze_ab  # noqa: E402
+import analyze_ab
 
 METRICS = ("registered", "datasets", "confirmed_findings", "top_committee")
 
