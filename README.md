@@ -17,10 +17,10 @@ Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so n
 ## Explore a recording
 
 - Use **Archive** in the sidebar to choose any of the four supplied recordings. These are temporary replay inputs, not the selected future research problems.
-- Press **Play**, drag the timeline, or change the playback pace. Research unfolds from an elevated camera inside the room.
+- Press **Play**, drag the timeline, or change the playback pace. Drag to change the camera angle from your current viewpoint, use WASD to glide around, and Q/E to change height—even while playback runs. These controls adapt the camera rig from History in 3D. Research unfolds from an elevated camera inside the room.
 - Pause and choose **Walk inside**. Use WASD, Shift, mouse/drag or arrow keys to explore the paused world. Approach a researcher and press E, or select them from **Team**.
 - Agent conversations appear as speech popups above the selected character and quote recorded statements and results available at the current tick. Boredom appears only when interacting with that agent.
-- Activity symbols show thinking/ideas (💡), experiment work (🫧), and evaluation (📈). **Evidence** shows the recorded metric and results through the playhead.
+- Activity symbols show thinking/ideas (💡 with a short source-derived idea label), experiment work (🫧), and evaluation (📈). **Evidence** shows the recorded metric and results through the playhead.
 - **Lab view** returns to the elevated indoor camera. Panels stay hidden until selected from the sidebar.
 
 Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.

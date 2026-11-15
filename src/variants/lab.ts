@@ -201,7 +201,7 @@ export function createWorld(): LabWorld {
   label('MODELS / REFERENCE LIBRARY',6.2,3.62,-12.36,2.9,.22);
 
   // Working agent avatars: cheerful cartoon robots, with hands reaching the tools.
-  type Worker={id:string;station:string;head:THREE.Group;arm:THREE.Group;light:THREE.Mesh;group:THREE.Group;sign:THREE.Mesh;path:{x:number;z:number}[];target:string;activity:THREE.Sprite;activityState:string};
+  type Worker={id:string;station:string;head:THREE.Group;arm:THREE.Group;light:THREE.Mesh;group:THREE.Group;sign:THREE.Mesh;path:{x:number;z:number}[];target:string;activity:THREE.Sprite;activityState:string;idea:THREE.Mesh|null;ideaText:string};
   const workers=new Map<string,Worker>();
   function researcher(x:number,z:number,rotation:number,name:string,station:string,id:string){
     const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
@@ -258,7 +258,7 @@ export function createWorld(): LabWorld {
     const sign=label(name.toUpperCase(),x,2.07,z+.16,.58,.18,'#f4f8fa','#31434b');
     g.userData.ownedMaterials=[shell,joints,robotBlue,orange,outline,faceMaterial,badge.material];g.userData.ownedTextures=[faceTexture,(badge.material as THREE.MeshBasicMaterial).map];
     const activity=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));activity.scale.set(.8,.8,1);scene.add(activity);
-    const worker:Worker={id,station,head,arm,light,group:g,sign,path:[],target:'',activity,activityState:''};workers.set(id,worker);return worker;
+    const worker:Worker={id,station,head,arm,light,group:g,sign,path:[],target:'',activity,activityState:'',idea:null,ideaText:''};workers.set(id,worker);return worker;
   }
   // Static architectural boxes are instanced by material, greatly reducing draws.
   const batches=new Map<THREE.Material,THREE.Mesh[]>();
@@ -280,7 +280,7 @@ export function createWorld(): LabWorld {
     fieldPoints.forEach((p,i)=>{p.visible=i<state.agents.length*4;p.position.y=.15+(i%5)*.11+Math.sin(time*.8+i)*.025;});
     const ids=new Set(state.agents.map(a=>a.id));
     for(const [id,w]of workers)if(!ids.has(id)){
-      scene.remove(w.group,w.sign,w.activity);w.activity.material.map?.dispose();w.activity.material.dispose();w.group.traverse(o=>{if(o instanceof THREE.Mesh&&o.geometry!==boxGeometry)o.geometry.dispose();});
+      scene.remove(w.group,w.sign,w.activity);if(w.idea){scene.remove(w.idea);w.idea.geometry.dispose();const material=w.idea.material as THREE.MeshBasicMaterial;material.map?.dispose();material.dispose();}w.activity.material.map?.dispose();w.activity.material.dispose();w.group.traverse(o=>{if(o instanceof THREE.Mesh&&o.geometry!==boxGeometry)o.geometry.dispose();});
       for(const m of w.group.userData.ownedMaterials as THREE.Material[])m.dispose();for(const t of w.group.userData.ownedTextures||[])t?.dispose();
       w.sign.geometry.dispose();const m=w.sign.material as THREE.MeshBasicMaterial;m.map?.dispose();m.dispose();workers.delete(id);
     }
@@ -298,6 +298,14 @@ export function createWorld(): LabWorld {
       w.sign.position.set(w.group.position.x,2.28,w.group.position.z);w.sign.lookAt(camera.position);
       w.activity.position.set(w.group.position.x,2.85,w.group.position.z);
       w.activity.visible=a.state!=='idle';
+      const brief=a.ideaBrief||'';
+      if(w.ideaText!==brief){
+        if(w.idea){scene.remove(w.idea);w.idea.geometry.dispose();const material=w.idea.material as THREE.MeshBasicMaterial;material.map?.dispose();material.dispose();w.idea=null;}
+        w.ideaText=brief;
+        if(brief)w.idea=label(brief,0,0,0,1.9,.26,'#fff4d5','#263b41');
+      }
+      if(w.idea){w.idea.visible=a.state==='thinking';w.idea.position.set(w.group.position.x,2.57,w.group.position.z);w.idea.lookAt(camera.position);}
+
       if(w.activityState!==a.state){w.activityState=a.state;const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.font='80px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a.state==='thinking'?'💡':a.state==='working'?'🫧':'📈',64,64);w.activity.material.map?.dispose();w.activity.material.map=new THREE.CanvasTexture(canvas);w.activity.material.needsUpdate=true;}
       const working=(state.replay||state.running)&&(a.state==='working'||a.state==='thinking');
       w.arm.rotation.x=next||a.position?.moving?Math.sin(time*5+index)*.12:working?Math.sin(time*1.8+index)*.08:0;

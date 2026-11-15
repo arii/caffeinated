@@ -59,3 +59,7 @@ Backend checks exercise all four archive folds, absence of later results at earl
 ## Character display identity
 
 NPCs have neutral B/C/P number labels, corresponding to Bio, Chem, and Physics. The normalized manifest retains `agent_id`, `native_id`, and `original_display_name` for source joins, and supplies `display_name`, `family`, and `familySource` for presentation. Existing recordings have no explicit family, so their groups are deterministic display assignments. Future producer-supplied families take precedence. UI excerpts replace personal-name mentions with aliases; original JSON stays intact. Pseudo-agents remain Reference/Environment records and are not rendered as people.
+
+## Lab-view camera and idea captions
+
+Lab-view movement adapts `history-in-3D/src/engine/controls.js`: drag applies in-place yaw/pitch offsets, WASD detaches into smooth free movement, and Q/E changes height. Movement is scaled and bounded to the lab interior. The camera remains independent of replay time; walking mode retains its existing first-person controls. Lightbulbs carry two-word labels extracted from the agent’s already-recorded idea or question. No model call or future knowledge is used to create these captions.

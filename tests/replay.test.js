@@ -63,3 +63,23 @@ test('idle researchers stay staged until their own first activity, without futur
  assert.notDeepEqual(poses.at(-1).positions.get('one'),poses[0].positions.get('one'));
  assert.deepEqual(buildReplayPoses(data,{minX:-12,maxX:12,minZ:-13,maxZ:13},[]),poses);
 });
+
+test('lightbulb briefs are a couple of source words and never invented when unknown',async()=>{
+ const {ideaBrief}=await import('../src/engine/ideaBrief.ts');
+ assert.equal(ideaBrief('coffee consumption and workplace productivity field study'),'Coffee consumption');
+ assert.equal(ideaBrief('[EXPLOIT] Raise Muon matrix learning rate from 0.04 to 0.05'),'Muon matrix');
+ assert.equal(ideaBrief('Can food physics measurements explain the difference?'),'Food physics');
+ assert.equal(ideaBrief(undefined),'');assert.equal(ideaBrief('and the 42'),'');
+});
+
+test('history-style lab camera looks around in place, then glides without touching replay time',async()=>{
+ const THREE=await import('three');const {LabCameraRig}=await import('../src/engine/labCamera.ts');
+ const camera=new THREE.PerspectiveCamera(),rig=new LabCameraRig(camera),position=camera.position.clone(),direction=new THREE.Vector3();
+ camera.getWorldDirection(direction);rig.dragBy(100,30);rig.update(.016,new Set());
+ assert.ok(camera.position.equals(position),'drag must look around rather than orbit around the room');
+ assert.ok(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direction)>.1);
+ rig.update(.1,new Set(['KeyW']));assert.ok(camera.position.distanceTo(position)>0);
+ for(let i=0;i<200;i++)rig.update(.1,new Set(['KeyE','KeyW']));
+ assert.ok(camera.position.y<=4.4&&camera.position.z>=-12.3&&camera.position.x>=-10.9);
+ rig.reset();assert.ok(camera.position.equals(position));assert.equal(rig.freeMode,false);
+});
