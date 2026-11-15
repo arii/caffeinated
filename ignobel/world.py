@@ -139,12 +139,39 @@ class World:
             pairs.append((a, b))
         return pairs
 
-    def _converse(self, a, b) -> list[tuple]:
+    def _overlap(self, a, b) -> dict:
+        """What two labs that meet turn out to have in common: near-identical current ideas, the same dataset."""
+        out = {}
+        ia, ib = a.current_idea(), b.current_idea()
+        if ia and ib and ia.embedding is not None and ib.embedding is not None:
+            sim = llm.cosine(np.array(ia.embedding), np.array(ib.embedding))
+            if sim >= float(self.cfg.get("overlap_similarity", 0.8)):
+                out["idea_similarity"] = round(float(sim), 4)
+        mine = {d.get(k) for d in a.datasets for k in ("sha256", "url")} - {None, ""}
+        shared = sorted({d["title"] for d in b.datasets if d.get("sha256") in mine or d.get("url") in mine})
+        if shared:
+            out["datasets"] = shared
+        return out
+
+    @staticmethod
+    def _overlap_note(me, other, overlap: dict) -> str:
+        """What two labs that overlap learn when they meet. What each does about it is its own decision."""
+        said = []
+        if "idea_similarity" in overlap:
+            said.append(f"{me.name} and {other.name} are working on almost the same idea: "
+                        f"\"{me.current_idea().title}\" and \"{other.current_idea().title}\"")
+        if overlap.get("datasets"):
+            said.append(f"{me.name} and {other.name} both use the dataset {'; '.join(overlap['datasets'])[:300]}")
+        return ". ".join(said) + "." if said else ""
+
+    def _converse(self, a, b, overlap: dict) -> list[tuple]:
         history: list[str] = []
         turns = []
         for i in range(int(self.cfg.get("talk_turns", 3))):
             speaker, other = (a, b) if i % 2 == 0 else (b, a)
-            text, res = speaker.talk(other.name, other.spec.field, history)
+            note = self._overlap_note(speaker, other, overlap)
+            text, res = speaker.talk(other.name, other.spec.field, history,
+                                     f"It turns out that {note}\n" if note else "")
             history.append(f"{speaker.name}: {text}")
             turns.append((speaker, other, i + 1, text, res))
         return turns
@@ -198,7 +225,11 @@ class World:
             known = a.known_sources()
             trace = lab.trace_values(out["stats"] if out["ok"] else None, [d for d in real if d[0] in out["read"]])
             cited = dict.fromkeys((idea.citations if idea else []) + re.findall(r"S\d+", abstract))
+            sha = {d["name"]: d.get("sha256") for d in a.datasets}
             evidence = {"evidence": {
+                # what was measured, so the committee can tell when two studies report the same thing
+                "finding": [{"dataset": sha.get(str(v["column"]).split(".", 1)[0]), "column": v["column"],
+                             "sketch": lab.sketch(out["stats"][k])} for k, v in trace["arrays"].items() if v["column"]],
                 "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256", "provenance")
                               if k in d} for d in a.datasets],
                 "citations": [known[c] for c in cited if c in known],
@@ -391,11 +422,16 @@ class World:
             todo = self.mothers[:max(0, cap - len(self.agents))]
             if not todo:
                 break
-            defs = await self._gather([
-                (lambda m=m: m.propose_daughter(0, [self.by_name[d] for d in m.daughters], self.seed, taken,
-                                                meeting=history)) for m in todo])
-            for m, (d, res) in zip(todo, defs):
+            for m in todo:  # one at a time, so each mother sees the labs founded just before hers
+                (d, res), = await self._gather([lambda m=m: m.propose_daughter(
+                    0, [self.by_name[d] for d in m.daughters], self.seed, taken, meeting=history,
+                    elsewhere=self._elsewhere(m))])
                 self._birth(m, d, res, 0, taken, {"reason": "founded"})
+
+    def _elsewhere(self, m) -> list[str]:
+        """The labs of the other departments, as a mother sees them when she founds one."""
+        return [f"- {x.name}: {self.by_name[d].name} ({self.by_name[d].spec.field})"
+                for x in self.mothers if x is not m for d in x.daughters]
 
     def _birth(self, m, d, res, r: int, taken: set[str], info: dict):
         while d.name in taken:  # two mothers picked the same name this round
@@ -448,19 +484,24 @@ class World:
 
         for a in snappers:
             a.meter["snap"] = r  # one round back at the bench after wandering
-        for x, y in pairs:
+        overlaps = [self._overlap(x, y) if self.exchange else {} for x, y in pairs]
+        for (x, y), overlap in zip(pairs, overlaps):
             for me, other in ((x, y), (y, x)):
                 me.meter["fresh"] = r  # a chance meeting is something new
+                if overlap:  # she now knows; whether to do something else is up to her
+                    me.memory.write(Item(id=f"{me.name}-overlap-{other.name}-r{r}", kind="idea", source_agent=other.name,
+                                         text="At a chance meeting: " + self._overlap_note(me, other, overlap)))
                 if self.exchange and me.spec.family and not me.datasets:  # no data yet: ask what the colleague uses
                     have = {l["id"] for l in me.leads}
                     me.leads += [{"id": d["id"], "title": d["title"], "url": d["url"], "license": d.get("license", ""),
                                   "file_url": d["file_url"], "bytes": d.get("bytes", 0),
                                   "preview": [c["label"] for c in d["columns"]][:25]}
                                  for d in other.datasets if d["id"] not in have and "file_url" in d][:2]
-        convs = await self._gather([(lambda p=p: self._converse(*p)) for p in pairs])
-        for turns in convs:
+        convs = await self._gather([(lambda p=p, o=o: self._converse(*p, o)) for p, o in zip(pairs, overlaps)])
+        for turns, overlap in zip(convs, overlaps):
             for speaker, other, i, text, res in turns:
-                self.log.append(r, speaker.name, "talk", {"partner": other.name, "turn": i, "text": text},
+                found = {"overlap": overlap} if overlap and i == 1 else {}
+                self.log.append(r, speaker.name, "talk", {"partner": other.name, "turn": i, "text": text, **found},
                                 tokens=res.tokens, latency_ms=res.latency_ms)
         if self.exchange:
             for x, y in pairs:
@@ -511,7 +552,8 @@ class World:
             return
         taken = set(self.by_name)
         defs = await self._gather([
-            (lambda m=m: m.propose_daughter(r, [self.by_name[d] for d in m.daughters], self.seed, taken))
+            (lambda m=m: m.propose_daughter(r, [self.by_name[d] for d in m.daughters], self.seed, taken,
+                                            elsewhere=self._elsewhere(m)))
             for m, _ in ready])
         born = []
         for (m, field_B), (d, res) in zip(ready, defs):

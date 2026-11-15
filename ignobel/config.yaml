@@ -29,4 +29,5 @@ alpha: 0.05                  # base significance threshold before dividing by st
 keep_similarity: 0.95        # share(): receiver drops items this similar to what it has
 max_share_items: 3
 talk_turns: 3
+overlap_similarity: 0.8      # two daughters who meet are told when their current ideas are this similar
 seed_results_per_query: 5

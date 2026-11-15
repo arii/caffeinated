@@ -9,12 +9,30 @@ from pathlib import Path
 
 import committee
 import events
+import lab
+
+SAME_FINDING = 0.9  # two reported arrays are the same measurements if they share this much of their values
+
+
+def same_finding(a: list[dict], b: list[dict]) -> bool:
+    """Two studies report the same thing: array for array, the same values from the same dataset file."""
+    if not a or len(a) != len(b):
+        return False
+    left = list(b)
+    for x in a:
+        twin = next((y for y in left if x["dataset"] and y["dataset"] == x["dataset"]
+                     and lab.common(x["sketch"], y["sketch"]) >= SAME_FINDING), None)
+        if twin is None:
+            return False
+        left.remove(twin)
+    return True
 
 
 def score_events(events_path: str | Path, out_path: str | Path | None = None, seed: int = 0) -> list[dict]:
     events_path = Path(events_path)
     out_path = Path(out_path) if out_path else events_path.with_name("scores.jsonl")
     rows = []
+    first: list[tuple[list, str]] = []  # findings that already have a supported study, in the order they were made
     for ev in events.read(events_path):
         p = ev.payload
         if ev.type == "experiment_request":  # an experiment that still needs doing: a proposal, never a finding
@@ -35,6 +53,13 @@ def score_events(events_path: str | Path, out_path: str | Path | None = None, se
                        traceable=p["evidence"].get("traceable"),
                        datasets=[d["url"] for d in p["evidence"]["datasets"]],
                        citations=[c["url"] for c in p["evidence"]["citations"]])
+            if row["supported"]:  # priority: the first supported study of a finding keeps it
+                finding = p["evidence"].get("finding") or []
+                earlier = next((sid for f, sid in first if same_finding(finding, f)), None)
+                if earlier:
+                    row["preceded_by"] = earlier
+                elif finding:
+                    first.append((finding, row["study_id"]))
         rows.append(row)
     with open(out_path, "w", encoding="utf-8") as f:
         for r in rows:
@@ -43,8 +68,9 @@ def score_events(events_path: str | Path, out_path: str | Path | None = None, se
 
 
 def candidate(rows: list[dict]) -> dict | None:
-    """The community's nomination: the best-scored study that is supported by real data."""
-    ok = [r for r in rows if r.get("supported") and not r["rejected"]]
+    """The community's nomination: the best-scored study that is supported by real data and was first
+    to its finding."""
+    ok = [r for r in rows if r.get("supported") and not r.get("preceded_by") and not r["rejected"]]
     return max(ok, key=lambda r: (r["score"], r["score_a"] + r["score_b"], -r["round"], r["study_id"])) if ok else None
 
 
@@ -66,6 +92,8 @@ def main(argv=None) -> int:
             flag += f" traceable={r['traceable']:.0%}"
         if r.get("supported") is False:
             flag += " (not supported by real data)"
+        if r.get("preceded_by"):
+            flag += f" (same finding as {r['preceded_by']}, which came first)"
         print(f"  {r['score']:2d}  r{r['round']} {r['study_id']:24s} A={r['score_a']} B={r['score_b']}{flag}")
     best = candidate(rows)
     if best:

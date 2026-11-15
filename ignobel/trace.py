@@ -62,7 +62,11 @@ def body(e: dict, run: Path, agents: dict) -> str:
         return (f"B = <b>{esc(p.get('B'))}</b> → <b>{esc(p.get('action'))}</b>{trig} "
                 + "".join(f"<span class=tag>{k} {esc(p.get(k))}</span>" for k in keys))
     if t == "talk":
-        return f"→ <b>{esc(p.get('partner'))}</b> (turn {esc(p.get('turn'))})<div>{esc(p.get('text', ''))}</div>"
+        o = p.get("overlap") or {}
+        both = ([f"near-identical ideas (similarity {o['idea_similarity']:.2f})"] if "idea_similarity" in o else []) + \
+               ([f"the same dataset: {esc('; '.join(o['datasets']))}"] if o.get("datasets") else [])
+        note = f"<div><span class=tag>both were told they have {' and '.join(both)}</span></div>" if both else ""
+        return f"→ <b>{esc(p.get('partner'))}</b> (turn {esc(p.get('turn'))}){note}<div>{esc(p.get('text', ''))}</div>"
     if t == "snap":
         src = p.get("source") or {}
         return (f"bored; meets <b>{esc(p.get('partner'))}</b>. Inspired by: "

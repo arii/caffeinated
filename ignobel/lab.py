@@ -5,6 +5,7 @@ no network, no API keys, only the study's own files (and dataset copy) visible.
 Mock mode: a local Docker container (read-only, no capabilities). Real mode: a Modal sandbox.
 """
 import csv
+import hashlib
 import json
 import os
 import shutil
@@ -137,6 +138,25 @@ def trace_values(result: dict | None, datasets: list[tuple]) -> dict:
     total = sum(sizes.values())
     return {"share": round(matched / total, 4) if total else 0.0,
             "weakest": min((a["share"] for a in out.values()), default=0.0), "arrays": out}
+
+
+def sketch(values: list, k: int = 64) -> list[str]:
+    """The k smallest hashes of an array's cells: enough to tell later how much two reported arrays
+    have in common without keeping the arrays."""
+    seen: Counter = Counter()
+    hashes = []
+    for c in map(_cell, values):
+        if c is not None:
+            seen[c] += 1  # a repeated value counts once per occurrence
+            hashes.append(hashlib.sha1(f"{c!r}#{seen[c]}".encode()).hexdigest()[:12])
+    return sorted(hashes)[:k]
+
+
+def common(a: list[str], b: list[str], k: int = 64) -> float:
+    """Share of cells two sketched arrays have in common (Jaccard; exact for arrays of up to k cells)."""
+    union = sorted(set(a) | set(b))[:k]
+    both = set(a) & set(b)
+    return sum(h in both for h in union) / len(union) if union else 0.0
 
 
 def _run_docker(workdir: Path) -> tuple[str, str, int]:

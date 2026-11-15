@@ -33,6 +33,10 @@ Each round a daughter chooses her own research steps (`research` events):
   the trace. Derived values (ratios, logs, group means) do not trace, so a study that reports a
   derived array is shown with its share but is not eligible. `score.py` ranks
   supported studies; the top one is the community's Ig Nobel candidate.
+- **Priority:** when two supported studies report the same finding, only the earlier one is
+  eligible; the later one is scored and marked `preceded_by`. Same finding means: array for array,
+  at least 90% of the reported values are the same cells of the same dataset file (`evidence.finding`).
+  Two labs asking different questions of one dataset are both eligible.
 
 - **Experiments needed:** when no public dataset can answer her idea, a daughter can instead write down
   the experiment it needs (`experiment` step: question, protocol, materials, design, sample size, what
@@ -55,8 +59,11 @@ Real runs execute studies in the `caffeinated-testcases:py311-v1` image (numpy, 
 same recipe as the autoresearch `testcases/Dockerfile`, copied to `sandbox/Dockerfile` and built on
 first use). `--roster flat` and its CSVs in `data/` are a small synthetic fixture kept for offline tests.
 
+- A mother founding a lab sees the labs every department already has and is asked for a subfield
+  none of them covers. Which subfield is her choice; founders are named one after another so each
+  sees the labs before hers.
 - When a mother's daughters' mean boredom reaches `spawn_threshold`, the mother spawns a new
-  daughter in a subfield none of them covers (one LLM call; at most `max_daughters`, one per
+  daughter in a subfield no existing lab covers (one LLM call; at most `max_daughters`, one per
   `spawn_cooldown` rounds). The newborn seeds its library and proposes an idea that round, then acts
   like the others. Founding and later births are both `spawn` events (`reason` founded or bored).
 - Daughters use their own boredom formula (`boredom.daughter_components`):
@@ -66,7 +73,9 @@ first use). `--roster flat` and its CSVs in `data/` are a small synthetic fixtur
   without progress) and `no_data` send her wandering; `cooldown` and `satisfied` keep her at the bench.
 - Meetings are chance encounters. Each round a daughter wanders with probability `wander_prob`
   (always, if she is bored) and bumps into a random free colleague from any department. Nothing
-  matches them by field, and the conversation has no set topic.
+  matches them by field, and the conversation has no set topic. If the two turn out to have
+  near-identical current ideas (cosine at least `overlap_similarity`) or the same dataset, both are
+  told so and keep a note of it. What each does about it is her own decision.
 - `roster: flat` in `config.yaml` (or `--roster flat`) uses the old flat list in `agents.yaml`.
 
 `python trace.py <run_dir>` writes `<run_dir>/trace.html`: every event of a run on one page, filterable by agent and event type, with each study's stats, plot and code.

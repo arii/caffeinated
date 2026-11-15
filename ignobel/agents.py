@@ -338,13 +338,13 @@ class Agent:
                          sources=[s["id"] for s in known], queries=self.spec.seed_queries)
         return _steps(res.data)[:max_steps], res
 
-    def talk(self, other: str, other_field: str, history: list[str]) -> tuple[str, llm.LLMResult]:
+    def talk(self, other: str, other_field: str, history: list[str], overlap: str = "") -> tuple[str, llm.LLMResult]:
         """One turn of a chance conversation. No topic is set; it goes wherever it goes."""
         hist = "\n".join(history[-4:]) or "(you have just bumped into each other)"
         idea = self.current_idea()
         doing = idea.title if idea else "nothing in particular yet"
         user = (f"You bumped into {other}, an expert in {other_field}, at the coffee machine. "
-                f"You are currently working on: {doing}.\nConversation so far:\n{hist}\n"
+                f"You are currently working on: {doing}.\n{overlap}Conversation so far:\n{hist}\n"
                 "Reply in 2-3 sentences. Talk about whatever comes up: your work, theirs, or something "
                 "neither of you planned. Return JSON {text}.")
         res = self._call("talk", user, topic=doing)

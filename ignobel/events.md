@@ -33,9 +33,11 @@ not enforce payload shapes; the fields below describe the producer's current wri
   null or one of stuck, stall, no_data, cooldown, satisfied.
 - `snap`: {partner: str|null, source:{title,url,snippet}}. Logged for every agent selected
   to explore, including random-policy snaps; partner is null when no partner is available.
-- `talk`: {partner, turn, text}, one turn of a conversation: a chance meeting between two
+- `talk`: {partner, turn, text, overlap?}, one turn of a conversation: a chance meeting between two
   agents (`talk_turns` turns, three by default), or the mothers' round-0 meeting (agent =
-  mother, partner = the other mothers).
+  mother, partner = the other mothers). The first turn of a meeting carries `overlap`
+  {idea_similarity?, datasets?:[title]} when the two daughters were told that their current ideas
+  are near-identical or that they use the same dataset.
 - `share`: {receiver, offered:[item_id], kept:[item_id]}, bounded by max_share_items
   (default three) in each conversation direction when exchange is enabled.
 - `measurement_request`: {requester, instrument, args, n, budget_left} when successful.
@@ -64,10 +66,13 @@ not enforce payload shapes; the fields below describe the producer's current wri
 
 For daughter labs, `study_result` also has `evidence` {datasets:[{name, id, title, url, license,
 rows, sha256}], citations:[{id, title, url}], read:[name], traceable, trace:{array:{column, share}},
-supported}. `read` lists the loaded datasets the code opened, `traceable` is the share of all
+finding:[{dataset, column, sketch}], supported}. `read` lists the loaded datasets the code opened, `traceable` is the share of all
 reported values found as cells of those datasets, and `trace` gives each reported array's best
 column and share. `supported` means the result replicated, the code opened a loaded dataset, and
 every reported array has more than `traceable_share` of its values in one column of it.
+`finding` has one entry per traced array: the sha256 of the dataset file, the column, and a sketch
+of the reported values (`lab.sketch`), which `score.py` uses to give a finding to the first
+supported study that reported it (`preceded_by` on later rows of `scores.jsonl`).
 
 Successful search-backed seed, snap and study_result.novelty records carry source URLs.
 Mock results use example.org URLs. Budget or service failures can stop an action before

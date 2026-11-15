@@ -58,7 +58,7 @@ class Mother:
         return str(res.data.get("text", "")), res
 
     def propose_daughter(self, round: int, daughters: list, seed: int, taken: set[str],
-                         meeting: list[str] | None = None):
+                         meeting: list[str] | None = None, elsewhere: list[str] | None = None):
         """One LLM call -> (DaughterDef, LLMResult). Falls back to a generic lab if the reply is unusable.
 
         With `meeting` (the opening conversation) this founds a lab; otherwise the daughters are bored."""
@@ -67,14 +67,16 @@ class Mother:
             recent = "; ".join(i.title for i in d.ideas[-3:]) or "no ideas yet"
             lines.append(f"- {d.name} ({d.spec.field}): recent ideas: {recent}")
         labs = "\n".join(lines) or "- none yet"
+        others = ("Labs the other departments already have:\n" + "\n".join(elsewhere) + "\n") if elsewhere else ""
         if meeting is not None:
             why = ("You just talked with the other department heads:\n" + "\n".join(meeting) + "\n"
-                   f"Your daughter labs so far:\n{labs}\n"
+                   f"Your daughter labs so far:\n{labs}\n{others}"
                    f"Found one new daughter lab in a subfield of {self.field} of your choosing, "
-                   "different from the labs you already have. ")
+                   "different from every lab that already exists, in any department. ")
         else:
-            why = (f"Your daughter labs are bored; their ideas keep repeating:\n{labs}\n"
-                   f"Start one new daughter lab in a subfield of {self.field} that none of them covers. ")
+            why = (f"Your daughter labs are bored; their ideas keep repeating:\n{labs}\n{others}"
+                   f"Start one new daughter lab in a subfield of {self.field} that no existing lab covers, "
+                   "in any department. ")
         user = (
             why +
             "Return JSON with keys: name (one lowercase word, a scientist's surname), field, "

@@ -149,13 +149,18 @@ def test_studies_run_on_the_real_dataset_and_carry_evidence(tmp_path):
     w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
     asyncio.run(w.run(1))
     studies = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"]
-    assert studies
+    assert any(e.payload["ok"] for e in studies)
     for e in studies:
         ev = e.payload["evidence"]
         assert ev["datasets"][0]["url"].startswith("https://huggingface.co/datasets/")
-        assert ev["read"] == ["d1"] and ev["traceable"] == 1.0
-        assert all(t["column"].startswith("d1.") for t in ev["trace"].values())
         assert ev["supported"] == (e.payload["ok"] and e.payload["replicated"])
+        if not e.payload["ok"]:  # a study that crashed reported nothing to trace
+            assert ev["traceable"] == 0.0 and ev["finding"] == []
+            continue
+        assert ev["read"] == ["d1"] and ev["traceable"] == 1.0
+        assert [f["column"] for f in ev["finding"]] == [t["column"] for t in ev["trace"].values()]
+        assert all(f["dataset"] == ev["datasets"][0]["sha256"] and f["sketch"] for f in ev["finding"])
+        assert all(t["column"].startswith("d1.") for t in ev["trace"].values())
         assert "rows(" in e.payload["code"] and "instrument(" not in e.payload["code"]
 
 
@@ -463,3 +468,126 @@ def test_the_bench_only_takes_an_idea_that_survived_five_rounds(tmp_path):
     assert [x.experiments[0]["status"] for x in (a, b)] == ["returned", "requested"]
     done = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "experiment_result"]
     assert [(e.agent, e.round, e.payload["provenance"]) for e in done] == [(a.name, 5, "simulated"), (a.name, 9, "returned")]
+
+
+def test_sketches_tell_how_much_two_reported_arrays_share():
+    import lab
+    a = [1.5, 2.5, 2.5, 4.0, "x", None]
+    assert lab.common(lab.sketch(a), lab.sketch([4.0, 2.5, 1.5, 2.5])) == 1.0  # order does not matter
+    assert lab.common(lab.sketch(a), lab.sketch([1.5, 2.5, 4.0, 9.0])) == 0.6  # 3 of 5 distinct cells
+    assert lab.common(lab.sketch(a), lab.sketch([7.0, 8.0])) == 0.0
+    assert lab.common([], []) == 0.0
+    big = [i * 0.37 for i in range(5000)]
+    assert lab.common(lab.sketch(big), lab.sketch(big[::-1])) == 1.0
+    assert lab.common(lab.sketch(big), lab.sketch(big[:1600])) < 0.6  # a subset is not the same measurements
+    assert lab.common(lab.sketch(big), lab.sketch([v + 0.01 for v in big])) == 0.0
+
+
+@requires_sandbox
+def test_the_first_study_of_a_finding_keeps_it(tmp_path):
+    import llm
+    import score
+    w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    a, b = w.agents
+    assert a.datasets[0]["sha256"] == b.datasets[0]["sha256"]  # both labs loaded the same public file
+    res = llm.LLMResult(data={}, tokens=0, latency_ms=0, model="mock")
+    first = ("from lab_runtime import rows, report_corr\n"
+             "d = rows('d1', ['sepallengthcm', 'petallengthcm'])\n"
+             "report_corr([r[0] for r in d], [r[1] for r in d], '+', 0.9)\n")
+    again = ("from lab_runtime import rows, report_corr\n"  # the same measurements, written differently
+             "length, petal = zip(*rows('d1', ['petallengthcm', 'sepallengthcm']))\n"
+             "report_corr(list(petal), list(length), '+', 0.8)\n")
+    other = ("from lab_runtime import rows, report_corr\n"  # same dataset, a different question
+             "d = rows('d1', ['sepallengthcm', 'petalwidthcm'])\n"
+             "report_corr([r[0] for r in d], [r[1] for r in d], '+', 0.9)\n")
+    n = sum(e.type == "study_result" for e in events.read(tmp_path / "events.jsonl"))
+    for who, code, r in ((a, first, 1), (b, again, 2), (b, other, 2), (a, first, 3)):
+        w._run_study(who, {"code": code}, res, r)
+    ids = [e.payload["study_id"] for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"][n:]
+    rows = {r["study_id"]: r for r in score.score_events(tmp_path / "events.jsonl")}
+    assert all(rows[i]["supported"] for i in ids)
+    assert [rows[i].get("preceded_by") for i in ids] == [None, ids[0], None, ids[0]]
+    late = {**rows[ids[1]], "score": 10, "rejected": False}
+    early = {**rows[ids[0]], "score": 1, "rejected": False}
+    assert score.candidate([late, early])["study_id"] == ids[0]  # the later lab cannot take the nomination
+    assert score.candidate([late]) is None
+
+
+def test_the_same_finding_is_the_same_values_from_the_same_file():
+    import score
+    f = [{"dataset": "abc", "column": "d1.x", "sketch": ["1", "2"]}, {"dataset": "abc", "column": "d1.y", "sketch": ["3"]}]
+    assert score.same_finding(f, f[::-1])
+    assert not score.same_finding(f, f[:1])
+    assert not score.same_finding(f, [{**f[0], "dataset": "other"}, f[1]])  # same numbers, another file
+    assert not score.same_finding([{**x, "dataset": None} for x in f], [{**x, "dataset": None} for x in f])
+    assert not score.same_finding([], [])
+
+
+def test_a_meeting_tells_two_labs_what_they_have_in_common(tmp_path, monkeypatch):
+    import agents
+    w = run_arm.build_world("full", 2, 0, tmp_path, cfg=_cfg(wander_prob=1.0), roster="families")
+    asyncio.run(w.round0())
+    a, b = w.agents
+    assert w._overlap(a, b) == {"datasets": [a.datasets[0]["title"]]}  # both loaded the same public file
+    b.datasets = [{**b.datasets[0], "sha256": "another", "url": "https://example.org/other", "title": "Other"}]
+    assert w._overlap(a, b) == {}  # different ideas, different data: nothing to say
+    b.datasets = [{**b.datasets[0], "url": a.datasets[0]["url"]}]  # another file of the same deposit
+    assert w._overlap(a, b) == {"datasets": ["Other"]}
+    b.ideas[-1].embedding = list(a.ideas[-1].embedding)
+    assert w._overlap(b, a) == {"idea_similarity": 1.0, "datasets": [a.datasets[0]["title"]]}
+
+    told = []
+    talk = agents.Agent.talk
+    monkeypatch.setattr(agents.Agent, "talk", lambda self, other, field, history, overlap="":
+                        told.append((self.name, overlap)) or talk(self, other, field, history, overlap))
+    before = [(x.current_idea().idea_id, len(x.datasets)) for x in (a, b)]
+    w.cfg["research_steps"] = 0
+    asyncio.run(w.round(1))
+    assert {n for n, _ in told} == {a.name, b.name}
+    for name, note in told:  # each is told about the other; nothing tells her what to do about it
+        assert "almost the same idea" in note and "both use the dataset" in note
+        assert a.name in note and b.name in note and a.ideas[0].title in note
+    talks = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "talk" and e.round == 1]
+    assert talks[0]["overlap"]["idea_similarity"] == 1.0 and talks[0]["overlap"]["datasets"]
+    assert all("overlap" not in t for t in talks[1:])
+    for x in (a, b):
+        assert any("At a chance meeting" in it.text for it in x.memory.items)
+    assert [len(x.datasets) for x in (a, b)] == [n for _, n in before]  # nobody's data was taken away
+
+
+def test_without_exchange_a_meeting_reveals_nothing(tmp_path):
+    w = run_arm.build_world("no_exchange", 2, 0, tmp_path, cfg=_cfg(wander_prob=1.0), roster="families")
+    asyncio.run(w.round0())
+    assert not w.exchange
+    w.cfg["research_steps"] = 0
+    asyncio.run(w.round(1))
+    talks = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "talk" and e.round == 1]
+    assert talks and all("overlap" not in t for t in talks)
+
+
+def test_a_mother_sees_every_departments_labs_when_she_founds_one(tmp_path, monkeypatch):
+    import llm
+    prompts = []
+    chat = llm.chat_json
+    monkeypatch.setattr(llm, "chat_json", lambda model, system, user, **kw:
+                        prompts.append((kw["kind"], system, user)) or chat(model, system, user, **kw))
+    w = run_arm.build_world("full", None, 0, tmp_path, cfg=_cfg(spawn_threshold=0.0), roster="families")
+    asyncio.run(w.round0())
+    founding = [u for k, _, u in prompts if k == "spawn"]
+    assert len(founding) == 6 and "Labs the other departments already have" not in founding[0]  # nobody yet
+    fields = {m.name: [w.by_name[d] for d in m.daughters] for m in w.mothers}
+    last = founding[-1]  # physics, founding her second lab, sees biology's and chemistry's two each
+    for dept in ("biology", "chemistry"):
+        for lab_ in fields[dept]:
+            assert f"- {dept}: {lab_.name} ({lab_.spec.field})" in last
+    assert "a subfield of " in last and "of your choosing" in last  # the field is still hers to pick
+
+    prompts.clear()
+    asyncio.run(w._spawn(1, {a.name: 1.0 for a in w.agents}))
+    bored = [u for k, _, u in prompts if k == "spawn"]
+    assert len(bored) == 3
+    for m, u in zip(w.mothers, bored):
+        others = [x for x in w.mothers if x is not m]
+        assert all(f"- {x.name}: {w.by_name[x.daughters[0]].name} (" in u for x in others)
+        assert f"- {m.name}: " not in u  # her own labs are listed with their ideas, not here
