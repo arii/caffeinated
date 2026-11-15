@@ -212,7 +212,7 @@ def fold(profile, events, agent=None):
             regime = "EXPLOIT"
         elif regime == "CONVERGED":
             regime = "CONVERGED"
-        elif stall >= 3 * patience and coverage_complete:
+        elif best is not None and stall >= 3 * patience and coverage_complete:
             regime = "CONVERGED"
         elif n < profile["min_attempts"]:
             regime = "EXPLOIT"
