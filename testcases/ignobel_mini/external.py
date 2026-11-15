@@ -64,7 +64,7 @@ def doi_title(citation, task_dir=HERE):
         headers={"User-Agent": "caffeinated-ignobel/1 (mailto:swarm@localhost)"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=10) as response:
             message = json.loads(response.read(2_000_000))["message"]
     except urllib.error.HTTPError as error:
         if error.code != 404:
