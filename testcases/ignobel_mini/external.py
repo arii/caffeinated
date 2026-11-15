@@ -57,7 +57,7 @@ def canonical_citation(citation):
 
 
 def doi_title(citation, task_dir=HERE):
-    """Title of a real DOI-registered work (Crossref, cached), or None if it does not exist."""
+    """Title of a real DOI-registered work (Crossref; hits are cached, misses are not), or None."""
     match = DOI.fullmatch(citation.strip())
     if not match:
         return None
@@ -75,9 +75,8 @@ def doi_title(citation, task_dir=HERE):
     except urllib.error.HTTPError as error:
         if error.code != 404:
             raise
-        title = None
-    else:
-        title = " ".join((message.get("title") or [""])[0].split()) or doi
+        return None
+    title = " ".join((message.get("title") or [""])[0].split()) or doi
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps({"doi": doi, "title": title}) + "\n", encoding="utf-8")
     return title
