@@ -34,18 +34,101 @@ class LiveExportTests(unittest.TestCase):
                 any(json.loads(line)["round"] == 2 for line in live_events.splitlines())
             )
 
-    def test_artifact_copy_excludes_publisher_owned_viewer(self):
+    def test_artifact_copy_and_commit_pause_exports_and_preserve_viewer(self):
+        for external_out in (False, True):
+            with self.subTest(external_out=external_out):
+                self.check_artifact_export_pause(external_out)
+
+    def check_artifact_export_pause(self, external_out):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            out = root / "out"
-            (out / "viewer" / "run").mkdir(parents=True)
-            (out / "viewer" / "run" / ".temporary-manifest").write_text("in flight")
-            (out / "ledger.jsonl").write_text("{}\n")
             conductor = root / "conductor"
             conductor.mkdir()
-            target = swarm.copy_artifacts_to_arm_branch(out, conductor, "B")
-            self.assertEqual((target / "ledger.jsonl").read_text(), "{}\n")
-            self.assertFalse((target / "viewer").exists())
+            swarm.git(conductor, "init", "-q")
+            out = root / "out" if external_out else conductor / "experiments" / "swarm_B"
+            entity = out / "viewer" / "run" / "entities" / "rewards.json"
+            entity.parent.mkdir(parents=True)
+            (out / "ledger.jsonl").write_text("{}\n")
+            temp_created = threading.Event()
+            release_export = threading.Event()
+            copying = threading.Event()
+            release_copy = threading.Event()
+            committing = threading.Event()
+            release_commit = threading.Event()
+            resumed = threading.Event()
+            errors = []
+            calls = []
+            replace = export_viewer.os.replace
+            copy = swarm.copy_artifacts_to_arm_branch
+            commit = swarm.commit_arm_artifacts
+
+            def replace_after_pause(source, target):
+                if not temp_created.is_set():
+                    temp_created.set()
+                    release_export.wait(3)
+                return replace(source, target)
+
+            def publish():
+                calls.append(True)
+                if len(calls) > 1:
+                    resumed.set()
+                export_viewer._atomic_write(entity, b"published")
+
+            def paused_copy(*args):
+                copying.set()
+                release_copy.wait(3)
+                return copy(*args)
+
+            def paused_commit(*args):
+                committing.set()
+                release_commit.wait(3)
+                return commit(*args)
+
+            publisher = live_publish.Publisher(publish, interval=0.01)
+
+            def record():
+                try:
+                    swarm.record_round_artifacts(publisher, out, conductor, "B", 1)
+                except Exception as error:
+                    errors.append(error)
+
+            worker = threading.Thread(target=record)
+            with (
+                patch("export_viewer.os.replace", side_effect=replace_after_pause),
+                patch("swarm.copy_artifacts_to_arm_branch", side_effect=paused_copy),
+                patch("swarm.commit_arm_artifacts", side_effect=paused_commit),
+            ):
+                try:
+                    publisher.request()
+                    self.assertTrue(temp_created.wait(2))
+                    self.assertTrue(list(entity.parent.glob(".rewards.json.*")))
+                    worker.start()
+                    self.assertFalse(copying.wait(0.05))
+                    release_export.set()
+                    self.assertTrue(copying.wait(2))
+                    publisher.request()
+                    self.assertFalse(resumed.wait(0.05))
+                    release_copy.set()
+                    self.assertTrue(committing.wait(2))
+                    publisher.request()
+                    self.assertFalse(resumed.wait(0.05))
+                    release_commit.set()
+                    worker.join(2)
+                    self.assertFalse(worker.is_alive())
+                    self.assertEqual(errors, [])
+                    self.assertTrue(resumed.wait(2))
+                finally:
+                    release_export.set()
+                    release_copy.set()
+                    release_commit.set()
+                    if worker.ident is not None:
+                        worker.join(3)
+                    publisher.close()
+            committed = swarm.git_text(conductor, "ls-tree", "-r", "--name-only", "HEAD")
+            relative = "experiments/swarm_B/viewer/run/entities/rewards.json"
+            self.assertIn(relative, committed.splitlines())
+            self.assertNotIn(".rewards.json.", committed)
+            self.assertEqual(swarm.git_text(conductor, "show", f"HEAD:{relative}"), "published")
 
     def test_research_and_proposals_sort_together(self):
         run = export_viewer.Run(

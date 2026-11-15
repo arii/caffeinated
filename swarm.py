@@ -1895,10 +1895,14 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
     target = target.resolve()
     if out_dir != target:
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(
-            out_dir, target, dirs_exist_ok=True, ignore=shutil.ignore_patterns("viewer")
-        )
+        shutil.copytree(out_dir, target, dirs_exist_ok=True)
     return target
+
+
+def record_round_artifacts(publisher, out_dir, conductor, arm, round_num):
+    with publisher.publish_lock:
+        target = copy_artifacts_to_arm_branch(out_dir, conductor, arm)
+        return commit_arm_artifacts(conductor, target, round_num)
 
 
 def commit_arm_artifacts(conductor, target, round_num):
@@ -2500,8 +2504,7 @@ def _orchestrate(args, publish_state, cleanup):
 
             events = write_results(ledger_path, results_path)
             _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
-            copy_target = copy_artifacts_to_arm_branch(out_dir, conductor, args.arm)
-            commit_arm_artifacts(conductor, copy_target, round_num)
+            record_round_artifacts(publisher, out_dir, conductor, args.arm, round_num)
             for candidate in candidate_records:
                 if candidate.get("commit"):
                     tag = unique_tag(
