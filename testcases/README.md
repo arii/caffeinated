@@ -24,7 +24,7 @@ better. A malformed or crashing candidate is scored as a crash.
 Build the pinned image once before running an evaluator or task swarm:
 
 ```sh
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 ```
 
 The image pins Python 3.11.12 and the CPU dependencies used by these tasks:

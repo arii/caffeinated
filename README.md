@@ -29,7 +29,7 @@ Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so n
 From the repo root, in two terminals:
 
 ```sh
-# one-time: make setup && docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+# one-time: make setup && docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 # put TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY in .env (see .env.example)
 npm run dev                                                          # terminal 1: lab
 python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker  # terminal 2: research

@@ -14,7 +14,7 @@ cd /tmp/swarm-research
 python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
 ```
 
-The CPU evaluator needs the image built with `docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases`. Fake mode makes no model calls. Omit `--llm fake` and configure your provider for real research.
+The CPU evaluator needs the image built with `docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases`. Fake mode makes no model calls. Omit `--llm fake` and configure your provider for real research.
 
 ## 2. Connect the lab without a ZIP or restart
 

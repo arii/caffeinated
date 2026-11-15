@@ -32,7 +32,7 @@ DOCKER_DAEMON_AVAILABLE = sandbox.docker_available()
 DOCKER_IMAGE_AVAILABLE = (
     DOCKER_DAEMON_AVAILABLE
     and subprocess.run(
-        ["docker", "image", "inspect", "caffeinated-testcases:py311-v1"],
+        ["docker", "image", "inspect", "caffeinated-testcases:py311-v2"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -40,7 +40,7 @@ DOCKER_IMAGE_AVAILABLE = (
     == 0
 )
 DOCKER_AVAILABLE = DOCKER_IMAGE_AVAILABLE
-DOCKER_SKIP_REASON = "Docker daemon and caffeinated-testcases:py311-v1 image required"
+DOCKER_SKIP_REASON = "Docker daemon and caffeinated-testcases:py311-v2 image required"
 
 
 def evaluate(task):
@@ -510,6 +510,36 @@ class IgnobelPreregTests(unittest.TestCase):
         graded = self.run_prereg(direction="negative")["graded"]
         self.assertFalse(graded["significant"])
         self.assertEqual(graded["score"], 0.0)
+
+    def test_tiny_effect_is_not_confirmed_despite_large_sample_and_small_p(self):
+        with patch.object(
+            ignobel,
+            "association",
+            side_effect=[
+                (78_559, 0.07, 1e-20, None),
+                (39_280, 0.07, 1e-10, None),
+                (39_279, 0.07, 1e-10, None),
+            ],
+        ):
+            graded = self.run_prereg()["graded"]
+        self.assertFalse(graded["significant"])
+        self.assertFalse(graded["replicated"])
+        self.assertFalse(graded["confirmed"])
+
+    def test_meaningful_effect_replicated_in_both_halves_is_confirmed(self):
+        with patch.object(
+            ignobel,
+            "association",
+            side_effect=[
+                (200, 0.3, 1e-10, None),
+                (100, 0.3, 1e-5, None),
+                (100, 0.3, 1e-5, None),
+            ],
+        ):
+            graded = self.run_prereg()["graded"]
+        self.assertTrue(graded["significant"])
+        self.assertTrue(graded["replicated"])
+        self.assertTrue(graded["confirmed"])
 
     def test_citations_must_come_from_research_or_vetted_sources(self):
         for citations in (

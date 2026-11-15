@@ -11,8 +11,9 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
    Exa research cites), freezes it, and allows ONE registered test per dataset
    per run (later registrations on the same dataset score 0);
 4. runs the registered Spearman test once: significant = p < ALPHA on all rows
-   with the registered sign; replicated = the same sign with p <
-   REPLICATION_ALPHA in each of the two fixed hash halves; trivial pairs fail.
+   with |rho| >= 0.1 in the registered direction; replicated = the same sign,
+   |rho| >= 0.1, and p < REPLICATION_ALPHA in each fixed hash half; trivial
+   pairs fail.
 
 loss = 1 - (replicated and significant)
 
@@ -44,6 +45,7 @@ from stats import spearman
 FIELD = re.compile(r"[a-z][a-z0-9_]{2,40}")
 ALPHA = 0.005
 REPLICATION_ALPHA = 0.05
+MIN_EFFECT_RHO = 0.1
 MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
@@ -354,13 +356,14 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
             research_log, entry.get("sha256") or name, test_hash(prereg), predicted
         )
     sign = 1 if prereg["direction"] == "positive" else -1
-    significant = rejected is None and p < ALPHA and rho * sign > 0
+    significant = rejected is None and p < ALPHA and rho * sign >= MIN_EFFECT_RHO
     halves = []
     for part in (entry["file"], f".cache/replication/{name}.csv"):
         h_n, h_rho, h_p, h_problem = association(read_rows(task_dir / part), claim, sides)
         halves.append({"n": h_n, "rho": h_rho, "p": h_p, "problem": h_problem})
     replicated = all(
-        h["problem"] is None and h["p"] < REPLICATION_ALPHA and h["rho"] * sign > 0 for h in halves
+        h["problem"] is None and h["p"] < REPLICATION_ALPHA and h["rho"] * sign >= MIN_EFFECT_RHO
+        for h in halves
     )
     confirmed = significant and replicated
     graded = {

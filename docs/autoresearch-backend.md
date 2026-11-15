@@ -16,7 +16,7 @@ From a fresh clone (Python 3.10+, Docker; Python 3.12 recommended):
 make setup                     # creates .venv with uv (or venv+pip) from requirements-dev.txt
 . .venv/bin/activate
 cp .env.example .env           # fill in TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker
 ```
 
@@ -102,7 +102,7 @@ standard-library `unittest` runner.
 Build the isolated candidate image once:
 
 ```sh
-docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 ```
 
 For the Tinker backend, set `TINKER_API_KEY` and
