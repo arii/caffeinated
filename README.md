@@ -1,64 +1,96 @@
-# Artificial Scientist Swarms: backend
+# Artificial Scientist Swarms
 
-Artificial Scientist Swarms uses a **boredom meter to redirect autonomous research
-when local refinement stops paying off**. Agents propose code changes, evaluate
-them on CPU benchmarks, and keep measured improvements. This entry point
-describes the runnable autoresearch backend at source baseline `add9002` and
-distinguishes it from the separate Ig Nobel research community on `main`.
-The meter controls search rather than claiming that agents feel bored, and
-features that are not yet merged are labeled throughout.
+Artificial Scientist Swarms investigates a practical question: when should an automated
+researcher stop refining one approach and try another? Four worker slots propose small
+program changes, test them against fixed CPU benchmarks, and retain only measured
+improvements. A reproducible **boredom meter** shifts effort from local refinement toward
+different methods when experiments become repetitive and progress stalls. Judges can
+follow a run from its hypotheses through evaluation, decisions, memory and read-only replay.
 
-Core concepts: [agent types](#types-of-agents) · [boredom B](#boredom-meter-exact-cpu-implementation) · [orchestration loop](#orchestration-loop)
-
-## Reading map
-
-- [Architecture and round loop](#architecture-and-round-loop)
-- [Types of agents](#types-of-agents)
-- [Swarm types and fair comparisons](#swarm-types-and-fair-comparisons)
-- [Exact boredom formulas](#boredom-meter-exact-cpu-implementation)
-- [Benchmarks and sandbox](#cpu-benchmarks-and-sandbox)
-- [Grounding and memory](#grounding-and-memory)
-- [Artifacts and viewer](#run-artifacts-and-viewer)
-- [Quickstart and tests](#quickstart-and-tests)
-- [Limitations](#honest-limitations)
-
-The Karpathy-style protocol separates human instructions from agent edits:
-**the human edits [program.md](program.md)**; agents edit only the Python file
-declared by their task. `prompts/` contains common, scout, proposal, repair and
-critic templates. Task contracts and profiles live in `testcases/<task>/`.
-
-**No GPU training:** `llm.py:LLMClient._request_tinker` creates a sampling
-client and sends the rendered prompt on each call. Tinker is used for stateless
-LLM inference, not gradient updates or model training. Candidate evaluation is
-CPU-only; the remote provider may use different hardware for inference.
-
-## Architecture and round loop
+**Nothing here trains or fine-tunes a model.** There is no GPU execution stage in the
+backend: candidate programs run on CPU in Docker, and Tinker is used only through its
+sampling API for stateless LLM inference. Fake and OpenAI inference adapters are also
+available. Remote inference providers choose their own hardware; the repository does not
+establish that their services are GPU-free. The separate Ig Nobel backend on main uses
+Modal **CPU** study sandboxes in real mode; its sandbox request specifies no accelerator.
 
 ```mermaid
 flowchart LR
-  H[Human: program.md + task/profile] --> C[Conductor: swarm.py]
-  C --> M[Deterministic descriptor meter]
-  M --> R[Role allocation + suggested cells]
-  R --> W[Scouts and workers]
-  W <--> L[llm.py: fake / OpenAI / Tinker sampling]
-  W <--> E[research.py: Exa]
-  W <--> P[memory.py: local / past.dev]
-  W --> G[boredom.py: descriptor + citation gate]
-  G --> D[Disposable Docker CPU candidate]
-  D --> T[Trusted host grader]
-  T --> K[Numeric confirmation + critic explanation]
+  H[Human instructions and task] --> C[Conductor]
+  C --> B[Boredom meter]
+  B --> R[Allocate four worker roles]
+  R --> W[Workers and optional scouts]
+  W <--> L[Stateless LLM inference]
+  W <--> G[Research and memory]
+  W --> N[Descriptor and citation gate]
+  N --> E[Docker CPU experiment]
+  E --> T[Trusted grader]
+  T --> K[Repeat evaluation and keep/discard]
   K --> C
-  C --> A[Ledger + logs + Git artifacts]
-  A --> V[export_viewer.py: round-end publish + static export]
-  V --> API[viewer.app: read-only HTTP + SSE]
-  API --> UI[Viewer clients]
+  C --> A[Evidence ledger and artifacts]
+  A --> P[Round-end and final viewer publish]
+  P --> V[Read-only HTTP and SSE]
 ```
+
+The human edits [program.md](program.md); agents may edit only the task's declared
+candidate file, not the grader or research rules. The objective is a **score, lower is
+better**. The running backend described here has source baseline `add9002`; the separate
+Ig Nobel community is described at main revision `be658b6`. Extensions that are not yet
+merged into those implementations are explicitly identified.
+
+Start with [why boredom](#why-boredom), [agent types](#types-of-agents),
+[the loop](#orchestration-loop), or [the meter](#boredom-meter).
+Exact implementation locations live in the [backend reference](docs/backend.md).
+
+## Why boredom
+
+A researcher can remain busy while learning little. Repeating a familiar method may be
+cheap and reliable, but small parameter changes are not always the best next experiment.
+The design uses boredom as a name for the signal that this pattern should be interrupted,
+not as a claim that software has feelings.
+
+Psychology provides several useful distinctions. Eastwood and colleagues describe boredom
+in terms of unsuccessful attentional engagement in satisfying activity [1]. Westgate and
+Wilson's Meaning and Attentional Components model separates difficulty engaging attention
+from a mismatch between an activity and valued goals; both understimulation and
+overstimulation can matter [2]. These accounts caution against equating boredom with
+simple inactivity or failure.
+
+Bench and Lench argue that boredom can motivate pursuit of alternative goals [3].
+Elpidorou likewise describes a regulatory role for boredom in redirecting activity [4].
+For this backend, the useful analogy is a **switch signal**: not “the experiment went
+badly,” but “the current pattern of experiments may no longer be worth repeating.”
+This sits within the wider exploration–exploitation problem reviewed by Cohen, McClure
+and Yu [5]. It is not evidence that a particular threshold is optimal.
+
+| Psychological construct | Engineering counterpart | Important difference |
+| --- | --- | --- |
+| Unsuccessful attention/engagement and repetitive activity [1, 2] | Low descriptor novelty raises B | A method label is a proxy for repetition, not a measure of attention |
+| Lack of meaningful, goal-congruent engagement [2] | Stagnation tracks attempts without meaningful score improvement | A benchmark objective is not a person's sense of meaning |
+| Boredom as motivation to change activity [3, 4] | Higher B reallocates slots toward divergent work and different mechanisms | The policy changes search instructions, not subjective motivation |
+| Distinct confusion, frustration and boredom states during learning [6] | Unmerged Ig Nobel PR #7 reports frustration separately from B and requests design review | This is a design analogy, not a reproduction of human affect dynamics |
+
+D'Mello and Graesser study transitions among engagement, confusion, frustration and
+boredom during complex learning [6]. That supports treating these as distinct concepts,
+rather than calling every failed experiment boredom. The CPU meter still includes a small
+failure/repetition term; the proposed Ig Nobel revision makes a stronger separation.
+
+The computational ingredients have different sources. Nearest-neighbor sparseness follows
+the novelty-search idea of Lehman and Stanley [7], but this system **does not abandon its
+objective**: novelty steers proposals, while benchmark scores decide retention. The
+reported diversity statistic is the complement of Simpson concentration [8].
+
+**B is an engineering operationalization inspired by these ideas, not a model of affect
+and not psychologically validated.** The literature motivates distinctions and questions;
+it does not supply the implemented weights, thresholds, causal efficacy or scientific
+validity of the swarm.
 
 ## Types of agents
 
-These are responsibilities, not separate trained models. Scouts are an extra
-assignment on worker slots, not additional candidate slots. Gate and conductor
-are deterministic Python control components, not LLM personas.
+“Agent” names a responsibility, not an independently optimized model. Scouts are additional
+assignments on existing worker slots, so they do not create extra candidate slots.
+Conductor and gate are deterministic control components; the critic's explanation cannot
+override the numeric acceptance rule.
 
 | Type / role | Reads | Writes / action | LLM prompt |
 | --- | --- | --- | --- |
@@ -66,235 +98,249 @@ are deterministic Python control components, not LLM personas.
 | Scout | Brief, regime, memory, research query results/extracts | Queries, source selection, grounded implementation leads and lead memory | `prompts/scout_query.md`, `scout_pick.md`, `scout_lead.md` |
 | Worker: exploit | Current best source, protocol, task inputs, status, recalled results/leads/claims | Focused local patch, descriptor, claim, predicted delta and research trailers | `prompts/worker_propose.md`; `worker_repair.md` on rejection |
 | Worker: divergent | Same inputs plus suggested/assigned under-visited cells | Alternative mechanism/method patch, source-backed claim; conductor-cell repair if needed | Same worker prompts, role/regime-dependent instructions |
-| Critic | Provisional claim, both measured losses, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`; omitted in A |
+| Critic | Provisional claim, both measured scores, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`; omitted in A |
 | Gate | Commit trailers, descriptor/profile, ledger, research IDs | Pass/reasons and distance/citation audit in boredom_log.jsonl | None; `boredom.py:run_gate`, `meter.py:gate` |
 | Ig Nobel researcher (main) | Private library, ideas/studies, peer conversation and instruments | Proposals/refinements, study code, abstracts and lessons in memory/events | Inline `ignobel/agents.py`: `propose`, `refine`, `talk`, `write_study_code`, `write_abstract`, `write_lesson`; not root prompts/ |
 | Ig Nobel statistician (main) | Same agent interface; statistician specialization in AgentSpec | Research using statistical instruments; #7 adds peer design review | Same inline agent methods; #7 adds review/refine advice |
 | Ig Nobel committee (main) | Finished study abstracts after the run | Independent judge scores/reasons | Inline `ignobel/committee.py` judge A/B prompts; never a round controller |
 | Ig Nobel mother / daughter (#8, **not yet merged**) | Mother: meeting + daughter histories; daughter: private data/library | Mother founds/spawns labs, no studies; daughter acts as researcher | Inline `families.py` talk/propose_daughter and `agents.py`; not root prompts/ |
 
-Root LLM role templates share `prompts/common.md`, including the human protocol.
+All root role prompts share the common instructions and human protocol. The viewer API is
+a separate artifact reader, not an agent and not a controller of the research process.
 
-The viewer API is a separate read-only process, not an agent or a controller.
-It reads published artifacts and serves HTTP and SSE without using an LLM prompt.
+Implementation: `swarm.allocate_roles`, `llm.render_prompt` and the role templates in `prompts/`.
 
 ## Orchestration loop
 
-The conductor owns a Git worktree and four slots (`worker-1` … `worker-4`).
-Each worker gets its own worktree at the same round base commit.
-Proposal calls and CPU evaluations are iterated **sequentially** at this revision
-in `swarm.py:_orchestrate` and `run_evaluations`; the worker slots do not imply
-parallel execution.
+A run starts from one Git revision and allocates four worktrees at each round's common
+base. Calls and evaluations are **sequential** in this implementation; four slots do not
+mean four concurrent experiments.
 
-The conductor implements the following loop in `swarm.py:_orchestrate`:
-
-1. Load the task and profile, then evaluate the starting HEAD as the round-0 baseline.
-2. Fold the shared ledger to compute swarm and per-agent B, then assign four
-   roles and optional scouts. Record the assignment and suggested descriptor cells.
-3. Have scouts recall memory, search and select research sources, extract relevant
-   findings, and write implementation leads.
-4. Have each worker recall outcomes, leads and claims, propose an editable-file
-   patch, check prior art, and commit the patch in its own worktree.
-5. Check each commit at the gate, then repair or reassign rejected work within
-   the bounded proposal attempts.
-6. Evaluate passing candidates in Docker and choose the best provisional improvement.
-7. Repeat that candidate's evaluation and apply the numeric mean predicate.
-   Outside arm A, obtain the critic LLM explanation. Keep only a confirmed improvement.
-8. Record every final outcome and memory, regenerate the TSV and status, and
-   fast-forward to a kept commit. Commit artifacts, tag attempts and optionally
-   push. Publish the viewer state at the end of the round before starting the
-   next one, unless `--no-viewer` is set. On exit, publish a final `finished` or
-   `stopped` state.
+1. Evaluate the starting program and load the task's descriptor vocabulary and meter profile.
+2. Recompute shared and worker-scoped meter status from the ledger. Assign exploit,
+   divergent and scout responsibilities, with suggested cells to explore.
+3. Have scouts recall previous findings, retrieve prior art and turn useful sources into
+   implementation leads.
+4. Have workers recall outcomes and current claims, propose focused edits and commit them
+   with descriptors and research references.
+5. Check each proposal at the gate. A worker has up to three bounded attempts: initial
+   proposal, repair, and possible conductor-assigned descriptor-cell work.
+6. Evaluate passing programs inside Docker. Identify the best provisional improvement.
+7. Evaluate that candidate again and apply the confirmation rule. Outside arm A, obtain a
+   critic explanation. Keep only a confirmed improvement and advance the conductor to it.
+8. Record outcomes and memories, update tabular/status artifacts, commit the research
+   artifacts, tag attempts, optionally push, and publish the round's viewer state.
+   On exit, publish a final finished or stopped state.
 
 ```mermaid
 sequenceDiagram
   participant C as Conductor
-  participant M as Meter / memory
+  participant M as Meter and memory
   participant W as Scouts and workers
   participant G as Gate
-  participant E as Docker + host grader
-  participant K as Confirmation / critic
-  participant V as Viewer publisher / HTTP API
-  C->>E: Evaluate baseline (round 0)
-  loop Each round (1 to 10)
-    C->>M: Read ledger; swarm and per-agent status
-    C->>W: Assign four roles; scout if Exa enabled
-    W->>M: Recall outcomes, leads and claims
-    W->>W: Propose patch; check prior art
-    W->>G: Commit + Descriptor / Source / Prior-art trailers
-    G-->>W: Pass or repair/reassign (bounded attempts)
+  participant E as CPU sandbox and grader
+  participant K as Confirmation and critic
+  participant V as Viewer publisher
+  C->>E: Evaluate starting program
+  loop Each round
+    C->>M: Fold ledger and allocate roles
+    C->>W: Assign four candidate slots and optional scouts
+    W->>M: Recall findings and record grounded claims
+    W->>G: Commit candidate with descriptor and references
+    G-->>W: Pass or bounded repair/reassignment
     C->>E: Evaluate passing candidates
-    E-->>C: Loss or crash
-    opt Best provisional improvement exists
-      C->>K: Repeat evaluation; numeric mean check
-      K-->>C: Acceptance + critic explanation outside arm A
+    E-->>C: Score or crash
+    opt Provisional improvement
+      C->>K: Repeat evaluation and apply numeric rule
+      K-->>C: Decision and explanation outside A
     end
-    C->>M: Append outcomes and result memories
-    C->>C: Keep/discard; TSV, status, artifact commit, tags
-    C->>V: Publish running state unless --no-viewer
+    C->>M: Record keep/discard and memories
+    C->>C: Commit artifacts, tag attempts, optionally push
+    C->>V: Publish running state unless disabled
   end
-  C->>V: Publish final finished/stopped state unless --no-viewer
-  Note over V: HTTP/SSE reads published files; it does not control the run
+  C->>V: Publish finished/stopped state unless disabled
 ```
 
-`worker_attempts` allows up to three attempts: initial proposal, repair, and
-potential conductor-assigned descriptor-cell work in divergent regimes. This is
-more specific than the simplified one-repair protocol text. The gate checks
-descriptors, novelty distance and citations. Prior-art search supplies evidence,
-not proof of scientific originality. Rejections are recorded.
+Confirmation repeats evaluation; **it does not independently change the seed**.
+Hadamard is deterministic, and Playworld reuses its held-out seeds. The gate verifies
+declared novelty and citation requirements, not scientific originality.
+`--no-push` suppresses remote pushes, not local branches, commits or tags; fake mode also
+forces no-push. Viewer publication failures are logged without aborting the experiment.
 
-**Acceptance is numeric, not the critic's opinion.** In
-`swarm.py:acceptance_margin`, margin is `accept_margin` or, absent that, `eps`.
-`candidate_is_provisional` requires `loss < previous_best - margin`.
-Only the best provisional candidate is confirmed; `critic_accepts` requires a
-successful second evaluation and
-`(first_loss + second_loss)/2 < previous_best - margin`.
-The critic LLM explains the result but cannot override this predicate. Arm A
-skips the critic LLM, but still performs numeric confirmation.
+Implementation: `swarm._orchestrate`, `swarm.orchestrate` and `swarm.publish_viewer_state`.
 
-**This is not a second-seed check:** `local_task_result` changes no seed.
-Hadamard is deterministic, and Playworld reuses its held-out seeds. The conductor
-fast-forwards to a kept commit. Each round writes memory, copies artifacts into
-`experiments/swarm_<arm>`, commits them and tags attempts. `--no-push` disables
-remote pushes, not local Git writes; fake mode also forces no-push.
-The conductor calls `publish_viewer_state` at each round end and again on exit.
-By default it writes under `<out>/viewer`; `--viewer-dest PATH` selects another
-export root, and `--no-viewer` disables publishing. Publish failures are logged
-without failing the research run.
+## Boredom meter
 
-## Swarm types and fair comparisons
+The CPU meter combines repetition, stagnation and an overload proxy. High B asks the
+conductor to change how it searches; low B favors focused work. Its inputs are only the
+ordered ledger prefix and a domain profile: no LLM, embedding, clock, randomness or
+external service participates in calculating B.
 
-### Artificial Scientist Swarms autoresearch backend: this branch
+Let $`\operatorname{clip}(x)=\min(1,\max(0,x))`$ and let $`\operatorname{r}_q`$ mean rounding
+to $`q`$ decimal places. For novelty $`N_t`$, stagnation $`S_t`$ and overload $`O_t`$:
 
-| Arm | Allocation / ablation |
-| --- | --- |
-| A: meter off | Fixed 3 exploit / 1 divergent; the divergent worker scouts if Exa is on. Meter gate disabled; no critic LLM. Shadow meter values remain available. |
-| B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED uses a confirmation-only gate. |
-| C: meter on, Exa off | The meter controls allocation, but Exa is disabled. |
-| D: meter on, local memory | The meter controls allocation, and memory defaults to local storage instead of past.dev. |
-
-For the meter-enabled B/C/D arms, `allocate_roles` assigns the following slots:
-
-| Regime | Exploit / divergent worker slots | Scouts when Exa on / off |
-| --- | --- | --- |
-| EXPLOIT | 3 / 1 | 1 / 0 |
-| BOREDOM_SNAP | 1 / 3 | min(2, 1 + bored-agent count) / 0 |
-| PARADIGM_BREAKOUT | 0 / 4 | 2 / 0 |
-| CONVERGED | 4 / 0 | 1 / 0; gate restricts workers to confirmation |
-
-An agent counts as “bored” when its per-agent B >=0.70. The conductor sorts
-bored agents by descending B, then by name, and fills remaining scout slots
-from the lowest-B available agents. If no agents are bored, the EXPLOIT divergent
-slot goes to the lowest-B worker. Scouts are divergent workers except in
-CONVERGED. Arm C always has zero scouts. Explicit memory backend settings can
-override arm D's local-memory default. Arm A always has three exploit slots and
-one divergent slot, regardless of its shadow regime.
-
-These rules are implemented in `swarm.py:allocate_roles`, `arm_environment` and
-`_orchestrate`. For a comparison, use the same task, starting HEAD, four slots,
-round budget, LLM and service settings, with separate output directories. **This is not exact call/token-budget
-matching:** scouts, repairs and the critic change call counts. Arm A also removes
-the critic LLM; differences cannot all be attributed to boredom timing.
-
-### Ig Nobel community: inspected main `be658b6`
-
-Expert agents have private labs, ideas, studies, diaries and exchanges. A committee
-judges studies **after** a run. `MOCK=1` substitutes fake chat, seeded embeddings
-and canned search; mock studies still run in Docker. Real mode uses external
-chat/search/memory and Modal study sandboxes. These are research simulations,
-not real laboratory experiments. See the
-[main Ig Nobel README](https://github.com/arii/caffeinated/blob/main/ignobel/README.md).
-
-Main's `ignobel/run_arm.py:ARMS` has `full`, `random_snap`, `single`
-(the off/never-snap single-agent control), `shared_memory` and `no_exchange`.
-There is **no literal off arm or yoked_random on inspected main**.
-Matching seeds/rosters and cached initial libraries aid reproducibility, but
-single/shared/no-exchange also alter the experiment, not just meter timing.
-
-The following open PRs describe separate extensions:
-
-- [#6](https://github.com/arii/caffeinated/pull/6), **not yet merged**:
-  Modal timeout cleanup, Docker/Modal selection, CPU local embeddings,
-  OpenAI-compatible/Tinker provider support, key rotation and completion handling.
-- [#7](https://github.com/arii/caffeinated/pull/7), **not yet merged**:
-  profile-driven private meter, frustration separation, cooldown/jitter, and
-  `yoked_random`. It validates the paired full run's seed and agent count,
-  then chooses random agents for the same per-round number of snaps, counting
-  breakouts too. This controls frequency, not identical histories or costs.
-- [#8](https://github.com/arii/caffeinated/pull/8), **not yet merged**,
-  stacked on #6 rather than #7: biology/chemistry/physics mother departments
-  talk first and found daughter labs. Mothers do no studies; daughters have
-  private generated CSVs, seed libraries and meters. Bored families can spawn
-  more labs; daughters meet through seeded chance encounters. Hidden effects
-  are mother-generated, not empirical discoveries. Its older meter/random
-  control must not be presented as already combined with #7's yoked policy.
-
-## Boredom meter: exact CPU implementation
-
-**Definition:** boredom B combines a novelty deficit, lack of significant
-progress, and overload (failures or near-repeats):
-
-```text
-B = round(clip(0.45*(1-N) + 0.45*S + 0.10*O, 0, 1), 9)
+```math
+B_t=\operatorname{r}_9\!\left(
+ \operatorname{clip}\!\left(w_1(1-N_t)+w_2S_t+w_3O_t\right)\right),
+\qquad (w_1,w_2,w_3)=(0.45,0.45,0.10).
 ```
 
-N is rolling descriptor novelty, S is normalized stagnation, and overload is
-O=max(fail_rate,trivial_rate). This is the CPU implementation
-(`boredom_meter/meter.py:fold`, lines 206–215; default weights at line 39),
-not the different private Ig Nobel formula below. The
-[formula source reference](docs/backend.md) lists line-level citations for every
-formula and threshold in this section.
+The weights and thresholds below are configured defaults, not estimates from psychology.
+The meter reports most metrics to six decimals, but regime comparisons use nine-decimal B.
+The profile's direction determines improvement; all three CPU tasks minimize score.
 
-The active descriptor meter is `boredom_meter/meter.py`, imported through
-`boredom.py`. The older token/Jaccard helper `boredom.py:compute_meter` is
-**not** this scoring path.
+### Describing how experiments differ
 
-The inputs are an ordered ledger prefix and a loaded domain profile. Computing
-B uses no LLM, clock, randomness, network or embeddings. The returned status
-contains canonical ledger and effective-profile SHA-256 hashes.
-`attempt_events` includes rows with keep, discard or crash status and excludes
-critic rows. **Rejects are audited but do not enter B** at this
-revision; candidate crashes do.
+A descriptor is a path through a closed vocabulary, such as mechanism then method, plus
+numeric parameters. A different top-level mechanism is farther away than a different
+method within the same mechanism. Distance is **not** a weighted sum over mismatched
+levels: the first differing level decides it.
 
-### Formulas
+Let the ordered levels be $`\ell_1,\ldots,\ell_L`$ with weights $`\lambda_i`$.
+If no level differs, compare parameters with residual weight $`\rho`$:
 
-`meter.py:load_profile` supplies the defaults. The functions `param_distance`,
-`distance`, `sparseness`, `simpson` and `fold` compute the quantities below.
-
-| Quantity | Exactly implemented |
-| --- | --- |
-| Descriptor distance | First differing categorical level returns its weight: CPU mechanism 1.0, method 0.5. If both match, `round(0.25 * mean(parameter_distances),9)`. No parameters gives 0. |
-| Ratio parameters | Missing on either side contributes 1. Otherwise x and y become `max(abs(value),1e-12)`; distance is `min(abs(log(x/y))/log(ratio),1)`. CPU value uses ratio 4. |
-| Other scales | Linear: `min(abs(x-y)/((hi-lo) or 1),1)`; log first applies `log10(max(v,1e-300))` to bounds and values. Average over the union of parameter names. |
-| Novelty N | Mean of the last k attempts' sparsenesses. Each sparseness is mean distance to the nearest knn **preceding** archive members (empty archive: 1); old sparsenesses are not recomputed. |
-| Stagnation S | `min(streak/patience,1)`. Reset on a score strictly better than the last significant best by more than eps, otherwise increment. Raw best and significant best are separate. |
-| Fail rate | Last k scoped attempts' fraction with a fail status (CPU: crash). |
-| Trivial rate | Last k scoped attempts' fraction with nearest preceding archive distance **<0.05**. |
-| Overload O | `max(fail_rate,trivial_rate)`. |
-| Diversity | `1-sum(count(cell)^2)/n^2` on last k top-level mechanisms (empty: 0). Reported, not an extra B term. |
-| Frontier stall | Attempts since any strict raw-best improvement; increments on failure or no improvement. Separate from epsilon-based stagnation. |
-
-```text
-B = round(clip(0.45*(1-N) + 0.45*S + 0.10*O, 0, 1), 9)
+```math
+d(a,b)=
+\begin{cases}
+ \lambda_j,&j=\min\{i:a_{\ell_i}\ne b_{\ell_i}\},\\
+ \operatorname{r}_9\!\left(\rho\,\delta(a_{\rm params},b_{\rm params})\right),
+   &a_{\ell_i}=b_{\ell_i}\ \text{for all }i.
+\end{cases}
+\qquad \rho=\text{params\_weight}\ \text{or }\lambda_L/2.
 ```
 
-The returned status rounds metrics to six decimals using `r`, while regime
-comparisons use nine-decimal B. An empty ledger returns B=0, N=1 and EXPLOIT.
-Per-agent scoring uses its own windows and streaks but compares novelty against
-the **shared preceding archive**. Any global significant improvement resets all
-agent streaks. The global regime drives allocation, while per-agent B prioritizes
-bored workers at the >=0.70 cutoff in `swarm.py:allocate_roles`.
+The CPU profiles use level weights $`(1,0.5)`$, residual weight $`0.25`$ and a ratio scale
+with ratio $`4`$. In general, let $`P`$ be the union of parameter names. A missing value on
+either side contributes distance one; two empty parameter maps have distance zero.
 
-### Regimes and hysteresis
+```math
+\delta(a,b)=
+\begin{cases}
+0,&P=\varnothing,\\
+|P|^{-1}\displaystyle\sum_{p\in P}\Delta_p(a_p,b_p),&P\ne\varnothing.
+\end{cases}
+\quad
+\Delta_p(x,y)=
+\begin{cases}
+1,&p\text{ is absent from either descriptor},\\
+\min\!\left(\dfrac{|\ln(\hat x/\hat y)|}{\ln r_p},1\right),&\text{ratio scale},\\
+\min\!\left(\dfrac{|f_p(x)-f_p(y)|}{h_p},1\right),&\text{linear or log scale}.
+\end{cases}
+```
 
-`fold` checks the regime conditions in a fixed order. A significant improvement
-resets the regime to EXPLOIT; otherwise, an existing CONVERGED regime persists.
-A stall >=3*patience together with complete required top-level mechanism coverage
-enters CONVERGED. If none of those conditions applies, fewer than min_attempts=3
-attempts keeps the regime in EXPLOIT; the function then checks breakout, snap and
-exit hysteresis. Required mechanisms default to all vocabulary mechanisms,
-including baseline. This revision does not explicitly require a scored best
-before entering CONVERGED.
+For ratio scales, $`\hat x=\max(|x|,10^{-12})`$ and similarly for $`\hat y`$.
+For linear scales, $`f_p(v)=v`$; for log scales,
+$`f_p(v)=\log_{10}(\max(v,10^{-300}))`$. Given configured bounds $`l_p,u_p`$,
+$`h_p=f_p(u_p)-f_p(l_p)`$, replaced by $`1`$ if that difference is zero.
+Descriptor validation requires declared parameters with finite numeric values.
+
+### Novelty, progress and repeated failures
+
+Index eligible attempts in ledger order. These include baseline and candidate rows with
+keep/discard/crash status, but exclude critic rows and rejected proposals. Rejections
+remain in the audit logs; crashes enter the meter. Let $`A_{t-1}`$ be all eligible
+descriptors **preceding** attempt $`t`$. Its sparseness $`\nu_t`$ is the average distance
+to the nearest $`m_t`$ archive members [7]:
+
+```math
+m_t=\min(\text{knn},|A_{t-1}|),\qquad
+\nu_t=
+\begin{cases}
+1,&A_{t-1}=\varnothing,\\
+\dfrac{1}{m_t}\displaystyle\sum_{a\in\operatorname{NN}_{m_t}(d_t,A_{t-1})}d(d_t,a),
+ &\text{otherwise}.
+\end{cases}
+\qquad
+N_t=\frac{1}{|W_t|}\sum_{i\in W_t}\nu_i.
+```
+
+$`W_t`$ contains the last $`k`$ eligible attempts in the requested scope. An empty window
+returns $`N_t=1`$. Neighbors may include failed and discarded attempts: repeating something
+that failed is still repetition.
+
+A significant improvement is the first valid score, or a score better than the last
+**significant** best by strictly more than $`\epsilon`$. It resets the stagnation streak;
+smaller raw improvements do not. For minimizing tasks, let $`y_t`$ be a valid score and
+$`h_{t-1}`$ the significant best:
+
+```math
+I_t=\mathbf{1}\!\left[
+ y_t\text{ is valid}\ \land\
+ (h_{t-1}\text{ is unset}\ \lor\ y_t<h_{t-1}-\epsilon)\right],
+\qquad
+h_t=
+\begin{cases}y_t,&I_t=1,\\h_{t-1},&I_t=0,\end{cases}
+\qquad
+s_t=
+\begin{cases}0,&I_t=1,\\s_{t-1}+1,&I_t=0,\end{cases}
+\qquad S_t=\min(s_t/\text{patience},1).
+```
+
+A score is valid when finite, numeric and not associated with a configured fail status.
+For a maximizing profile, reverse the inequality and add the margin. The raw frontier
+tracks **any** strict valid best-score improvement. Its stall $`F_t`$ resets to zero on such
+an improvement and otherwise increments by one, independently of $`\epsilon`$:
+
+```math
+F_t=
+\begin{cases}
+0,&\text{first valid score or strict raw-best improvement at }t,\\
+F_{t-1}+1,&\text{otherwise}.
+\end{cases}
+\quad
+f_t=\frac{\sum_{i\in W_t}\mathbf{1}[\text{fail status}_i]}{|W_t|},
+\quad
+q_t=\frac{\sum_{i\in W_t}\mathbf{1}[\min_{a\in A_{i-1}}d(d_i,a)<0.05]}{|W_t|},
+\quad O_t=\max(f_t,q_t).
+```
+
+Initially both streak and frontier stall are zero. For an empty preceding archive,
+the nearest distance used for triviality is one; empty
+failure/trivial windows give rates zero. The CPU fail status is crash. The overload name
+is an engineering label for the larger of failure and near-repeat rates, not a measure
+of cognitive load.
+
+For top-level mechanism counts $`n_c`$ within the same window, the reported diversity
+is the complement of Simpson concentration [8]:
+
+```math
+D_t=
+\begin{cases}
+0,&|W_t|=0,\\
+1-\displaystyle\sum_c\left(\frac{n_c}{|W_t|}\right)^2,&|W_t|>0.
+\end{cases}
+```
+
+Diversity is diagnostic; **it does not add a fourth term to B**.
+
+### Regimes, hysteresis and scope
+
+The regime selects the kind of search to attempt next. The following cases are evaluated
+**top to bottom**, using default thresholds. Let $`R_{t-1}`$ be the previous regime,
+$`p=\text{patience}`$, $`n_t=|A_t|`$, and $`C_t`$ mean that all required top-level mechanisms
+have been covered. Abbreviate EXPLOIT, BOREDOM_SNAP, PARADIGM_BREAKOUT and CONVERGED as
+E, S, P and C:
+
+```math
+R_t=
+\begin{cases}
+\mathrm{E},&I_t=1,\\
+\mathrm{C},&R_{t-1}=\mathrm{C},\\
+\mathrm{C},&F_t\ge3p\ \land\ C_t,\\
+\mathrm{E},&n_t<3,\\
+\mathrm{P},&(B_t\ge0.85\land F_t\ge p)
+ \ \lor\ (R_{t-1}=\mathrm{P}\land B_t\ge0.55),\\
+\mathrm{S},&B_t\ge0.70
+ \ \lor\ (R_{t-1}=\mathrm{S}\land B_t\ge0.55),\\
+\mathrm{E},&\text{otherwise}.
+\end{cases}
+```
+
+This is hysteresis, not a timed cooldown: a snap or breakout persists down to the exit
+threshold $`0.55`$. A significant improvement resets even CONVERGED. Convergence is a
+coverage-and-stall heuristic, not proof of an optimum; required mechanisms default to
+all vocabulary mechanisms, including baseline. There is no explicit requirement that a
+scored best already exist before convergence. The warmup is min_attempts=3.
 
 ```mermaid
 stateDiagram-v2
@@ -304,219 +350,312 @@ stateDiagram-v2
   BOREDOM_SNAP --> PARADIGM_BREAKOUT: B >= 0.85 and stall >= patience
   BOREDOM_SNAP --> EXPLOIT: B < 0.55 or significant improvement
   PARADIGM_BREAKOUT --> EXPLOIT: B < 0.55 or significant improvement
-  EXPLOIT --> CONVERGED: stall >= 3*patience and coverage complete
-  BOREDOM_SNAP --> CONVERGED: stall >= 3*patience and coverage complete
-  PARADIGM_BREAKOUT --> CONVERGED: stall >= 3*patience and coverage complete
+  EXPLOIT --> CONVERGED: coverage complete and stall >= 3 patience
+  BOREDOM_SNAP --> CONVERGED: coverage complete and stall >= 3 patience
+  PARADIGM_BREAKOUT --> CONVERGED: coverage complete and stall >= 3 patience
   CONVERGED --> EXPLOIT: significant improvement
 ```
 
-SNAP remains active down to 0.55. BREAKOUT also remains active while B >=0.55,
-even if B falls below 0.85.
-There is **no timed cooldown** in the CPU meter. `gate` defaults to recent-distance
-minimum 0.35 and failed/discarded-distance minimum 0.25 outside EXPLOIT.
-Exploit-role workers are exempt from the former only. BREAKOUT also rejects a
-recent top-level mechanism; CONVERGED allows the best descriptor only.
-`boredom.py:run_gate` adds research-trailer checks; arm A disables meter gating
-and Exa-off disables prior-art requirements.
+The swarm uses all eligible attempts for its windows. Each worker uses its own attempts
+for novelty, failure, triviality and diversity windows, but compares novelty against the
+**shared** preceding archive. A global significant improvement resets every worker's
+streak; otherwise only the acting worker's streak increments. Frontier stall and archive
+size remain global, while coverage uses the requested scope. Worker-scoped regimes are
+folded through the shared event sequence. Global regime drives allocation, and workers
+with per-agent $`B\ge0.70`$ receive priority for divergent/scout assignments.
+Empty swarm status is B=0, N=1 and EXPLOIT.
 
-| Profile under testcases/ | eps (default accept_margin) | k / knn / patience |
-| --- | --- | --- |
-| hadamard19/boredom_profile.json | 0.005 | 5 / 3 / 5 |
-| bixbench_mini/boredom_profile.json | 0.03 | 5 / 3 / 5 |
-| playworld_mini/boredom_profile.json | 0.005 | 5 / 3 / 5 |
+| CPU profile | $`\epsilon`$ | $`k`$ | knn | patience |
+| --- | --- | --- | --- | --- |
+| hadamard19 | 0.005 | 5 | 3 | 5 |
+| bixbench_mini | 0.03 | 5 | 3 | 5 |
+| playworld_mini | 0.005 | 5 | 3 | 5 |
 
-None of these profiles explicitly sets accept_margin. Eps is a configured value,
-not a learned value.
-Profiles define closed vocabularies, objective direction, parameter scales and
-directives. Reusable non-CPU examples are
-`boredom_meter/profiles/biolab_growth.json` and `compbio_pipeline.json`.
-See [meter CLI documentation](boredom_meter/README.md); the code takes precedence
-over older conceptual descriptions there.
+Profiles also specify the vocabulary, parameter scales, direction and regime instructions.
+None of these three sets an explicit acceptance margin.
 
-### Ig Nobel uses a different meter
+### Gate and acceptance rules
 
-On main, `ignobel/boredom.py:components` computes
-`clip(0.5*similarity + 0.5*unsurprise - 0.5*failure,0,1)`, rounded to four decimals.
-Similarity is the clipped mean cosine of the newest idea versus up to five
-previous ideas; it is 0 when fewer than two ideas are available. Unsurprise is
-the mean of 1-gap over the last five replicated studies, or 0 if there are none.
-Gap is 1 when the direction is missing or wrong; otherwise it is
-`min(abs(abs(predicted)-abs(actual))/(abs(predicted)+abs(actual)),1)`
-(or 0 when the denominator is zero). Failure is the fraction of the last five
-studies that crashed or did not replicate, or 0 if there are none.
-`config.yaml` sets the snap threshold at 0.50, overriding the policy default of 0.70.
-Main has no multi-regime cooldown policy.
+Outside EXPLOIT and CONVERGED, a proposed descriptor $`d`$ must satisfy:
 
-**PR #7, not yet merged:** `ignobel/boredom.py:components` and
-`boredom_meter/profiles/ignobel.json:agent_meter` replace this with:
-
-```text
-B = clip(0.30*self_repeat + 0.25*ext_familiar + 0.20*unsurprise + 0.25*stall,0,1)
+```math
+\min_{a\in A_{\rm recent}}d(d,a)\ge0.35
+ \quad(\text{unless the worker role is exploit}),\qquad
+\min_{a\in A_{\rm failed/discarded}}d(d,a)\ge0.25.
 ```
 
-- Self-repetition is `self_repeat=clip(((similarity-base_mu)/base_sd)/3,0,1)`.
-  The baseline is the cosine of the round-0 idea against the agent's own seeded
-  library. A zero standard deviation becomes 1; a missing baseline defaults
-  to mean 0 and standard deviation 1. Similarity uses up to five previous ideas
-  since exploration, and fewer than two gives self_repeat 0.
-- External familiarity is `ext_familiar=clip(1-idea.novelty,0,1)`, or 0 when
-  novelty is missing. Unlike CPU B, it uses external novelty. Unsurprise and gap
-  retain the definitions above. Stall is
-  `stall=min(1,max(0,round-last_progress_round)/3)`; progress means a replicated
-  new descriptor cell or gap >=0.5. Components are rounded to four decimals.
-- Frustration is the fraction of the last five studies that failed or did not
-  replicate, and it is **not part of B**. At >=0.6, the policy requests a design
-  review when a statistician is available.
-- `policy.py:decide` prioritizes convergence, then frustration, then pending
-  breakout and cooldown, and finally snap. Snap requires two consecutive rounds at
-  `B >= 0.5 + jitter`; seeded per-agent jitter is uniform in [-0.05,0.05],
-  rounded to four decimals. Exploration resets similarity history and starts
-  a two-round cooldown. Pending breakout at elapsed >=2 and stall >=0.8 is checked
-  **before** cooldown (elapsed <=2).
-- Convergence requires the current idea to have a study, the last two studies
-  to have replicated with gaps <=0.2, and ext_familiar <=0.5. The agent replicates
-  once more and then remains on hold.
+An empty comparison set imposes no restriction. Recent means the last $`k`$ shared eligible
+attempts. BREAKOUT also requires a top-level mechanism absent from those attempts.
+CONVERGED instead permits only a descriptor at distance zero from the best descriptor:
 
-**PR #8, not yet merged:** family spawning uses mean daughter B >=0.40,
-two-round spawn cooldown and fewer than five daughters per mother; initial
-founding defaults to two per mother (`ignobel/config.yaml`, `world.py`).
-These are population rules, not #7's private exploration policy.
+```math
+R=\mathrm{P}\ \Longrightarrow\
+ d_{\ell_1}\notin\{a_{\ell_1}:a\in A_{\rm recent}\},\qquad
+R=\mathrm{C}\ \Longrightarrow\
+ \text{best descriptor exists}\ \land\ d(d,d_{\rm best})=0.
+```
 
-## CPU benchmarks and sandbox
+Citation checks are additional to descriptor checks. Arm A disables meter gating;
+turning Exa off removes prior-art requirements. These checks operate on declared
+descriptors and logged source IDs, not an independent semantic assessment of the code.
 
-| Task | Honest scope and metric | Editable |
+Let $`y_\star`$ be the previous best score and $`y_1,y_2`$ the first and repeated evaluations.
+Only the best provisional candidate is confirmed:
+
+```math
+m=
+\begin{cases}
+\text{accept\_margin},&\text{if explicitly configured},\\
+\epsilon,&\text{otherwise},
+\end{cases}
+\qquad
+\text{provisional}\iff y_1<y_\star-m,\qquad
+\text{keep}\iff\text{second status is ok}\ \land\
+ y_2\text{ exists}\ \land\ \frac{y_1+y_2}{2}<y_\star-m.
+```
+
+This is a repeatability guard, not a statistical significance test. Arm A skips the critic
+LLM but still requires numeric confirmation.
+
+### Ig Nobel: a different private meter
+
+The separate main backend studies ideas and simulated experiments rather than editable
+benchmark programs. Its private meter uses semantic similarity, predictable outcomes
+and study failures; it is **not** the CPU formula:
+
+```math
+B_{\rm main}=\operatorname{r}_4\!\left(
+ \operatorname{clip}(0.5\,\mathrm{similarity}
+                   +0.5\,\mathrm{unsurprise}-0.5\,\mathrm{failure})\right).
+```
+
+Similarity is the clipped mean cosine of the newest embedded idea against up to five
+preceding embedded ideas, or zero with fewer than two. Unsurprise averages $`1-g`$ across
+the last five replicated studies, or zero if none. Failure is the fraction of the last
+five studies that crashed or did not replicate, or zero if none. For predicted effect $`u`$
+and actual effect $`v`$:
+
+```math
+g(u,v)=
+\begin{cases}
+1,&\text{actual effect/direction missing or direction disagrees},\\
+0,&|u|+|v|=0\ \text{and directions agree},\\
+\min\!\left(\dfrac{\big||u|-|v|\big|}{|u|+|v|},1\right),&\text{otherwise}.
+\end{cases}
+```
+
+Main configures snap at $`0.50`$, overriding the policy function's default $`0.70`$.
+It does not implement the multi-regime cooldown policy below.
+
+**PR #7, not yet merged**, replaces that meter with:
+
+```math
+B_7=\operatorname{r}_4\!\left(
+ \operatorname{clip}(0.30\,r+0.25\,e+0.20\,u+0.25\,s)\right),
+\qquad
+r=\operatorname{clip}\!\left(\frac{\mathrm{similarity}-\mu_0}{3\sigma_0}\right),
+\quad
+e=\operatorname{clip}(1-\mathrm{external\ novelty}),
+\quad
+s=\min\!\left(1,\frac{\max(0,\mathrm{round}-\mathrm{lastProgressRound})}{3}\right).
+```
+
+Here $`u`$ is unsurprise as above. The baseline mean and standard deviation come from the
+round-0 idea against the agent's own seeded library. Missing baselines use $`(0,1)`$ and
+zero standard deviation becomes one. Similarity considers up to five embedded ideas
+since exploration; fewer than two makes $`r=0`$. Missing external novelty gives $`e=0`$.
+Progress means a replicated study in a new descriptor cell or with gap at least $`0.5`$.
+Components are reported to four decimals; B uses their unrounded values.
+
+Frustration is reported separately and is **excluded** from $`B_7`$:
+
+```math
+\mathrm{frustration}=
+\frac{\#\{\text{failed or unreplicated studies among the last five}\}}
+     {\#\{\text{studies among the last five}\}},
+\qquad
+\mathrm{frustration}\ge0.6\ \Longrightarrow\ \text{design review before further work}.
+```
+
+An empty study window gives zero frustration. The policy prioritizes convergence,
+frustration, pending breakout, cooldown and then snap. It requests review, using a
+statistician when available. Snap requires two consecutive rounds with
+$`B\ge0.50+j`$, where seeded per-agent jitter $`j`$ is uniform in $`[-0.05,0.05]`$ and rounded
+to four decimals. Exploration resets similarity history and begins a two-round cooldown.
+A pending breakout at elapsed rounds at least two and stall at least $`0.8`$ is checked
+before the cooldown condition (elapsed at most two). Convergence requires the current
+idea to have a study, the last two studies to have replicated with gaps at most $`0.2`$,
+and external familiarity at most $`0.5`$; the agent replicates once more and then holds.
+
+PR #7 also adds a **yoked_random** control. After validating a paired full run's seed
+and roster size, it randomly chooses the same number of agents to explore in each round,
+counting breakouts as well as snaps. It matches frequency, not identical ideas or cost.
+
+**PR #8, not yet merged**, instead adds mother departments and daughter labs, private
+generated data and chance encounters. It is based on PR #6 rather than PR #7. A mother
+starts with two daughters by default and may spawn while mean daughter B is at least
+$`0.40`$, with a two-round cooldown and fewer than five daughters. These are population
+rules, not the private policy above; generated hidden effects remain simulations.
+
+Implementation: `boredom_meter.meter`, `boredom.run_gate` and `swarm.critic_accepts`;
+separate Ig Nobel `boredom.components` and `policy`.
+The [formula source table](docs/backend.md#formula-and-threshold-sources) records exact locations.
+
+## Swarm types and fair comparison
+
+The runnable benchmark backend supports four arms:
+
+| Arm | Allocation / ablation |
+| --- | --- |
+| A: meter off | Fixed 3 exploit / 1 divergent; the divergent worker scouts if Exa is on. Meter gate disabled; no critic LLM. Shadow meter values remain available. |
+| B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED uses a confirmation-only gate. |
+| C: meter on, Exa off | The meter controls allocation, but Exa is disabled. |
+| D: meter on, local memory | The meter controls allocation, and memory defaults to local storage instead of past.dev. |
+
+The meter-enabled arms allocate roles as follows:
+
+| Regime | Exploit / divergent worker slots | Scouts when Exa on / off |
 | --- | --- | --- |
-| hadamard19 | **exact; known optimum**. Valid 19×19 ±1 matrix; integer Bareiss determinant; nonzero-det loss = log10(2^18*3411968)-log10(abs(det)). Loss 0 matches the optimum. | construct.py |
-| bixbench_mini | **17-question subset, not full BixBench**. Host answer-key accuracy; loss=1-accuracy. Published reference accuracy 0.523 is not a full-benchmark swarm result. | analysis.py |
-| playworld_mini | **synthetic proxy, not PlayWorld**. 9×9 environment, 10 context frames, 20 future 5×5 frames, 200 held-out episodes; exact-frame fraction, loss=1-score; 8-frame-memory reference score 0.3598. | world_model.py |
+| EXPLOIT | 3 / 1 | 1 / 0 |
+| BOREDOM_SNAP | 1 / 3 | min(2, 1 + bored-agent count) / 0 |
+| PARADIGM_BREAKOUT | 0 / 4 | 2 / 0 |
+| CONVERGED | 4 / 0 | 1 / 0; gate restricts workers to confirmation |
 
-Each task's `task.json` and `evaluate.py` define its scope and metric; the
-[task documentation](testcases/README.md) provides further details. BixBench
-preparation downloads public data on its first run, so it is not fully offline
-when its cache is empty.
+Workers with higher B sort first, with names breaking ties; remaining scout slots fill
+from the lowest-B available workers. If nobody is bored, EXPLOIT gives its divergent
+slot to the lowest-B worker. Scouts are divergent workers except in CONVERGED.
+C always disables scouts; explicit memory settings can override D's local default.
 
-`testcases/sandbox.py:run_candidate` is **fail-closed**: if Docker or its image is
-unavailable, or the sandbox fails to start, the evaluator records a crash rather
-than executing candidate code on the host.
-The pinned `testcases/Dockerfile` image uses network none, read-only root,
-dropped capabilities, no-new-privileges, non-root UID and PID/CPU/memory/time
-limits. Stdout/stderr and output are bounded. Only declared public files,
-editable source and required harness enter a read-only work mount, with a
-separate output mount. The container receives no repository, home directory,
-hidden answers, reference solutions or host environment credentials.
+For a meaningful comparison, hold task, starting revision, four slots, round budget,
+model and service settings constant, and use separate output directories.
+**Equal slots and rounds do not mean equal calls or tokens.** Scouting, repairs and
+criticism change cost, and A removes the critic LLM as well as meter gating.
 
-**Trusted host graders never import candidate code.** Hadamard parses a JSON
-matrix, and BixBench parses an answer dictionary. Playworld's `run_candidate.py` imports the
-model **inside Docker** and returns predictions. Hidden future frames and the
-simulator stay on the host; BixBench's answer key remains in host `.cache/`.
-This container boundary is not proof against runtime/kernel vulnerabilities.
-Task preparation and graders are trusted code.
+The separate Ig Nobel community supports full, random_snap, single, shared_memory and
+no_exchange. Single is the one-agent never-snap control; there is no literal off or
+yoked_random arm on inspected main. Mock mode substitutes fake chat, seeded embeddings
+and canned search, but still runs studies in Docker. Real mode uses external inference
+and Modal CPU study sandboxes. Seeds, rosters and cached initial libraries help
+reproducibility; changing agent count, memory or exchange changes more than boredom timing.
+
+PR #6 is **not yet merged**: it adds timeout cleanup, Docker/Modal selection, local CPU
+embeddings, provider support, key rotation and completion handling. PR #7 and PR #8 remain
+separate extensions as described above, not one integrated system.
+
+Implementation: `swarm.allocate_roles`, `swarm.arm_environment` and main's `ignobel.run_arm.ARMS`.
+
+## Benchmarks and sandbox security
+
+Scores quantify the task outcome, not the scientific importance of an idea.
+
+| Task | Scope and score (lower is better) | Agent may edit |
+| --- | --- | --- |
+| hadamard19 | **Exact; known optimum.** Valid 19×19 ±1 matrix, exact integer Bareiss determinant. For nonzero determinant, score is log10(2^18 × 3411968) − log10(abs(det)); score zero matches the optimum. | construct.py |
+| bixbench_mini | **17-question subset, not full BixBench.** Score is 1 − answer accuracy. Published reference accuracy 0.523 is not a full-benchmark swarm result. | analysis.py |
+| playworld_mini | **Synthetic proxy, not PlayWorld.** A 9×9 environment supplies 10 context frames; predict 20 future 5×5 frames over 200 held-out episodes. Score is 1 − exact-frame fraction; the 8-frame-memory reference achieves fraction 0.3598. | world_model.py |
+
+The [task documentation](testcases/README.md) gives preparation details. First-time
+BixBench preparation downloads public data, so it needs a populated cache to be offline.
+
+Candidate execution is **fail-closed**. If Docker, the pinned image or startup is
+unavailable, evaluation records a crash rather than executing candidate code on the host.
+Containers have no network, a read-only root, dropped capabilities, no-new-privileges,
+a non-root user and limits on processes, CPU, memory, time and output. Only declared
+public inputs, editable source and required harness files enter the read-only work mount;
+a separate mount receives output. Repository files, home directories, credentials,
+hidden answers and reference solutions are not mounted.
+
+Trusted host graders parse bounded outputs rather than import candidates. Hadamard
+returns a matrix and BixBench an answer dictionary. Playworld's harness imports candidate
+code **inside Docker**, returning predictions while hidden future frames stay on the host.
+Task preparation and graders are trusted; containers do not prove immunity to runtime or
+kernel vulnerabilities.
+
+Implementation: `testcases.sandbox.run_candidate` and each task's `evaluate` module.
 
 ## Grounding and memory
 
-`research.py` wraps Exa prior-art search, paper/code scouting, similar-source
-lookup and extraction. Q/S/E identifiers link queries, sources and extracts;
-logs include cost/latency and cached responses. `EXA=off` records disabled
-queries without a service call. Scouts turn sources into implementation leads;
-workers check prior art and cite IDs in proposals and commit trailers.
+Scouts search for prior art and convert useful material into concrete leads. Workers cite
+those leads and sources when explaining a proposed change. Query, source and extract IDs
+connect research to proposals; logs retain cost, latency and cached responses.
+`EXA=off` records disabled queries without calling Exa. Finding a source is evidence of
+grounding, not proof that a proposal is novel or that the source is correct.
 
-`memory.py` supports none, local JSONL recall and past.dev. The swarm writes
-assignments, claims, leads and outcomes; workers recall results, leads and current
-claims. A/B default to past.dev: select `MEMORY_BACKEND=local` for offline use.
-Environment names include `EXA_API_KEY`, `PAST_API_KEY`, and arm-specific
-`PAST_API_KEY_A` / `PAST_API_KEY_B`; values do not belong in docs or artifacts.
+Memory supports none, local JSONL and past.dev. Assignments, claims, leads and outcomes
+become retrievable records. Workers recall prior outcomes, leads and current claims so
+that a new round need not rediscover every failed attempt. A/B default to past.dev;
+choose `MEMORY_BACKEND=local` for offline use.
 
-Past.dev has per-arm audiences/recall identities (`ensure_arm_audience`),
-arm/run_id metadata (`arm_run_scope`) and post-recall evidence filtering
-(`scoped_pastdev_response`). Known current-run IDs and metadata determine
-eligibility; other-run records are dropped. This is application retrieval
-isolation, not separate infrastructure. Local recall reads the selected mirror;
-separate output directories isolate local arms. Retrieval is outside CPU B.
+Past.dev audiences and recall identities separate arms, while run metadata and
+post-retrieval evidence filtering drop ineligible other-run records. This is application
+retrieval isolation, not separate infrastructure. Local recall reads the selected mirror;
+separate output directories isolate local arms. Retrieval is outside the CPU B calculation.
 
-## Run artifacts and viewer
+Credential names include EXA_API_KEY, PAST_API_KEY and arm-specific PAST_API_KEY_A /
+PAST_API_KEY_B. Supply values privately in the environment, never in shared artifacts.
 
-The CPU backend writes the following artifacts under `--out`, or under the
-conductor's `experiments/swarm_<arm>` directory when no output path is supplied:
+Implementation: `research` and `memory.arm_run_scope`/`memory.scoped_pastdev_response`.
+
+## Data model and viewer
+
+The ledger is the record of attempted work. Supporting logs explain how a proposal was
+allocated, grounded, evaluated and accepted or rejected. The backend writes these under
+`--out` (otherwise in the conductor's `experiments/swarm_<arm>` directory).
 
 | File | Key fields / purpose | Writer |
 | --- | --- | --- |
-| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score (loss), descriptor, sources, commit, round; candidate replicate_score, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
-| results.tsv | commit, loss, memory_gb, status, description, agent, round, descriptor, kind; CPU memory_gb=0.0 | swarm.write_results |
+| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score, descriptor, sources, commit, round; candidate replicate_score, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
+| results.tsv | commit, `loss` (score, lower is better), `memory_gb` (legacy format column, always 0.0), status, description, agent, round, descriptor, kind | swarm.write_results |
 | assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, ledger/profile hashes, command/commit provenance | swarm.append_assignment |
-| boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss/best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments. | boredom.run_gate; swarm.append_status |
+| boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss (best score), best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments. | boredom.run_gate; swarm.append_status |
 | research_log.jsonl | query id/purpose/agent/regime/endpoint/query/n_results/cost/latency_ms, optional disabled; source id/query_id/url/title/published/highlights; extract records when used | research.append_query_record/write_query_results/run_extract |
 | memory.jsonl | id, sourceId, label, content, author, metadata, timestamp; memory type is metadata.type, alongside arm/round/commit/status as appropriate | memory.write/append_mirror |
 | memory_log.jsonl | writes/recalls: backend, agent, query or ID, latency, evidence/source IDs, counts, pending/dropped counts where applicable | memory.write/recall |
 | llm_log.jsonl | ts, role, agent, round, model, prompt_sha, full prompt, parsed response, latency_ms, usage, optional attempts | llm.LLMClient.call |
-| critic.tsv | round, commit, run1_loss, run2_loss, accepted, verdict, why | swarm.update_critic_tsv |
+| critic.tsv | round, commit, run1_loss and run2_loss (first and repeated scores), accepted, verdict, why | swarm.update_critic_tsv |
 | run_id | Persisted UUID hex for memory run scope | swarm._orchestrate |
 | run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments | swarm._write_run_artifact |
 | boredom_profile.json | Effective profile without private `_` fields; used to reproduce meter values and verify profile hashes | swarm._orchestrate |
 | viewer_publish_log.jsonl | ts, status, final, exception class and message; written only on publish failure | swarm.publish_viewer_state |
 | viewer/ | Default published index and run directories, including events, entities, keyframes, manifests and copied experiment artifacts | export_viewer.publish |
 
-Other outputs include `runs/<commit>.log`, critic confirmation logs and the Exa
-cache. Review full prompts, responses and retrieved content before sharing them.
+Review full prompts, responses and retrieved content before sharing. Command redaction
+is heuristic, not a general secret detector.
 
 ```mermaid
 flowchart TD
-  A[Assignments + LLM calls] --> B[Claims / leads / gate]
-  B --> C[Docker evaluation + critic.tsv]
-  C --> D[Ledger: seq, commit, descriptor, score, outcome]
-  D --> E[results.tsv + boredom status]
-  D --> F[memory.jsonl + recall log]
-  G[Research: Q query → S source → E extract] --> B
-  A --> X[export_viewer.py]
-  B --> X
-  D --> X
-  E --> X
-  F --> X
-  G --> X
-  R[run.json + boredom_profile.json] --> X
-  X --> I[index.json + manifest]
-  X --> J[events.ndjson: ticks + entity refs]
-  X --> K[Entities + WorldSnapshot keyframes]
-  I --> API[Read-only HTTP + SSE]
-  J --> API
-  K --> API
+  A[Assignments and claims] --> X[Viewer exporter]
+  R[Research sources and memory] --> X
+  E[CPU evaluations and critic decisions] --> L[Ordered ledger]
+  L --> X
+  P[Run metadata and effective profile] --> X
+  X --> J[Gap-free event ticks and entity references]
+  X --> K[Entities and WorldSnapshot keyframes]
+  X --> M[Manifest, timeline and run index]
+  J --> V[Read-only HTTP and SSE clients]
+  K --> V
+  M --> V
 ```
 
-`export_viewer.py` implements **swarm-viewer/v1** exports for CPU and Ig Nobel
-artifacts, plus incremental publishing for the CPU conductor. UUIDv5 run/agent/event IDs are deterministic for the same inputs;
-ticks start at 0 and are gap-free. Events include round starts, assignments,
-boredom measurements, questions, observations, hypotheses, gates, experiments,
-verdicts and discoveries, plus Ig Nobel talk/share/diary events. Entity references
-link evidence and discovery lineage. A reducer produces WorldSnapshot state;
-round-end and periodic keyframes let viewers seek through the run.
+The **swarm-viewer/v1** layout includes index.json, a UUID run directory, manifest.json,
+timeline.json, events.ndjson, entities and keyframes. Deterministic UUIDv5 identities and
+gap-free ticks make replay reproducible for the same inputs. Events link assignments,
+questions, observations, hypotheses, experiments, gates, verdicts and discoveries;
+Ig Nobel also supplies conversations, exchanges and diaries. A reducer reconstructs a
+WorldSnapshot, using round-end and periodic keyframes to seek.
 
-The exporter writes index.json, <run_id>/manifest.json, timeline.json,
-events.ndjson, keyframes/<tick>.json and entities/<kind>.json. Manifest provenance
-records the LLM, CPU evaluation and Exa/memory settings. For new CPU runs,
-command and swarm_commit come from run.json: the command is a list of redacted
-arguments, and swarm_commit is the starting commit. The provenance.artifacts
-field remains an empty object rather than a set of populated hashes. Missing
-timestamps stay null.
-Prompt, response and reasoning text stays in entities/llm_calls.json rather than
-timeline events. Run identity also depends on the input directory name and first
-timestamp, so renaming inputs is not guaranteed to preserve it.
+For new CPU runs, provenance includes the starting commit, redacted command arguments,
+inference provider and research/memory settings. Artifact hash provenance is still empty.
+Missing timestamps stay null. Full LLM prompt/response records are kept in entities;
+events reference them.
+Run identity depends partly on directory name and first timestamp, so renaming inputs can
+change it. Per-agent boredom is recomputed against the assignment's logged ledger prefix
+and checked against the profile and logged values.
 
-The full [docs/swarm-viewer-api.md contract](https://github.com/arii/caffeinated/blob/main/docs/swarm-viewer-api.md)
-was merged to main in #9 but is absent from this branch. It is a design document:
-its opening “nothing implemented” and old GPU/timestamp/log-gap notes predate this
-CPU exporter. Current writer/exporter code is authoritative for implementation
-status; the design document alone does not establish running endpoints.
+### Read-only API and live publication
 
-### Read-only /api/v1 and live mode
-
-The read-only FastAPI server and round-end publisher are merged into
-`autoresearch` in `add9002` and `91e6e26`. Start the server with
-`python -m viewer --data <export-root> --port 8000` using the viewer environment
-shown in the quickstart. The export root must contain index.json and the UUID
-run directories, not the raw ledger directory. The CLI binds to 127.0.0.1;
-`--data` defaults to VIEWER_DATA or lab/data/runs.
-
-All paths below use the `/api/v1` prefix. These routes are implemented in
-`viewer/app.py:create_app`, rather than merely proposed by the design contract.
+The merged server reads the export root containing index.json and UUID directories,
+not the raw ledger directory. All routes below have prefix `/api/v1`:
 
 | GET path | Implemented response and selectors |
 | --- | --- |
@@ -533,49 +672,46 @@ All paths below use the `/api/v1` prefix. These routes are implemented in
 | /runs/{run_id}/artifacts/{path} | Files within the run's exported artifacts directory |
 | /runs/{run_id}/stream | SSE with after or Last-Event-ID resume, swarm-event IDs equal to ticks, and run.status events |
 
-Incremental publishing appends only an event suffix and preserves existing
-keyframes. It refuses an export whose old events are not a prefix or whose
-published keyframes changed. New keyframes, entities, copied artifacts,
-manifest, timeline and index are replaced atomically per file; the publication
-is not one atomic directory transaction. Per-agent boredom is recomputed from
-the assignment's ledger prefix and checked against logged values and profile
-hashes. While running, the manifest has status=running and live=true; final
-publishing adds run.finished and sets finished/stopped with live=false.
-A publish failure writes viewer_publish_log.jsonl and leaves the run going.
+World and agent selectors default to the latest tick. Unknown runs, agents and entities
+return 404; invalid world selectors return 416. Event pages default to 500 and cap at
+5000; collection pages default to 100 and cap at 1000. NDJSON returns a bounded page,
+whereas SSE remains connected during an active run.
 
-The SSE handler polls published events every 0.1 seconds, ignores a partial
-last line, emits running heartbeats every 15 seconds, and closes after emitting
-the terminal status. This is **round-level live visibility**, not a tailer of
-every raw worker log line. The server can also serve a finished static export.
+The conductor publishes after each round and again on exit. The default destination is
+`<out>/viewer`; `--viewer-dest PATH` changes it and `--no-viewer` disables it.
+A running manifest has live=true; terminal finished/stopped publication adds run.finished
+and sets live=false. Publication appends only an event suffix and refuses changed
+published keyframes or a non-prefix event history. Other files are replaced atomically
+one file at a time, not as a whole-directory transaction. Publication errors do not halt
+research.
 
-The API handlers read artifacts only: they do not launch or stop runs, call
-LLMs, write memory, or mutate research files. Non-GET mutation requests have no
-API handlers. Run and artifact path resolution rejects traversal outside their
-roots. Artifact serving confines paths to artifacts/ but does not enforce a
-file-extension allowlist; only trusted exports should be served. There is no
-authentication or automatic content/credential scrubbing. CORS permits GET
-from HTTP localhost and 127.0.0.1 origins; CORS is not access control for
-non-browser clients. Do not give the server process swarm credentials or expose
-it publicly. Running responses use weak ETags and no-cache; finished/stopped
-responses use content-hash ETags and immutable caching, except the run index,
-which always uses no-cache. Conditional GET returns 304 for a matching ETag.
+SSE polls complete event lines every 0.1 seconds, resumes after Last-Event-ID or after,
+sends status heartbeats every 15 seconds and closes at terminal status. This provides
+**round-level visibility**, not streaming from every worker log write. Pausing a viewer
+does not pause the swarm.
 
-The design contract is broader than exact response compatibility. Run summaries
-currently include time, agents and discoveries but not its compare_group/best
-fields or top-level ticks/rounds. Entity native records are not guaranteed.
-The exported accept_margin threshold defaults to 0 when absent from the profile,
-whereas the conductor's numeric acceptance predicate falls back to eps.
-The artifact route has the directory restriction described above rather than
-the contract's allowlist, and NDJSON is a bounded event page rather than a
-continuous live feed (use SSE for that). The contract's GPU-era examples and
-per-log-line tailer description do not describe this CPU implementation.
+The CLI binds to 127.0.0.1. API handlers only read artifacts: no run-start/stop, inference,
+memory-write or research-mutation endpoints exist. Path checks restrict runs to the
+export root and artifacts to their exported artifacts directory. There is no authentication,
+automatic credential scrubber or artifact extension allowlist. CORS allows GET from HTTP
+localhost/127.0.0.1 origins but is not non-browser access control. Serve only trusted
+exports, without swarm credentials in the server process, and do not expose it publicly.
+
+Running responses use weak ETags and no-cache. Finished/stopped responses use content
+hashes and immutable caching, except the always-revalidated run index. Matching ETags
+return 304. The [viewer design contract](https://github.com/arii/caffeinated/blob/main/docs/swarm-viewer-api.md)
+is not present locally and is not exact response compatibility: summaries lack its
+compare_group/best and top-level ticks/rounds fields, raw native entities are not guaranteed,
+and artifact access is directory-restricted rather than extension-allowlisted. Exported
+accept_margin defaults to zero if omitted, while conductor acceptance falls back to epsilon.
+
+Implementation: `export_viewer.publish`/`world_at` and `viewer.app.create_app`.
 
 ## Quickstart and tests
 
-Run the commands below from the repository root with Python >=3.10, Git and a
-working Docker daemon. The root project declares no mandatory Python dependencies;
-Tinker extras require Python >=3.11. Build the sandbox image once before running
-experiments. The build downloads packages, but candidate containers have no network:
+These commands were verified offline with Python 3.10, Git and a working Docker daemon.
+The root package has no mandatory Python dependencies. Building the sandbox image downloads
+packages, but candidate containers themselves have no network.
 
 ```sh
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
@@ -583,14 +719,12 @@ EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm
 python3 export_viewer.py /tmp/readme_check2 --dest /tmp/readme_viewer2
 ```
 
-Use fresh output directories; keep valuable outputs outside /tmp. Fake mode is
-an offline plumbing check, not evidence of autonomous discoveries; it still needs
-Docker. The runner creates local branches/worktrees/tags and artifact commits:
-use your own checkout and preserve others' work. The exporter prints the path
-it generated.
+Use fresh output directories; preserve valuable results outside /tmp. The fake run checks
+plumbing, not autonomous discovery, and still requires Docker. It creates local Git
+branches, worktrees, commits and tags even with no-push: use a checkout where those writes
+are appropriate.
 
-To serve the automatically published output, create a local viewer venv and
-install the server dependencies (FastAPI, Uvicorn and HTTPX):
+Create a viewer environment and serve the automatic publication:
 
 ```sh
 python3 -m venv .venv
@@ -598,27 +732,22 @@ python3 -m venv .venv
 .venv/bin/python -m viewer --data /tmp/readme_check2/viewer --port 8000
 ```
 
-In another terminal, list runs with
-`curl -sS http://127.0.0.1:8000/api/v1/runs`, then use the returned run_id in
-`curl -sS http://127.0.0.1:8000/api/v1/runs/<run_id>/world?at=round=1`.
-To serve the explicit static export instead, pass
-`--data /tmp/readme_viewer2`. To watch a longer running experiment, start the
-server against its viewer directory; it serves newly published rounds without
-a restart. The API does not start the experiment.
-
-To use Tinker, install its optional packages and supply the environment variables
-shown below. These instructions have not been verified against the live service:
+In another terminal, list runs and use a returned ID in the second URL:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install 'tinker==0.39.0' 'tml-renderers==0.4.1'
-# Supply TINKER_API_KEY and TINKER_MODEL in the environment; no values in files.
-EXA=off MEMORY_BACKEND=local .venv/bin/python swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker --no-push --out out/tinker-B
+curl -sS http://127.0.0.1:8000/api/v1/runs
+curl -sS 'http://127.0.0.1:8000/api/v1/runs/1b153d37-67a4-577f-9fe7-a807422f98c9/world?at=round=1'
 ```
 
-Kimi K3.1 also needs PyTorch 2.10+ for the renderer path (`llm.py` reports this
-requirement); extras alone do not guarantee every renderer/model combination.
-Compare arm A in a separate output directory at the same HEAD and settings.
+That UUID is from the verified example, not a fixed ID for future runs. To serve the
+explicit static export instead, use `--data /tmp/readme_viewer2`. The server never starts
+an experiment; point it at an ongoing run's viewer directory to observe later publications.
+The optional live Tinker path needs Python 3.11+, TINKER_API_KEY and TINKER_MODEL; no live
+provider calls were used in verification. Model-specific rendering dependencies must be
+checked separately.
+
+For tests, host pandas is needed by the spreadsheet-preview test; it is not required by
+the fake Hadamard command or API server:
 
 ```sh
 .venv/bin/python -m pip install pandas==2.2.3
@@ -626,52 +755,60 @@ EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s boredom_meter/tests -v
 ```
 
-The root suite's spreadsheet-preview test imports pandas on the host, so a fresh
-viewer venv also needs the pandas install above. The fake Hadamard run and API
-server do not require host pandas.
-
-Docker test cases need the image above, and BixBench integration tests may prepare
-public data. Inspect the test summary: a skipped sandbox test is not security
-evidence.
-
-Ig Nobel commands belong in a **separate main worktree**, not this branch's
-empty `ignobel/` directory. Run the following from that worktree's `ignobel/`
-directory:
-
-```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-MOCK=1 .venv/bin/python run_arm.py --arm full --agents 4 --rounds 3 --seed 0
-MOCK=1 .venv/bin/python -m pytest -q
-```
-
-Mock study tests require Docker with the python:3.11-slim image, or an image
-specified by IGNOBEL_SANDBOX_IMAGE.
-Do not use PR #7/#8 flags against main before they land.
-
-### Verified offline
-
-The fake one-round command and static export above completed successfully.
-The automatic publish finished with 75 gap-free ticks and three keyframes.
-The API served the run list, an event page and round-1 world state; its SSE
-stream returned the terminal finished status. A POST to /api/v1/runs returned
-405. The root unittest command ran 74 tests with one skip (73 passed), including
-API streaming, caching and error cases. The unchanged meter and separate
-Ig Nobel suites previously passed 23 and 56 tests respectively.
+The verified run produced 75 gap-free ticks and three keyframes with no candidate kept.
+API run-list, event-page and world requests returned 200, terminal SSE reported finished,
+and POST /api/v1/runs returned 405. The root suite ran 74 tests with one skip; the unchanged
+meter suite previously passed 23 tests. The separate main Ig Nobel suite previously passed
+56 tests in its own environment/worktree; it is not part of this branch's runnable package.
 No live Tinker, Exa, past.dev or Modal calls were made.
 
-## Honest limitations
+Implementation: `swarm.build_parser`, `viewer.__main__` and `tests/`.
 
-- B operationalizes repetition/stall, not scientific value. Descriptors can be
-  wrong or gamed; eps/thresholds need calibration.
-- Known-optimum, subset and synthetic tasks do not establish full benchmark
-  performance. No aggregate win-rate or causal boredom benefit is claimed here.
-- Confirmation repeats evaluation rather than independently changing seeds.
-  Equal slots/rounds are not equal tokens or identical histories.
-- Static export also works without running the merged read-only HTTP/SSE server.
-  Frontend rendering/visual replay was not verified.
-- Fake mode does not validate Tinker, Exa, past.dev or Modal reliability.
-  Main's Ig Nobel Modal/past.dev paths still have verification TODOs; #6 does
-  not mean those services were exercised for this documentation.
-- Ig Nobel yoked/family changes are separate unmerged work, not one integrated
-  backend. Mother-generated hidden effects remain simulations.
+## Limitations
+
+- The psychology motivates an analogy, not validated weights, affect detection or a claim
+  that agents experience boredom. No causal improvement from boredom is established here.
+- Descriptor novelty can be wrong or gamed. Significant progress depends on a configured
+  epsilon; convergence is only a coverage/stall rule.
+- Known-optimum, subset and synthetic tasks do not establish full-benchmark or real
+  scientific performance. Generated Ig Nobel effects remain simulations.
+- Repeated evaluation does not change seeds independently or constitute statistical testing.
+  Equal slots/rounds are not equal costs or identical histories.
+- Fake mode does not validate external service reliability. Main's Modal integration still
+  has verification TODOs; its CPU sandbox request was inspected, not exercised live.
+- Authentication, broad secret scrubbing and strong transactional publication are absent.
+  Frontend rendering and visual replay have not been verified.
+- PR #6, #7 and #8 are separate unmerged work relative to the inspected backends, not
+  features of one combined executable.
+
+## References
+
+[1] Eastwood, J. D., Frischen, A., Fenske, M. J., & Smilek, D. (2012).
+“The unengaged mind: Defining boredom in terms of attention.”
+*Perspectives on Psychological Science*, 7(5), 482–495. https://doi.org/10.1177/1745691612456044
+
+[2] Westgate, E. C., & Wilson, T. D. (2018).
+“Boring thoughts and bored minds: The MAC model of boredom and cognitive engagement.”
+*Psychological Review*, 125(5), 689–713. https://doi.org/10.1037/rev0000097
+
+[3] Bench, S. W., & Lench, H. C. (2013). “On the function of boredom.”
+*Behavioral Sciences*, 3(3), 459–472. https://doi.org/10.3390/bs3030459
+
+[4] Elpidorou, A. (2014). “The bright side of boredom.”
+*Frontiers in Psychology*, 5, Article 1245. https://doi.org/10.3389/fpsyg.2014.01245
+
+[5] Cohen, J. D., McClure, S. M., & Yu, A. J. (2007).
+“Should I stay or should I go? How the human brain manages the trade-off between
+exploitation and exploration.” *Philosophical Transactions of the Royal Society B*,
+362(1481), 933–942. https://doi.org/10.1098/rstb.2007.2098
+
+[6] D'Mello, S., & Graesser, A. (2012). “Dynamics of affective states during complex
+learning.” *Learning and Instruction*, 22(2), 145–157.
+https://doi.org/10.1016/j.learninstruc.2011.10.001
+
+[7] Lehman, J., & Stanley, K. O. (2011). “Abandoning objectives: Evolution through
+the search for novelty alone.” *Evolutionary Computation*, 19(2).
+https://doi.org/10.1162/evco_a_00025
+
+[8] Simpson, E. H. (1949). “Measurement of diversity.” *Nature*, 163, 688.
+https://doi.org/10.1038/163688a0
