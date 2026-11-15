@@ -1,0 +1,71 @@
+name: release
+
+# Publishes the reproduction image and the run-artifact dataset for a GitHub release:
+#   ghcr.io/<owner>/<repo>:<tag>            reproduction image (Dockerfile)
+#   ghcr.io/<owner>/<repo>-testcases:<tag>  candidate sandbox image (testcases/Dockerfile)
+#   caffeinated-dataset-<tag>.tar.gz        scripts/export_hf_dataset.py output, attached to the release
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      SANDBOX: caffeinated-testcases:py311-v2
+      TAG: ${{ github.event.release.tag_name || format('sha-{0}', github.sha) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build images
+        run: |
+          docker build -t "$IMAGE:$TAG" .
+          docker build -t "$SANDBOX" -f testcases/Dockerfile testcases
+      - name: Verify published numbers inside the image
+        run: docker run --rm "$IMAGE:$TAG" verify
+      - name: Run the full check suite inside the image
+        run: |
+          mkdir -p /tmp/caffeinated-sandbox
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /tmp/caffeinated-sandbox:/tmp/caffeinated-sandbox \
+            "$IMAGE:$TAG" check
+      - name: Push images
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag "$SANDBOX" "$IMAGE-testcases:$TAG"
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE-testcases:$TAG"
+          if [ "${{ github.event_name }}" = release ]; then
+            docker tag "$IMAGE:$TAG" "$IMAGE:latest"
+            docker push "$IMAGE:latest"
+          fi
+      - name: Export dataset
+        run: |
+          docker run --rm -v "$PWD/dist:/workspace/caffeinated/dist" "$IMAGE:$TAG" \
+            export-dataset --out dist/hf-dataset
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner \
+            -C dist -czf "dist/caffeinated-dataset-$TAG.tar.gz" hf-dataset
+      - name: Attach dataset and image digests to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          repro=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG")
+          sandbox=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE-testcases:$TAG")
+          gh release upload "$TAG" "dist/caffeinated-dataset-$TAG.tar.gz" --clobber
+          body=$(gh release view "$TAG" --json body -q .body)
+          printf '%s\n\n## Reproduction images\n\n- `%s`\n- `%s` (tag it `%s` before running the swarm)\n\nSee REPRODUCE.md.\n' \
+            "$body" "$repro" "$sandbox" "$SANDBOX" > notes.md
+          gh release edit "$TAG" --notes-file notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caffeinated-dataset-${{ env.TAG }}
+          path: dist/caffeinated-dataset-*.tar.gz

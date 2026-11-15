@@ -8,7 +8,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 
 **Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)**, built by Team caffeinated: Ariel Anders, Jialin Feng, Neeraj Shah and Masha Baidachna.
 
-Artificial Scientist Swarms (ASS) prevents research agents from stalling by giving them a deterministic boredom meter grounded in psychology. Unlike standard agents that endlessly loop on diminishing returns, our swarm tracks stagnation, novelty deficit, and overload to trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks before tackling an Ig Nobel Prize hunt, agents search via Exa, share an experiment ledger on past.dev, and pre-register tests on real public data before a two-judge committee and final IgJudge select the winner.
+Our hypothesis is that existing AI scientist swarms get stuck because they are bored—trapped in repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and overload to detect when the swarm is bored and trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and final IgJudge.
 
 - Live demo: https://arii.github.io/caffeinated
 - Repository: https://github.com/arii/caffeinated
@@ -41,6 +41,17 @@ sleepstudy, and others): known relationships, not discoveries. It had 21 registe
 run. The ρ = 0.07 x/y coordinate study is the failure case; it also appears as a second confirmed
 row because the critic re-ran it (a `study.replicated` event), not as a separate test. No committee
 score was run on the published recording.
+
+## Reproduce
+
+[REPRODUCE.md](REPRODUCE.md) explains how to recompute every published number from the
+committed artifacts, regrade the winning candidates in the sandbox, and rerun experiments.
+Releases publish a pinned image to `ghcr.io/arii/caffeinated`. The run artifacts are on Hugging
+Face at [onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs). The quickest check needs only Docker:
+
+```sh
+docker build -t caffeinated-repro . && docker run --rm caffeinated-repro
+```
 
 ## Run
 
