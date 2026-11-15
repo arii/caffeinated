@@ -483,6 +483,52 @@ class ExportViewerTests(unittest.TestCase):
             award_event = next(event for event in run.events if event["type"] == "award.issued")
             self.assertEqual(award_event["payload"]["prior_work"][0]["title"], "Related work")
 
+    def test_ignobel_export_links_legacy_study_and_carries_novelty_rejection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "ignobel"
+            (out / "runs").mkdir(parents=True)
+            (out / "runs" / "abc1234.log").write_text(
+                "question: Do fish fight?\nreplicated: true\n"
+            )
+            write_jsonl(
+                out / "novelty.jsonl",
+                [{"commit": "abc1234def", "novelty": 0.2, "prior_art_pass": False}],
+            )
+            write_jsonl(
+                out / "ignobel_studies.jsonl",
+                [
+                    {
+                        "ts": "2026-11-14T10:00:00Z",
+                        "prereg": {"question": "Do fish fight?", "dataset": {"x": "X", "y": "Y"}},
+                        "result": {"confirmed": True, "rho": -0.38, "p": 1e-6, "n": 161},
+                    }
+                ],
+            )
+
+            class FakeRun:
+                def __init__(self):
+                    self.entities = {
+                        "experiments": {"experiment:abc1234": {"agent_id": "agent-1", "round": 3}},
+                        "studies": {},
+                    }
+                    self.agents = {}
+                    self.events = []
+
+                def put(self, table, key, entity):
+                    self.entities[table][key] = entity
+                    return key
+
+                def emit(self, event_type, **event):
+                    self.events.append({"type": event_type, **event})
+
+            run = FakeRun()
+            export_viewer.export_studies(run, out, {}, {"abc1234": "experiment:abc1234"}, 3, [])
+
+            study = next(iter(run.entities["studies"].values()))
+            self.assertEqual(study["experiment_id"], "experiment:abc1234")
+            self.assertIs(study["prior_art_pass"], False)
+            self.assertEqual(study["novelty"], 0.2)
+
     def test_arm_branch_checkout_with_gzipped_logs_exports_the_same_events(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

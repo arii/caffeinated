@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
+import {entityRows} from '../src/engine/inspect.ts';
 import {researchCommitteeScores,researchFinalists,researchResults,researchToolUsage,preCommitteeResultsHtml} from '../src/engine/intro.ts';
 
 const config=JSON.parse(readFileSync(new URL('../data/pages/intro.json',import.meta.url),'utf8'));
@@ -18,6 +19,14 @@ test('Ig Nobel results count distinct studies without counting the critic rerun'
  assert.equal(summary.confirmed,11);
  assert.equal(summary.underCurrentRules,10);
  assert.equal(recording.events.filter(event=>event.type==='study.replicated').length,1);
+});
+
+test('a replicated study the novelty critic matched to prior art is not a finalist',()=>{
+ const copy=structuredClone(recording),rows=entityRows(copy,'studies'),raw=copy.entities.studies;
+ const target=(Array.isArray(raw)?raw:Object.values(raw)).find(row=>(row.id??row.study_id)==='study:14');
+ assert.ok(rows.length&&target);target.prior_art_pass=false;
+ const ids=researchFinalists(copy).map(item=>item.id);
+ assert.ok(!ids.includes('study:14'));assert.ok(ids.includes('study:11'));
 });
 
 test('recorded tool usage is computed from events and source cards',()=>{

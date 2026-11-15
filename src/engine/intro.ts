@@ -69,7 +69,7 @@ export function researchFinalists(r:Recording|null):ResultFinalist[]{
  return studyCards(r,Number.MAX_SAFE_INTEGER).flatMap(card=>{
   const result=card.result,rho=result?.rho;
   const preregistered=result?.confirmed===true||result?.replicated===true||card.replications.some(row=>row.confirmed===true||row.replicated===true);
-  if(!preregistered||rho==null||Math.abs(rho)<.1||!currentRules(result?{...result,direction:card.direction||undefined}:null,thresholds).pass)return [];
+  if(!preregistered||card.priorArtPass===false||rho==null||Math.abs(rho)<.1||!currentRules(result?{...result,direction:card.direction||undefined}:null,thresholds).pass)return [];
   const lab=r.manifest.agents?.find(agent=>agent.agent_id===card.agentId)?.display_name||r.frames.flatMap(frame=>frame.snapshot.agents||[]).find(agent=>agent.id===card.agentId)?.name||card.field?.replaceAll('_',' ')||'Research lab';
   return [{id:card.id,question:card.question||card.hypothesis||card.id,dataset:datasetName(card.dataset.url,card.dataset.id),rho,lab}];
  }).sort((a,b)=>Math.abs(b.rho)-Math.abs(a.rho));

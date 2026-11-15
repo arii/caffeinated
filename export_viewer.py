@@ -1457,11 +1457,24 @@ def study_outcome(result):
 def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_ts):
     """Ig Nobel preregistrations, results and committee awards (ignobel_studies.jsonl)."""
     rows = read_jsonl(Path(out_dir) / "ignobel_studies.jsonl")
+    novelty = {
+        str(record["commit"])[:7]: record
+        for _, record in read_jsonl(Path(out_dir) / "novelty.jsonl")
+        if record.get("commit")
+    }
+    # Records written before the evaluator logged its commit: match by the logged question.
+    by_question = {}
+    for known in experiments_by_commit:
+        study = study_from_log(Path(out_dir) / "runs" / f"{known}.log") if known else None
+        if study:
+            by_question.setdefault(study["question"], []).append(known)
     by_commit, by_prereg = {}, {}
     for line, record, ts in with_inherited_ts(rows, "ts"):
         prereg, result = record.get("prereg") or {}, record.get("result") or {}
         commit = record.get("commit")
         prereg_key = json.dumps(prereg, sort_keys=True)
+        if not commit and prereg_key not in by_prereg and by_question.get(prereg.get("question")):
+            commit = by_question[prereg.get("question")].pop(0)
         original = by_commit.get(commit) if commit else None
         if record.get("role") == "critic" or (not commit and prereg_key in by_prereg):
             original = original or by_prereg.get(prereg_key)
@@ -1529,6 +1542,10 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
                 "citations": result.get("citations") or prereg.get("citations") or [],
                 "replications": [],
                 "committee": result.get("committee"),
+                "novelty": (novelty.get(str(commit)[:7]) or {}).get("novelty") if commit else None,
+                "prior_art_pass": (
+                    (novelty.get(str(commit)[:7]) or {}).get("prior_art_pass") if commit else None
+                ),
                 "tick": None,
             },
         )
