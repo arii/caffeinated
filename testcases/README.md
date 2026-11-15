@@ -99,8 +99,14 @@ split-half-consistent findings that are funny, thoughtful and not already well
 known score higher.
 Judge A uses `openai/gpt-oss-120b:peft:131072` and judge B uses
 `Qwen/Qwen3.5-397B-A17B:peft:262144`; neither is the Kimi generator model.
-When the committee is unavailable (fake LLM or no `TINKER_API_KEY`), confirmed
-studies keep score 1.0, preserving offline evaluation. Before judging, one Exa
+The committee is on by default and needs `TINKER_API_KEY`; without it the
+evaluator raises rather than silently changing the objective. Set
+`IGNOBEL_COMMITTEE=off` to opt out explicitly: confirmed studies then score 1.0
+(gate-only scoring), and each graded study records `"committee": {"status":
+"off"}` and `"metric_variant": "gate-only"`. `swarm.py --llm fake` and the
+offline tests set it. With the key present, a committee failure (for example
+Tinker HTTP 402) is a `grader_error` scoring 0, and the error text includes the
+HTTP status. Before judging, one Exa
 search on the host-written headline supplies up to five title/URL/snippet
 results as prior-work data; established or textbook results must receive THINK
 ≤ 3. Judges receive only a host-written abstract and search results, never the

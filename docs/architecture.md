@@ -3,6 +3,7 @@
 Caffeinated runs **Artificial Scientist Swarms**: groups of LLM agents that
 propose, test and verify research changes against a frozen evaluator, steered
 by a deterministic Boredom Meter. Everything runs on CPU; no model is trained.
+Track 3 check: on 18 held-out bixbench_numeric questions a single agent (arm S) beat the boredom swarm (arm B) on 3/3 seeds (mean 0.296 vs 0.056; not significance-tested; see experiments/confirmatory/RESULTS.md).
 
 ```mermaid
 flowchart TB
@@ -165,7 +166,9 @@ comparison has not been run yet; it is blocked on Tinker credit.
 
 - **Benchmarks:** `hadamard19`, `bixbench_mini`, `playworld_mini`, which are small
   CPU-sized versions of the hackathon's records to beat (see
-  [`testcases/README.md`](../testcases/README.md)).
+  [`testcases/README.md`](../testcases/README.md)). The confirmatory tasks are
+  `hadamard29` and `bixbench_numeric` (see
+  [`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md)).
 - **Ig Nobel:** the swarm task `swarm.py --task ignobel`: expert labs
   pre-register one Spearman test per real public dataset, the host grades
   significance and split-half consistency, then a two-judge LAUGH/THINK

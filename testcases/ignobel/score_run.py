@@ -50,7 +50,7 @@ def score_run(run_dir, task_dir=HERE, ask=None):
                 "p": result["p"],
                 "n": result["n"],
                 "citations": result["citations"],
-                "available": verdict.get("available", True),
+                "available": verdict.get("available", verdict.get("status") != "off"),
                 "committee": verdict.get("score"),
                 "rejected": verdict.get("rejected", False),
                 "verdicts": verdict.get("verdicts", {}),

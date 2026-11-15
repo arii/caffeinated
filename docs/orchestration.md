@@ -2,7 +2,8 @@
 
 `swarm.py` is the conductor of an Artificial Scientist Swarm. The conductor
 is plain, deterministic code; only scouts, workers and the critic call an LLM.
-One run = one arm on one task for up to 10 rounds.
+One run = one arm on one task; the round count is set per run with `--rounds`
+(the Ig Nobel run requested 15, and arm S ran 48 in the confirmatory runs).
 
 Rounds are synchronous: scouts finish first, then workers take turns. Candidate
 evaluations and any critic decision are recorded in the ledger and
@@ -69,8 +70,9 @@ questions); it reports the question ID, not the answer value.
 For Ig Nobel, the host evaluates confirmed studies with the two-judge
 committee in-loop. Its score is `0.25 + 0.75 * committee_score` (the lower
 judge's min(LAUGH, THINK)/10), and loss is `1 - score`; unconfirmed or
-targets-group studies score 0. If the committee is unavailable, confirmed
-studies retain score 1.0. One Exa search on the host-written headline provides
+targets-group studies score 0. Without `TINKER_API_KEY` the evaluator raises;
+only the explicit `IGNOBEL_COMMITTEE=off` opt-out keeps confirmed studies at
+1.0 (gate-only scoring, recorded as `metric_variant: gate-only`). One Exa search on the host-written headline provides
 prior-work data to the judges, who see only the host-written abstract and
 search results, not the preregistration's question, hypothesis or mechanism;
 established or textbook relationships are capped at THINK 3. The judges use
@@ -101,6 +103,11 @@ reproducible.
 | C | on | off | past.dev |
 | D | on | on | local file |
 | S | off (1 worker; no scouts or critic) | on | past.dev |
+
+This table is the arm design. The confirmatory runs did not use it as written:
+every arm ran with Exa off and local memory (no past.dev). See the "Arms as
+actually run" table in
+[`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md).
 
 All arms share the task evaluator and budget, so A vs B isolates the meter.
 Arms A-D call the LLM critic for provisional improvements. Deterministic tasks
