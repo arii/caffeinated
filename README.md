@@ -2,6 +2,8 @@
 
 A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
 
+Backend team: start with the [integration guide](docs/backend-integration.md) for the bundle format, runnable payload example, event mapping, and `LAB_RECORDINGS_ZIP` setup.
+
 ## Run
 
 Requires Node 22.18+, Python 3.12, Git, and uv.

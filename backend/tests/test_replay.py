@@ -1,6 +1,8 @@
 from copy import deepcopy
 from pathlib import Path
 import tempfile
+import os
+from unittest.mock import patch
 import unittest
 from fastapi.testclient import TestClient
 from backend.app import create_app
@@ -8,6 +10,10 @@ from backend.replay import build_recording, RecordingCatalog
 
 ROOT=Path(__file__).resolve().parents[2]
 class ReplayTests(unittest.TestCase):
+    def setUp(self):
+        environment=patch.dict(os.environ,{'LAB_RECORDINGS_ZIP':str(ROOT/'data/replays/swarm-viewer-sample-runs.zip')})
+        environment.start();self.addCleanup(environment.stop)
+
     def test_all_four_archive_recordings_and_no_lookahead(self):
         c=RecordingCatalog(ROOT/'data/replays/swarm-viewer-sample-runs.zip')
         self.assertEqual(len(c.list()),4)
@@ -47,6 +53,16 @@ class ReplayTests(unittest.TestCase):
         b=next(c.get(m['id']) for m in c.list() if m['swarm']=='ignobel')
         s=b['frames'][-1]['snapshot'];self.assertEqual(s['metric']['direction'],'maximize');self.assertEqual(s['value'],8)
         self.assertTrue(b['manifest']['sample']);self.assertIn('mock',b['manifest']['description'])
+    def test_backend_team_can_select_a_bundle_without_replacing_sample_data(self):
+        with tempfile.TemporaryDirectory() as d:
+            archive=Path(d)/'backend-export.zip'
+            archive.write_bytes((ROOT/'data/replays/swarm-viewer-sample-runs.zip').read_bytes())
+            with patch.dict(os.environ,{'LAB_RECORDINGS_ZIP':str(archive)}),TestClient(create_app(Path(d)/'state',runner=False)) as c:
+                rows=c.get('/api/recordings').json()
+                self.assertEqual(len(rows),4)
+                self.assertEqual(c.get('/api/recordings/'+rows[0]['id']).status_code,200)
+                self.assertFalse(c.get('/api/health').json()['executionEnabled'])
+
     def test_read_only_api_serves_recordings_with_cache_and_rejects_execution(self):
         with tempfile.TemporaryDirectory() as d,TestClient(create_app(d,runner=False)) as c:
             rows=c.get('/api/recordings').json();self.assertEqual(len(rows),4)

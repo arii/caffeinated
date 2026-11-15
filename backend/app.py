@@ -145,7 +145,7 @@ def create_app(data_dir=None,runner=True,execution_enabled=False):
     holder={}
     @asynccontextmanager
     async def lifespan(app):
-        holder['recordings']=RecordingCatalog(ROOT/'data'/'replays'/'swarm-viewer-sample-runs.zip')
+        holder['recordings']=RecordingCatalog(os.environ.get('LAB_RECORDINGS_ZIP',str(ROOT/'data'/'replays'/'swarm-viewer-sample-runs.zip')))
         holder['manager']=Manager(data_dir or os.environ.get('LAB_DATA_DIR',str(ROOT/'.lab_data')),runner)
         yield
         holder['manager'].close()

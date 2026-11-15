@@ -2,6 +2,8 @@
 
 This branch is a read-only research replay. The research backend team owns future experiment execution and Tinker submission. The chosen lab, timeline, cameras, and archived agent interactions consume recorded state and do not select or execute future research objectives.
 
+For exact integration steps and producer payloads, see [Backend integration](backend-integration.md).
+
 ## Source and reference
 
 - Supplied `data/replays/swarm-viewer-sample-runs.zip`, schema `swarm-viewer/v1`: four recordings, including the Ig Nobel sample.
