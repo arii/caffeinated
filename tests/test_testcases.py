@@ -142,6 +142,27 @@ class EvaluatorTests(unittest.TestCase):
 
         self.assertEqual(bixbench_evaluate.answer_literal_qids(source, key, "{}"), ["folded"])
 
+    def test_bixbench_conventional_statistics_constants_do_not_match_gold_ranges(self):
+        key = {
+            "power": {"mode": "range", "lo": 0.78, "hi": 0.82},
+            "quantile": {"mode": "range", "lo": 0.97, "hi": 0.98},
+            "probability": {"mode": "range", "lo": 0.74, "hi": 0.76},
+        }
+        source = "power = 0.8\ncritical = stats.t.ppf(0.975, df)\nq = 0.75\n"
+
+        self.assertEqual(bixbench_evaluate.answer_literal_qids(source, key, "{}"), [])
+
+    def test_bixbench_conventional_constants_still_flag_specific_and_folded_answers(self):
+        key = {"answer": {"mode": "exact", "value": 0.8034}}
+
+        self.assertEqual(
+            bixbench_evaluate.answer_literal_qids("answer = 0.8034\n", key, "{}"), ["answer"]
+        )
+        self.assertEqual(
+            bixbench_evaluate.answer_literal_qids("answer = 0.8 + 0.0034\n", key, "{}"),
+            ["answer"],
+        )
+
     def test_bixbench_folded_answers_keep_small_and_public_number_exemptions(self):
         key = {
             "small": {"mode": "exact", "value": 7},
@@ -1118,6 +1139,116 @@ class IgnobelTaskTests(unittest.TestCase):
             ignobel_score_run.committee._last_verdict_object(content),
             {"laugh": 7, "think": 4, "reason": "brace } stays inside a string"},
         )
+
+    def test_committee_prefers_content_then_falls_back_to_reasoning_content(self):
+        committee = ignobel_score_run.committee
+        content_verdict = {
+            "laugh": 8,
+            "think": 7,
+            "targets_group": False,
+            "reason": "content verdict",
+        }
+        reasoning_verdict = {
+            "laugh": 2,
+            "think": 3,
+            "targets_group": True,
+            "reason": "reasoning verdict",
+        }
+        self.assertEqual(
+            committee._response_verdict(
+                {
+                    "content": json.dumps(content_verdict),
+                    "reasoning_content": json.dumps(reasoning_verdict),
+                }
+            ),
+            content_verdict,
+        )
+        self.assertEqual(
+            committee._response_verdict(
+                {
+                    "content": "Analysis without a verdict",
+                    "reasoning_content": json.dumps(reasoning_verdict),
+                }
+            ),
+            reasoning_verdict,
+        )
+
+    def test_committee_reasks_for_non_boolean_targets_group(self):
+        committee = ignobel_score_run.committee
+        first = {
+            "content": json.dumps(
+                {
+                    "laugh": 8,
+                    "think": 7,
+                    "targets_group": ["cat owners", "dog owners"],
+                    "reason": "initial response",
+                }
+            ),
+            "reasoning_content": "separate reasoning channel",
+        }
+        second = {
+            "content": json.dumps(
+                {
+                    "laugh": 6,
+                    "think": 5,
+                    "targets_group": "false",
+                    "reason": "corrected response",
+                }
+            ),
+            "reasoning_content": "",
+        }
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(committee, "_complete", side_effect=[first, second]) as complete,
+        ):
+            verdict = committee._ask("model", "system", "user", tmp)
+
+        self.assertFalse(verdict["targets_group"])
+        self.assertEqual(complete.call_count, 2)
+        retry_user = complete.call_args_list[1].args[2]
+        self.assertIn("targets_group must be the JSON boolean true or false", retry_user)
+        self.assertTrue(committee._normalize_targets_group("true"))
+        self.assertFalse(committee._normalize_targets_group("false"))
+
+    def test_committee_raises_after_targets_group_remains_invalid(self):
+        committee = ignobel_score_run.committee
+        invalid = {
+            "content": json.dumps(
+                {"laugh": 8, "think": 7, "targets_group": ["a group"], "reason": "invalid"}
+            ),
+            "reasoning_content": "",
+        }
+        still_invalid = {
+            "content": json.dumps(
+                {"laugh": 8, "think": 7, "targets_group": "sometimes", "reason": "invalid"}
+            ),
+            "reasoning_content": "",
+        }
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(committee, "_complete", side_effect=[invalid, still_invalid]) as complete,
+            self.assertRaisesRegex(ValueError, "still has invalid targets_group after one retry"),
+        ):
+            committee._ask("model", "system", "user", tmp)
+
+        self.assertEqual(complete.call_count, 2)
+
+    def test_committee_parse_error_includes_first_500_raw_response_chars(self):
+        committee = ignobel_score_run.committee
+        raw = "x" * 600
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(
+                committee,
+                "_complete",
+                return_value={"content": raw, "reasoning_content": "separate reasoning"},
+            ),
+            self.assertRaises(ValueError) as raised,
+        ):
+            committee._ask("model", "system", "user", tmp)
+
+        self.assertIn(f"raw response excerpt: {raw[:500]}", str(raised.exception))
+        self.assertNotIn(raw[:501], str(raised.exception))
 
     def test_committee_prompts_are_the_two_judges(self):
         prompts = ignobel_score_run.committee.judge_prompts()

@@ -41,9 +41,10 @@ and test uses 300,000–300,199. Its `RECORD = 0.3598` is dev-only and comes fro
 the original commit; the reference model source is not in the repo, so it
 cannot be graded on test. Likewise, the other references are proxies:
 Hadamard's exact optimum is task-specific, and Ig Nobel has no single
-reference score. BixBench also disables research
-and rejects source literals matching gold answers in the current split, apart
-from small integers and numbers stated in its public questions.
+reference score. BixBench also disables research and rejects source literals
+matching gold answers in the current split, apart from small integers, numbers
+stated in its public questions, and fixed conventional statistical constants
+(such as 0.05, 0.8 and 0.975) to avoid false positives in standard analysis code.
 
 The BixBench test split has only seven questions. Held-out baseline and best
 accuracy results include a Wilson 95% confidence interval (`ci95`); report the

@@ -217,6 +217,57 @@ def _last_verdict_object(content):
     return max(candidates, key=lambda item: item[0])[1]
 
 
+def _raw_response_text(response):
+    if isinstance(response, str):
+        return response
+    if isinstance(response, dict):
+        channels = [
+            channel
+            for channel in (response.get("content"), response.get("reasoning_content"))
+            if isinstance(channel, str) and channel
+        ]
+        if channels:
+            return "\n".join(channels)
+    try:
+        return json.dumps(response, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return str(response)
+
+
+def _response_verdict(response):
+    if isinstance(response, dict):
+        content = response.get("content")
+        reasoning = response.get("reasoning_content")
+    else:
+        content, reasoning = response, None
+
+    for candidate in (content, reasoning):
+        if not isinstance(candidate, str) or not candidate:
+            continue
+        try:
+            return _last_verdict_object(candidate)
+        except ValueError:
+            pass
+
+    raw_excerpt = _raw_response_text(response)[:500]
+    raise ValueError(
+        "no committee verdict JSON object containing laugh and think; "
+        f"raw response excerpt: {raw_excerpt}"
+    )
+
+
+def _normalize_targets_group(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    raise ValueError("targets_group must be a boolean or the string 'true' or 'false'")
+
+
 def _complete(model, system, user):
     """One Tinker chat completion (OpenAI-compatible endpoint), seed 0, no reasoning knobs."""
     import llm
@@ -245,12 +296,7 @@ def _complete(model, system, user):
     for attempt in range(3):
         try:
             with urllib.request.urlopen(request, timeout=300) as response:
-                return (
-                    json.loads(response.read().decode("utf-8"))["choices"][0]["message"].get(
-                        "content"
-                    )
-                    or ""
-                )
+                return json.loads(response.read().decode("utf-8"))["choices"][0]["message"]
         except urllib.error.HTTPError as error:
             if error.code in (429, 500, 502, 503, 504) and attempt < 2:
                 time.sleep(5 * (attempt + 1))
@@ -269,11 +315,30 @@ def _ask(model, system, user, task_dir):
     cache = Path(task_dir) / ".cache" / "committee" / f"{key}.json"
     if cache.is_file():
         return json.loads(cache.read_text(encoding="utf-8"))
-    data = _last_verdict_object(_complete(model, system, user))
+    response = _complete(model, system, user)
+    data = _response_verdict(response)
+    try:
+        targets_group = _normalize_targets_group(data.get("targets_group"))
+    except ValueError:
+        retry_user = (
+            f"{user}\n\n"
+            "targets_group must be the JSON boolean true or false; return one JSON object only."
+        )
+        response = _complete(model, system, retry_user)
+        data = _response_verdict(response)
+        try:
+            targets_group = _normalize_targets_group(data.get("targets_group"))
+        except ValueError as error:
+            raw_excerpt = _raw_response_text(response)[:500]
+            raise ValueError(
+                "committee verdict still has invalid targets_group after one retry; "
+                f"raw response excerpt: {raw_excerpt}"
+            ) from error
+
     verdict = {
         "laugh": _clamp(data.get("laugh")),
         "think": _clamp(data.get("think")),
-        "targets_group": bool(data.get("targets_group", False)),
+        "targets_group": targets_group,
         "reason": str(data.get("reason", ""))[:300],
         "model": model,
     }

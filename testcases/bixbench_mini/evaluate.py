@@ -33,6 +33,27 @@ QUESTION_NUMBER = re.compile(
     r"(?:[eE][-+]?\d+)?(?![\w.])"
 )
 MAX_FOLDED_MAGNITUDE = 1e12
+CONVENTIONAL_STATISTICAL_CONSTANTS = (
+    0.001,
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.2,
+    0.25,
+    0.5,
+    0.75,
+    0.8,
+    0.9,
+    0.95,
+    0.975,
+    0.99,
+    0.995,
+    0.999,
+    1.0,
+)
+STATISTICAL_CONSTANT_TOLERANCE = 1e-12
 
 
 def grade(key, answers):
@@ -150,6 +171,11 @@ def answer_literal_qids(source, key, questions_text):
         except OverflowError:
             continue
         if not math.isfinite(value) or value in public_numbers:
+            continue
+        if any(
+            abs(value - constant) <= STATISTICAL_CONSTANT_TOLERANCE
+            for constant in CONVENTIONAL_STATISTICAL_CONSTANTS
+        ):
             continue
         for qid, expected in key.items():
             if expected["mode"] == "range":
