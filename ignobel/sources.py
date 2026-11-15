@@ -384,7 +384,8 @@ def find_datasets(query: str, n: int = 3, skip=()) -> list[dict]:
     if not query:
         raise ResearchError("empty query")
     if llm.MOCK:
-        return [{**MOCK_LEAD, "preview": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"]}]
+        lead = {**MOCK_LEAD, "preview": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"]}
+        return [] if lead["id"] in set(skip) else [lead]
     hits, errors = [], []
     for fn in (_zenodo, _huggingface):
         try:

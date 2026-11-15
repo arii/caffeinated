@@ -294,3 +294,5 @@ def test_exa_research_rotates_keys_and_dataset_search_mixes_providers(tmp_path, 
     assert first == ["z0", "h0", "z1"]
     again = [c["id"] for c in sources.find_datasets("coffee", 3, skip=first)]
     assert again == ["h1", "z2", "h2"]  # a repeated search still turns up new leads
+    monkeypatch.setattr(llm, "MOCK", True)
+    assert sources.find_datasets("iris", 3, skip={sources.MOCK_LEAD["id"]}) == []  # the mock lead is not offered twice
