@@ -479,6 +479,7 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertFalse(self.run_prereg(direction="negative")["graded"]["confirmed"])
         registry.unlink()
         sharp = self.run_prereg()["graded"]
+        registry.unlink()
         vague = self.run_prereg(predicted_rho=0.05)["graded"]
         self.assertLess(vague["calibration"], sharp["calibration"])
         self.assertLess(vague["score"], sharp["score"])
