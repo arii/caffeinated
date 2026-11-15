@@ -12,6 +12,93 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.replay import RecordingCatalog  # noqa: E402
 
+PRE_COMMITTEE_NOTE = (
+    "Pre-committee run: loss 0 = passed preregistered gates, 1 = failed; not committee-judged."
+)
+COMMITTEE_FIELDS = (
+    "available",
+    "rejected",
+    "score",
+    "scores",
+    "judges",
+    "verdicts",
+    "prior_work",
+    "priorWork",
+    "prior_work_available",
+)
+COMMITTEE_EVENT_TYPES = {
+    "award.issued",
+    "study.result",
+    "study.replicated",
+    "study.completed",
+}
+
+
+def _rows(value):
+    if isinstance(value, list):
+        return value
+    return list(value.values()) if isinstance(value, dict) else []
+
+
+def _has_committee_fields(value):
+    return isinstance(value, dict) and any(value.get(key) is not None for key in COMMITTEE_FIELDS)
+
+
+def _is_ignobel(recording):
+    manifest = recording.get("manifest") or {}
+    title = str(manifest.get("title") or "").casefold()
+    metric = manifest.get("metric") or {}
+    description = str(metric.get("description") or "").casefold()
+    if "ig nobel" in title or metric.get("name") == "replicated_findings":
+        return True
+    if "replicated and significant" in description:
+        return True
+    provenance = manifest.get("provenance") or {}
+    command = provenance.get("command") or []
+    parts = command.split() if isinstance(command, str) else list(command)
+    if manifest.get("task") == "ignobel":
+        return True
+    return any(
+        part == "--task" and parts[index + 1] == "ignobel" for index, part in enumerate(parts[:-1])
+    )
+
+
+def _has_committee_data(recording):
+    for study in _rows((recording.get("entities") or {}).get("studies")):
+        if not isinstance(study, dict):
+            continue
+        graded = study.get("graded") or {}
+        result = study.get("result") or {}
+        if (
+            _has_committee_fields(study.get("committee"))
+            or _has_committee_fields(graded)
+            or _has_committee_fields(graded.get("committee") if isinstance(graded, dict) else None)
+            or _has_committee_fields(result.get("committee") if isinstance(result, dict) else None)
+        ):
+            return True
+    for event in _rows(recording.get("events")):
+        if not isinstance(event, dict) or event.get("type") not in COMMITTEE_EVENT_TYPES:
+            continue
+        payload = event.get("payload") or {}
+        if not isinstance(payload, dict):
+            continue
+        nested = payload.get("committee") or payload.get("award")
+        if _has_committee_fields(nested) or _has_committee_fields(payload):
+            return True
+    return False
+
+
+def _is_pre_committee_ignobel(recording):
+    if not _is_ignobel(recording):
+        return False
+    if any(
+        event.get("type") == "award.issued"
+        for event in _rows(recording.get("events"))
+        if isinstance(event, dict)
+    ):
+        return False
+    return not _has_committee_data(recording)
+
 
 def export(viewer_dir, out_dir):
     out = Path(out_dir)
@@ -31,6 +118,8 @@ def export(viewer_dir, out_dir):
             m.update(live=False, stale=False, sample=False)
             if m.get("status") in {"running", "live"}:
                 m["status"] = "snapshot"
+            if _is_pre_committee_ignobel(recording):
+                m["proxy_note"] = PRE_COMMITTEE_NOTE
         content = deepcopy(recording)
         for key in ("contentVersion", "lastUpdateTs", "staleAfterSeconds"):
             content["manifest"].pop(key, None)

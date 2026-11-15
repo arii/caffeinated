@@ -4,6 +4,7 @@ import {agentDescriptor,descriptorText,humanizeActivity,humanizeRole} from './ag
 import {agentNow,eventWhy,type WhyContext} from './nowCard.ts';
 import {formatValue} from './moments.ts';
 import {outcomeOf,type ResultRow} from './scoreChart.ts';
+import {regimeLabel} from './boredom.ts';
 import type {Recording,ReplayEvent} from './replay.ts';
 
 export interface NearCandidate{id:string;distance:number;facing:number}
@@ -46,6 +47,7 @@ const finite=(value:unknown):value is number=>typeof value==='number'&&Number.is
 const clamp=(value:number)=>Math.max(0,Math.min(1,value));
 export interface TileMetric{best:number|null;progress:number|null;kept:number;discarded:number;crashed:number;spark:number[]}
 export interface GateCounts{confirmed:number;tested:number}
+export const gateCountExplanation='Zero loss passed the preregistered gates; tested counts finite candidate results.';
 export function tileGateCounts(results:readonly GlanceResult[],agentId:string,agentName:string):GateCounts{
  const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;
  const rows=results.filter(r=>matching(r)&&outcomeOf(r.status,r.kind)!=='baseline'&&finite(r.value));
@@ -56,13 +58,18 @@ export function staffStripLabel(type:string,events:readonly ReplayEvent[],tick:n
  const reached=events.filter(e=>e.tick<=tick);
  if(type==='conductor'){
   const round=reached.filter(e=>e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
-  return typeof regime==='string'?`Conductor · assigning ${regime}`:'Conductor · awaiting assignment';
+  return typeof regime==='string'?`Conductor · assigning ${regimeLabel(regime).label}`:'Conductor · awaiting assignment';
  }
  if(type==='critic'){
   const reviews=reached.filter(e=>e.type==='verdict.issued').length;
   return `Critic · ${reviews} review${reviews===1?'':'s'}`;
  }
  return '';
+}
+export function staffStripHelp(type:string,events:readonly ReplayEvent[],tick:number){
+ if(type!=='conductor')return '';
+ const round=events.filter(e=>e.tick<=tick&&e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
+ return typeof regime==='string'?regimeLabel(regime).description:'';
 }
 export function tileBestLabel(best:number|null){return best==null?'best —':`best ${formatValue(best)}`;}
 export function tileMetrics(results:readonly GlanceResult[],agentId:string,agentName:string,metric:{name:string;direction:string},runBest:number|null,baseline:number|null):TileMetric{

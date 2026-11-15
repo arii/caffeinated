@@ -8,7 +8,7 @@ from pathlib import Path
 from scripts.export_pages import export
 
 
-def write_recording(viewer):
+def write_recording(viewer, *, title="Test recording", task=None):
     run = viewer / "run-1"
     run.mkdir(parents=True)
     (run / "manifest.json").write_text(
@@ -17,8 +17,9 @@ def write_recording(viewer):
                 "run_id": "run-1",
                 "schema": "swarm-viewer/v1",
                 "status": "finished",
-                "title": "Test recording",
+                "title": title,
                 "metric": {"name": "loss", "label": "loss", "direction": "minimize"},
+                "provenance": {"command": ["swarm.py", "--task", task]} if task else {},
             }
         )
     )
@@ -84,6 +85,22 @@ class ExportPagesTests(unittest.TestCase):
             changed = export(viewer, root / "changed-out")[0]["contentVersion"]
 
             self.assertNotEqual(first, changed)
+
+    def test_precommittee_ignobel_export_uses_plain_proxy_note(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            viewer = root / "viewer"
+            write_recording(viewer, title="Ig Nobel Prize hunt", task="ignobel")
+
+            items = export(viewer, root / "out")
+            archive = root / "out" / "run-1.json.gz"
+            shipped = json.loads(gzip.decompress(archive.read_bytes()))
+            expected = (
+                "Pre-committee run: loss 0 = passed preregistered gates, 1 = failed; "
+                "not committee-judged."
+            )
+            self.assertEqual(shipped["manifest"]["proxy_note"], expected)
+            self.assertEqual(items[0]["proxy_note"], expected)
 
 
 if __name__ == "__main__":

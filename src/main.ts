@@ -18,7 +18,7 @@ import {openingTick,reloadTick,following,liveButton,eventsAfter} from './engine/
 import {prefersReducedMotion} from './engine/affect';
 import {momentsBetween,formatValue,type Moment} from './engine/moments';
 import {scoreSeries,scoreChartSvg,outcomeOf,type ResultRow} from './engine/scoreChart';
-import {runStatus,taskTitle,metricLabel,publishWarning,pickerOptions} from './engine/runInfo';
+import {runStatus,taskTitle,metricLabel,publishWarning,pickerOptions,compactDock,evidenceMetricLabel} from './engine/runInfo';
 import type {RunSnapshot} from './engine/contract';
 import type {LabWorld,AgentView} from './engine/types';
 import {buildReplayPoses,type PoseFrame} from './engine/replayMotion';
@@ -27,7 +27,7 @@ import {discussionAt} from './engine/discussion';
 import {agentNow,nowCardHtml,eventWhy} from './engine/nowCard';
 import {experimentDetail,sourceCards,studyCards,dialogueThrough,pValue,type InspectEvent} from './engine/inspect';
 import {experimentHtml,sourceCardsHtml,studyCardsHtml,dialogueHtml,type ViewContext} from './engine/inspectView';
-import {bubbleContent,bubbleHtml,pickNear,staffStripLabel,tileBestLabel,tileGateCounts,tileGateLabel,tileMetrics} from './engine/glance';
+import {bubbleContent,bubbleHtml,pickNear,staffStripLabel,staffStripHelp,tileBestLabel,tileGateCounts,tileGateLabel,tileMetrics,gateCountExplanation} from './engine/glance';
 import {hasCreditError,provenanceBadge} from './engine/provenanceBadge';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './engine/proxyNote';
 import {finaleReached,finaleSummary,improvementText} from './engine/finale';
@@ -41,6 +41,7 @@ const evidence=$<HTMLDialogElement>('console'),conversation=$<HTMLDialogElement>
 let world:LabWorld,renderer:THREE.WebGLRenderer,labControls:LabCameraRig,recording:Recording|null=null,snapshot:RunSnapshot|null=null;
 let recordingManifests:RecordingManifest[]=[];
 let tick=0,playing=false,walking=false,pace=1,currentDrawer:string|null=null,selectedAgent='',nearAgent='',bubbleAgent='',bubblePinned=false,bubbleExpanded=false,bubbleDismissedAgent='',bubbleRenderKey='',loadGeneration=0,experienceStarted=false,growActive=false,growStarted=0,coachId='',finaleAutoOpened=false;
+let barManuallyToggled=false,coachDismissCleanup:(()=>void)|null=null;
 let yaw=0,pitch=0,drag=false,lastPointer={x:0,y:0},pointerStart:{x:number;y:number;canvas:boolean}|null=null,toastTimer:ReturnType<typeof setTimeout>,momentTimer:ReturnType<typeof setTimeout>,announcedTick=0;
 let displayAliases=new Map<string,string>();
 const reducedMotion=prefersReducedMotion();
@@ -57,7 +58,7 @@ function identityOf(a:ArchivedAgent){return agentIdentity(a,recording?.manifest.
 function avatar(a:ArchivedAgent){const id=identityOf(a);return `<span class="agent-avatar" data-family="${id.familyKey}"${id.color?` style="--agent-color:${id.color}"`:''}>${esc(id.initial)}</span>`;}
 function agentLine(a:ArchivedAgent){const id=identityOf(a),d=recording&&!id.staff?descriptorText(agentDescriptor(recording.events,a.id,tick),id.familyLabel):'';return [id.familyLabel,id.staff?'':d||(a.role!==a.type?humanizeRole(a.role):''),a.standby?'standing by':humanizeActivity(a.activity||a.state)].filter(Boolean).map(v=>rawEsc(v)).join(' · ');}
 /** Always-visible boredom meter for a roster row. */
-function rowMeter(a:ArchivedAgent){if(identityOf(a).staff)return '';const b=a.boredom==null?null:boredomPercent(a.boredom),r=regimeLabel(a.boredomSpectrum?.regime);return `<span class="row-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i><b>${b==null?'not measured':`bored ${Math.round(b)}%`}</b>${r.label?`<em class="regime-chip" data-tone="${r.tone}">${esc(r.label)}</em>`:''}</span>`;}
+function rowMeter(a:ArchivedAgent){if(identityOf(a).staff)return '';const b=a.boredom==null?null:boredomPercent(a.boredom),r=regimeLabel(a.boredomSpectrum?.regime);return `<span class="row-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i><b>${b==null?'not measured':`bored ${Math.round(b)}%`}</b>${r.label?`<em class="regime-chip" data-tone="${r.tone}" title="${esc(r.description)}">${esc(r.label)}</em>`:''}</span>`;}
 function stripMeter(a:ArchivedAgent){const b=a.boredom==null?null:boredomPercent(a.boredom);return `<span class="strip-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i></span>`;}
 function renderWhosWho(){const rows=whosWho(recording?.manifest.agents||[]);$('whos-who').hidden=!rows.length;$('whos-who').innerHTML=rows.length?`<summary>Who's who</summary><dl>${rows.map(r=>`<dt>${rawEsc(r.title)}<small>${esc(r.names.join(', '))}</small></dt><dd>${rawEsc(r.does)}</dd>`).join('')}</dl>`:'';}
 /** Live runs never call their events recorded. */
@@ -70,6 +71,13 @@ function people(){return replayPeople(snapshot?.agents as ArchivedAgent[]||[],ti
 function toast(message:string){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4000);}
 function unlock(){document.exitPointerLock?.();pressed.clear();}
 function modal(){return document.querySelector('dialog[open]')!==null||currentDrawer!==null;}
+function setBarCollapsed(collapsed:boolean){
+ document.body.classList.toggle('bar-collapsed',collapsed);
+ $('collapse-bar').setAttribute('aria-expanded',String(!collapsed));
+ $('collapse-bar').textContent=collapsed?'▴':'▾';
+ $('collapse-bar').setAttribute('aria-label',collapsed?'Expand playback panel':'Collapse playback panel');
+ $('tick-label').textContent=collapsed?`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+}
 function closeDrawer(){if(currentDrawer)$(currentDrawer).hidden=true;currentDrawer=null;document.querySelectorAll('[data-drawer]').forEach(b=>b.setAttribute('aria-expanded','false'));}
 for(const button of document.querySelectorAll<HTMLElement>('[data-drawer]'))button.onclick=()=>{const id=button.dataset.drawer!,open=currentDrawer!==id;unlock();closeDrawer();if(open){currentDrawer=id;$(id).hidden=false;button.setAttribute('aria-expanded','true');if(id==='orchestration-drawer')renderOrchestration();}};
 for(const button of document.querySelectorAll<HTMLElement>('[data-close-drawer]'))button.onclick=closeDrawer;
@@ -80,13 +88,19 @@ function renderControls(){
  const live=liveButton(recording?.manifest,tick,playing,recording?.events||[]);$('go-live').hidden=live.hidden;$('go-live').textContent=live.label;$('go-live').classList.toggle('at-edge',live.atEdge);$('go-live').setAttribute('aria-label',live.atEdge?'Following live':'Jump to the live edge');
  $('play').textContent=playing?'Ⅱ Pause':'▶ Play';$('play').setAttribute('aria-label',playing?'Pause':'Play');
  $('camera-mode').textContent=walking?'Lab view ↗':'Walk inside ↗';$<HTMLButtonElement>('camera-mode').disabled=!recording||playing;
- $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+ $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=document.body.classList.contains('bar-collapsed')?`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
  $<HTMLInputElement>('timeline').setAttribute('aria-valuetext',`Tick ${Math.floor(tick)} of ${recording?.manifest.totalTicks||0}`);
  const e=recording&&frameAt(recording.events,tick) as InspectEvent|undefined|null,caption=$('activity-caption'),eid=e?.refs?.experiment_id;caption.textContent=e?aliasText(eventCaption({...e,message:eventWhy(e,whyContext())||e.message},agentName(e.agentId,''))):'The run begins here';if(eid){caption.dataset.experiment=eid;caption.title='Inspect this experiment';caption.tabIndex=0;caption.setAttribute('role','button');}else{delete caption.dataset.experiment;caption.removeAttribute('title');caption.removeAttribute('tabindex');caption.removeAttribute('role');}
 }
-function renderRunMeta(){if(!recording)return;const m=recording.manifest,status=runStatus(m),regime=regimeLabel(snapshot?.regime),rounds=m.time?.rounds||snapshot?.config.rounds||0,warning=publishWarning(m),proxyNote=recordingProxyNote(m,recording);
+function renderRunMeta(){
+ if(!recording)return;
+ const m=recording.manifest,status=runStatus(m),regime=regimeLabel(snapshot?.regime),rounds=m.time?.rounds||snapshot?.config.rounds||0,warning=publishWarning(m),proxyNote=recordingProxyNote(m,recording),gateRun=isPreCommitteeIgnobel(m,recording);
  const rawMetric=metricLabel(m.metric||snapshot?.metric),shownMetric=isIgnobelRecording(m,recording)?rawMetric.replace(/\breplication\b/gi,'split-half consistency').replace(/\breplicated\b/gi,'split-half consistent'):rawMetric;
- $('run-meta').innerHTML=[`<span class="status-chip" data-status="${status.status}" title="${esc(status.detail)}">${esc(status.label)}</span>`,`<span class="meta-task">${esc(taskTitle(m))}</span>`,shownMetric?`<span>${esc(shownMetric)}</span>`:'',proxyNote?`<span class="proxy-chip" title="Benchmark caveat for this recording">Proxy: ${esc(proxyNote)}</span>`:'',snapshot?.round?`<span>Round ${snapshot.round}${rounds?` / ${rounds}`:''}</span>`:'',regime.label&&m.sample===false?`<span class="regime-chip" data-tone="${regime.tone}" title="Swarm boredom ${Math.round(boredomPercent(snapshot?.boredom||0))}%">${esc(regime.label)} · ${Math.round(boredomPercent(snapshot?.boredom||0))}%</span>`:'',status.status==='stale'?`<span class="warn-chip">${esc(status.detail)}</span>`:'',warning?`<span class="warn-chip">${esc(warning)}</span>`:''].filter(Boolean).join('');}
+ const regimeChip=regime.label&&m.sample===false?`<span class="regime-chip" data-tone="${regime.tone}" title="${esc(regime.description||`Swarm boredom ${Math.round(boredomPercent(snapshot?.boredom||0))}%`)}">${esc(regime.label)} · ${Math.round(boredomPercent(snapshot?.boredom||0))}%</span>`:'';
+ const regimeHelp=regime.description&&m.sample===false?`<span class="regime-explanation">${esc(regime.description)}</span>`:'';
+ const gateHelp=gateRun?`<span class="gate-explanation" title="${esc(gateCountExplanation)}">Zero loss = preregistered gates passed.</span>`:'';
+ $('run-meta').innerHTML=[`<span class="status-chip" data-status="${status.status}" title="${esc(status.detail)}">${esc(status.label)}</span>`,`<span class="meta-task">${esc(taskTitle(m))}</span>`,shownMetric?`<span>${esc(shownMetric)}</span>`:'',proxyNote?`<span class="proxy-chip" title="Benchmark caveat for this recording">Proxy: ${esc(proxyNote)}</span>`:'',snapshot?.round?`<span>Round ${snapshot.round}${rounds?` / ${rounds}`:''}</span>`:'',regimeChip,regimeHelp,gateHelp,status.status==='stale'?`<span class="warn-chip">${esc(status.detail)}</span>`:'',warning?`<span class="warn-chip">${esc(warning)}</span>`:''].filter(Boolean).join('');
+}
 function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();if(resultsDialog.open)renderResultsPanel();if(!finaleAutoOpened&&finaleReached(recording,tick)){finaleAutoOpened=true;renderResultsPanel();if(!resultsDialog.open)resultsDialog.showModal();}}
 function renderHUD(){
  $('agent-count').textContent=`${people().length} AGENTS`;
@@ -103,11 +117,11 @@ function renderStatusStrip(){
  const baseline=results.find(r=>outcomeOf(r.status,r.kind)==='baseline'&&typeof r.value==='number')?.value??null;
  strip.innerHTML=roster.map(a=>{
   if(a.type==='conductor'||a.type==='critic'){
-   const label=staffStripLabel(a.type,recording!.events,tick);
-   return `<button class="status-tile status-role" data-agent="${esc(a.id)}" title="${esc(a.name)}" aria-label="Focus ${esc(a.name)}: ${esc(label)}">${esc(label)}</button>`;
+   const label=staffStripLabel(a.type,recording!.events,tick),help=staffStripHelp(a.type,recording!.events,tick);
+   return `<button class="status-tile status-role" data-agent="${esc(a.id)}" title="${esc(help||a.name)}" aria-label="Focus ${esc(a.name)}: ${esc(label)}">${esc(label)}</button>`;
   }
-  const m=tileMetrics(results,a.id,a.name,metric,runBest,baseline),metricText=gateRun?tileGateLabel(tileGateCounts(results,a.id,a.name)):tileBestLabel(m.best);
-  return `<button class="status-tile" data-agent="${esc(a.id)}" aria-label="Focus ${esc(a.name)}: ${esc(metricText)}"><strong class="status-tile-name">${esc(a.name)}</strong>${stripMeter(a)}<span class="tile-metric">${esc(metricText)}</span></button>`;
+  const m=tileMetrics(results,a.id,a.name,metric,runBest,baseline),gateCounts=gateRun?tileGateCounts(results,a.id,a.name):null,metricText=gateCounts?tileGateLabel(gateCounts):tileBestLabel(m.best);
+  return `<button class="status-tile" data-agent="${esc(a.id)}" aria-label="Focus ${esc(a.name)}: ${esc(metricText)}"><strong class="status-tile-name">${esc(a.name)}</strong>${stripMeter(a)}<span class="tile-metric"${gateCounts?` title="${esc(gateCountExplanation)}"`:''}>${esc(metricText)}</span></button>`;
  }).join('')+(scientistCount?`<span class="status-scroll-hint">${scientistCount} scientist${scientistCount===1?'':'s'} ›</span>`:'');
  strip.hidden=!roster.length;
  const turnLabels={active:'Active turn',waiting:'Waiting',done:'Done this round',idle:'Idle'},stateByAgent=turns(recording,tick);
@@ -131,7 +145,8 @@ function renderOrchestration(){
  const closes=view.roundCloses.filter(c=>c.tick>0).map(c=>`<line x1="${x(c.tick,c.round)}" y1="${top-20}" x2="${x(c.tick,c.round)}" y2="${height}" class="orch-close"><title>Round ${c.round} closed</title></line>`).join('');
  const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*cellWidth}" y="13" class="orch-round">Round ${r}</text>`).join('');
  const playhead=`<line x1="${x(tick)}" y1="${top-20}" x2="${x(tick)}" y2="${height}" class="orch-playhead"/>`;
- const legend=[['idea','Idea'],['scout','Search'],['memory','Memory'],['boredom','Boredom shift'],['critic','Review'],['veto','Veto'],['keep','Kept']].map(([kind,label])=>`<span><i style="--mark:${colors[kind]}"></i>${label}</span>`).join('');
+ const legendTitles:Record<string,string>={boredom:'BOREDOM_SNAP at B ≥ 0.70 assigns one exploit and three divergent workers; the novelty gate rejects near-duplicates.',keep:'Kept means retained as a current best; baseline is the unmodified reference.'};
+ const legend=[['idea','Idea'],['scout','Search'],['memory','Memory'],['boredom','Boredom shift'],['critic','Review'],['veto','Veto'],['keep','Kept']].map(([kind,label])=>`<span${legendTitles[kind]?` title="${esc(legendTitles[kind])}"`:''}><i style="--mark:${colors[kind]}"></i>${label}</span>`).join('')+`<span class="orchestration-legend-note"><span title="EXPLOIT assigns three exploit slots and one divergent slot.">EXPLOITING</span>: 3 exploit + 1 divergent; <span title="${esc(legendTitles.boredom)}">BOREDOM_SNAP</span>: 1 exploit + 3 divergent; <span title="SNAP's novelty gate rejects divergent ideas that near-duplicate recent attempts.">SNAP slots</span>: divergent ideas are checked against near-duplicates.</span>`;
  host.innerHTML=view.lanes.length?`<div class="orchestration-scroll"><svg class="orchestration-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Orchestration lanes through tick ${Math.floor(tick)}">${rounds}${closes}${lines}${playhead}</svg></div><div class="orchestration-legend">${legend}</div><p class="orchestration-hint">Select a mark to jump to that event and focus its scientist.</p>`:'<p>No orchestration events by this moment.</p>';
 }
 function renderResultsPanel(){
@@ -153,7 +168,7 @@ function renderResultsPanel(){
  const held=summary.heldOut?`<section class="held-out"><h3>Held-out test</h3><p>Baseline ${heldValue(summary.heldOut.baseline)} → best ${heldValue(summary.heldOut.best)}</p>${summary.heldOut.best.wilson?`<p>95% Wilson CI: ${interval(summary.heldOut.best.wilson)} (baseline ${interval(summary.heldOut.baseline.wilson)})</p>`:''}${summary.heldOut.proxyNote?`<p>${esc(summary.heldOut.proxyNote)}</p>`:''}${summary.heldOut.referenceNote?`<p>${esc(summary.heldOut.referenceNote)}</p>`:''}</section>`:'<p class="no-held-out">no held-out split for this task</p>';
  const delta=summary.delta==null?'':` · ${improvementText(summary.delta,value)}`;
  $('results-title').textContent=`RUN RESULTS · ${summary.status.toUpperCase()}`;
- $('results-content').innerHTML=`${badgeHtml}<h2>${esc(recording.manifest.title)}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p class="result-winner-description">${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote&&!summary.heldOut?.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote&&!summary.heldOut?.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
+ $('results-content').innerHTML=`${badgeHtml}<h2>${esc(taskTitle(recording.manifest))}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p class="result-winner-description">${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote&&!summary.heldOut?.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote&&!summary.heldOut?.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
 }
 function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-52)}px`;strip.style.bottom='auto';strip.style.transform='none';}
 const replayBar=document.querySelector<HTMLElement>('.replay-bar');if(replayBar)new ResizeObserver(alignStatusStrip).observe(replayBar);
@@ -186,16 +201,26 @@ function positionBubble(){
 }
 function pinBubble(id:string){bubbleAgent=id;bubblePinned=true;bubbleExpanded=false;bubbleDismissedAgent='';bubbleRenderKey='';finishCoach('scientist');}
 function seenCoaches(){try{return ['scientist','scrub'].filter(id=>localStorage.getItem(`lab.coach.${id}`));}catch{return [];}}
+function coachDismissed(){try{return localStorage.getItem('lab.coach.dismissed')==='1';}catch{return false;}}
+function watchCoachInteractions(){
+ const types=['pointerdown','keydown','touchstart'] as const,dismiss=()=>{
+  coachDismissCleanup?.();coachDismissCleanup=null;
+  try{localStorage.setItem('lab.coach.dismissed','1');}catch{}
+  coachId='done';$('coach-mark').hidden=true;
+ };
+ types.forEach(type=>window.addEventListener(type,dismiss,true));
+ coachDismissCleanup=()=>types.forEach(type=>window.removeEventListener(type,dismiss,true));
+}
 function showNextCoach(){
- if(modal()){$('coach-mark').hidden=true;return;}
+ if(modal()||coachDismissed()){$('coach-mark').hidden=true;return;}
  const next=nextCoach(seenCoaches());
  if(next==='scientist'&&innerHeight<=500&&!document.body.classList.contains('bar-collapsed')){coachId='done';$('coach-mark').hidden=true;return;}
  if(!next){coachId='done';$('coach-mark').hidden=true;return;}
  coachId=next;try{localStorage.setItem(`lab.coach.${next}`,'1');}catch{}
  const message=next==='scientist'?'Tap a scientist':'Drag to scrub';
- $('coach-mark').dataset.coach=next;$('coach-mark').innerHTML=`<span>${message}</span><button type="button" data-coach-dismiss aria-label="Dismiss tip">×</button>`;$('coach-mark').hidden=false;
+ $('coach-mark').dataset.coach=next;$('coach-mark').innerHTML=`<span>${message}</span><button type="button" data-coach-dismiss aria-label="Dismiss tip">×</button>`;$('coach-mark').hidden=false;watchCoachInteractions();
 }
-function finishCoach(id:string){if(coachId!==id)return;coachId='';$('coach-mark').hidden=true;showNextCoach();}
+function finishCoach(id:string){if(coachId!==id)return;coachDismissCleanup?.();coachDismissCleanup=null;coachId='';$('coach-mark').hidden=true;showNextCoach();}
 function startExperience(){
  if(experienceStarted)return;
  experienceStarted=true;document.body.classList.remove('prestart');$('prestart').hidden=true;$('intro').hidden=true;
@@ -208,8 +233,21 @@ window.addEventListener('pointerdown',skipGrow,{capture:true});window.addEventLi
 $('start-swarm').onclick=startExperience;
 $('coach-mark').onclick=e=>{if((e.target as Element).closest('[data-coach-dismiss]'))finishCoach(coachId);};
 function graph(){if(!recording||!snapshot)return '<p>No measurements yet.</p>';const counted=recording.manifest.swarm==='ignobel'&&snapshot.metric.name==='replicated_findings';return scoreChartSvg(scoreSeries(snapshot.results as ResultRow[],recording.frames,tick,!counted),snapshot.metric,tick,esc);}
-function resultMeasurement(r:{value:number|null;effectSize?:number|null;pValue?:number|null;reward?:number|null}){const fields=[r.effectSize==null?'':`Effect ${esc(r.effectSize)}`,r.pValue==null?'':`p = ${esc(r.pValue)}`,r.reward==null?'':`Reward ${esc(r.reward)}`].filter(Boolean);return fields.length?fields.join('<br>'):esc(r.value??'—');}
-function renderEvidence(){const s=snapshot;if(!s){$('console-content').innerHTML='<h2>No evidence yet.</h2>';return;}const proxyNote=recording?recordingProxyNote(recording.manifest,recording):undefined;$('console-content').innerHTML=`<h2>The question so far.</h2><p>Source evidence through tick ${Math.floor(tick)}. Every candidate is plotted: kept, discarded and crashed, with the confirmed best so far. Later results stay hidden until playback reaches them.</p>${proxyNote?`<p class="proxy-note"><b>About this benchmark:</b> ${esc(proxyNote)}</p>`:''}${graph()}<div class="table-scroll"><table><thead><tr><th>ROUND</th><th>AGENT</th><th>RESULT</th><th>MEASUREMENT</th></tr></thead><tbody>${s.results.slice().reverse().map(r=>`<tr${(r as {id?:string}).id?` class="inspectable" data-experiment="${esc((r as {id?:string}).id)}" tabindex="0"`:''}><td>${r.round}</td><td>${esc(r.agent)}</td><td>${esc(r.status)}<br>${esc(r.description)}</td><td>${resultMeasurement(r)}</td></tr>`).join('')}</tbody></table></div><h3>${said()} findings</h3>${s.findings.filter(f=>!(/swarm_B|per_agent_B|boredom/i.test(f.message))).slice().reverse().map(f=>`<div class="finding"><b>${esc(people().find(a=>a.id===f.agent)?.name||f.role)}</b><span>${esc(f.message)}</span></div>`).join('')||'<p>No findings yet.</p>'}${inspectionSections()}`;}
+function resultMeasurement(r:{value:number|null;effectSize?:number|null;pValue?:number|null;reward?:number|null},metricName=evidenceMetricLabel(snapshot?.metric)){
+ const fields=[r.effectSize==null?'':`Effect ${esc(r.effectSize)}`,r.pValue==null?'':`p = ${esc(r.pValue)}`,r.reward==null?'':`${esc(metricName)} ${esc(r.reward)}`].filter(Boolean);
+ return fields.length?fields.join('<br>'):esc(r.value??'—');
+}
+function renderEvidence(){
+ const s=snapshot;
+ if(!s){$('console-content').innerHTML='<h2>No evidence yet.</h2>';return;}
+ const proxyNote=recording?recordingProxyNote(recording.manifest,recording):undefined,metricName=evidenceMetricLabel(s.metric);
+ const evidenceKey='<p class="evidence-key"><span title="Kept candidates are retained when they improve the current best.">Keep</span> = retained as a current best; <span title="Baseline is the unmodified reference used for comparison.">baseline</span> = the unmodified reference.</p>';
+ const rows=s.results.slice().reverse().map(r=>{
+  const statusTitle=r.kind==='baseline'?'Baseline is the unmodified reference for comparison.':String(r.status).toLowerCase()==='keep'?'Kept because this result improved the current best.':'';
+  return `<tr${(r as {id?:string}).id?` class="inspectable" data-experiment="${esc((r as {id?:string}).id)}" tabindex="0"`:''}><td>${r.round}</td><td>${esc(r.agent)}</td><td><span${statusTitle?` title="${esc(statusTitle)}"`:''}>${esc(r.status)}</span><br>${esc(r.description)}</td><td>${resultMeasurement(r,metricName)}</td></tr>`;
+ }).join('');
+ $('console-content').innerHTML=`<h2>The question so far.</h2><p>Source evidence through tick ${Math.floor(tick)}. Every candidate is plotted: kept, discarded and crashed, with the confirmed best so far. Later results stay hidden until playback reaches them.</p>${evidenceKey}${proxyNote?`<p class="proxy-note"><b>About this benchmark:</b> ${esc(proxyNote)}</p>`:''}${graph()}<div class="table-scroll"><table><thead><tr><th>ROUND</th><th>AGENT</th><th>RESULT</th><th title="Run metric value">${esc(metricName)}</th></tr></thead><tbody>${rows}</tbody></table></div><h3>${said()} findings</h3>${s.findings.filter(f=>!(/swarm_B|per_agent_B|boredom/i.test(f.message))).slice().reverse().map(f=>`<div class="finding"><b>${esc(people().find(a=>a.id===f.agent)?.name||f.role)}</b><span>${esc(f.message)}</span></div>`).join('')||'<p>No findings yet.</p>'}${inspectionSections()}`;
+}
 function inspectionSections(){const studies=studyCards(recording,tick),sources=sourceCards(recording,tick),dialogue=dialogueThrough(events(),tick);return `${studies.length?`<h3>Ig Nobel studies</h3>${studyCardsHtml(studies,viewContext())}`:''}${dialogue.length?`<h3>Lab dialogue</h3><div class="dialogue-scroll">${dialogueHtml(dialogue,viewContext())}</div>`:''}${sources.length||entityCount('sources')?`<h3>Research sources</h3>${sourceCardsHtml(sources,viewContext())}`:''}`;}
 let conversationTopic='now';
 function whyContext(){return {name:(id:string|null)=>agentName(id),metric:snapshot?.metric,best:snapshot?.value??null};}
@@ -255,19 +293,21 @@ $('close-conversation').onclick=()=>{conversation.close();renderer.domElement.fo
 $('open-console').onclick=()=>{unlock();closeDrawer();renderEvidence();evidence.showModal();};$('open-guide').onclick=()=>{unlock();closeDrawer();guide.showModal();};
 $('play').onclick=()=>{if(!recording)return;if(!playing){conversation.close();if(!recording.manifest.live&&tick>=recording.manifest.totalTicks)seek(0);if(walking)setWalking(false);}playing=!playing;renderControls();};
 $('camera-mode').onclick=()=>setWalking(!walking);
-$('collapse-bar').onclick=()=>{const collapsed=document.body.classList.toggle('bar-collapsed');$('collapse-bar').setAttribute('aria-expanded',String(!collapsed));$('collapse-bar').textContent=collapsed?'▴':'▾';$('collapse-bar').setAttribute('aria-label',collapsed?'Expand playback panel':'Collapse playback panel');};
+$('collapse-bar').onclick=()=>{barManuallyToggled=true;setBarCollapsed(!document.body.classList.contains('bar-collapsed'));};
+setBarCollapsed(compactDock(innerWidth,innerHeight));
+window.addEventListener('resize',()=>{if(!barManuallyToggled)setBarCollapsed(compactDock(innerWidth,innerHeight));});
 $('timeline').oninput=()=>{playing=false;seek(Number($<HTMLInputElement>('timeline').value));announcedTick=tick;finishCoach('scrub');};
 $('go-live').onclick=()=>{if(!recording?.manifest.live)return;conversation.close();if(walking)setWalking(false);playing=true;seek(recording.manifest.totalTicks);announce();};
 $('pace').onchange=()=>{pace=Number($<HTMLSelectElement>('pace').value);};
 /** Precompute illustrative paths once, so a seek always places each person identically. */
 function buildPoses(data:Recording){presence=buildReplayPresence(data);poseFrames=buildReplayPoses(data,world.bounds,world.colliders);}
 function posesAt(){const before=frameAt(poseFrames,tick);if(!before)return new Map();if(tick<=0)return before.positions;const next=poseFrames[poseFrames.indexOf(before)+1];if(!next)return before.positions;const t=(tick-before.tick)/(next.tick-before.tick);return new Map([...before.positions].map(([id,p])=>{const q=next.positions.get(id)||p;const moving=Math.hypot(q.x-p.x,q.z-p.z)>.005;return[id,{atTable:p.atTable,atLab:p.atLab,x:p.x+(q.x-p.x)*t,z:p.z+(q.z-p.z)*t,heading:moving?Math.atan2(q.x-p.x,q.z-p.z):undefined,moving}];}));}
-async function attachRecording(id:string,preserve=false){const generation=++loadGeneration;if(!preserve){playing=false;finaleAutoOpened=false;resultsDialog.close();$('connection').textContent='LOADING RUN';}try{const data=await loadRecording(request,id,recordingManifests.find(m=>m.id===id)?.contentVersion||'2',recording);if(generation!==loadGeneration)return;const savedTick=tick,wasFollowing=isFollowing();recording=data;renderProvenanceBadge();prepareAliases(data);data.frames.sort((a,b)=>a.tick-b.tick);data.events.sort((a,b)=>a.tick-b.tick);buildPoses(data);renderWhosWho();$<HTMLInputElement>('timeline').max=String(data.manifest.totalTicks);$<HTMLInputElement>('timeline').disabled=false;$<HTMLButtonElement>('play').disabled=false;$('replay-title').textContent=aliasText(data.manifest.title);$('overview-text').textContent=data.manifest.description||(data.manifest.live?'Research as it happens. Follow the swarm from inside the lab.':'Research as it happened. Explore the supplied recording.');$('provenance').textContent=data.manifest.description||(data.manifest.live?'Live swarm run':'Source recording · read-only replay');$('timeline-markers').innerHTML=data.events.filter(e=>/experiment.finished|discovery|study.completed|award/.test(e.type)).map(e=>`<i${/discovery|award/.test(e.type)?' class="best"':''} style="left:${e.tick/Math.max(1,data.manifest.totalTicks)*100}%"></i>`).join('');$<HTMLSelectElement>('run-picker').value=id;if(!preserve)setWalking(false);const target=preserve?reloadTick(savedTick,data.manifest,wasFollowing):openingTick(data.manifest);if(!preserve){playing=experienceStarted;announcedTick=target;}seek(target);if(preserve&&wasFollowing)announce();else if(!preserve)announcedTick=tick;renderControls();if(STATIC_SITE&&!preserve){if(!sessionStorage.getItem('intro-seen')){sessionStorage.setItem('intro-seen','1');showIntro();}else startExperience();}const url=new URL(location.href);url.searchParams.set('recording',id);url.searchParams.delete('run');history.replaceState(null,'',url);}catch(e){$('connection').textContent='ARCHIVE UNAVAILABLE';toast((e as Error).message);}}
+async function attachRecording(id:string,preserve=false){const generation=++loadGeneration;if(!preserve){playing=false;finaleAutoOpened=false;resultsDialog.close();$('connection').textContent='LOADING RUN';}try{const data=await loadRecording(request,id,recordingManifests.find(m=>m.id===id)?.contentVersion||'2',recording);if(generation!==loadGeneration)return;const savedTick=tick,wasFollowing=isFollowing();recording=data;renderProvenanceBadge();prepareAliases(data);data.frames.sort((a,b)=>a.tick-b.tick);data.events.sort((a,b)=>a.tick-b.tick);buildPoses(data);renderWhosWho();$<HTMLInputElement>('timeline').max=String(data.manifest.totalTicks);$<HTMLInputElement>('timeline').disabled=false;$<HTMLButtonElement>('play').disabled=false;$('replay-title').textContent=aliasText(taskTitle(data.manifest));$('overview-text').textContent=data.manifest.description||(data.manifest.live?'Research as it happens. Follow the swarm from inside the lab.':'Research as it happened. Explore the supplied recording.');$('provenance').textContent=data.manifest.description||(data.manifest.live?'Live swarm run':'Source recording · read-only replay');$('timeline-markers').innerHTML=data.events.filter(e=>/experiment.finished|discovery|study.completed|award/.test(e.type)).map(e=>`<i${/discovery|award/.test(e.type)?' class="best"':''} style="left:${e.tick/Math.max(1,data.manifest.totalTicks)*100}%"></i>`).join('');$<HTMLSelectElement>('run-picker').value=id;if(!preserve)setWalking(false);const target=preserve?reloadTick(savedTick,data.manifest,wasFollowing):openingTick(data.manifest);if(!preserve){playing=experienceStarted;announcedTick=target;}seek(target);if(preserve&&wasFollowing)announce();else if(!preserve)announcedTick=tick;renderControls();if(STATIC_SITE&&!preserve){if(!sessionStorage.getItem('intro-seen')){sessionStorage.setItem('intro-seen','1');showIntro();}else startExperience();}const url=new URL(location.href);url.searchParams.set('recording',id);url.searchParams.delete('run');history.replaceState(null,'',url);}catch(e){$('connection').textContent='ARCHIVE UNAVAILABLE';toast((e as Error).message);}}
 async function loadRecordings(){try{const items=sortedRecordings(await request<RecordingManifest[]>('/recordings'));recordingManifests=items;$('run-picker').innerHTML=pickerOptions(items,esc)||'<option>No artificial scientist swarm recordings available</option>';if(recording)$<HTMLSelectElement>('run-picker').value=recording.manifest.id;else if(items.length){const selected=new URL(location.href).searchParams.get('recording');await attachRecording(items.find(m=>m.id===selected)?.id||items[0].id);}else if(!items.length){$('connection').textContent='NO SWARM RECORDINGS';$('replay-title').textContent='No artificial scientist swarm recordings available';}}catch(e){$('connection').textContent='ARCHIVE UNAVAILABLE';$('replay-title').textContent='Archive unavailable';toast((e as Error).message);}}
 $('refresh-runs').onclick=()=>loadRecordings();$('run-picker').onchange=()=>attachRecording($<HTMLSelectElement>('run-picker').value);
 let polling=false;
 /** Static site only: the hackathon intro sits in front of the replay until dismissed. */
-function showIntro(){$('intro').innerHTML=introHtml(introConfig as IntroConfig,researchTrail(recording),esc,researchResults(recording),recording?.manifest,recording);$('prestart').hidden=true;$('intro').hidden=false;$('intro-start').onclick=startExperience;$('intro-results-link').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};$('intro-qualifier').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};}
+function showIntro(){$('intro').innerHTML=introHtml(introConfig as IntroConfig,researchTrail(recording),esc,researchResults(recording,tick),recording?.manifest,recording);$('prestart').hidden=true;$('intro').hidden=false;$('intro-start').onclick=startExperience;$('intro-results-link').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};$('intro-qualifier').onclick=e=>{e.preventDefault();const about=$<HTMLDetailsElement>('intro-about'),results=$<HTMLDetailsElement>('intro-real-results');about.open=true;results.hidden=false;results.open=true;results.scrollIntoView({behavior:reducedMotion?'auto':'smooth',block:'center'});};}
 if(STATIC_SITE){$('refresh-runs').hidden=true;document.body.classList.add('static-site');}
 else setInterval(async()=>{if(polling)return;polling=true;const current=recording,generation=loadGeneration;try{await loadRecordings();const updated=recordingManifests.find(m=>m.id===current?.manifest.id);if(current&&generation===loadGeneration&&recording===current&&recordingChanged(current.manifest,updated))await attachRecording(current.manifest.id,true);}finally{polling=false;}},4000);
 function blocked(x:number,z:number){const r=.34,b=world.bounds;return x<b.minX+r||x>b.maxX-r||z<b.minZ+r||z>b.maxZ-r||world.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);}

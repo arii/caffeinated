@@ -5,8 +5,8 @@ export function boredomColor(value:number):string{
   const position=boredomPercent(value)/25,index=Math.min(3,Math.floor(position)),fraction=position-index;
   return '#'+stops[index].map((channel,i)=>Math.round(channel+(stops[index+1][i]-channel)*fraction).toString(16).padStart(2,'0')).join('');
 }
-const REGIMES:Record<string,[string,string]>={EXPLOIT:['Exploiting','calm'],BOREDOM_SNAP:['Boredom snap','snap'],YOKED_SNAP:['Boredom snap','snap'],PARADIGM_BREAKOUT:['Paradigm breakout','breakout'],CONVERGED:['Converged','converged'],FRUSTRATED:['Frustrated','frustrated']};
-export function regimeLabel(regime?:string):{label:string;tone:string}{if(!regime)return {label:'',tone:'calm'};const known=REGIMES[regime];return known?{label:known[0],tone:known[1]}:{label:regime.replaceAll('_',' ').toLowerCase().replace(/^./,c=>c.toUpperCase()),tone:'calm'};}
+const REGIMES:Record<string,[string,string,string]>={EXPLOIT:['Exploiting','calm','After a significant improvement or before min_attempts: 3 exploit + 1 divergent.'],BOREDOM_SNAP:['Boredom snap','snap','B ≥ 0.70: 1 exploit + 3 divergent; the novelty gate rejects near-duplicates.'],YOKED_SNAP:['Boredom snap','snap','B ≥ 0.70: 1 exploit + 3 divergent; the novelty gate rejects near-duplicates.'],PARADIGM_BREAKOUT:['Paradigm breakout','breakout','4 divergent slots; the gate requires a top-level mechanism not used recently.'],CONVERGED:['Converged','converged','The gate allows only exact reruns of the best for confirmation.'],FRUSTRATED:['Frustrated','frustrated','']};
+export function regimeLabel(regime?:string):{label:string;tone:string;description:string}{if(!regime)return {label:'',tone:'calm',description:''};const known=REGIMES[regime];return known?{label:known[0],tone:known[1],description:known[2]}:{label:regime.replaceAll('_',' ').toLowerCase().replace(/^./,c=>c.toUpperCase()),tone:'calm',description:''};}
 /** Published meter components as 0..100 bars, in a stable order. */
 export function boredomComponents(components?:Record<string,unknown>):{key:string;label:string;value:number}[]{
   if(!components||typeof components!=='object')return [];
