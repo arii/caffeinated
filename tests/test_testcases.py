@@ -1,6 +1,7 @@
 import ast
 import csv
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -418,7 +419,12 @@ class SwarmTaskModeTests(unittest.TestCase):
             with (out_dir / "results.tsv").open(newline="", encoding="utf-8") as stream:
                 rows = list(csv.DictReader(stream, delimiter="\t"))
             self.assertEqual(rows[0]["description"], "baseline")
-            self.assertEqual(len(rows), 5)
+            self.assertEqual(len(rows), 6)
+            self.assertTrue(rows[-1]["description"].startswith("critic second-evaluation"))
+            self.assertEqual(
+                [row["status"] for row in rows],
+                ["keep", "keep", "duplicate", "duplicate", "duplicate", "keep"],
+            )
             for row in rows:
                 self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
@@ -801,13 +807,12 @@ class IgnobelTaskTests(unittest.TestCase):
 
 class BixBenchPrepareTests(unittest.TestCase):
     def setUp(self):
-        sys.path.insert(0, str(TESTCASES / "bixbench_mini"))
-        self.addCleanup(sys.path.remove, str(TESTCASES / "bixbench_mini"))
-        sys.modules.pop("prepare", None)
-        import prepare
-
+        spec = importlib.util.spec_from_file_location(
+            "bixbench_prepare", TESTCASES / "bixbench_mini" / "prepare.py"
+        )
+        prepare = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(prepare)
         self.prepare = prepare
-        self.addCleanup(sys.modules.pop, "prepare", None)
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.here = Path(directory.name)
@@ -926,15 +931,20 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr[-3000:] + result.stdout[-3000:])
         ledger = meter.read_ledger(out_dir / "ledger.jsonl")
         branch = re.search(r"branch=(\S+);", result.stdout).group(1)
-        head = subprocess.run(
-            ["git", "rev-parse", branch], cwd=repo, capture_output=True, text=True, check=True
-        ).stdout.strip()
-        return ledger, head
+        return (
+            ledger,
+            lambda commit: (
+                subprocess.run(
+                    ["git", "merge-base", "--is-ancestor", commit, branch], cwd=repo, check=False
+                ).returncode
+                == 0
+            ),
+        )
 
     def test_fake_runs_keep_critic_and_merge(self):
         for task_name in ("hadamard19", "bixbench_mini", "playworld_mini", "ignobel"):
             with self.subTest(task=task_name), tempfile.TemporaryDirectory() as directory:
-                ledger, head = self.run_fake_swarm(task_name, directory)
+                ledger, on_branch = self.run_fake_swarm(task_name, directory)
                 baseline = next(event for event in ledger if event.get("kind") == "baseline")
                 keeps = [
                     event
@@ -947,7 +957,7 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
                 self.assertTrue(all(event.get("verdict") for event in verdicts))
                 accepted = [event for event in verdicts if event.get("accepted")]
                 self.assertTrue(accepted)
-                self.assertEqual(head, accepted[-1]["commit"])
+                self.assertTrue(all(on_branch(event["commit"]) for event in accepted))
                 self.assertLess(min(event["score"] for event in keeps), baseline["score"])
 
 
