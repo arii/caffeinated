@@ -58,7 +58,9 @@ export function staffStripLabel(type:string,events:readonly ReplayEvent[],tick:n
  const reached=events.filter(e=>e.tick<=tick);
  if(type==='conductor'){
   const round=reached.filter(e=>e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
-  return typeof regime==='string'?`Conductor · assigning ${regimeLabel(regime).label}`:'Conductor · awaiting assignment';
+  if(typeof regime!=='string')return 'Conductor · awaiting assignment';
+  const normalized=regime.toUpperCase(),label=/BOREDOM_SNAP|EXPLORE|DIVERG/.test(normalized)?'Bored — trying new directions':/BREAKOUT|NOVEL/.test(normalized)?'Breakout':'Refining';
+  return `Conductor · ${label}`;
  }
  if(type==='critic'){
   const reviews=reached.filter(e=>e.type==='verdict.issued').length;

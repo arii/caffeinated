@@ -26,17 +26,19 @@ test('finished, stalled and sample runs each get distinct copy',()=>{
 test('a heartbeat gone quiet marks a live run as stalled in the picker',()=>{
  assert.match(pickerLabel({...live,heartbeat_ts:'2020-01-01T00:00:00Z'}),/^◌ STALLED · /);
 });
-test('static lab shell copy carries no replay or recording wording',()=>{
- const html=readFileSync(new URL('../index.html',import.meta.url),'utf8').replace(/<script[\s\S]*?<\/script>/g,'');
- const visible=html.replace(/<[^>]+>/g,' ');
- assert.doesNotMatch(visible,REPLAY);
+test('the compact first-view header names the lab and its two actions',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8'),brand=html.match(/<a class="brand"[\s\S]*?<\/a>/)?.[0]||'',actions=html.match(/<div class="header-actions"[\s\S]*?<\/div>/)?.[0]||'',chrome=`${brand} ${actions}`;
+ assert.match(chrome,/Artificial scientist swarm/);
+ assert.match(chrome,/>Results</);
+ assert.match(chrome,/>About</);
+ assert.doesNotMatch(chrome,REPLAY);
 });
 test('the first-run shell and empty states name the artificial scientist swarm',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8'),app=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(html,/<title>Artificial Scientist Swarm/);
  assert.match(html,/<meta name="description" content="[^"]*artificial scientist swarm/i);
- assert.match(html,/An artificial scientist swarm at work/);
+ assert.match(html,/Artificial scientist swarm/);
+ assert.match(html,/Growing the lab/);
  assert.match(app,/No artificial scientists are active in the artificial scientist swarm/);
- assert.match(app,/Waiting for the first events from the artificial scientist swarm/);
  assert.match(app,/No artificial scientist swarm recordings available/);
 });

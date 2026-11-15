@@ -51,7 +51,7 @@ test('archive request failure reports the error without attaching a recording',a
 });
 function playHarness(live,tick,totalTicks=10){
  const button={},seeks=[];
- const context={recording:{manifest:{live,totalTicks}},tick,playing:false,walking:false,
+ const context={recording:{manifest:{live,totalTicks}},STATIC_SITE:false,playbackMode:'full',tick,playing:false,walking:false,
   conversation:{close(){}},seek:value=>{seeks.push(value);context.tick=value;},
   setWalking(){},renderControls(){},$:()=>button};
  runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith("$('play').onclick"))),context);

@@ -81,8 +81,8 @@ test('staff strip labels follow reached rounds and critic reviews',()=>{
   {tick:2,type:'round.started',payload:{regime:'EXPLOIT'}},
   {tick:9,type:'verdict.issued'}
  ];
- assert.equal(staffStripLabel('conductor',events,5),'Conductor · assigning Exploiting');
- assert.equal(staffStripLabel('conductor',events,10),'Conductor · assigning Boredom snap');
+ assert.equal(staffStripLabel('conductor',events,5),'Conductor · Refining');
+ assert.equal(staffStripLabel('conductor',events,10),'Conductor · Bored — trying new directions');
  assert.equal(staffStripHelp('conductor',events,5),'After a significant improvement or before min_attempts: 3 exploit + 1 divergent.');
  assert.equal(staffStripHelp('conductor',events,10),'B ≥ 0.70: 1 exploit + 3 divergent; the novelty gate rejects near-duplicates.');
  assert.equal(staffStripLabel('critic',events,3),'Critic · 0 reviews');
