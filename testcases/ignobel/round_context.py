@@ -27,10 +27,12 @@ def outcome(result):
     if "rho" not in result:
         return "not run"
     verdict = (
-        "REPLICATED"
-        if result.get("confirmed")
+        "split-half consistent"
+        if result.get("replicated")
         else (
-            "significant but did not replicate" if result.get("significant") else "not significant"
+            "significant but not split-half consistent"
+            if result.get("significant")
+            else "not significant"
         )
     )
     return f"rho {result['rho']:.3f}, p {result['p']:.2g}, n {result['n']}: {verdict}"
@@ -43,10 +45,17 @@ def notebook(out_dir):
         if path.is_file()
         else []
     )
+    tested = sum("rho" in record.get("result", {}) for record in records)
+    confirmed = sum(bool(record.get("result", {}).get("confirmed")) for record in records)
+    summary = (
+        f"Studies tested: {tested}; confirmed: {confirmed}. "
+        f"Multiple testing: k={tested} tests at alpha=0.005 per test."
+    )
     if not records:
-        return ["Lab notebook: no studies registered yet this run."], set()
+        return [summary, "Lab notebook: no studies registered yet this run."], set()
     lines = [
-        "Lab notebook (studies registered so far this run, newest last; build on them, do not repeat them):"
+        summary,
+        "Lab notebook (studies registered so far this run, newest last; build on them, do not repeat them):",
     ]
     for record in records[-NOTEBOOK_ITEMS:]:
         prereg, result = record["prereg"], record["result"]

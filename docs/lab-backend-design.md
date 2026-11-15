@@ -36,7 +36,7 @@ A native event’s integer tick is the source clock. Render time interpolates co
 
 A snapshot at tick T includes only events through T. Source timestamps are preserved where present; missing timestamps, seeds, boredom, and source commits are not invented. Agent identities are stable and independent of avatar appearance. Baseline and World are pseudo-agents in the data and are not rendered as human researchers.
 
-The supplied keyframe zero contains later-run state. The adapter therefore reconstructs every frame from the event prefix instead of loading those keyframes. Native final entity records remain available for audit, but the visual state and interaction text use time-gated event data. Candidate results do not become the confirmed swarm best before acceptance. Metric direction remains domain-specific; the Ig Nobel replicated-findings metric counts replicated studies rather than treating a p-value or effect size as that aggregate.
+The supplied keyframe zero contains later-run state. The adapter therefore reconstructs every frame from the event prefix instead of loading those keyframes. Native final entity records remain available for audit, but the visual state and interaction text use time-gated event data. Candidate results do not become the confirmed swarm best before acceptance. Metric direction remains domain-specific; the Ig Nobel split-half-consistent-findings metric counts confirmed studies rather than treating a p-value or effect size as that aggregate.
 
 ## Interaction and cameras
 

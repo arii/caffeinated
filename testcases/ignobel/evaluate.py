@@ -11,9 +11,9 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
    Exa research cites), freezes it, and allows ONE registered test per dataset
    per run (later registrations on the same dataset score 0);
 4. runs the registered Spearman test once: significant = p < ALPHA on all rows
-   with |rho| >= 0.1 in the registered direction; replicated = the same sign,
-   |rho| >= 0.1, and p < REPLICATION_ALPHA in each fixed hash half; trivial
-   pairs fail.
+   with |rho| >= 0.1 in the registered direction; split-half consistency means
+   the same sign, |rho| >= 0.1, and p < REPLICATION_ALPHA in each fixed hash
+   half; trivial pairs fail.
 
 Unconfirmed studies score 0. Confirmed studies score 0.25 + 0.75 times the
 committee score (the lower judge's minimum of LAUGH and THINK, divided by 10);
@@ -457,7 +457,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
                 f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}",
                 f"halves: rho {first['rho']:.4f} (p={first['p']:.2g}), rho {second['rho']:.4f} (p={second['p']:.2g})",
                 f"significant: {str(graded['significant']).lower()}",
-                f"replicated: {str(graded['replicated']).lower()}",
+                f"split-half consistency: {str(graded['replicated']).lower()}",
                 f"confirmed: {str(graded['confirmed']).lower()}",
             ]
             if graded["confirmed"]:

@@ -11,7 +11,7 @@ on the host.
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | dev accuracy ≈ 0.1 (10 questions) | published full-BixBench accuracy 0.523 |
 | `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | dev score ≈ 0.149 | dev-only `RECORD` 0.3598 from the original commit; source unavailable |
-| `ignobel` | Pre-registered expert study on real public data, graded for replication and committee-rated interest | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
+| `ignobel` | Pre-registered expert study on real public data, graded for split-half consistency and committee-rated interest | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
@@ -44,6 +44,10 @@ Hadamard's exact optimum is task-specific, and Ig Nobel has no single
 reference score. BixBench also disables research
 and rejects source literals matching gold answers in the current split, apart
 from small integers and numbers stated in its public questions.
+
+The BixBench test split has only seven questions. Held-out baseline and best
+accuracy results include a Wilson 95% confidence interval (`ci95`); report the
+interval alongside every seven-question accuracy value.
 
 ## Build the candidate image
 
@@ -81,15 +85,18 @@ headers and levels, the direction, and the predicted |ρ|. `external.py`
 downloads the dataset once (https, open-data hosts or URLs the run's Exa
 research cites, ≤ 5 MB, frozen in `.cache/raw` with its sha256), and
 `evaluate.py` runs the registered Spearman test: significant = p < 0.005 on
-all rows with the registered sign; replicated = the same sign with p < 0.05 in
-each of the two fixed hash halves. Each dataset gets one registered test per
+all rows with the registered sign; split-half consistency requires the same
+sign with p < 0.05 in each of the two fixed hash halves. Each dataset gets one registered test per
 run, so the swarm cannot fish through a dataset's columns, and a test's
 predicted effect size is frozen at its first registration. Trivial pairs fail.
 Unconfirmed studies score 0. For a confirmed study, the host calls the
 two-judge committee during evaluation: score = `0.25 + 0.75 * committee_score`,
 where the committee score is the lower judge's `min(LAUGH, THINK)/10`; a
-targets-group flag sets score to 0. The swarm loss is `1 - score`, so replicated
-findings that are funny, thoughtful and not already well known score higher.
+targets-group flag sets score to 0. The swarm loss is `1 - score`, so
+split-half-consistent findings that are funny, thoughtful and not already well
+known score higher.
+Judge A uses `openai/gpt-oss-120b:peft:131072` and judge B uses
+`Qwen/Qwen3.5-397B-A17B:peft:262144`; neither is the Kimi generator model.
 When the committee is unavailable (fake LLM or no `TINKER_API_KEY`), confirmed
 studies keep score 1.0, preserving offline evaluation. Before judging, one Exa
 search on the host-written headline supplies up to five title/URL/snippet

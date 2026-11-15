@@ -327,8 +327,9 @@ interface Study {           // ignobel_studies.jsonl: one per candidate study (c
   headline: string | null;
   rejected: string | null;  // rejection reason (bad dataset, wrong direction, ...)
   outcome: string;          // one readable line, e.g. "rho 0.065 (predicted 0.15), p 0.18,
-                            // n 428: not significant" ("...: REPLICATED", "...: significant
-                            // but did not replicate", "Rejected: <reason>", "Not run")
+                            // n 428: not significant" ("...: split-half consistent",
+                            // "...: significant but not split-half consistent",
+                            // "Rejected: <reason>", "Not run")
   citations: string[];
   replications: { rho; p; n; halves; significant; replicated; confirmed }[];  // critic re-runs
   committee: { available: boolean; score: number | null; rejected: boolean;

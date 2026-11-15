@@ -3,8 +3,8 @@
 
 Reads <run>/ignobel_studies.jsonl (written by evaluate.py), keeps each distinct
 finding once (the earliest lab to report a dataset's column pair has priority),
-reuses cached in-run verdicts (judging legacy records when needed), and writes
-<run>/scores.jsonl, best first.
+reuses cached in-run verdicts (judging legacy records when needed), counts
+tested and confirmed studies, and writes <run>/scores.jsonl, best first.
 
   TINKER_API_KEY=... python3 testcases/ignobel/score_run.py --run /path/to/swarm_out
 """
@@ -66,12 +66,29 @@ def score_run(run_dir, task_dir=HERE, ask=None):
     return rows
 
 
+def study_counts(run_dir):
+    records = [
+        json.loads(line)
+        for line in (Path(run_dir) / "ignobel_studies.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    tested = sum("rho" in record.get("result", {}) for record in records)
+    confirmed = sum(bool(record.get("result", {}).get("confirmed")) for record in records)
+    return tested, confirmed
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", required=True, help="swarm --out directory")
     args = parser.parse_args(argv)
     rows = score_run(args.run)
-    print(f"scored {len(rows)} replicated studies -> {Path(args.run) / 'scores.jsonl'}")
+    tested, confirmed = study_counts(args.run)
+    print(
+        f"studies tested: {tested}; confirmed: {confirmed}; "
+        f"multiple testing: k={tested} tests at alpha=0.005 per test"
+    )
+    print(f"scored {len(rows)} confirmed studies -> {Path(args.run) / 'scores.jsonl'}")
     for row in rows:
         flag = " REJECTED" if row["rejected"] else ""
         score = f"{row['committee']:.1f}" if row["committee"] is not None else "unavailable"

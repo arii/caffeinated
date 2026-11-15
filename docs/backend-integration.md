@@ -102,7 +102,7 @@ This block groups two files for readability. Write each array to `entities/<key>
 }
 ```
 
-This produces C1, a “Mixing speed” lightbulb caption at tick 2, experiment activity at tick 3, one replicated finding at tick 4, and the research note at tick 5. At earlier ticks, later measurements and notes remain absent. Boredom appears only when the user interacts with C1.
+This produces C1, a “Mixing speed” lightbulb caption at tick 2, experiment activity at tick 3, one split-half-consistent finding at tick 4, and the research note at tick 5. At earlier ticks, later measurements and notes remain absent. Boredom appears only when the user interacts with C1.
 
 ## 4. Map backend events to the lab
 

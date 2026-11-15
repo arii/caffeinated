@@ -136,6 +136,28 @@ class EvaluatorTests(unittest.TestCase):
             bixbench_evaluate.answer_literal_qids(source, key, questions), ["range", "negative"]
         )
 
+    def test_bixbench_answer_literal_scanner_folds_numeric_expressions(self):
+        key = {"folded": {"mode": "exact", "value": 0.5234}}
+        source = "answer = 0.5 + 0.0234\n"
+
+        self.assertEqual(bixbench_evaluate.answer_literal_qids(source, key, "{}"), ["folded"])
+
+    def test_bixbench_folded_answers_keep_small_and_public_number_exemptions(self):
+        key = {
+            "small": {"mode": "exact", "value": 7},
+            "public": {"mode": "exact", "value": 42},
+        }
+        questions = json.dumps({"q": {"question": "The public example is 42."}})
+        source = "small_answer = 3 + 4\npublic_answer = 40 + 2\n"
+
+        self.assertEqual(bixbench_evaluate.answer_literal_qids(source, key, questions), [])
+
+    def test_wilson_interval_for_small_proportion_sample(self):
+        low, high = held_out.wilson_interval(5 / 7, 7)
+
+        self.assertAlmostEqual(low, 0.359, places=3)
+        self.assertAlmostEqual(high, 0.918, places=3)
+
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_rejects_answer_literals_without_flagging_data_computation(self):
         task_dir = TESTCASES / "bixbench_mini"
@@ -617,6 +639,7 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertTrue(graded["replicated"] and graded["significant"])
         self.assertEqual(result["loss"], 0.0)
         self.assertEqual(len(graded["halves"]), 2)
+        self.assertIn("split-half consistency: true", result["stdout"])
         self.assertEqual(
             graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"]
         )
@@ -710,6 +733,54 @@ class IgnobelPreregTests(unittest.TestCase):
         )
         self.assertFalse(rows[0]["available"])
         self.assertIsNone(rows[0]["committee"])
+
+    def test_score_run_reports_tested_confirmed_and_multiple_testing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+
+            def record(index, confirmed):
+                return {
+                    "prereg": {
+                        "field": "everyday_physics",
+                        "question": f"Question {index}",
+                        "dataset": {"url": f"https://example.test/{index}.csv"},
+                    },
+                    "result": {
+                        "sha256": str(index),
+                        "columns": ["x", "y"],
+                        "headline": f"Finding {index}",
+                        "rho": 0.3,
+                        "p": 0.001,
+                        "n": 100,
+                        "citations": [],
+                        "confirmed": confirmed,
+                        "replicated": confirmed,
+                        "committee": {
+                            "available": True,
+                            "score": 0.6,
+                            "rejected": False,
+                            "verdicts": {},
+                            "judges": {},
+                            "prior_work": [],
+                            "prior_work_available": False,
+                        },
+                    },
+                }
+
+            records = [record(1, True), record(2, False)]
+            (run_dir / "ignobel_studies.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in records), encoding="utf-8"
+            )
+            output = io.StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(ignobel_score_run.main(["--run", str(run_dir)]), 0)
+
+            lines, _ = ignobel_round_context.notebook(run_dir)
+
+        summary = "studies tested: 2; confirmed: 1; multiple testing: k=2 tests at alpha=0.005"
+        self.assertIn(summary, output.getvalue())
+        self.assertTrue(lines[0].startswith("Studies tested: 2; confirmed: 1."))
+        self.assertIn("k=2 tests at alpha=0.005", lines[0])
 
     def test_missing_tinker_key_keeps_confirmed_score_offline(self):
         with (
@@ -885,7 +956,7 @@ class IgnobelPreregTests(unittest.TestCase):
             ignobel_round_context.main(["--out-dir", str(self.log.parent)])
         text = out.getvalue()
         self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', text)
-        self.assertIn("REPLICATED", text)
+        self.assertIn("split-half consistent", text)
         self.assertIn("Datasets already tested this run", text)
 
     def test_committee_verdicts_never_reach_the_labs(self):
@@ -897,7 +968,7 @@ class IgnobelPreregTests(unittest.TestCase):
         out = io.StringIO()
         with patch.dict(os.environ, {"EXA": "off"}), redirect_stdout(out):
             ignobel_round_context.main(["--out-dir", str(self.log.parent)])
-        self.assertIn("REPLICATED", out.getvalue())
+        self.assertIn("split-half consistent", out.getvalue())
         self.assertNotIn(canary, out.getvalue())
         for word in ("laugh", "committee", "judge"):
             self.assertNotIn(word, out.getvalue().lower())
@@ -1036,6 +1107,18 @@ class IgnobelPreregTests(unittest.TestCase):
 
 
 class IgnobelTaskTests(unittest.TestCase):
+    def test_committee_parser_uses_last_verdict_object_after_reasoning(self):
+        content = (
+            'Reasoning: first pass {"laugh": 9, "think": 9}. '
+            'Reconsidered verdict: {"laugh": 7, "think": 4, '
+            '"reason": "brace } stays inside a string"}. '
+            'Trailing malformed JSON: {"laugh":'
+        )
+        self.assertEqual(
+            ignobel_score_run.committee._last_verdict_object(content),
+            {"laugh": 7, "think": 4, "reason": "brace } stays inside a string"},
+        )
+
     def test_committee_prompts_are_the_two_judges(self):
         prompts = ignobel_score_run.committee.judge_prompts()
         self.assertEqual(set(prompts), {"a", "b"})
@@ -1315,6 +1398,19 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
                     self.assertEqual(
                         artifact["n_items"], 7 if task_name == "bixbench_mini" else 200
                     )
+                    for result_name in ("baseline", "best"):
+                        if task_name == "bixbench_mini":
+                            self.assertEqual(len(artifact[result_name]["ci95"]), 2)
+                            self.assertLessEqual(
+                                artifact[result_name]["ci95"][0],
+                                artifact[result_name]["score"],
+                            )
+                            self.assertGreaterEqual(
+                                artifact[result_name]["ci95"][1],
+                                artifact[result_name]["score"],
+                            )
+                        else:
+                            self.assertNotIn("ci95", artifact[result_name])
                     run = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
                     manifest = json.loads(
                         (out_dir / "viewer" / run["viewer_run_id"] / "manifest.json").read_text(

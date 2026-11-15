@@ -32,6 +32,7 @@ QUESTION_NUMBER = re.compile(
     r"(?<![\w.])[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d*)?|\d+(?:\.\d*)?|\.\d+)"
     r"(?:[eE][-+]?\d+)?(?![\w.])"
 )
+MAX_FOLDED_MAGNITUDE = 1e12
 
 
 def grade(key, answers):
@@ -57,12 +58,45 @@ def grade(key, answers):
 
 def _numeric_constant(node):
     if isinstance(node, ast.Constant) and type(node.value) in (int, float):
-        return node.value
-    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+        value = node.value
+    elif isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
         value = _numeric_constant(node.operand)
-        if value is not None:
-            return value if isinstance(node.op, ast.UAdd) else -value
-    return None
+        if value is None:
+            return None
+        value = value if isinstance(node.op, ast.UAdd) else -value
+    elif isinstance(node, ast.BinOp):
+        left = _numeric_constant(node.left)
+        right = _numeric_constant(node.right)
+        if left is None or right is None:
+            return None
+        try:
+            if isinstance(node.op, ast.Add):
+                value = left + right
+            elif isinstance(node.op, ast.Sub):
+                value = left - right
+            elif isinstance(node.op, ast.Mult):
+                value = left * right
+            elif isinstance(node.op, ast.Div):
+                value = left / right
+            elif isinstance(node.op, ast.FloorDiv):
+                value = left // right
+            elif isinstance(node.op, ast.Mod):
+                value = left % right
+            elif isinstance(node.op, ast.Pow):
+                if abs(right) > 10:
+                    return None
+                value = left**right
+            else:
+                return None
+        except (ArithmeticError, OverflowError, TypeError, ValueError):
+            return None
+    else:
+        return None
+    if type(value) not in (int, float):
+        return None
+    if type(value) is float and not math.isfinite(value):
+        return None
+    return None if abs(value) > MAX_FOLDED_MAGNITUDE else value
 
 
 def _numeric_literals(source):
@@ -73,14 +107,12 @@ def _numeric_literals(source):
     literals = []
 
     def visit(node):
-        if isinstance(node, ast.UnaryOp):
+        if isinstance(node, (ast.UnaryOp, ast.BinOp)):
             value = _numeric_constant(node)
             if value is not None:
                 literals.append(value)
-                return
         if isinstance(node, ast.Constant) and type(node.value) in (int, float):
             literals.append(node.value)
-            return
         for child in ast.iter_child_nodes(node):
             visit(child)
 
