@@ -2149,6 +2149,8 @@ def worker_attempts(
             "reasons": "none",
             "assigned_cell": "none",
             "candidate_source": candidate_source,
+            "recalled_results": recalled_results,
+            "recalled_leads": recalled_leads,
             "fake_targets": TASK.get("fake_targets", []),
             "fake_edits": TASK.get("fake_edits", []),
         }
