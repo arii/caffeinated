@@ -32,10 +32,16 @@ Run research in a separate clone because `swarm.py` creates Git branches/worktre
 git clone /path/to/caffeinated /tmp/swarm-research
 cd /tmp/swarm-research
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
-python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
+python3 swarm.py --task hadamard19 --arm B --rounds 2 --llm fake --exa off --memory-backend local --no-push
+# In another terminal, in the same clone:
+npm ci
+npm run setup
+npm run dev
 ```
 
-Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. The picker refreshes every four seconds, including while viewing finished recordings. Live recordings also reload when changed, preserving the playhead. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
+Open the printed lab URL without a `?recording=` parameter: it selects the newest live swarm run, otherwise the newest completed swarm run, then a bundled sample. No `--out`, `--viewer-dest`, or environment variables are needed. For real model calls, use your configured provider (for example `--llm tinker`) instead of `fake`.
+
+The backend discovers this clone's `.swarm_worktrees/*/conductor/experiments/*/viewer` and `experiments/*/viewer` folders on each catalog refresh, including new arms created after startup. The frontend's Vite watch ignores do not affect backend discovery. The picker refreshes every four seconds; live recordings reload changes while preserving the playhead. Explicit URL selections and picker choices are preserved. To follow a separate clone or custom `--out`, add `LAB_RECORDINGS_DIRS=/path/to/output/viewer` when starting the lab. Multiple roots use `:` on Unix; out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
 

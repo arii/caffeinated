@@ -11,6 +11,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shlex
 import zipfile
 
 from backend.ingest import number, spectrum_color
@@ -40,7 +41,7 @@ def event_message(event):
     return str(p.get('text') or p.get('summary') or p.get('title') or p.get('why') or p.get('rationale') or p.get('excerpt') or event['type'].replace('.',' · '))[:3000]
 
 
-def build_recording(native_manifest, native_events, entities):
+def build_recording(native_manifest, native_events, entities, sample=True):
     """Pure deterministic fold. Entity lookups never import late verdicts/results."""
     manifest=deepcopy(native_manifest)
     if manifest.get('schema')!='swarm-viewer/v1':raise ValueError('Unsupported recording schema')
@@ -57,9 +58,15 @@ def build_recording(native_manifest, native_events, entities):
     live=manifest.get('status') in {'running','live'} or bool(manifest.get('live'))
     manifest.update({'id':manifest['run_id'],'totalTicks':last_tick,'tickDurationMs':700,'live':live})
     mock_sources='example.org/mock' in json.dumps(entities)
-    manifest['description']='Recorded sample · mock prior-art sources' if mock_sources else 'Recorded research · no live model calls'
-    manifest['sample']=mock_sources
     provenance=manifest.get('provenance',{})
+    manifest['sample']=sample
+    llm=provenance.get('llm','unknown')
+    try:
+        command=shlex.split(provenance.get('command',''))
+        provider=next((part.split('=',1)[1] if '=' in part else command[i+1] for i,part in enumerate(command) if part=='--llm' or part.startswith('--llm=')),None)
+        if provider:llm=provider
+    except (ValueError,IndexError):pass
+    manifest['description']=('Recorded sample · mock prior-art sources' if mock_sources else 'Recorded research · no live model calls') if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
     created=manifest.get('time',{}).get('ts_start')
     created_at=datetime.fromisoformat(created.replace('Z','+00:00')).timestamp() if created else 0
     agents=[]
@@ -179,9 +186,10 @@ def build_recording(native_manifest, native_events, entities):
 
 
 class RecordingCatalog:
-    def __init__(self, archive, directories=()):
+    def __init__(self, archive, directories=(), repo_root=None):
         self.archive=Path(archive);self.manifests={};self.cache={}
         self.directories=[Path(p).absolute() for p in directories]
+        self.repo_root=Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[1]
         self.directory_runs={};self.directory_cache={}
         self.content_version=''
         if not self.archive.is_file():return
@@ -195,7 +203,11 @@ class RecordingCatalog:
                     self.manifests[rid]=m
     def _scan(self):
         runs={}
-        for root in self.directories:
+        roots=set(self.directories)
+        for pattern in ('.swarm_worktrees/*/conductor/experiments/*/viewer', 'experiments/*/viewer'):
+            roots.update(self.repo_root.glob(pattern))
+        for root in sorted(roots):
+            if root.is_symlink():continue
             if not root.is_dir():continue
             for parent, dirs, files in os.walk(root,followlinks=False):
                 path=Path(parent)
@@ -234,7 +246,7 @@ class RecordingCatalog:
                 if file.exists():
                     try:entities[name]=json.loads(file.read_text())
                     except ValueError:logging.warning('Skipping partial entity file %s',file)
-            recording=build_recording(manifest,events,entities)
+            recording=build_recording(manifest,events,entities,sample=False)
             recording['manifest']['contentVersion']=version
             self.directory_cache[key]=recording
         return self.directory_cache[key]

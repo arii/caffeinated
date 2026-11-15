@@ -105,3 +105,23 @@ class DirectoryReplayTests(unittest.TestCase):
         (path / 'entities').mkdir()
         (path / 'entities/experiments.json').write_text('[null]')
         self.assertEqual(catalog.list(), [])
+
+    def test_default_repo_discovery_new_arm_after_startup_and_provenance(self):
+        env = {'LAB_RECORDINGS_ZIP': str(self.root / 'missing.zip'), 'LAB_RECORDINGS_DIRS': ''}
+        with patch('backend.app.ROOT', self.root), patch.dict(os.environ, env), TestClient(create_app(self.root / 'state', runner=False)) as client:
+            self.assertEqual(client.get('/api/recordings').json(), [])
+            path = self.run_dir('.swarm_worktrees/B/conductor/experiments/swarm_B/viewer/run-1')
+            manifest = json.loads((path / 'manifest.json').read_text())
+            manifest['provenance'] = {'llm': 'a-model', 'command': 'swarm.py --llm tinker'}
+            (path / 'manifest.json').write_text(json.dumps(manifest))
+            rows = client.get('/api/recordings').json()
+            self.assertEqual([m['id'] for m in rows], ['run-1'])
+            self.assertTrue(rows[0]['live'])
+            self.assertFalse(rows[0]['sample'])
+            self.assertEqual(rows[0]['description'], 'Live swarm run · tinker model calls')
+            manifest.update(status='finished', provenance={'llm': 'fake'})
+            (path / 'manifest.json').write_text(json.dumps(manifest))
+            self.run_dir('experiments/direct/viewer/run-2')
+            self.run_dir('.swarm_worktrees/A/conductor/experiments/swarm_A/viewer/run-3')
+            self.assertEqual(len(client.get('/api/recordings').json()), 3)
+            self.assertEqual(client.get('/api/recordings/run-1').json()['manifest']['description'], 'Swarm run · fake LLM')
