@@ -15,12 +15,13 @@ SAME_FINDING = 0.9  # two reported arrays are the same measurements if they shar
 
 
 def same_finding(a: list[dict], b: list[dict]) -> bool:
-    """Two studies report the same thing: array for array, the same values from the same dataset file."""
+    """Two studies report the same thing: array for array, the same values of the same column of the same
+    dataset file."""
     if not a or len(a) != len(b):
         return False
     left = list(b)
     for x in a:
-        twin = next((y for y in left if x["dataset"] and y["dataset"] == x["dataset"]
+        twin = next((y for y in left if x["dataset"] and y["dataset"] == x["dataset"] and y["column"] == x["column"]
                      and lab.common(x["sketch"], y["sketch"]) >= SAME_FINDING), None)
         if twin is None:
             return False

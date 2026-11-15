@@ -158,7 +158,7 @@ def test_studies_run_on_the_real_dataset_and_carry_evidence(tmp_path):
             assert ev["traceable"] == 0.0 and ev["finding"] == []
             continue
         assert ev["read"] == ["d1"] and ev["traceable"] == 1.0
-        assert [f["column"] for f in ev["finding"]] == [t["column"] for t in ev["trace"].values()]
+        assert ["d1." + f["column"] for f in ev["finding"]] == [t["column"] for t in ev["trace"].values()]
         assert all(f["dataset"] == ev["datasets"][0]["sha256"] and f["sketch"] for f in ev["finding"])
         assert all(t["column"].startswith("d1.") for t in ev["trace"].values())
         assert "rows(" in e.payload["code"] and "instrument(" not in e.payload["code"]
@@ -525,10 +525,11 @@ def test_the_first_study_of_a_finding_keeps_it(tmp_path, monkeypatch):
 
 def test_the_same_finding_is_the_same_values_from_the_same_file():
     import score
-    f = [{"dataset": "abc", "column": "d1.x", "sketch": ["1", "2"]}, {"dataset": "abc", "column": "d1.y", "sketch": ["3"]}]
+    f = [{"dataset": "abc", "column": "x", "sketch": ["1", "2"]}, {"dataset": "abc", "column": "y", "sketch": ["3"]}]
     assert score.same_finding(f, f[::-1])
     assert not score.same_finding(f, f[:1])
     assert not score.same_finding(f, [{**f[0], "dataset": "other"}, f[1]])  # same numbers, another file
+    assert not score.same_finding(f, [f[0], {**f[1], "column": "z"}])  # two columns that hold the same values
     assert not score.same_finding([{**x, "dataset": None} for x in f], [{**x, "dataset": None} for x in f])
     assert not score.same_finding([], [])
 

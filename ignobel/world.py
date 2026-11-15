@@ -228,8 +228,9 @@ class World:
             sha = {d["name"]: d.get("sha256") for d in a.datasets}
             evidence = {"evidence": {
                 # what was measured, so the committee can tell when two studies report the same thing
-                "finding": [{"dataset": sha.get(str(v["column"]).split(".", 1)[0]), "column": v["column"],
-                             "sketch": lab.sketch(out["stats"][k])} for k, v in trace["arrays"].items() if v["column"]],
+                "finding": [{"dataset": sha.get(name), "column": col, "sketch": lab.sketch(out["stats"][k])}
+                            for k, v in trace["arrays"].items() if v["column"]
+                            for name, col in [str(v["column"]).split(".", 1)]],
                 "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256", "provenance")
                               if k in d} for d in a.datasets],
                 "citations": [known[c] for c in cited if c in known],
