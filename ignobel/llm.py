@@ -6,6 +6,7 @@ Real mode uses the OpenAI SDK; model names come from env vars.
 import hashlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -77,7 +78,7 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     """
     _log_prompt(model, system, user)
     if MOCK:
-        data = _mock_json(kind, _hash(system, user, str(seed)), mock_context or {})
+        data = _mock_json(kind, _hash(system, user, str(seed)), {**(mock_context or {}), "_prompt": user})
         tokens = (len(system) + len(user) + len(json.dumps(data))) // 4
         _charge(tokens)
         return LLMResult(data=data, tokens=tokens, latency_ms=0, model=f"mock-{model}")
@@ -116,12 +117,7 @@ def embed(texts: list[str]) -> np.ndarray:
     if not texts:
         return np.zeros((0, MOCK_EMBED_DIM))
     if MOCK:
-        rows = []
-        for t in texts:
-            h = int(_hash("embed", t)[:8], 16)
-            v = np.random.default_rng(h).normal(size=MOCK_EMBED_DIM)
-            rows.append(v / np.linalg.norm(v))
-        return np.vstack(rows)
+        return np.vstack([_mock_embed(t) for t in texts])
 
     out: list[np.ndarray | None] = [None] * len(texts)
     missing: list[int] = []
@@ -142,6 +138,16 @@ def embed(texts: list[str]) -> np.ndarray:
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(json.dumps(v.tolist()))
     return np.vstack(out)  # type: ignore[arg-type]
+
+
+def _mock_embed(text: str) -> np.ndarray:
+    """Seeded bag-of-words vector: shared words give similar texts a high cosine."""
+    words = re.findall(r"\w+", text.lower()) or ["empty"]
+    v = np.zeros(MOCK_EMBED_DIM)
+    for w in words:
+        h = int(_hash("embed", w)[:8], 16)
+        v += np.random.default_rng(h).normal(size=MOCK_EMBED_DIM)
+    return v / (np.linalg.norm(v) or 1.0)
 
 
 def cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -197,10 +203,8 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
     noun = ctx.get("noun", "participants")
     method = ctx.get("method", "regression")
     n = int(h[:8], 16)
-    if kind in ("propose", "refine"):
+    if kind == "propose":
         text = _pick(_IDEAS, h).format(noun=noun, method=method)
-        if kind == "refine":
-            text = "Refined: " + text + f" (variant {n % 7})"
         return {
             "title": text[:60],
             "idea": text,
@@ -209,6 +213,19 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
             "prediction": {"direction": "+" if n % 2 == 0 else "-",
                            "effect_size": round(0.1 + (n % 80) / 100, 2)},
         }
+    if kind == "refine":
+        # A sensible scientist keeps the idea, sharpens the hypothesis, and predicts what it saw last time.
+        prompt = ctx.get("_prompt", "")
+        m = re.search(r"study: (.*?)(?:\nLast study|\nReturn)", prompt, re.S)
+        text = m.group(1).strip() if m else _pick(_IDEAS, h).format(noun=noun, method=method)
+        seen = re.search(r"actual effect=(-?[0-9.]+) \(([+-])\)", prompt)
+        if seen:
+            pred = {"direction": seen.group(2), "effect_size": round(abs(float(seen.group(1))), 2)}
+        else:
+            pred = {"direction": "+" if n % 2 == 0 else "-", "effect_size": round(0.1 + (n % 80) / 100, 2)}
+        return {"title": "Refined: " + text[:50], "idea": text,
+                "hypothesis": f"The effect on {noun} holds after controlling for variant {n % 7}.",
+                "method": method, "prediction": pred}
     if kind == "talk":
         return {"text": _pick(_TALK, h).format(topic=ctx.get("topic", "measurement error"))}
     if kind == "study_code":

@@ -125,6 +125,7 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     result, calls = _parse(stdout)
+    stderr = stderr.replace(str(workdir), "<sandbox>")  # keep temp paths out of the event log
     agent.budget_left = max(0, agent.budget_left - calls)
     ok = rc == 0 and result is not None
     out_plot = None
