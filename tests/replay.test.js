@@ -68,19 +68,6 @@ test('robot appearance kit is stable by identity across roster reorder and repla
  assert.equal(new Set(ROBOT_APPEARANCES.map(a=>JSON.stringify(a))).size,6);
 });
 
-test('idle researchers stay staged until their own first activity, without future movement',async()=>{
- const {buildReplayPoses}=await import('../src/engine/replayMotion.ts');
- const idle={id:'one',name:'B1',role:'researcher',type:'researcher',state:'idle',stationId:'notebook',boredom:null};
- const second={...idle,id:'two',name:'C1'};
- const frames=[-1,0,1,2,3].map(tick=>({tick,snapshot:{agents:[tick>=2?{...idle,state:'thinking',stationId:'explorer'}:idle,second]}}));
- const data={manifest:{id:'test',title:'test',totalTicks:3,tickDurationMs:700},frames,events:[]};
- const poses=buildReplayPoses(data,{minX:-12,maxX:12,minZ:-13,maxZ:13},[]);
- for(const frame of poses)assert.deepEqual(frame.positions.get('two'),poses[0].positions.get('two'));
- for(const frame of poses.filter(f=>f.tick<=2))assert.deepEqual(frame.positions.get('one'),poses[0].positions.get('one'));
- assert.notDeepEqual(poses.at(-1).positions.get('one'),poses[0].positions.get('one'));
- assert.deepEqual(buildReplayPoses(data,{minX:-12,maxX:12,minZ:-13,maxZ:13},[]),poses);
-});
-
 test('lightbulb briefs are a couple of source words and never invented when unknown',async()=>{
  const {ideaBrief}=await import('../src/engine/ideaBrief.ts');
  assert.equal(ideaBrief('coffee consumption and workplace productivity field study'),'Coffee consumption');

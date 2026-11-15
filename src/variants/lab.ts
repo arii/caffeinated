@@ -3,6 +3,7 @@ import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js'
 import type { LabWorld, LabState, Collider } from '../engine/types';
 import {robotAppearance} from '../engine/robots.ts';
 import {findPath} from '../engine/navigation.ts';
+import {ROUNDTABLE,stationGoal} from '../engine/labLayout.ts';
 
 /** Lab Environment: Daylight instruments and cheerful robot researchers in a warm modular commons. */
 export function createWorld(): LabWorld {
@@ -43,6 +44,21 @@ export function createWorld(): LabWorld {
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
     const m=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);mesh.position.set(x,y,z);mesh.rotation.y=rotation;scene.add(mesh);return mesh;
+  };
+  const speechBubble=(name:string,text:string,peers:string[])=>{
+    const canvas=document.createElement('canvas');canvas.width=960;canvas.height=360;
+    const ctx=canvas.getContext('2d')!;
+    ctx.fillStyle='#fff9ea';ctx.strokeStyle='#b6c9c4';ctx.lineWidth=4;
+    ctx.beginPath();ctx.roundRect(4,4,952,310,30);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(450,313);ctx.lineTo(480,352);ctx.lineTo(510,313);ctx.fill();
+    ctx.textAlign='left';ctx.fillStyle='#35716c';ctx.font='bold 38px sans-serif';ctx.fillText(name.toUpperCase(),34,48);
+    ctx.fillStyle='#263b41';ctx.font='48px sans-serif';
+    const words=text.replace(/\s+/g,' ').trim().split(' '),lines:string[]=[];let line='';
+    for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>875&&line){lines.push(line);line=word;}else line=next;}if(line)lines.push(line);
+    lines.slice(0,3).forEach((line,i)=>{let value=line;if(i===2&&lines.length>3)value=value.replace(/.{0,3}$/,'…');ctx.fillText(value,34,110+i*53);});
+    ctx.fillStyle='#6c817c';ctx.font='32px sans-serif';ctx.fillText(peers.length?'WITH '+peers.join(' · ').slice(0,62):'RECORDED RESEARCH DISCUSSION',34,280);
+    const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+    return new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.0125),new THREE.MeshBasicMaterial({map:texture,transparent:true,side:THREE.DoubleSide,depthWrite:false,depthTest:false,toneMapped:false}));
   };
   scene.add(new THREE.HemisphereLight('#f5faff','#9caeb8',2.15));
   const sun=new THREE.DirectionalLight('#ffffff',2.2);sun.position.set(-8,11,3);scene.add(sun);
@@ -133,34 +149,56 @@ export function createWorld(): LabWorld {
     for(let i=0;i<3;i++){const xx=x-.12+i*.12;cylinder(xx,1.28,z,.026,.32,porcelain,scene,12);cylinder(xx,1.08,z,.007,.12,steel,scene,8);cylinder(xx,1.46,z,.035,.035,i%2?blue:amber,scene,12);}
   }
   function bottle(x:number,z:number,color:THREE.Material){cylinder(x,1.1,z,.075,.23,color);cylinder(x,1.24,z,.044,.07,ivory);box(x,1.1,z+.074,.09,.1,.004,paper);}
-  // Left wall wet lab with an accessible inner face.
-  bench(-8.0,-4.6,5.4,1.45);monitor(-9.6,-4.8,'CULTURE / 01');microscope(-7.7,-4.65);rack(-6.2,-4.45,blue);pipetteStand(-6.3,-4.95);
-  label('01   CULTURE & MICROSCOPY',-8.0,2.2,-5.37,5.35,.32);
-  bottle(-8.65,-4.7,amber);bottle(-8.9,-4.7,blue);
-  // Scientific instruments on the central island, leaving the full x=0 aisle clear.
+  // Open ideation circle: every researcher faces the same shared table.
+  const discussionX=ROUNDTABLE.x,discussionZ=ROUNDTABLE.z;
+  cylinder(discussionX,.43,discussionZ,.18,.78,steel);
+  cylinder(discussionX,.88,discussionZ,1.38,.12,wood);
+  cylinder(discussionX,.95,discussionZ,1.31,.025,porcelain);
+  collider(discussionX,discussionZ,2.8,2.8);
+  for(let i=0;i<12;i++){
+    const angle=i*Math.PI/6,x=discussionX+Math.sin(angle)*2.15,z=discussionZ+Math.cos(angle)*2.15;
+    cylinder(x,.36,z,.29,.07,steel);cylinder(x,.18,z,.035,.32,steel);
+    const seat=cylinder(x,.43,z,.31,.09,i%3===0?mat('#dfabc5'):sage);seat.userData.discussionSeat=true;
+    const note=box(discussionX+Math.sin(angle)*.87,.979,discussionZ+Math.cos(angle)*.87,.28,.015,.21,paper);note.rotation.y=-angle;
+  }
+  cylinder(discussionX,.99,discussionZ,.19,.025,amber);
+  label('01   IDEATION ROUNDTABLE',discussionX,2.65,-7.2,4.7,.38);
+  label('SHARED QUESTIONS / GROUP DISCUSSION',discussionX,2.29,-7.19,4.7,.22,'#f5f4ec','#6b817d');
+  // Physics: a large multimeter, connected probes, and a small circuit board.
   bench(5.4,-2.8,6.2,1.7);
-  box(5.6,1.47,-3.03,1.62,.98,.95,porcelain);box(5.6,1.5,-2.54,1.23,.57,.035,charcoal);
-  label('ANALYSIS\nSAMPLE READY',5.6,1.5,-2.517,1.08,.45,'#273c43','#a6c8bb');
-  box(5.6,1.97,-3.03,1.4,.04,.6,ivory);cylinder(5.6,1.99,-3.03,.24,.03,steel);
-  monitor(3.3,-3.08,'ANALYSIS / 02');rack(7.75,-2.5,amber);pipetteStand(7.7,-3.2);
-  label('02   ANALYSIS',5.4,.62,-1.935,4.2,.24,'#fafaf6','#425859');
-  // Rear exploration wall: incubator and compute nook, not a spaceship console.
-  bench(.2,-10.6,5.8,1.5);monitor(-1.5,-10.8,'EXPERIMENT PLANNER');
-  box(1.65,1.67,-10.83,1.32,1.34,1.05,porcelain);box(1.65,1.72,-10.29,1.04,1.02,.025,glass);
-  for(const y of [1.29,1.61,1.93])box(1.65,y,-10.61,.98,.027,.63,steel);
-  for(const x of [1.37,1.9])for(const y of [1.35,1.67,1.99]){cylinder(x,y,-10.55,.14,.06,ivory);cylinder(x,y+.04,-10.55,.13,.02,sage);}
-  box(2.35,1.8,-10.25,.04,.38,.05,steel);
-  label('03   EXPERIMENT DESIGN',.2,2.65,-11.4,5.65,.32);
+  const meter=box(5.6,1.44,-2.85,1.08,.88,.30,amber);meter.rotation.x=-.12;
+  box(5.6,1.65,-2.666,.81,.25,.035,charcoal);
+  label('12.48 V',5.6,1.65,-2.642,.71,.19,'#c6dfc9','#263e37');
+  const dial=cylinder(5.6,1.3,-2.64,.16,.07,charcoal);dial.rotation.x=Math.PI/2;
+  const dialMark=box(5.64,1.36,-2.59,.025,.11,.025,ivory);dialMark.rotation.z=-.5;
+  for(const [x,color]of [[5.28,blue],[5.88,amber]] as const){sphere(x,1.1,-2.64,.045,charcoal);line(new THREE.Vector3(x,1.1,-2.61),new THREE.Vector3(x+.35,1.03,-2.1),.018,color);line(new THREE.Vector3(x+.35,1.03,-2.1),new THREE.Vector3(x+.9,1.04,-2.17),.018,color);}
+  box(7.2,1.01,-2.8,.95,.055,.68,sage);
+  for(let i=0;i<4;i++){box(6.9+i*.19,1.08,-2.8,.10,.09,.18,charcoal);box(6.9+i*.19,1.04,-2.8,.02,.018,.57,steel);}
+  monitor(3.3,-3.08,'PHYSICS / MEASUREMENTS');
+  label('02   PHYSICS / ELECTRICAL BENCH',5.4,.62,-1.935,4.7,.25,'#fafaf6','#425859');
+  // Chemistry: colorful reagent bottles and flasks with visible liquid volumes.
+  bench(.2,-10.6,5.8,1.5);monitor(-1.5,-10.8,'CHEMISTRY / REACTIONS');
+  for(let i=0;i<5;i++){
+    const x=.25+i*.43,z=-10.55+(i%2)*.19,color=[blue,amber,sage][i%3];
+    cylinder(x,1.16,z,.13,.35,glass);cylinder(x,1.09,z,.115,.19,color);cylinder(x,1.40,z,.055,.15,glass);cylinder(x,1.49,z,.065,.045,charcoal);
+  }
+  rack(2.2,-10.9,blue);pipetteStand(.1,-11.05);
+  label('03   CHEMISTRY / REAGENT LAB',.2,2.65,-11.4,5.65,.32);
   // Rear feature graphic and material sample panels.
   label('LAB ENVIRONMENT',.15,3.82,-13.32,7.4,.8,'#f1ecdf','#3e5c59');
   label('A WORKING LAB. A SHARED UNDERSTANDING.',.15,3.22,-13.31,7.4,.24,'#f1ecdf','#84958c');
   for(let i=0;i<5;i++)box(-2.2+i*1.12,2.68,-13.29,.85,.06,.02,i%2?sage:wood);
-  // A notebook desk near the entrance, visibly different from the wet lab.
-  bench(-7.3,5.4,4.8,1.45);monitor(-8.6,5.18,'SHARED NOTEBOOK');
-  const notebook=box(-6.9,1.005,5.65,.56,.035,.42,darkWood);notebook.rotation.y=.15;
-  const sheet=box(-6.9,1.029,5.65,.52,.014,.38,paper);sheet.rotation.y=.15;
-  cylinder(-5.65,1.13,5.25,.075,.27,ivory);box(-5.65,1.31,5.25,.015,.2,.015,wood);
-  label('04   SHARED RESEARCH',-7.3,.65,6.145,3.7,.22,'#fafaf6','#425859');
+  // Biology: microscope, culture dishes, and enlarged cellular specimens.
+  bench(-7.3,5.4,4.8,1.45);monitor(-8.6,5.18,'BIOLOGY / CELL CULTURES');microscope(-7.15,5.32);
+  for(let i=0;i<3;i++){
+    const x=-6.25+i*.43,z=5.5+(i%2)*.3;
+    cylinder(x,1.025,z,.18,.055,glass);cylinder(x,1.045,z,.16,.015,sage);
+    for(let j=0;j<5;j++){
+      const a=j*2.4,cell=sphere(x+Math.cos(a)*.10,1.065,z+Math.sin(a)*.10,.035,i%2?amber:blue);cell.scale.y=.35;
+    }
+  }
+  rack(-5.55,5.15,blue);
+  label('04   BIOLOGY / CELLS & CULTURES',-7.3,.65,6.145,4.3,.25,'#fafaf6','#425859');
   // Tall storage, sink, and wall details.
   for(const z of [-9.9,-7.9,-5.9]){box(10.75,1.22,z,1.4,2.4,1.5,porcelain);box(10.02,1.22,z,.035,2.18,1.35,cabinetry);box(9.98,1.35,z+.42,.035,.43,.035,steel);collider(10.75,z,1.5,1.6);}
   label('SAMPLE STORAGE',10.0,2.7,-7.9,3.6,.26,'#f1ecdf','#667d74',-Math.PI/2);
@@ -168,7 +206,7 @@ export function createWorld(): LabWorld {
   line(new THREE.Vector3(9.5,1.0,6.8),new THREE.Vector3(9.5,1.5,6.8),.025,steel);line(new THREE.Vector3(9.5,1.5,6.8),new THREE.Vector3(9.5,1.5,7.05),.025,steel);
   label('WASH / RESET',9.3,.65,7.89,2.9,.22,'#fafaf6','#425859');
   // Steel stools, with soft sage upholstery.
-  for(const [x,z] of [[-7.8,-2.8],[3.7,-.5],[-7.5,7.3]]){
+  for(const [x,z] of [[3.7,-.5],[-7.5,7.7]]){
     cylinder(x,.66,z,.32,.12,sage);cylinder(x,.34,z,.045,.56,steel);
     for(let i=0;i<4;i++){const a=i*Math.PI/2;line(new THREE.Vector3(x,.12,z),new THREE.Vector3(x+Math.cos(a)*.37,.08,z+Math.sin(a)*.37),.025,steel);}
     collider(x,z,.7,.7);
@@ -207,7 +245,7 @@ export function createWorld(): LabWorld {
     const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rotation;scene.add(g);
     // Six deterministic toy-robot variations, inspired by the supplied happy researcher reference.
     const appearance=robotAppearance(id);
-    const shell=mat('#fff7df',.62),joints=mat('#293b42',.8),robotBlue=mat('#1987c1',.48),orange=mat('#f69a3d',.57);
+    const shell=mat(appearance.shell,.62),joints=mat('#293b42',.8),robotBlue=mat(appearance.accent,.48),orange=mat(appearance.trim,.57);
     const outline=new THREE.MeshBasicMaterial({color:'#263b41',side:THREE.BackSide});
     const accent=name.startsWith('B')?sage:name.startsWith('C')?amber:blue;
     const rounded=(x:number,y:number,z:number,w:number,h:number,d:number,m:THREE.Material,parent:THREE.Object3D=g,r=.055)=>{
@@ -267,10 +305,10 @@ export function createWorld(): LabWorld {
   }
   for(const [m,members]of batches){if(members.length<3)continue;const batch=new THREE.InstancedMesh(boxGeometry,m,members.length);members.forEach((mesh,i)=>{mesh.updateMatrix();batch.setMatrixAt(i,mesh.matrix);scene.remove(mesh);});batch.instanceMatrix.needsUpdate=true;batch.computeBoundingSphere();scene.add(batch);}
   const stations=[
-    {id:'culture' as const,name:'Culture & microscopy',description:'Inspect samples and run an experiment',position:new THREE.Vector3(-6.9,1.25,-2.1),radius:3.1},
-    {id:'analyzer' as const,name:'Analysis station',description:'Review measurements and compare outcomes',position:new THREE.Vector3(4.6,1.25,-.8),radius:3.1},
-    {id:'explorer' as const,name:'Experiment design',description:'Explore a different hypothesis',position:new THREE.Vector3(.2,1.25,-8.8),radius:3.1},
-    {id:'notebook' as const,name:'Shared research desk',description:'Read what the research agents learned',position:new THREE.Vector3(-6.3,1.25,7.2),radius:3.1},
+    {id:'culture' as const,name:'Ideation roundtable',description:'See researchers discuss their shared questions',position:new THREE.Vector3(-7.8,1.25,-4.6),radius:3.1},
+    {id:'analyzer' as const,name:'Physics bench',description:'Measure circuits with the multimeter',position:new THREE.Vector3(4.6,1.25,-.8),radius:3.1},
+    {id:'explorer' as const,name:'Chemistry lab',description:'Explore reactions and reagent experiments',position:new THREE.Vector3(.2,1.25,-8.8),radius:3.1},
+    {id:'notebook' as const,name:'Biology lab',description:'Inspect cells and cultures',position:new THREE.Vector3(-6.3,1.25,7.2),radius:3.1},
   ];
   let lastTime=0;
   const bounds={minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05};
@@ -288,23 +326,24 @@ export function createWorld(): LabWorld {
       let w=workers.get(a.id);
       if(!w)w=researcher(a.position?.x??(index%3-1)*.6,a.position?.z??10.4+Math.floor(index/3)*.4,0,a.name,a.stationId,a.id);
       const slot=a.id.startsWith('worker-')?Number(a.id.match(/\d+$/)?.[0]||1)-1:index%4;
-      const goal=a.stationId==='culture'?{x:-9+slot*.85,z:-3.45}:a.stationId==='analyzer'?{x:5.5,z:-1.15}:a.stationId==='notebook'?{x:-6.3,z:6.8}:{x:-.9+slot*.55,z:-9.25};
+      const goal=stationGoal(a.stationId,slot);
       const target=`${a.stationId}:${slot}`;
       if(w.target!==target){w.target=target;w.station=a.stationId;w.path=findPath(w.group.position,goal,bounds,colliders);}
       if(a.position){w.group.position.set(a.position.x,0,a.position.z);w.path=[];}
       const next=w.path[0];
       if(next){const dx=next.x-w.group.position.x,dz=next.z-w.group.position.z,d=Math.hypot(dx,dz);if(d<.07)w.path.shift();else{const speed=Math.min(d,dt*1.8);w.group.position.x+=dx/d*speed;w.group.position.z+=dz/d*speed;w.group.rotation.y=Math.atan2(dx,dz);}}
-      else w.group.rotation.y=state.replay&&time===0?0:a.position?.heading??0;
+      else w.group.rotation.y=a.position?.heading??(a.stationId==='culture'?Math.atan2(ROUNDTABLE.x-w.group.position.x,ROUNDTABLE.z-w.group.position.z):Math.PI);
       w.sign.position.set(w.group.position.x,2.28,w.group.position.z);w.sign.lookAt(camera.position);
       w.activity.position.set(w.group.position.x,2.85,w.group.position.z);
-      w.activity.visible=a.state!=='idle';
-      const brief=a.ideaBrief||'';
-      if(w.ideaText!==brief){
+      w.activity.visible=a.state!=='idle'&&!(a.stationId==='culture'&&a.discussionBrief);
+      const brief=a.discussionBrief||'';
+      const bubbleKey=brief?`${a.name}:${brief}:${(a.discussionPeers||[]).join(',')}`:'';
+      if(w.ideaText!==bubbleKey){
         if(w.idea){scene.remove(w.idea);w.idea.geometry.dispose();const material=w.idea.material as THREE.MeshBasicMaterial;material.map?.dispose();material.dispose();w.idea=null;}
-        w.ideaText=brief;
-        if(brief)w.idea=label(brief,0,0,0,1.9,.26,'#fff4d5','#263b41');
+        w.ideaText=bubbleKey;
+        if(brief){w.idea=speechBubble(a.name,brief,a.discussionPeers||[]);w.idea.name='recorded-discussion-bubble';scene.add(w.idea);}
       }
-      if(w.idea){w.idea.visible=a.state==='thinking';w.idea.position.set(w.group.position.x,2.57,w.group.position.z);w.idea.lookAt(camera.position);}
+      if(w.idea){w.idea.visible=a.stationId==='culture'&&!a.position?.moving&&(!!a.discussionBrief||a.state==='thinking'||a.state==='reviewing');w.idea.position.set(w.group.position.x,3.05,w.group.position.z);w.idea.lookAt(camera.position);}
 
       if(w.activityState!==a.state){w.activityState=a.state;const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.font='80px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a.state==='thinking'?'💡':a.state==='working'?'🫧':'📈',64,64);w.activity.material.map?.dispose();w.activity.material.map=new THREE.CanvasTexture(canvas);w.activity.material.needsUpdate=true;}
       const working=(state.replay||state.running)&&(a.state==='working'||a.state==='thinking');
@@ -312,6 +351,27 @@ export function createWorld(): LabWorld {
       w.head.rotation.y=Math.sin(time*.32+index)*.055;w.head.rotation.x=working&&!next?.12:0;
       w.light.scale.setScalar(working?1+Math.sin(time*2)*.12:1);
     });
+    // Keep short archive speech legible at either camera height, with separate
+    // screen lanes when speakers overlap from the current viewing angle.
+    camera.updateMatrixWorld();
+    const placed:{x:number;y:number}[]=[],bubbleWidth=230,bubbleHeight=86.25;
+    for(const w of workers.values())if(w.idea?.visible){
+      const anchor=w.idea.position.clone(),local=anchor.clone().applyMatrix4(camera.matrixWorldInverse);
+      if(local.z>=0){w.idea.visible=false;continue;}
+      const projected=anchor.project(camera);
+      if(Math.abs(projected.x)>1.15||Math.abs(projected.y)>1.15){w.idea.visible=false;continue;}
+      let x=THREE.MathUtils.clamp((projected.x+1)*innerWidth/2,90+bubbleWidth/2,innerWidth-bubbleWidth/2-16);
+      let y=(1-projected.y)*innerHeight/2;
+      for(let attempt=0;attempt<12&&placed.some(p=>Math.abs(x-p.x)<bubbleWidth+10&&Math.abs(y-p.y)<bubbleHeight+8);attempt++){
+        y-=bubbleHeight+8;
+        if(y<110){y=155;x=Math.min(innerWidth-bubbleWidth/2-16,x+bubbleWidth+12);}
+      }
+      placed.push({x,y});
+      w.idea.position.set(x/innerWidth*2-1,1-y/innerHeight*2,projected.z).unproject(camera);
+      w.idea.quaternion.copy(camera.quaternion);
+      const unitsPerPixel=2*(-local.z)*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/innerHeight;
+      w.idea.scale.setScalar(bubbleWidth*unitsPerPixel/2.7);w.idea.renderOrder=10;
+    }
   }
 
   return {scene,camera,colliders,stations,bounds:{minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05},update,setOverview:(_overview:boolean)=>{roof.visible=true;},agentPositions:()=>[...workers.values()].map(w=>({id:w.id,position:w.group.position.clone()})),exposure:1.0};
