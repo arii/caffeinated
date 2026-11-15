@@ -227,6 +227,8 @@ class World:
                     a.meter["fresh"] = a.meter["progress"] = r  # new real data is progress
                 self.log.append(r, a.name, "research", done, tokens=tokens, latency_ms=latency)
                 tokens = latency = 0
+            # D ids stay fixed while one plan runs; used leads are dropped and the list trimmed only afterwards
+            a.leads = [l for l in a.leads if not l.get("used")][-6:]
 
     def _do_step(self, a, step: dict) -> dict:
         tool = str(step.get("tool", "")).strip().lower()
@@ -256,18 +258,19 @@ class World:
             if tool == "datasets":
                 have = {d["id"] for d in a.datasets} | {l["id"] for l in a.leads}
                 new = [l for l in sources.find_datasets(query, int(self.cfg.get("dataset_leads", 3))) if l["id"] not in have]
-                a.leads = (a.leads + new)[-6:]
+                a.leads = a.leads + new
                 return {"tool": "datasets", "query": query,
                         "results": [{"lead": f"D{a.leads.index(l) + 1}", "title": l["title"], "url": l["url"],
                                      "license": l.get("license", ""), "columns": l.get("preview", [])} for l in new]}
             if tool == "load":
                 m = re.search(r"D(\d+)", str(step.get("lead", "")))
                 i = int(m.group(1)) - 1 if m else -1
-                if not 0 <= i < len(a.leads):
+                if not 0 <= i < len(a.leads) or a.leads[i].get("used"):
                     raise sources.ResearchError(f"{step.get('lead')!r} is not one of this lab's dataset leads")
                 if len(a.datasets) >= int(self.cfg.get("max_datasets", 2)):
                     raise sources.ResearchError("this lab already has its maximum number of datasets")
-                lead = a.leads.pop(i)  # an unusable lead is dropped too, so the lab does not retry it
+                lead = a.leads[i]
+                lead["used"] = True  # an unusable lead is dropped too, so the lab does not retry it
                 name = f"d{len(a.datasets) + 1}"
                 rel = Path("data") / a.name / f"{name}.csv"
                 ds = {"name": name, "file": str(rel), **sources.fetch_dataset(lead, self.out / rel)}

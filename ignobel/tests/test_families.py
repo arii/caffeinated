@@ -213,3 +213,32 @@ def test_triggers_and_temperament():
     t1, t2 = boredom.temperament(0, "miller"), boredom.temperament(0, "aschoff")
     assert t1 == boredom.temperament(0, "miller") and t1 != t2
     assert all(abs(t1["weights"][k] - w) <= 0.1 for k, w in boredom.WEIGHTS.items()) and abs(t1["threshold"]) <= 0.1
+
+
+def test_loading_two_leads_in_one_plan_keeps_their_ids(tmp_path):
+    import sources
+    w = run_arm.build_world("full", 1, 0, tmp_path, cfg=_cfg(max_datasets=3), roster="families")
+    asyncio.run(w.round0())
+    a = w.agents[0]
+    a.leads = [{**sources.MOCK_LEAD, "id": f"lead{i}", "title": f"lead {i}"} for i in (1, 2, 3)]
+    got = [w._do_step(a, {"tool": "load", "lead": d})["dataset"]["id"] for d in ("D1", "D2")]
+    assert got == ["lead1", "lead2"]
+    assert "error" in w._do_step(a, {"tool": "load", "lead": "D1"})  # already used
+
+
+def test_unsafe_links_and_bad_cells_are_dropped(tmp_path, monkeypatch):
+    import sources
+    import trace
+    assert "href" not in trace.link("javascript:alert(1)", "x") and "href" in trace.link("https://doi.org/10.1/x", "x")
+    assert not sources._allowed("https://evil.example/x")
+    try:
+        sources._CheckedRedirects().redirect_request(None, None, 302, "", {}, "https://evil.example/x")
+        raise AssertionError("redirect to a forbidden host was followed")
+    except sources.ResearchError:
+        pass
+    (tmp_path / "spec.json").write_text(json.dumps({"datasets": {"d": {"file": str(tmp_path / "d.csv"), "columns": ["a", "b"]}}}))
+    (tmp_path / "d.csv").write_text("a,b\n1,2\nnan,3\n4,inf\n5,6\n")
+    monkeypatch.chdir(tmp_path)
+    import importlib
+    import lab_runtime
+    assert importlib.reload(lab_runtime).rows("d", ["a", "b"]) == [(1.0, 2.0), (5.0, 6.0)]
