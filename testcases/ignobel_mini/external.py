@@ -39,7 +39,7 @@ OPEN_DATA_HOSTS = (
 
 
 def dataset_id(url):
-    return "x" + hashlib.sha256(url.encode()).hexdigest()[:10]
+    return "x" + hashlib.sha256(url.split("#", 1)[0].encode()).hexdigest()[:10]
 
 
 def cited(url, research_log=None):

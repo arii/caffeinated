@@ -242,7 +242,7 @@ def test_hash(prereg):
 
 
 def claim_registry(research_log, name, digest):
-    """One registered test per dataset per run; None if allowed, else the reason."""
+    """One registered test per dataset (keyed by content hash) per run; None if allowed, else the reason."""
     if not research_log:
         return None
     path = Path(research_log).parent / "ignobel_registry.json"
@@ -284,7 +284,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     (x, x_level), (y, y_level) = sides
     rows = read_rows(task_dir / entry["file"]) + read_rows(task_dir / ".cache" / "replication" / f"{name}.csv")
     n, rho, p, problem = association(rows, claim, sides)
-    rejected = trivial or problem or claim_registry(research_log, name, test_hash(prereg))
+    rejected = trivial or problem or claim_registry(research_log, entry.get("sha256") or name, test_hash(prereg))
     sign = 1 if prereg["direction"] == "positive" else -1
     confirmed = rejected is None and p < ALPHA and rho * sign > 0
     predicted = float(prereg["predicted_rho"])

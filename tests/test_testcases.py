@@ -495,9 +495,11 @@ class IgnobelPreregTests(unittest.TestCase):
     def test_one_registered_test_per_dataset_per_run(self):
         self.assertGreater(self.run_prereg()["graded"]["score"], 0)
         self.assertGreater(self.run_prereg()["graded"]["score"], 0)
-        other = self.run_prereg(dataset={"x": "Favourite colour", "x_level": "red"})["graded"]
-        self.assertEqual(other["score"], 0.0)
-        self.assertIn("one confirmatory test per dataset", other["rejected"])
+        for url in (self.URL, self.URL + "#again", self.URL + "?copy=1"):
+            with self.subTest(url=url):
+                other = self.run_prereg(dataset={"url": url, "x": "Favourite colour", "x_level": "red"})["graded"]
+                self.assertEqual(other["score"], 0.0)
+                self.assertIn("one confirmatory test per dataset", other["rejected"])
 
     def test_unknown_column_lists_usable_columns(self):
         result = self.run_prereg(dataset={"y": "Socks"})
