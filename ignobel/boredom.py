@@ -27,7 +27,8 @@ def _cfg(cfg: dict | None) -> dict:
 def set_baseline(agent) -> None:
     """Record mean and sd of cosine(round-0 idea, library item). Call once after round 0."""
     ideas = [i for i in agent.ideas if i.embedding is not None]
-    items = [it for it in getattr(agent.memory, "items", []) if it.embedding is not None and it.kind == "library"]
+    items = [it for it in getattr(agent.memory, "items", [])
+             if it.embedding is not None and it.kind == "library" and it.source_agent == agent.name]
     if not ideas or not items:
         agent.meter.setdefault("base_mu", 0.0)
         agent.meter.setdefault("base_sd", 1.0)
