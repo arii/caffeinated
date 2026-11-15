@@ -10,6 +10,8 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 - **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Autoresearch runner:** [swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md).
+- **Artificial Scientist Swarms backend:** [backend and judge guide](https://github.com/arii/caffeinated/blob/autoresearch/README.md) on the `autoresearch` branch, covering agent types, the orchestration loop and the boredom meter.
+- **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run
 
@@ -49,7 +51,7 @@ The source bundle is `data/replays/swarm-viewer-sample-runs.zip`. It contains th
 
 Responses support gzip and ETags. The browser loads a recording once and handles play, pause, seek, camera mode, and pace locally. No server call is needed for each playback tick. Default run creation is disabled on this replay branch.
 
-The normalized source contract is documented in [the swarm viewer API proposal](docs/swarm-viewer-api.md). Our two recording endpoints are a small replay adapter over that format; they do not claim to implement every proposed `/api/v1` endpoint. See [the current integration design](docs/lab-backend-design.md) for the handoff boundary.
+The normalized source contract is documented in [the swarm-viewer/v1 contract](docs/swarm-viewer-api.md). Our two recording endpoints are a small replay adapter over that format; they do not claim to implement every proposed `/api/v1` endpoint. See [the current integration design](docs/lab-backend-design.md) for the handoff boundary.
 
 The timeline interaction follows the user’s [History in 3D](https://github.com/mashathepotato/history-in-3D) project: continuous scrubbing, play/pause, and a scene tied to a selected historical moment. Here, the timeline is research-event ticks rather than historical years.
 
