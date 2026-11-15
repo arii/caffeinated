@@ -28,8 +28,8 @@ class TinkerTests(unittest.TestCase):
         environment.start()
         self.addCleanup(environment.stop)
 
-    def client(self, **kwargs):
-        return llm.LLMClient(mode="tinker", log_path=self.log_path, **kwargs)
+    def client(self, *, log_path=None, **kwargs):
+        return llm.LLMClient(mode="tinker", log_path=log_path or self.log_path, **kwargs)
 
     def call(self, client):
         return client.call("SCOUT_QUERY", agent="worker-1", round_num=1, values={})
@@ -163,10 +163,11 @@ class TinkerTests(unittest.TestCase):
         response.__enter__.return_value.read.side_effect = TimeoutError("read timed out")
         return response
 
-    def client_for_mode(self, mode):
+    def client_for_mode(self, mode, log_path=None):
+        log_path = log_path or self.log_path
         if mode == "tinker":
-            return self.client()
-        return llm.LLMClient(mode="openai", model="stub-openai-model", log_path=self.log_path)
+            return self.client(log_path=log_path)
+        return llm.LLMClient(mode="openai", model="stub-openai-model", log_path=log_path)
 
     def test_read_timeouts_retry_and_raise_llm_error(self):
         for mode in ("tinker", "openai"):
@@ -174,7 +175,10 @@ class TinkerTests(unittest.TestCase):
                 self.subTest(mode=mode),
                 patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
             ):
-                client = self.client_for_mode(mode)
+                log_dir = self.log_path.parent / f"{mode}-failure"
+                log_dir.mkdir()
+                log_path = log_dir / "llm_log.jsonl"
+                client = self.client_for_mode(mode, log_path)
                 with (
                     patch(
                         "llm.urlopen",
@@ -186,6 +190,26 @@ class TinkerTests(unittest.TestCase):
                     self.call(client)
                 self.assertEqual(urlopen.call_count, 3)
                 sleep.assert_has_calls([call(5), call(10)])
+                self.assertEqual(llm.read_log(log_path), [])
+                errors = llm.read_log(log_path.with_name("llm_errors.jsonl"))
+                self.assertEqual(len(errors), 1)
+                self.assertEqual(errors[0]["call_id"], client.last_call_id)
+                self.assertEqual(len(errors[0]["attempts"]), 3)
+                self.assertIn("ts", errors[0])
+                self.assertEqual(errors[0]["role"], "SCOUT_QUERY")
+                self.assertEqual(errors[0]["agent"], "worker-1")
+                self.assertEqual(errors[0]["round"], 1)
+                self.assertEqual(errors[0]["model"], client.model)
+                self.assertEqual(len(errors[0]["prompt_sha"]), 64)
+                self.assertIn("request timed out", errors[0]["error"])
+                self.assertTrue(
+                    all(
+                        attempt["transport_error"]
+                        and attempt["usage"] is None
+                        and isinstance(attempt["latency_ms"], int)
+                        for attempt in errors[0]["attempts"]
+                    )
+                )
 
     def test_read_timeout_retries_once_then_succeeds(self):
         body = {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
@@ -194,7 +218,10 @@ class TinkerTests(unittest.TestCase):
                 self.subTest(mode=mode),
                 patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
             ):
-                client = self.client_for_mode(mode)
+                log_dir = self.log_path.parent / f"{mode}-success"
+                log_dir.mkdir()
+                log_path = log_dir / "llm_log.jsonl"
+                client = self.client_for_mode(mode, log_path)
                 with (
                     patch(
                         "llm.urlopen",
@@ -205,6 +232,14 @@ class TinkerTests(unittest.TestCase):
                     self.assertEqual(self.call(client), {"ok": True})
                 self.assertEqual(urlopen.call_count, 2)
                 sleep.assert_called_once_with(5)
+                record = llm.read_log(log_path)[0]
+                self.assertEqual(len(record["attempts"]), 2)
+                self.assertEqual(
+                    record["attempts"][0]["transport_error"], "TimeoutError: read timed out"
+                )
+                self.assertIsNone(record["attempts"][0]["usage"])
+                self.assertIsInstance(record["attempts"][1]["usage"], dict)
+                self.assertEqual(llm.read_log(log_path.with_name("llm_errors.jsonl")), [])
 
     def test_openai_compatible_request_uses_final_content_not_reasoning(self):
         body = {
@@ -331,14 +366,28 @@ class TinkerTests(unittest.TestCase):
 
     def test_transient_http_errors_are_retried(self):
         body = {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
-        busy = HTTPError(llm.TINKER_BASE_URL, 503, "Busy", {}, io.BytesIO(b""))
-        with (
-            patch("llm.urlopen", side_effect=[busy, self.http_response(body)]) as urlopen,
-            patch("llm.time.sleep") as sleep,
-        ):
-            self.assertEqual(self.call(self.client()), {"ok": True})
-        self.assertEqual(urlopen.call_count, 2)
-        sleep.assert_called_once()
+        for mode in ("tinker", "openai"):
+            with (
+                self.subTest(mode=mode),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
+            ):
+                log_dir = self.log_path.parent / f"{mode}-http-retry"
+                log_dir.mkdir()
+                client = self.client_for_mode(mode, log_dir / "llm_log.jsonl")
+                busy = HTTPError(llm.TINKER_BASE_URL, 503, "Busy", {}, io.BytesIO(b""))
+                with (
+                    patch(
+                        "llm.urlopen",
+                        side_effect=[busy, self.http_response(body)],
+                    ) as urlopen,
+                    patch("llm.time.sleep") as sleep,
+                ):
+                    self.assertEqual(self.call(client), {"ok": True})
+                self.assertEqual(urlopen.call_count, 2)
+                sleep.assert_called_once_with(5)
+                attempts = llm.read_log(client.log_path)[0]["attempts"]
+                self.assertEqual(attempts[0]["transport_error"], "HTTPError: HTTP 503")
+                self.assertEqual(len(attempts), 2)
 
 
 if __name__ == "__main__":

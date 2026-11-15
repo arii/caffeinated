@@ -3244,9 +3244,19 @@ def _token_count(value):
         return 0
 
 
-def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts):
+def _transport_retry_count(records):
+    return sum(
+        1
+        for record in records
+        for attempt in (record.get("attempts") if isinstance(record.get("attempts"), list) else [])
+        if isinstance(attempt, dict) and attempt.get("transport_error")
+    )
+
+
+def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts, error_start=0):
     llm_records = read_jsonl(Path(out_dir) / "llm_log.jsonl")[llm_start:]
     outcomes = read_jsonl(Path(out_dir) / "llm_outcomes.jsonl")[outcome_start:]
+    errors = read_jsonl(Path(out_dir) / "llm_errors.jsonl")[error_start:]
     usage = {"input_tokens": 0, "cached_tokens": 0, "output_tokens": 0, "reasoning_tokens": 0}
     for record in llm_records:
         call_usage = record.get("usage") or {}
@@ -3277,6 +3287,8 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
         "calls": len(llm_records),
         **usage,
         "wasted_calls": wasted_calls,
+        "failed_calls": len(errors),
+        "transport_retries": _transport_retry_count(llm_records + errors),
         "exa_searches": tool_counts["exa_searches"],
         "pastdev_recalls": tool_counts["pastdev_recalls"],
         "pastdev_writes": tool_counts["pastdev_writes"],
@@ -3286,6 +3298,8 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
         f"round {round_num} spend: calls={spend['calls']} in={spend['input_tokens']} "
         f"cached={spend['cached_tokens']} out={spend['output_tokens']} "
         f"reasoning={spend['reasoning_tokens']} wasted={spend['wasted_calls']} "
+        f"failed_calls={spend['failed_calls']} "
+        f"transport_retries={spend['transport_retries']} "
         f"Exa searches={spend['exa_searches']} past.dev recalls={spend['pastdev_recalls']} "
         f"writes={spend['pastdev_writes']}",
         flush=True,
@@ -3986,6 +4000,7 @@ def _orchestrate(args, publish_state, cleanup):
             memory_start = len(read_jsonl(memory_log))
             llm_start = len(read_jsonl(out_dir / "llm_log.jsonl"))
             outcome_start = len(read_jsonl(out_dir / "llm_outcomes.jsonl"))
+            error_start = len(read_jsonl(out_dir / "llm_errors.jsonl"))
             events = meter.read_ledger(ledger_path)
             allocation = allocate_roles(profile, events, agents, args.arm, research_source != "off")
             status = {
@@ -4342,7 +4357,14 @@ def _orchestrate(args, publish_state, cleanup):
                 )
 
             tool_counts = round_tool_counts(out_dir, research_start, memory_start)
-            record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts)
+            record_round_spend(
+                out_dir,
+                round_num,
+                llm_start,
+                outcome_start,
+                tool_counts,
+                error_start=error_start,
+            )
             assert_live_tool_use(
                 out_dir,
                 round_num=round_num,

@@ -44,6 +44,10 @@ class RunCostTests(unittest.TestCase):
                     "round": 1,
                     "agent": "a",
                     "model": "fixture-model",
+                    "attempts": [
+                        {"transport_error": "TimeoutError: read timed out", "usage": None},
+                        {"usage": {"prompt_tokens": 100, "completion_tokens": 40}},
+                    ],
                     "usage": {
                         "prompt_tokens": 100,
                         "prompt_tokens_details": {"cached_tokens": 20},
@@ -79,6 +83,21 @@ class RunCostTests(unittest.TestCase):
             ]
             (run_dir / "llm_log.jsonl").write_text(
                 "".join(json.dumps(record) + "\n" for record in calls), encoding="utf-8"
+            )
+            transport_error = {
+                "call_id": "SCOUT_QUERY-r3-c-4",
+                "role": "SCOUT_QUERY",
+                "round": 3,
+                "agent": "c",
+                "model": "fixture-model",
+                "error": "SCOUT_QUERY call for c failed: request timed out",
+                "attempts": [
+                    {"transport_error": "TimeoutError: read timed out", "usage": None}
+                    for _ in range(3)
+                ],
+            }
+            (run_dir / "llm_errors.jsonl").write_text(
+                json.dumps(transport_error) + "\n", encoding="utf-8"
             )
             (run_dir / "llm_outcomes.jsonl").write_text(
                 "".join(
@@ -119,6 +138,9 @@ class RunCostTests(unittest.TestCase):
             with redirect_stdout(output):
                 self.assertEqual(run_cost.main([str(run_dir), "--json"]), 0)
             cli_report = json.loads(output.getvalue())
+            text_output = io.StringIO()
+            with redirect_stdout(text_output):
+                self.assertEqual(run_cost.main([str(run_dir), "--text"]), 0)
 
         llm_report = report["llm"]
         self.assertEqual(
@@ -140,9 +162,18 @@ class RunCostTests(unittest.TestCase):
                 "reasoning_tokens": 12,
             },
         )
+        self.assertEqual(llm_report["failed_calls"], 1)
+        self.assertEqual(llm_report["transport_retries"], 4)
         self.assertEqual(llm_report["by_role"]["WORKER_PROPOSE"]["calls"], 1)
+        self.assertEqual(llm_report["by_role"]["WORKER_PROPOSE"]["transport_retries"], 1)
+        self.assertEqual(llm_report["by_role"]["SCOUT_QUERY"]["failed_calls"], 1)
+        self.assertEqual(llm_report["by_role"]["SCOUT_QUERY"]["transport_retries"], 3)
         self.assertEqual(llm_report["by_round"]["1"]["input_tokens"], 130)
+        self.assertEqual(llm_report["by_round"]["3"]["failed_calls"], 1)
+        self.assertEqual(llm_report["by_round"]["3"]["transport_retries"], 3)
         self.assertEqual(llm_report["by_agent"]["a"]["calls"], 2)
+        self.assertEqual(llm_report["by_agent"]["c"]["failed_calls"], 1)
+        self.assertEqual(llm_report["by_agent"]["c"]["transport_retries"], 3)
         self.assertEqual(
             llm_report["wasted"],
             {
@@ -165,6 +196,12 @@ class RunCostTests(unittest.TestCase):
             {"exa_searches": 1, "pastdev_recalls": 1, "pastdev_writes": 1},
         )
         self.assertEqual(cli_report["llm"]["wasted"]["calls"], 2)
+        self.assertEqual(cli_report["llm"]["failed_calls"], 1)
+        self.assertIn("failed_calls=1 transport_retries=4", text_output.getvalue())
+        self.assertIn(
+            "SCOUT_QUERY: calls=0 failed_calls=1 transport_retries=3",
+            text_output.getvalue(),
+        )
 
     def test_repaired_worker_call_only_counts_the_failed_proposal_as_waste(self):
         with tempfile.TemporaryDirectory() as directory:

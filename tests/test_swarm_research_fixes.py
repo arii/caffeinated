@@ -1124,6 +1124,9 @@ class LiveToolGuardTests(unittest.TestCase):
                         {
                             "round": 4,
                             "call_id": "WORKER_PROPOSE-r4-worker-1-1",
+                            "attempts": [
+                                {"transport_error": "TimeoutError: read timed out", "usage": None}
+                            ],
                             "usage": {
                                 "prompt_tokens": 10,
                                 "cached_tokens": 2,
@@ -1153,6 +1156,21 @@ class LiveToolGuardTests(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
+            (output / "llm_errors.jsonl").write_text(
+                json.dumps(
+                    {
+                        "round": 4,
+                        "call_id": "WORKER_REPAIR-r4-worker-1-3",
+                        "attempts": [
+                            {"transport_error": "TimeoutError: read timed out", "usage": None},
+                            {"transport_error": "URLError: network unreachable", "usage": None},
+                            {"transport_error": "HTTPError: HTTP 503", "usage": None},
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
             console = io.StringIO()
             with redirect_stdout(console):
                 spend = swarm.record_round_spend(
@@ -1178,6 +1196,8 @@ class LiveToolGuardTests(unittest.TestCase):
                 "output_tokens": 7,
                 "reasoning_tokens": 3,
                 "wasted_calls": 2,
+                "failed_calls": 1,
+                "transport_retries": 4,
                 "exa_searches": 2,
                 "pastdev_recalls": 2,
                 "pastdev_writes": 1,
@@ -1185,6 +1205,7 @@ class LiveToolGuardTests(unittest.TestCase):
         )
         self.assertEqual(stored, spend)
         self.assertIn("round 4 spend: calls=2", console.getvalue())
+        self.assertIn("failed_calls=1 transport_retries=4", console.getvalue())
 
 
 class LLMCallLinkTests(unittest.TestCase):
