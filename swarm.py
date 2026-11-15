@@ -1956,8 +1956,26 @@ def local_task_result(repo, commit, out_dir, role="candidate"):
         if role == "candidate":
             write_candidate_diff(repo, commit, out_dir)
         # Evaluators that log their own records (ignobel studies) tag them with this.
+        run_artifact = Path(out_dir).parent / "run.json"
+        try:
+            run_settings = json.loads(run_artifact.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            run_settings = {}
+        eval_context = {"commit": commit, "role": role}
+        eval_context["exa_enabled"] = (
+            run_settings["exa"] == "on" and bool(os.environ.get("EXA_API_KEY"))
+            if "exa" in run_settings
+            else os.environ.get("EXA", "").casefold() != "off"
+            and bool(os.environ.get("EXA_API_KEY"))
+        )
+        committee_flag = (
+            "off" if run_settings.get("llm") == "fake" else "on" if run_settings else None
+        )
         previous = os.environ.get("TASK_EVAL_CONTEXT")
-        os.environ["TASK_EVAL_CONTEXT"] = json.dumps({"commit": commit, "role": role})
+        previous_committee_flag = os.environ.get("IGNOBEL_COMMITTEE")
+        if committee_flag is not None:
+            os.environ["IGNOBEL_COMMITTEE"] = committee_flag
+        os.environ["TASK_EVAL_CONTEXT"] = json.dumps(eval_context)
         try:
             result = sandbox.evaluate_task(TASK["dir"], source.stdout)
         finally:
@@ -1965,6 +1983,11 @@ def local_task_result(repo, commit, out_dir, role="candidate"):
                 os.environ.pop("TASK_EVAL_CONTEXT", None)
             else:
                 os.environ["TASK_EVAL_CONTEXT"] = previous
+            if committee_flag is not None:
+                if previous_committee_flag is None:
+                    os.environ.pop("IGNOBEL_COMMITTEE", None)
+                else:
+                    os.environ["IGNOBEL_COMMITTEE"] = previous_committee_flag
         log = result.get("stdout", "") + result.get("stderr", "")
         if role == "critic" and log_path.exists():
             log_path = Path(out_dir) / f"{commit}.critic.log"

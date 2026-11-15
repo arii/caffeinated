@@ -59,6 +59,17 @@ also rejects source code containing numeric literals matching gold answers
 (for the current split, except small integers and numbers stated in public
 questions); it reports the question ID, not the answer value.
 
+For Ig Nobel, the host evaluates confirmed studies with the two-judge
+committee in-loop. Its score is `0.25 + 0.75 * committee_score` (the lower
+judge's min(LAUGH, THINK)/10), and loss is `1 - score`; unconfirmed or
+targets-group studies score 0. If the committee is unavailable, confirmed
+studies retain score 1.0. One Exa search on the host-written headline provides
+prior-work data to the judges, who see only the host-written abstract and
+search results, not the preregistration's question, hypothesis or mechanism;
+established or textbook relationships are capped at THINK 3.
+The complete committee result is stored with `ignobel_studies.jsonl`, and the
+post-run `score_run.py` report reuses the in-run cached verdicts.
+
 ## Role allocation
 
 From `allocate_roles()` with 4 workers. Bored agents (`B ≥ 0.70`) are chosen

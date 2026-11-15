@@ -324,6 +324,108 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
 
+    def test_ignobel_export_preserves_committee_details(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / "ignobel"
+            out.mkdir()
+            committee = {
+                "available": True,
+                "score": 0.6,
+                "rejected": False,
+                "judges": {
+                    "a": {"laugh": 8, "think": 6, "reason": "Odd and plausible."},
+                    "b": {"laugh": 7, "think": 6, "reason": "Not textbook."},
+                },
+                "prior_work": [
+                    {
+                        "title": "Related work",
+                        "url": "https://example.org/paper",
+                        "snippet": "A prior-work snippet.",
+                    }
+                ],
+                "prior_work_available": True,
+            }
+            write_jsonl(
+                out / "ignobel_studies.jsonl",
+                [
+                    {
+                        "ts": "2026-11-14T10:00:00Z",
+                        "commit": "abc",
+                        "prereg": {
+                            "field": "everyday_physics",
+                            "study_type": "untested_prediction",
+                            "question": "Does X go with Y?",
+                            "hypothesis": "X and Y are related.",
+                            "dataset": {"url": "https://example.org/data.csv", "x": "X", "y": "Y"},
+                        },
+                        "result": {
+                            "confirmed": True,
+                            "headline": "X goes with Y",
+                            "dataset_id": "dataset:1",
+                            "rho": 0.3,
+                            "p": 0.001,
+                            "n": 200,
+                            "citations": [],
+                            "committee": committee,
+                        },
+                    }
+                ],
+            )
+            write_jsonl(
+                out / "scores.jsonl",
+                [
+                    {
+                        "commit": "abc",
+                        "field": "everyday_physics",
+                        "headline": "X goes with Y",
+                        "dataset": "https://example.org/data.csv",
+                        "committee": 0.6,
+                        "available": True,
+                        "rejected": False,
+                        "verdicts": {},
+                        "judges": committee["judges"],
+                        "prior_work": committee["prior_work"],
+                        "prior_work_available": True,
+                    }
+                ],
+            )
+
+            class FakeRun:
+                def __init__(self):
+                    self.entities = {
+                        "experiments": {
+                            "experiment:abc": {
+                                "agent_id": "agent-worker-1",
+                                "round": 1,
+                            }
+                        },
+                        "studies": {},
+                    }
+                    self.agents = {"worker-1": {"agent_id": "agent-worker-1"}}
+                    self.events = []
+
+                def put(self, table, key, entity):
+                    self.entities[table][key] = entity
+                    return key
+
+                def emit(self, event_type, **event):
+                    self.events.append({"type": event_type, **event})
+
+            run = FakeRun()
+            export_viewer.export_studies(run, out, {}, {"abc": "experiment:abc"}, 1, [])
+
+            study = next(iter(run.entities["studies"].values()))
+            self.assertEqual(study["committee"]["score"], 0.6)
+            self.assertEqual(study["committee"]["judges"]["a"]["think"], 6)
+            self.assertEqual(
+                study["committee"]["prior_work"][0]["url"], "https://example.org/paper"
+            )
+            result_event = next(event for event in run.events if event["type"] == "study.result")
+            self.assertEqual(result_event["payload"]["committee"]["score"], 0.6)
+            award_event = next(event for event in run.events if event["type"] == "award.issued")
+            self.assertEqual(award_event["payload"]["prior_work"][0]["title"], "Related work")
+
     def test_arm_branch_checkout_with_gzipped_logs_exports_the_same_events(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

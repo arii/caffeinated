@@ -308,7 +308,7 @@ class ReadableExportTests(unittest.TestCase):
             run_json = json.loads((out / "run.json").read_text())
             (out / "run.json").write_text(json.dumps({**run_json, "task": "ignobel"}))
             _, manifest, _ = read_bundle(export_viewer.export(out, root / "dest"))
-            self.assertEqual(manifest["metric"]["label"], "replication loss")
+            self.assertEqual(manifest["metric"]["label"], "interesting-finding loss")
             self.assertEqual(manifest["metric"]["direction"], "minimize")
 
     def test_experiment_artifacts_include_diff_and_log_tail(self):
