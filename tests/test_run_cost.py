@@ -141,6 +141,37 @@ class RunCostTests(unittest.TestCase):
         )
         self.assertEqual(cli_report["llm"]["wasted"]["calls"], 2)
 
+    def test_repaired_worker_call_only_counts_the_failed_proposal_as_waste(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            proposal = {
+                "call_id": "WORKER_PROPOSE-r1-a-1",
+                "role": "WORKER_PROPOSE",
+                "round": 1,
+                "agent": "a",
+                "usage": {"prompt_tokens": 100, "completion_tokens": 20},
+            }
+            repair = {
+                "call_id": "WORKER_REPAIR-r1-a-2",
+                "role": "WORKER_REPAIR",
+                "round": 1,
+                "agent": "a",
+                "usage": {"prompt_tokens": 60, "completion_tokens": 10},
+            }
+            (run_dir / "llm_log.jsonl").write_text(
+                json.dumps(proposal) + "\n" + json.dumps(repair) + "\n", encoding="utf-8"
+            )
+            (run_dir / "llm_outcomes.jsonl").write_text(
+                json.dumps({"call_id": proposal["call_id"], "outcome": "rejected"})
+                + "\n"
+                + json.dumps({"call_id": repair["call_id"], "outcome": "repaired_then_accepted"})
+                + "\n",
+                encoding="utf-8",
+            )
+            wasted = run_cost.build_report(run_dir)["llm"]["wasted"]
+        self.assertEqual(wasted["calls"], 1)
+        self.assertEqual(wasted["input_tokens"], 100)
+
     def test_summarizes_model_tokens_prices_and_research_costs(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)

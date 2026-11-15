@@ -592,7 +592,7 @@ class LLMCallLinkTests(unittest.TestCase):
             (
                 "repaired_then_accepted",
                 {"status": "discard", "evaluation_status": "ok", "score": 0.2},
-                "repaired_then_accepted",
+                ["rejected", "repaired_then_accepted"],
                 2,
             ),
             ("duplicate", {"status": "duplicate", "duplicate_of": "known"}, "duplicate", 1),
@@ -615,8 +615,16 @@ class LLMCallLinkTests(unittest.TestCase):
                 call_ids = [f"WORKER_PROPOSE-r1-worker-1-{index}" for index in range(count)]
                 client = SimpleNamespace(
                     call_metadata={
-                        call_id: {"round": 1, "agent": "worker-1", "role": "WORKER_PROPOSE"}
-                        for call_id in call_ids
+                        call_id: {
+                            "round": 1,
+                            "agent": "worker-1",
+                            "role": (
+                                "WORKER_REPAIR"
+                                if name == "repaired_then_accepted" and index == count - 1
+                                else "WORKER_PROPOSE"
+                            ),
+                        }
+                        for index, call_id in enumerate(call_ids)
                     }
                 )
                 candidate = {
@@ -628,7 +636,8 @@ class LLMCallLinkTests(unittest.TestCase):
                 swarm.record_worker_outcomes(tmp, candidate, 1, client)
                 records = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
                 self.assertEqual(len(records), count)
-                self.assertEqual([record["outcome"] for record in records], [expected] * count)
+                expected_outcomes = expected if isinstance(expected, list) else [expected] * count
+                self.assertEqual([record["outcome"] for record in records], expected_outcomes)
 
     def test_assignment_record_links_scout_lead_calls(self):
         with tempfile.TemporaryDirectory() as tmp:

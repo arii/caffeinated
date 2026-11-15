@@ -2149,6 +2149,15 @@ def worker_attempts(
                 raise ValueError(mismatch_reason)
             lead_claim = validate_lead_reference(current_proposal, known_leads)
         except (ValueError, TypeError) as error:
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "call_id": getattr(llm_client, "last_call_id", None),
+                    "pass": False,
+                    "outcome": "invalid",
+                    "reasons": [str(error)],
+                }
+            )
             log_worker_rejection(
                 out_dir,
                 agent,
@@ -2416,7 +2425,15 @@ def worker_attempts(
                 memory_write_claim=write_claim,
             )
         except EditError as error:
-            attempts.append({"attempt": attempt, "edit_error": str(error)})
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "call_id": getattr(llm_client, "last_call_id", None),
+                    "edit_error": str(error),
+                    "outcome": "edit_error",
+                    "reasons": [str(error)],
+                }
+            )
             if attempt == 1:
                 current_proposal = llm_client.call(
                     "WORKER_REPAIR",
@@ -2457,8 +2474,16 @@ def worker_attempts(
         attempts.append(
             {
                 "attempt": attempt,
+                "call_id": getattr(llm_client, "last_call_id", None),
                 "commit": committed["commit"],
                 "pass": gate_pass,
+                "outcome": (
+                    "duplicate"
+                    if gate_record.get("duplicate_of") is not None
+                    else "accepted"
+                    if gate_pass
+                    else "rejected"
+                ),
                 "reasons": gate_record.get("reasons", []),
             }
         )
@@ -2888,28 +2913,27 @@ def record_worker_outcomes(out_dir, candidate, round_num, llm_client):
     attempts = candidate.get("attempts", [])
     if not isinstance(attempts, list):
         attempts = []
-    if candidate.get("duplicate_of") is not None or status == "duplicate":
-        outcome = "duplicate"
-    elif (
+    accepted = (
         candidate.get("evaluation_status") == "ok"
         and candidate.get("score") is not None
         and status in {"keep", "discard"}
-    ):
-        outcome = "repaired_then_accepted" if len(call_ids) > 1 else "accepted"
+    )
+    if candidate.get("duplicate_of") is not None or status == "duplicate":
+        fallback_outcome = "duplicate"
     elif candidate.get("outcome") in {"invalid", "edit_error"}:
-        outcome = candidate["outcome"]
+        fallback_outcome = candidate["outcome"]
     elif any(item.get("edit_error") for item in attempts if isinstance(item, dict)):
-        outcome = "edit_error"
+        fallback_outcome = "edit_error"
     elif (status == "reject" and not attempts and not candidate.get("llm_error")) or any(
         reason.startswith(
             ("invalid proposal", "lead_id must ", "source_ids must ", "unbuildable assignment")
         )
         for reason in reasons
     ):
-        outcome = "invalid"
+        fallback_outcome = "invalid"
     else:
-        outcome = "rejected"
-    if outcome in {"rejected", "invalid", "edit_error"} and not reasons:
+        fallback_outcome = "rejected"
+    if fallback_outcome in {"rejected", "invalid", "edit_error"} and not reasons:
         evaluation_status = candidate.get("evaluation_status")
         reasons = (
             [f"evaluation status: {evaluation_status}"]
@@ -2920,10 +2944,43 @@ def record_worker_outcomes(out_dir, candidate, round_num, llm_client):
     path = Path(out_dir) / "llm_outcomes.jsonl"
     written_call_ids = {record.get("call_id") for record in read_jsonl(path)}
     metadata = getattr(llm_client, "call_metadata", {})
-    for call_id in call_ids:
+    attempts_by_call = {
+        item.get("call_id"): item
+        for item in attempts
+        if isinstance(item, dict) and item.get("call_id")
+    }
+    for index, call_id in enumerate(call_ids):
         if call_id in written_call_ids:
             continue
         call = metadata.get(call_id, {})
+        attempt = attempts_by_call.get(call_id, {})
+        outcome = attempt.get("outcome")
+        if outcome == "accepted":
+            if accepted:
+                outcome = (
+                    "repaired_then_accepted" if call.get("role") == "WORKER_REPAIR" else "accepted"
+                )
+            else:
+                outcome = "rejected"
+        if outcome not in {
+            "accepted",
+            "repaired_then_accepted",
+            "rejected",
+            "duplicate",
+            "invalid",
+            "edit_error",
+        }:
+            if accepted:
+                outcome = (
+                    "repaired_then_accepted"
+                    if index == len(call_ids) - 1 and call.get("role") == "WORKER_REPAIR"
+                    else "accepted"
+                    if index == len(call_ids) - 1
+                    else "rejected"
+                )
+            else:
+                outcome = fallback_outcome
+        call_reasons = [str(reason) for reason in (attempt.get("reasons") or reasons)]
         record = {
             "call_id": call_id,
             "round": call.get("round", round_num),
@@ -2932,7 +2989,7 @@ def record_worker_outcomes(out_dir, candidate, round_num, llm_client):
             "outcome": outcome,
         }
         if outcome in {"rejected", "invalid", "edit_error"}:
-            record["reasons"] = reasons
+            record["reasons"] = call_reasons or ["worker proposal was not accepted"]
         append_jsonl(path, record)
         written_call_ids.add(call_id)
 
