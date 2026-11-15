@@ -88,9 +88,11 @@ def rows(dataset: str, columns, where: dict | None = None) -> list[tuple]:
             if where and not all(_same(r.get(k), v) for k, v in where.items()):
                 continue
             try:
-                out.append(tuple(float(r[c]) for c in columns))
+                vals = tuple(float(r[c]) for c in columns)
             except (TypeError, ValueError):
                 continue
+            if all(v == v and abs(v) != float("inf") for v in vals):  # NaN and inf cells are not measurements
+                out.append(vals)
     return out
 
 
