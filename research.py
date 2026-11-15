@@ -19,8 +19,8 @@ SOURCE_ID_RE = re.compile(r"^S(\d+)$")
 QUERY_ID_RE = re.compile(r"^Q(\d+)$")
 EXTRACT_ID_RE = re.compile(r"^E(\d+)$")
 DEFAULT_EXTRACT_QUESTION = (
-    "What concrete change to a small GPT training script does this propose? "
-    "Give the hyperparameters and the reported effect."
+    "What concrete, testable change for the task described by this source does it propose? "
+    "Give implementation details and the reported effect."
 )
 
 

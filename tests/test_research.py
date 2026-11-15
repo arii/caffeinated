@@ -118,7 +118,7 @@ class ResearchCliTests(unittest.TestCase):
             result = self.run_cli(
                 server,
                 "search",
-                "small model training",
+                "task optimization approach",
                 "--n",
                 "2",
                 "--log",
@@ -134,7 +134,7 @@ class ResearchCliTests(unittest.TestCase):
             self.assertEqual(
                 server.request_body,
                 {
-                    "query": "small model training",
+                    "query": "task optimization approach",
                     "type": "auto",
                     "numResults": 2,
                     "category": "publication",
@@ -203,7 +203,7 @@ class ResearchCliTests(unittest.TestCase):
             result = self.run_cli(
                 server,
                 "scout",
-                "small GPT SwiGLU implementation",
+                "task implementation approach",
                 "--kind",
                 "code",
                 "--since",
@@ -386,9 +386,9 @@ class ResearchCliTests(unittest.TestCase):
                     "urls": ["https://example.test/paper"],
                     "summary": {
                         "query": (
-                            "What concrete change to a small GPT training script "
-                            "does this propose? Give the hyperparameters and the "
-                            "reported effect."
+                            "What concrete, testable change for the task described "
+                            "by this source does it propose? Give implementation "
+                            "details and the reported effect."
                         )
                     },
                 },
@@ -412,7 +412,7 @@ class ResearchCliTests(unittest.TestCase):
             log = Path(directory) / "research_log.jsonl"
             common = [
                 "prior-art",
-                "small GPT optimization",
+                "task optimization",
                 "--n",
                 "2",
                 "--log",

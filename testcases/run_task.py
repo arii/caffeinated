@@ -3,7 +3,7 @@
     python testcases/run_task.py hadamard19
     python testcases/run_task.py hadamard19 --results results.tsv --desc "anneal 2k steps" --status auto
 
-The row uses the autoresearch columns (commit, loss, memory_gb, status, description)
+The row uses the autoresearch columns (commit, loss, status, description)
 with the task's loss (lower is better) in the loss column, so boredom.py,
 analyze.py and the trace exporter work unchanged. --status auto keeps the run only
 if it beats the best kept loss so far.
@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:
 from testcases import sandbox
 
 TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
-HEADER = ["commit", "loss", "memory_gb", "status", "description"]
+HEADER = ["commit", "loss", "status", "description"]
 
 
 def score(task):
@@ -72,7 +72,7 @@ def main():
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
         if new:
             w.writerow(HEADER)
-        w.writerow([commit, f"{loss if loss is not None else 0:.6f}", "0.0", status, args.desc.replace("\t", " ")])
+        w.writerow([commit, f"{loss if loss is not None else 0:.6f}", status, args.desc.replace("\t", " ")])
     print(f"logged: {commit} {status}")
 
 

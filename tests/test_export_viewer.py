@@ -106,7 +106,18 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(workers["critic"]["type"], "critic")
             self.assertEqual([e["tick"] for e in events], list(range(len(events))))
             self.assertEqual(len({e["event_id"] for e in events}), len(events))
-            self.assertEqual(manifest["provenance"]["gpu"], "none (CPU only)")
+            self.assertEqual(
+                set(manifest["provenance"]),
+                {
+                    "llm",
+                    "exa",
+                    "native_run_id",
+                    "memory_backend",
+                    "swarm_commit",
+                    "command",
+                    "artifacts",
+                },
+            )
 
             ids = {key for table in entities.values() for key in table}
             for event in events:
@@ -117,6 +128,21 @@ class ExportViewerTests(unittest.TestCase):
             ledger_events = [e for e in events if e["source"]["file"] == "ledger.jsonl"]
             baseline = next(e for e in ledger_events if e["type"] == "experiment.started")
             self.assertIsNone(baseline["ts"])  # no invented timestamps
+            started_by_agent = next(
+                e
+                for e in ledger_events
+                if e["type"] == "experiment.started" and e["agent_id"]
+            )
+            world = export_viewer.world_at(
+                events, manifest, entities, started_by_agent["tick"]
+            )
+            agent_state = next(
+                agent
+                for agent in world["agents"]
+                if agent["agent_id"] == started_by_agent["agent_id"]
+            )
+            self.assertEqual(agent_state["activity"], "training")
+            self.assertEqual(agent_state["station"], "culture")
             started = next(e for e in ledger_events if e["refs"].get("experiment_id") == "experiment:c1")
             self.assertEqual(started["ts"], "2026-11-14T10:04:00Z")  # borrowed from the gate record
 
