@@ -27,7 +27,8 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
 - **Ig Nobel (pre-committee):** the stopped `out-ignobel` artifact has 22 study
   registrations. 13 were evaluated (9 crashed or were rejected before a result),
   and 12 have `result.confirmed == true`. One confirmed study is a duplicate, so
-  11 are unique. The confirmed findings are mostly true but unsurprising (for
+  11 are unique (the Lab replay shows the 21 unique records). One of the 11 (x vs y
+  coordinates, ρ = 0.07) fails today's |ρ| ≥ 0.1 effect-size gate, leaving 10 under current rules. The confirmed findings are mostly true but unsurprising (for
   example, heavier cars have lower city MPG, ρ = −0.89). No committee result is
   present in these records, so committee scoring has not been run on them. The
   committee-scored rerun is blocked: both Tinker keys return HTTP 402.
