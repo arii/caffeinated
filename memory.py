@@ -927,7 +927,9 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         used_tokens = response.get("usedEvidenceTokens", 0)
         pending = pending_count(response.get("pending"))
         if scope:
-            local_results, _ = local_recall_results(query, limit, cutoff, mirror_path)
+            local_results, _ = local_recall_results(
+                query, len(read_mirror(mirror_path)) or limit, cutoff, mirror_path
+            )
             local_index = mirror_source_index(mirror_path)
             local_results = [
                 result for result in local_results
@@ -938,7 +940,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
                     ) == "same_run"
                     for source in result.get("sources") or []
                 )
-            ]
+            ][:limit]
             for result in local_results:
                 for source in result.get("sources") or []:
                     source["scope"] = "same_run"
@@ -948,10 +950,13 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
                 for source in result.get("sources") or []
             }
             results = merge_same_run_mirror(results, local_results, limit)
-            local_same_run = sum(
-                1 for result in results
+            local_only = [
+                result for result in results
                 if not {source.get("sourceId") for source in result.get("sources") or []} & remote_ids
-            )
+            ]
+            local_same_run = len(local_only)
+            if local_only and isinstance(raw_response, dict):
+                raw_response = {**raw_response, "localSameRun": local_only}
 
     latency_ms = int((time.monotonic() - started_at) * 1000)
     source_ids = []
