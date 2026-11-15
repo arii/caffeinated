@@ -533,10 +533,12 @@ def test_the_same_finding_is_the_same_values_from_the_same_file():
     assert not score.same_finding(f, [f[0], {**f[1], "column": "z"}])  # two columns that hold the same values
     assert not score.same_finding([{**x, "dataset": None} for x in f], [{**x, "dataset": None} for x in f])
     assert not score.same_finding([], [])
-    near = [{"dataset": "abc", "column": "x", "sketch": [str(i) for i in range(20)]},  # two groups that are nearly alike
-            {"dataset": "abc", "column": "x", "sketch": [str(i) for i in range(1, 21)]}]
-    one = [{"dataset": "abc", "column": "x", "sketch": [str(i) for i in range(1, 20)]}, near[1]]
-    assert score.same_finding(near, one) and score.same_finding(near[::-1], one) and score.same_finding(one, near[::-1])
+    def group(lo):
+        return {"dataset": "abc", "column": "x", "sketch": [str(i) for i in range(lo, lo + 50)]}
+    # the first array resembles both of the other study's, the second only one: the pairing must not be greedy
+    assert score.same_finding([group(11), group(8)], [group(10), group(13)])
+    assert score.same_finding([group(10), group(13)], [group(11), group(8)])
+    assert not score.same_finding([group(11), group(8)], [group(13), group(13)])
 
 
 def test_a_meeting_tells_two_labs_what_they_have_in_common(tmp_path, monkeypatch):
