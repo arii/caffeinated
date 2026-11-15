@@ -64,6 +64,21 @@ class TaskInputTests(unittest.TestCase):
         prompt = llm.render_prompt("WORKER_PROPOSE", task_values("playworld_mini"))
         self.assertIn("--- data/train.jsonl", prompt)
 
+    def test_call_ids_in_lead_records_do_not_change_prompt_sha(self):
+        lead = {
+            "id": "lead-1",
+            "recipe": "adjust one parameter",
+            "source_ids": ["S1"],
+        }
+        with_ids = {**lead, "llm_call_ids": ["SCOUT_LEAD-r2-worker-1-7"]}
+        values = task_values("bixbench_mini")
+        values["recalled_leads"] = swarm.render_leads_for_prompt([lead])
+        prompt_without_ids = llm.render_prompt("WORKER_PROPOSE", values)
+        values["recalled_leads"] = swarm.render_leads_for_prompt([with_ids])
+        prompt_with_ids = llm.render_prompt("WORKER_PROPOSE", values)
+        self.assertEqual(llm.prompt_sha(prompt_without_ids), llm.prompt_sha(prompt_with_ids))
+        self.assertNotIn("SCOUT_LEAD-r2-worker-1-7", prompt_with_ids)
+
 
 class ProposalGroundingTests(unittest.TestCase):
     def setUp(self):

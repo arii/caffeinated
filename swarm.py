@@ -975,9 +975,9 @@ def critic_review(
         "v2": "n/a" if second_score is None else f"{float(second_score):.6f}",
         "prev_best": f"{previous_best_val:.6f}",
         "accepted": str(accepted).lower(),
-        "claim": json.dumps(claim, sort_keys=True),
+        "claim": json.dumps(strip_call_ids(claim), sort_keys=True),
         "predicted_delta": str(candidate.get("predicted_delta")),
-        "basin_results": json.dumps(basin, sort_keys=True),
+        "basin_results": json.dumps(strip_call_ids(basin), sort_keys=True),
         "novelty": ("n/a" if candidate.get("novelty") is None else f"{candidate['novelty']:.2f}"),
         "prior_art": json.dumps(candidate.get("prior_hits", [])[:3], sort_keys=True),
     }
@@ -1622,6 +1622,284 @@ def known_lead_records(all_leads, lead, recalled_result):
     return leads
 
 
+def strip_call_ids(value):
+    if isinstance(value, dict):
+        return {
+            key: strip_call_ids(item)
+            for key, item in value.items()
+            if key not in {"call_id", "llm_call_ids", "call_ids", "call_id_counter", "call_counter"}
+        }
+    if isinstance(value, list):
+        return [strip_call_ids(item) for item in value]
+    return value
+
+
+def render_leads_for_prompt(leads):
+    return (
+        "\n".join(json.dumps(strip_call_ids(item), sort_keys=True) for item in leads)
+        or "No recalled leads."
+    )
+
+
+def pi_stuck_agents(events, agents, round_num):
+    nonaccepted = {"reject", "duplicate", "invalid", "edit_error", "discard", "crash"}
+    candidates = [
+        event
+        for event in events
+        if event.get("kind") == "candidate"
+        and event.get("agent") in agents
+        and isinstance(event.get("round"), int)
+        and event["round"] < round_num
+    ]
+    stuck = {}
+    for agent in agents:
+        history = [event for event in candidates if event.get("agent") == agent]
+        if len(history) < 2 or any(
+            event.get("status") not in nonaccepted for event in history[-2:]
+        ):
+            continue
+        stuck[agent] = history[-3:]
+    return stuck
+
+
+def pi_attempt_summary(event):
+    descriptor = event.get("descriptor") or {}
+    reasons = event.get("gate_reasons") or event.get("reasons") or []
+    return {
+        "round": event.get("round"),
+        "idea": event.get("idea") or event.get("description", ""),
+        "mechanism": descriptor.get("mechanism"),
+        "method": descriptor.get("method"),
+        "status": event.get("status"),
+        "reasons": reasons,
+        "score": event.get("score"),
+    }
+
+
+def pi_lead_summary(leads):
+    result = []
+    seen = set()
+    for lead in leads:
+        lead_id = lead.get("id")
+        if not isinstance(lead_id, str) or lead_id in seen:
+            continue
+        seen.add(lead_id)
+        recipe = lead.get("recipe")
+        result.append(
+            {
+                "id": lead_id,
+                "source_ids": list(lead.get("source_ids") or []),
+                "recipe": str(recipe or "")[:200],
+            }
+        )
+    return result
+
+
+def validate_pi_steers(response, stuck_agents, known_sources, known_leads):
+    if not isinstance(response, dict) or not isinstance(response.get("steers"), list):
+        raise ValueError("PI response must contain a steers list")
+    known_agent_ids = set(stuck_agents)
+    known_lead_ids = {lead.get("id") for lead in known_leads}
+    steers = {}
+    for item in response["steers"]:
+        if not isinstance(item, dict):
+            continue
+        agent = item.get("agent")
+        steer = item.get("steer")
+        if not isinstance(agent, str) or agent not in known_agent_ids or not isinstance(steer, str):
+            continue
+        steer = " ".join(steer.split())[:200]
+        if not steer:
+            continue
+        cite = item.get("cite")
+        cite = cite if isinstance(cite, list) else []
+        cite = list(
+            dict.fromkeys(
+                source_id
+                for source_id in cite
+                if isinstance(source_id, str) and source_id in known_sources
+            )
+        )
+        lead_id = item.get("lead_id")
+        if not isinstance(lead_id, str) or lead_id not in known_lead_ids:
+            lead_id = None
+        steers[agent] = {"steer": steer, "cite": cite, "lead_id": lead_id}
+    return steers
+
+
+def run_pi_steering(
+    *,
+    enabled,
+    profile,
+    events,
+    status,
+    roles,
+    agents,
+    out_dir,
+    llm_client,
+    backend,
+    mirror,
+    memory_log,
+    arm,
+    round_num,
+    best_commit,
+    best_val,
+    leads,
+    research_start,
+):
+    if not enabled:
+        return {}
+    stuck_agents = pi_stuck_agents(events, agents, round_num)
+    if not stuck_agents:
+        return {}
+
+    recalled = recall_memory(
+        "untested implementation leads",
+        "pi",
+        backend=backend,
+        mirror=mirror,
+        log=memory_log,
+        arm=arm,
+        limit=20,
+    )
+    known_leads = known_lead_records(leads, None, recalled)
+    lead_summaries = pi_lead_summary(known_leads)
+    all_research_records = read_jsonl(Path(out_dir) / "research_log.jsonl")
+    research_records = all_research_records[research_start:]
+    available_sources = []
+    known_sources = {
+        source.get("id")
+        for source in source_records(all_research_records)
+        if isinstance(source.get("id"), str)
+    }
+    seen_sources = set()
+    for source in source_records(research_records):
+        source_id = source.get("id")
+        if not isinstance(source_id, str) or source_id in seen_sources:
+            continue
+        seen_sources.add(source_id)
+        available_sources.append({"id": source_id, "title": str(source.get("title") or "")})
+        if len(available_sources) == 20:
+            break
+    shared_rules = list(
+        dict.fromkeys(
+            hard_rules(
+                profile,
+                events,
+                agent,
+                roles[agent],
+                status,
+                bool((TASK or {}).get("deterministic")),
+            )
+            for agent in stuck_agents
+        )
+    )
+    values = common_values(
+        "pi",
+        round_num,
+        "pi",
+        status,
+        0.0,
+        best_commit,
+        best_val,
+        profile,
+        events=events,
+        deterministic=bool((TASK or {}).get("deterministic")),
+        out_dir=out_dir,
+    )
+    values.update(
+        {
+            "hard_rules": "\n".join(rule for rule in shared_rules if rule != "none") or "none",
+            "pi_stuck_agents": json.dumps(
+                [
+                    {
+                        "agent": agent,
+                        "role": roles[agent],
+                        "last_attempts": [pi_attempt_summary(event) for event in history],
+                    }
+                    for agent, history in stuck_agents.items()
+                ],
+                sort_keys=True,
+            ),
+            "pi_available_leads": json.dumps(lead_summaries, sort_keys=True),
+            "pi_available_sources": json.dumps(available_sources, sort_keys=True),
+            "task_inputs_brief": (TASK or {})
+            .get("prompt_values", {})
+            .get(
+                "task_inputs_brief",
+                (TASK or {}).get("prompt_values", {}).get("task_context", "(none)"),
+            ),
+        }
+    )
+    call_ids = getattr(llm_client, "call_ids", [])
+    call_id_start = len(call_ids)
+    call_id = None
+    try:
+        response = llm_client.call("PI", agent="pi", round_num=round_num, values=values)
+        call_ids = getattr(llm_client, "call_ids", [])
+        call_id = call_ids[-1] if len(call_ids) > call_id_start else None
+        steers = validate_pi_steers(response, stuck_agents, known_sources, known_leads)
+    except Exception as error:
+        call_ids = getattr(llm_client, "call_ids", [])
+        call_id = call_ids[-1] if len(call_ids) > call_id_start else None
+        print(
+            f"round {round_num}: PI steering unavailable: {type(error).__name__}: {error}",
+            file=sys.stderr,
+            flush=True,
+        )
+        append_jsonl(
+            Path(out_dir) / "pi.jsonl",
+            {
+                "type": "pi_error",
+                "round": round_num,
+                "message": str(error)[:500],
+                "llm_call_ids": [call_id] if call_id else [],
+            },
+        )
+        steers = {}
+
+    if call_id:
+        append_jsonl(
+            Path(out_dir) / "llm_outcomes.jsonl",
+            {
+                "call_id": call_id,
+                "round": round_num,
+                "agent": "pi",
+                "role": "PI",
+                "outcome": "steered",
+                "agents": sorted(steers),
+            },
+        )
+    for agent in stuck_agents:
+        steer = steers.get(agent, {})
+        append_jsonl(
+            Path(out_dir) / "pi.jsonl",
+            {
+                "type": "pi_steer",
+                "round": round_num,
+                "agent": agent,
+                "role": roles[agent],
+                "steer": steer.get("steer", ""),
+                "cite": steer.get("cite", []),
+                "lead_id": steer.get("lead_id"),
+                "llm_call_ids": [call_id] if call_id else [],
+            },
+        )
+    return {agent: format_pi_steer(steer) for agent, steer in steers.items()}
+
+
+def format_pi_steer(steer):
+    if not steer:
+        return "none"
+    details = []
+    if steer.get("cite"):
+        details.append("suggested sources: " + ", ".join(steer["cite"]))
+    if steer.get("lead_id"):
+        details.append("lead: " + steer["lead_id"])
+    suffix = f" ({'; '.join(details)})" if details else ""
+    return f"{steer['steer']}{suffix}"
+
+
 def validate_lead_reference(proposal, known_leads):
     lead_id = proposal.get("lead_id")
     if not lead_id:
@@ -1713,7 +1991,7 @@ def assigned_cell_repair(
             **common,
             "problem": "Implement exactly the conductor-assigned cell. Required descriptor: "
             + json.dumps(common["assigned_descriptor"], sort_keys=True),
-            "proposal": json.dumps(proposal, sort_keys=True),
+            "proposal": json.dumps(strip_call_ids(proposal), sort_keys=True),
         },
     )
     return proposal, searches_used, worker_sources
@@ -1771,12 +2049,7 @@ def worker_attempts(
     ]
     recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
     known_leads = known_lead_records(all_leads, lead, recalls[1])
-    recalled_leads = "\n".join(
-        [
-            *(json.dumps(item, sort_keys=True) for item in known_leads),
-            memory_text(recalls[1]),
-        ]
-    )
+    recalled_leads = render_leads_for_prompt(known_leads)
     current_base = base_commit
     candidate_source = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
     common = common_values(
@@ -1880,7 +2153,7 @@ def worker_attempts(
                     values={
                         **common,
                         "problem": f"Invalid proposal: {error}",
-                        "proposal": json.dumps(current_proposal, sort_keys=True),
+                        "proposal": json.dumps(strip_call_ids(current_proposal), sort_keys=True),
                     },
                 )
                 if current_proposal.get("status") == "reject":
