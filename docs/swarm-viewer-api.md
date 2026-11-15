@@ -169,7 +169,9 @@ interface RunManifest {
   live: boolean;                       // true while the producer is still appending
   arm: { id: string; label: string; boredom_enabled: boolean; policy: string };
   compare_group?: string;              // runs whose arms are compared share this
-  metric: { name: string; unit: string; direction: 'minimize' | 'maximize' };
+  metric: { name: string; unit: string; direction: 'minimize' | 'maximize';
+            label?: string; description?: string };  // from task.json "metric" when present
+  publish_errors: PublishIssue[];      // last 20 publish failures/recoveries; [] when healthy
   boredom: { scale: [0, 1]; thresholds: Record<string, number>; regimes: string[] };
   time: { ticks: number; rounds: number; ts_start: string | null; ts_end: string | null };
   agents: AgentIdentity[];
@@ -179,7 +181,20 @@ interface RunManifest {
     artifacts: Record<string, string>; // file -> sha256[:16]
   };
 }
+
+interface PublishIssue {               // from <out>/viewer_publish_log.jsonl
+  ts: string;
+  kind: string;                        // 'recovered' or the exception class, e.g. 'RuntimeError'
+  final: boolean;                      // true when the failing publish was the final one
+  message: string;                     // capped at 500 chars
+}
 ```
+
+Live publishing is append-only: a republish keeps the published `events.ndjson` bytes as a
+prefix. If a late record would sort into the published prefix, the exporter pins the published
+events and appends the new ones after them (never in an earlier round) and logs a `recovered`
+issue instead of raising `PublishConflict`. Only unreadable published bytes still conflict.
+A failed final publish is retried once, then printed to stderr and kept in `publish_errors`.
 
 ### 3.2 Agents
 
@@ -260,7 +275,9 @@ interface Observation {     // something the agent saw
 
 interface Hypothesis {      // a proposal plus its reasoning
   hypothesis_id: string; agent_id: string; tick: number; round: number;
-  text: string;             // autoresearch claim.idea; ignobel idea.title / text
+  text: string;             // autoresearch claim.idea (regime tags like "[EXPLOIT]" stripped);
+                            // ignobel idea.title / text. A repeated claim (same author, same
+                            // idea) adds no new hypothesis; its memory item gets repeat_of.
   rationale: string;        // autoresearch claim.rationale; ignobel idea.hypothesis + method
   descriptor?: Record<string, unknown>;
   prediction?: { delta?: number; direction?: '+' | '-'; effect_size?: number };
@@ -279,7 +296,29 @@ interface Experiment {      // one ledger row (autoresearch) or study (ignobel)
   status: 'keep' | 'discard' | 'crash' | 'reject' | 'replicated' | 'not_replicated' | 'failed';
   verdict?: { by_agent_id: string; verdict: string; why: string };
   reward: Reward | null;
-  artifacts: string[];                    // diff, plot_path, run log
+  artifacts: Record<string, string>;      // log: runs/<commit>.log, diff: runs/<commit>.diff
+                                          // (diff capped at 20,000 chars); both copied
+                                          // under the bundle's artifacts/
+  log_tail?: string;                      // last 2,000 chars of the run log
+}
+
+interface Study {           // ignobel_studies.jsonl: one per candidate study (critic re-runs
+                            // are folded into replications, not duplicated)
+  id: string;               // study:<line>
+  agent_id: string | null; experiment_id: string | null; commit: string | null; round: number;
+  field?: string; study_type?: string; question?: string; hypothesis?: string; mechanism?: string;
+  dataset: { url?: string; x?: string; x_level?: string; x_per?: string;
+             y?: string; y_level?: string; y_per?: string };
+  dataset_id?: string; direction?: string;
+  predicted_rho: number | null; rho: number | null; p: number | null; n: number | null;
+  halves: { rho: number; p: number; n: number }[] | null;
+  significant: boolean | null; replicated: boolean | null; confirmed: boolean;
+  headline: string | null;
+  rejected: string | null;  // rejection reason (bad dataset, wrong direction, ...)
+  outcome: string;          // one readable line, e.g. "replicated: rho 0.31 vs predicted 0.2"
+  citations: string[];
+  replications: { rho; p; n; halves; significant; replicated; confirmed }[];  // critic re-runs
+  committee: { score: number | null; rejected: string | null; verdicts: unknown } | null;
 }
 
 interface Reward {
@@ -303,7 +342,10 @@ interface DiaryEntry {      // the agent's own running notes
 interface MemoryItem {      // shared or private memory (past.dev mirror / ignobel stores)
   memory_id: string; author_agent_id: string; tick: number; round: number;
   type: string;             // lead|claim|result|verdict|lesson|assignment|idea|prediction|failure
-  text: string; source_ids: string[];
+  text: string;             // readable text, never raw JSON ("<idea>. Why: <rationale>" for claims)
+  content?: string;         // the raw stored content (often JSON), for detail views
+  repeat_of?: string;       // memory_id of the same author's earlier claim with the same idea
+  source_ids: string[];
   scope: 'shared' | 'private';
   recalled_by: { agent_id: string; tick: number; inferred: boolean }[];
 }
@@ -362,8 +404,12 @@ interface SwarmEvent<T extends EventType = EventType, P = unknown> {
 | `experiment.finished` | `Experiment` with `reward` | ledger row, `critic.tsv` | `study_result` |
 | `verdict.issued` | `{experiment_id, verdict, why}` | `critic.tsv`, `verdict` memory | — (committee is post-run) |
 | `memory.written` | `MemoryItem` | `memory.jsonl` / `memory_log` `write` | private store writes (idea, prediction, result) |
-| `message.sent` | `{to_agent_id, turn, text}` | — | `talk` |
-| `items.shared` | `{to_agent_id, offered, kept}` | — | `share` |
+| `message.sent` | `{to_agent_id, turn, text}`; autoresearch adds `kind: 'assignment' \| 'verdict'` | conductor→worker per `assignments.jsonl` role; critic→author per `critic.tsv` row (`refs.experiment_id`) | `talk` |
+| `items.shared` | `{to_agent_id, offered, kept}`; autoresearch: `{kind: 'lead', to_agent_id, items, text}` | a claim whose `lead_id` is another agent's lead (actor = lead author) | `share` |
+| `study.registered` | `{field, question, x, y, predicted_rho, text}` | `ignobel_studies.jsonl` prereg (`refs.study_id`, `refs.experiment_id`) | — |
+| `study.result` | `{rho, predicted_rho, p, n, replicated, confirmed, rejected, headline, text}` | `ignobel_studies.jsonl` result | — |
+| `study.replicated` | `{rho, p, n, halves, significant, replicated, confirmed, text}` | critic re-run of a study (actor `critic`) | — |
+| `award.issued` | `{award, score, rejected, verdicts, headline, text}` | `scores.jsonl` committee row (end of run, phase `finish`) | `scores.jsonl` |
 | `diary.written` | `DiaryEntry` | `claim.rationale`, critic `lesson`, round summary | `lesson` |
 | `discovery.made` | `Discovery` | critic `keep` that improves the best by more than `eps` | `study_result.replicated` (+ `scores.jsonl` picks at the end) |
 | `llm.called` | `LlmCall` (no prompt body) | `llm_log.jsonl` | prompt log |
@@ -371,6 +417,9 @@ interface SwarmEvent<T extends EventType = EventType, P = unknown> {
 † Current assignments record full per_agent_boredom as well as per_agent_B and ledger/profile
 hashes. The exporter recomputes components against each assignment's logged ledger prefix,
 checks hashes and verifies logged B/components. Older assignments may contain only B.
+
+Every exported event carries a one-line human-readable `payload.text` (speech bubbles, the
+event feed). Events that have a native text keep it; the rest get a generated sentence.
 
 Unknown `type` values are ignored by the reducer, so new types do not require a version bump.
 Renaming or removing a field does.
@@ -575,7 +624,12 @@ Current CPU runs have closed several gaps from the original proposal:
    attempt content/reasoning when available. A proposal's rationale and recorded response
    provide the available explanations; additional internal reasoning is not guaranteed.
 6. **Legacy Ig Nobel timestamps.** The removed harness's events.jsonl omitted wall-clock
-   timestamps; its recordings use file order and ticks for replay time.
+   timestamps; its recordings use file order and ticks for replay time. Swarm `ignobel`
+   research_log sources carry `ts`, `round` and `agent: conductor`. Records without a ts
+   inherit the previous record's ts and are placed in the newest round, never round 0.
+7. **Committee.** A swarm `ignobel` run invokes the task's `post_run` hook (`score_run.py`)
+   when it ran with a real LLM and `TINKER_API_KEY` is set; otherwise it prints a skip line
+   and no `award.issued` events appear.
 
 ## Out of scope
 

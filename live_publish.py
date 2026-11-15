@@ -1,6 +1,7 @@
 """Coalesced, best-effort publication after source logs are closed."""
 
 import json
+import sys
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -60,6 +61,7 @@ class Publisher:
         self.last = float("-inf")
         self.settle = settle
         self.settle_until = float("-inf")
+        self.errors = []
         self.thread = threading.Thread(target=self._work, daemon=True)
         self.thread.start()
 
@@ -73,8 +75,12 @@ class Publisher:
     def _call(self, **kwargs):
         try:
             self.callback(**kwargs)
-        except Exception:
-            pass
+        except Exception as error:
+            # Keep publishing on later triggers, but never hide the failure.
+            self.errors.append(f"{type(error).__name__}: {error}")
+            print(
+                f"live publish failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True
+            )
         finally:
             self.last = time.monotonic()
 

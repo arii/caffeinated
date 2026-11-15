@@ -21,6 +21,7 @@ committee (committee.py) scores the replicated ones after the run with
 score_run.py.
 """
 
+import contextlib
 import csv
 import hashlib
 import json
@@ -383,9 +384,10 @@ def record_study(research_log, prereg, graded):
     """Append the full study record for post-run analysis (score_run.py runs the committee)."""
     if not research_log:
         return
-    line = (
-        json.dumps({"ts": time.time(), "prereg": prereg, "result": graded}, sort_keys=True) + "\n"
-    )
+    record = {"ts": time.time(), "prereg": prereg, "result": graded}
+    with contextlib.suppress(ValueError):
+        record.update(json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}"))
+    line = json.dumps(record, sort_keys=True) + "\n"
     with (Path(research_log).parent / "ignobel_studies.jsonl").open(
         "a", encoding="utf-8"
     ) as stream:

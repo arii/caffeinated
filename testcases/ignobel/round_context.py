@@ -12,6 +12,7 @@ Dataset search is skipped when EXA=off or IGNOBEL_DATASET_SEARCH=off (offline ru
 import argparse
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import datasets
@@ -64,7 +65,11 @@ def field_query(cell):
     return field if field and field not in ("baseline", "other") else ""
 
 
-def log_source(out_dir, source_id, hit):
+def utc_ts():
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def log_source(out_dir, source_id, hit, round_num=0):
     record = {
         "type": "source",
         "id": source_id,
@@ -72,6 +77,9 @@ def log_source(out_dir, source_id, hit):
         "file_url": hit["url"],
         "title": hit["title"],
         "purpose": "dataset_finder",
+        "agent": "conductor",
+        "round": round_num,
+        "ts": utc_ts(),
     }
     with (Path(out_dir) / "research_log.jsonl").open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True) + "\n")
@@ -86,7 +94,7 @@ def found_datasets(cells, skip, out_dir=None, round_num=0):
             seen.add(hit["url"])
             source_id = f"D{round_num}_{len(seen) - len(skip)}"
             if out_dir:
-                log_source(out_dir, source_id, hit)
+                log_source(out_dir, source_id, hit, round_num)
             if not lines:
                 lines.append(
                     "Real public datasets found this round (use the file url as dataset.url and exact column names):"

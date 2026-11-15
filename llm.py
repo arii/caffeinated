@@ -282,8 +282,10 @@ class LLMClient:
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
         seed=None,
+        fake_delay=0.0,
     ):
         self.mode = mode.casefold()
+        self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
         self.replay = replay
@@ -337,6 +339,8 @@ class LLMClient:
             model = previous.get("model", model)
             usage = previous.get("usage")
         elif self.mode == "fake":
+            if self.fake_delay:
+                time.sleep(self.fake_delay)
             response = fake_response(role, prompt_values)
         elif self.mode == "tinker":
             response, usage = self._request_tinker(prompt)

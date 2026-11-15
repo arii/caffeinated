@@ -34,6 +34,7 @@ def score_run(run_dir, task_dir=HERE, ask=None):
         )
         rows.append(
             {
+                "commit": record.get("commit"),
                 "field": prereg["field"],
                 "question": prereg["question"],
                 "headline": result["headline"],

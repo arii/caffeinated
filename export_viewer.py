@@ -11,9 +11,11 @@ import bisect
 import csv
 import json
 import os
+import re
 import shutil
 import tempfile
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -47,6 +49,7 @@ ENTITY_KINDS = (
     "sources",
     "llm_calls",
     "discoveries",
+    "studies",
 )
 STATIONS = {
     "assigned": "notebook",
@@ -122,6 +125,7 @@ class Run:
         self.raw = []
         self.entities = {kind: {} for kind in ENTITY_KINDS}
         self.agents = {}
+        self.pinned = []
 
     def agent(self, native, agent_type, label=None, **extra):
         if native not in self.agents:
@@ -181,6 +185,8 @@ class Run:
                     "payload": raw["payload"],
                 }
             )
+        if self.pinned:
+            events = self._after_pinned(events)
         tick_of = {}
         for event in events:
             for ref in event["refs"].values():
@@ -192,13 +198,61 @@ class Run:
                     entity["tick"] = tick_of.get(entity_id)
         return events
 
+    def _after_pinned(self, events):
+        """Keep already-published events verbatim and append the rest after them.
+
+        Used when a late record would otherwise sort into the published prefix:
+        it is appended (never in an earlier round than the event before it).
+        """
+        merged = [dict(event) for event in self.pinned]
+        published = {event["event_id"] for event in merged}
+        floor = merged[-1]["round"] if merged else 0
+        for event in events:
+            if event["event_id"] in published:
+                continue
+            floor = max(floor, event["round"])
+            merged.append({**event, "tick": len(merged), "round": floor})
+        return merged
+
 
 def round_of_ts(starts, ts):
-    """Round whose assignment timestamp is the latest at or before ts."""
-    if not ts or not starts:
+    """Round whose assignment timestamp is the latest at or before ts.
+
+    A record without a timestamp belongs to the newest round: it was appended
+    after everything already published, so it must never sort into round 0.
+    """
+    if not starts:
         return 0
+    if not ts:
+        return starts[-1][1]
     index = bisect.bisect_right([start for start, _ in starts], ts) - 1
     return starts[index][1] if index >= 0 else 0
+
+
+def iso_ts(value):
+    """ISO-8601 UTC string for a logged ts (ISO string or epoch seconds)."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return (
+            datetime.fromtimestamp(value, timezone.utc)
+            .isoformat(timespec="microseconds")
+            .replace("+00:00", "Z")
+        )
+    return value or None
+
+
+def with_inherited_ts(rows, *fields):
+    """Give records without a timestamp the timestamp of the record before them.
+
+    Logs are append-only, so file order is time order; inheriting keeps a
+    ts-less record next to its neighbours instead of sorting it to the start.
+    """
+    last, result = None, []
+    for line, record in rows:
+        ts = next((iso_ts(record.get(field)) for field in fields if record.get(field)), None)
+        if ts:
+            last = ts
+        result.append((line, record, ts or last))
+    return result
 
 
 def reward_for(metric, reference, status, direction="minimize"):
@@ -208,6 +262,122 @@ def reward_for(metric, reference, status, direction="minimize"):
     if reference == 0:
         return round(delta * 100, 6)
     return round(delta / abs(reference) * 100, 6)
+
+
+REGIME_TAG = re.compile(r"^\s*(\[[A-Z_]+\]\s*)+")
+LOG_TAIL_CHARS = 2000
+
+
+def json_object(text):
+    try:
+        value = (
+            json.loads(text) if isinstance(text, str) and text.lstrip().startswith("{") else None
+        )
+    except ValueError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def clean_label(text):
+    """Drop leading regime tags such as "[EXPLOIT] " (the regime is its own field)."""
+    return REGIME_TAG.sub("", str(text or "")).strip()
+
+
+def claim_fields(item):
+    """idea/rationale/predicted_delta of a claim: metadata first, else the JSON content."""
+    meta, data = item.get("metadata", {}), json_object(item.get("content"))
+    return {
+        key: meta.get(key) if meta.get(key) not in (None, "") else data.get(key)
+        for key in ("idea", "rationale", "predicted_delta", "lead_id", "descriptor", "source_ids")
+    }
+
+
+def memory_text(label, item):
+    """Human-readable text for a memory item (raw JSON stays in entity.content)."""
+    content = item.get("content") or ""
+    data = json_object(content)
+    if not data:
+        return content
+    if label == "claim":
+        fields = claim_fields(item)
+        why = f" Why: {fields['rationale']}" if fields.get("rationale") else ""
+        return f"{fields.get('idea') or 'claim'}.{why}"
+    if label == "lead":
+        what = data.get("recipe") or data.get("claimed_effect") or data.get("cell") or "lead"
+        effect = data.get("claimed_effect")
+        return f"Lead: {what}" + (
+            f" (claimed effect: {effect})" if effect and effect != what else ""
+        )
+    if label == "assignment":
+        roles = data.get("roles") or {}
+        parts = [f"regime {data['regime']}"] if data.get("regime") else []
+        if roles:
+            parts.append("roles " + ", ".join(f"{a} {r}" for a, r in sorted(roles.items())))
+        if data.get("rationale"):
+            parts.append(str(data["rationale"]))
+        return "Assignment: " + ("; ".join(parts) or "round plan")
+    for key in ("why", "text", "summary", "lesson", "idea"):
+        if data.get(key):
+            return str(data[key])
+    scalars = [f"{k}: {v}" for k, v in data.items() if isinstance(v, (str, int, float)) and v != ""]
+    return "; ".join(scalars[:6]) or content
+
+
+def fmt(value, digits=4):
+    return f"{value:.{digits}g}" if isinstance(value, (int, float)) else "n/a"
+
+
+def describe_event(event, labels, metric_name):
+    """Readable one-line text for an event (payload.text), used by the Lab's speech/feeds."""
+    p, kind = event["payload"], event["type"]
+    if kind == "run.started":
+        return f"Run started (arm {p.get('arm')})"
+    if kind == "run.finished":
+        return f"Run {p.get('status')}; best {metric_name} {fmt(p.get('best_metric'))}"
+    if kind == "round.started":
+        swarm_b = (
+            f", swarm boredom {fmt(p.get('swarm_B'), 2)}" if p.get("swarm_B") is not None else ""
+        )
+        return f"Round {event['round']} begins: regime {p.get('regime') or 'EXPLOIT'}{swarm_b}"
+    if kind == "agent.assigned":
+        return f"Assigned role {p.get('role')}" + (" (scout)" if p.get("scout") else "")
+    if kind == "boredom.measured":
+        return (
+            f"Boredom {fmt(p.get('B'), 2)} ({p.get('regime') or p.get('directive') or 'measured'})"
+        )
+    if kind == "gate.checked":
+        verdict = "passed" if p.get("pass") else "blocked"
+        reasons = "; ".join(p.get("reasons") or [])
+        return f"Novelty gate {verdict}" + (f": {reasons}" if reasons else "")
+    if kind == "llm.called":
+        tokens = f", {p['tokens']} tokens" if p.get("tokens") else ""
+        return f"Asked the {p.get('role')} model ({p.get('model') or 'llm'}{tokens})"
+    if kind == "experiment.started":
+        return f"Testing: {p.get('description') or 'candidate'}"
+    if kind == "experiment.finished":
+        reward = (
+            f", reward {p['reward']:+.1f}%" if isinstance(p.get("reward"), (int, float)) else ""
+        )
+        return f"Result {p.get('status')}: {metric_name} {fmt(p.get('metric_value'))}{reward}"
+    if kind == "verdict.issued":
+        why = f": {p['why']}" if p.get("why") else ""
+        return f"Critic verdict {p.get('verdict') or ('accept' if p.get('accepted') else 'reject')}{why}"
+    if kind == "discovery.made":
+        return f"New best {metric_name} {fmt(p.get('metric_value'))}: {p.get('title')}"
+    if kind == "observation.received":
+        if p.get("kind") == "memories":
+            authors = ", ".join(p.get("authors") or []) or "nobody"
+            return f"Recalled {p.get('n_results') or 0} memories from {authors}"
+        return f"Found: {p.get('summary') or p.get('kind')}"
+    if kind in {"memory.written", "diary.written"}:
+        return p.get("excerpt") or kind
+    return str(
+        p.get("summary")
+        or p.get("title")
+        or p.get("why")
+        or p.get("rationale")
+        or kind.replace(".", " ")
+    )
 
 
 # ---------------------------------------------------------------- autoresearch
@@ -406,6 +576,29 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "rationale": record.get("rationale"),
                 },
             )
+            if agent in run.agents:
+                scout = " and scout for leads" if agent in record.get("scouts", []) else ""
+                why = (
+                    f" ({str(record['rationale']).rstrip('.')})" if record.get("rationale") else ""
+                )
+                run.emit(
+                    "message.sent",
+                    round_=round_,
+                    phase="assign",
+                    ts=ts,
+                    agent="conductor",
+                    file="assignments.jsonl",
+                    line=line,
+                    native_type="assignment",
+                    sub=200 + sub,
+                    refs={"to_agent_id": run.agent_id(agent)},
+                    payload={
+                        "kind": "assignment",
+                        "to_agent_id": run.agent_id(agent),
+                        "text": f"{run.agents[agent]['label']}, you are on {role} this round"
+                        f"{scout}{why}.",
+                    },
+                )
             status = (record.get("per_agent_boredom") or {}).get(agent)
             if not status:
                 status = recomputed_boredom.get((round_, agent), {})
@@ -496,8 +689,10 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
 
     # Exa research: queries are questions, sources/extracts are observations.
     query_agent = {}
-    for line, record in research:
-        ts, round_ = record.get("ts"), round_of_ts(starts, record.get("ts"))
+    for line, record, ts in with_inherited_ts(research, "ts"):
+        round_ = (
+            record["round"] if isinstance(record.get("round"), int) else round_of_ts(starts, ts)
+        )
         if record.get("type") == "query":
             qid = f"question:{record['id']}"
             agent = record.get("agent") if record.get("agent") in run.agents else None
@@ -669,18 +864,16 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "lesson": "critic",
         "assignment": "assign",
     }
-    for line, item in memory_items:
+    lead_authors, seen_claims = {}, {}
+    for line, item, ts in with_inherited_ts(memory_items, "logged_at", "timestamp"):
         meta = item.get("metadata", {})
         label = meta.get("type") or (item.get("label") or "note").split(" by ")[0]
         author = item.get("author")
         agent = author if author in run.agents else ("conductor" if label == "assignment" else None)
         round_ = (
-            meta.get("round")
-            if isinstance(meta.get("round"), int)
-            else round_of_ts(starts, item.get("logged_at") or item.get("timestamp"))
+            meta.get("round") if isinstance(meta.get("round"), int) else round_of_ts(starts, ts)
         )
         mid = f"memory:{item.get('sourceId') or item.get('id') or line}"  # recalls report sourceId
-        ts = item.get("logged_at") or item.get("timestamp")
         run.put(
             "memory",
             mid,
@@ -689,7 +882,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 "author_agent_id": run.agent_id(agent),
                 "author": author,
                 "type": label,
-                "text": item.get("content"),
+                "text": memory_text(label, item),
+                "content": item.get("content"),
                 "scope": item.get("audience") or "swarm",
                 "tick": None,
                 "round": round_,
@@ -707,27 +901,41 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "line": line,
             "native_type": label,
         }
+        fields = claim_fields(item) if label == "claim" else {}
+        idea = clean_label(fields.get("idea")) or "(no idea text)"
+        repeat_of = seen_claims.get((author, idea.casefold())) if label == "claim" else None
+        text = memory_text(label, item)
+        if repeat_of:
+            text = f"Re-proposes: {text}"
+            run.entities["memory"][mid]["text"] = text
+            run.entities["memory"][mid]["repeat_of"] = repeat_of
         run.emit(
             "memory.written",
             **common,
             refs={"memory_id": mid},
-            payload={"type": label, "excerpt": (item.get("content") or "")[:240]},
+            payload={"type": label, "excerpt": text[:240], "text": text[:240]},
         )
-        if label == "claim":
+        if label == "lead":
+            lead_authors[item.get("id")] = (agent, mid)
+        if label == "claim" and repeat_of:
+            claims[(author, round_)] = repeat_of
+        elif label == "claim":
             hid = f"hypothesis:{meta.get('commit') or line}"
             claims[(author, round_)] = hid
+            seen_claims[(author, idea.casefold())] = hid
+            lead_id = fields.get("lead_id") or meta.get("lead")
             run.put(
                 "hypotheses",
                 hid,
                 {
                     "agent_id": run.agent_id(agent),
                     "round": round_,
-                    "text": meta.get("idea") or item.get("content"),
-                    "rationale": meta.get("rationale"),
-                    "descriptor": meta.get("descriptor"),
-                    "predicted_delta": meta.get("predicted_delta"),
-                    "lead_id": meta.get("lead_id") or meta.get("lead"),
-                    "source_ids": meta.get("source_ids") or meta.get("sources") or [],
+                    "text": idea,
+                    "rationale": fields.get("rationale") or None,
+                    "descriptor": fields.get("descriptor"),
+                    "predicted_delta": fields.get("predicted_delta"),
+                    "lead_id": lead_id,
+                    "source_ids": fields.get("source_ids") or meta.get("sources") or [],
                     "memory_id": mid,
                     "tick": None,
                 },
@@ -737,9 +945,24 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 **common,
                 sub=1,
                 refs={"hypothesis_id": hid, "memory_id": mid},
-                payload={"text": run.entities["hypotheses"][hid]["text"]},
+                payload={"text": idea, "rationale": fields.get("rationale") or None},
             )
-        if label in {"claim", "lesson"}:
+            giver, lead_mid = lead_authors.get(lead_id, (None, None))
+            if giver and agent and giver != agent:
+                run.emit(
+                    "items.shared",
+                    **{**common, "agent": giver},
+                    sub=3,
+                    refs={"to_agent_id": run.agent_id(agent), "memory_id": lead_mid},
+                    payload={
+                        "kind": "lead",
+                        "to_agent_id": run.agent_id(agent),
+                        "items": [lead_mid],
+                        "text": f"Shared lead {lead_id} with {run.agents[agent]['label']}: "
+                        f"{run.entities['memory'][lead_mid]['text']}",
+                    },
+                )
+        if label == "lesson" or (label == "claim" and not repeat_of):
             did = f"diary:{line}"
             kind = "rationale" if label == "claim" else "critic_lesson"
             run.put(
@@ -749,7 +972,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "agent_id": run.agent_id(agent),
                     "kind": kind,
                     "round": round_,
-                    "text": meta.get("rationale") or item.get("content"),
+                    "text": fields.get("rationale") or text,
                     "tick": None,
                     "refs": [mid],
                 },
@@ -759,7 +982,11 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 **common,
                 sub=2,
                 refs={"diary_id": did},
-                payload={"kind": kind, "excerpt": (run.entities["diary"][did]["text"] or "")[:240]},
+                payload={
+                    "kind": kind,
+                    "excerpt": (run.entities["diary"][did]["text"] or "")[:240],
+                    "text": (run.entities["diary"][did]["text"] or "")[:240],
+                },
             )
 
     # LLM calls: metadata only in events; prompts live in the entity.
@@ -873,7 +1100,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "seq": row.get("seq"),
                     "commit": commit,
                     "parent_commit": None,
-                    "description": row.get("description"),
+                    "description": clean_label(row.get("description")) or None,
                     "descriptor": row.get("descriptor"),
                     "role": row.get("role"),
                     "regime_label": row.get("regime_label"),
@@ -890,7 +1117,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     },
                     "verdict": None,
                     "reward_id": rid,
-                    "artifacts": {"log": f"runs/{commit}.log"} if commit else {},
+                    "artifacts": experiment_artifacts(out_dir, commit),
+                    "log_tail": log_tail(out_dir, commit),
                     "start_tick": None,
                     "end_tick": None,
                     "tick": None,
@@ -912,7 +1140,10 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 **common,
                 ts=started,
                 refs={"experiment_id": eid, **({"hypothesis_id": hid} if hid else {})},
-                payload={"description": row.get("description"), "role": row.get("role")},
+                payload={
+                    "description": clean_label(row.get("description")) or None,
+                    "role": row.get("role"),
+                },
             )
             run.emit(
                 "experiment.finished",
@@ -949,6 +1180,21 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             }
             run.emit("verdict.issued", **common, refs={"experiment_id": eid}, payload=verdict)
             experiment = run.entities["experiments"].get(eid)
+            if experiment and experiment["agent_id"]:
+                why = f" {verdict['why']}" if verdict.get("why") else ""
+                run.emit(
+                    "message.sent",
+                    **common,
+                    sub=2,
+                    refs={"to_agent_id": experiment["agent_id"], "experiment_id": eid},
+                    payload={
+                        "kind": "verdict",
+                        "to_agent_id": experiment["agent_id"],
+                        "text": f'Re "{experiment["description"]}": '
+                        f"{'accepted' if accepted else 'not confirmed'} "
+                        f"({verdict.get('verdict') or 'reviewed'}).{why}",
+                    },
+                )
             metric = experiment and experiment["metric_value"]
             second = number(row.get("score"))
             if metric is not None and second is not None:
@@ -999,6 +1245,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 }
 
     last_round = max([r for _, r in starts] + [0])
+    export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_ts)
     final_status = status or run_artifact.get("status", "finished")
     final_status = final_status if final_status in {"finished", "stopped"} else "finished"
     if final:
@@ -1027,7 +1274,14 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "boredom_enabled": arm != "A",
             "policy": "boredom_meter",
         },
-        "metric": {"name": "loss", "unit": "", "direction": "minimize"},
+        "metric": {
+            "name": "loss",
+            "label": "loss",
+            "unit": "",
+            "direction": "minimize",
+            **(task_config(run_artifact.get("task")).get("metric") or {}),
+        },
+        "publish_errors": publish_errors(out_dir),
         "boredom": {
             "scale": [0, 1],
             "thresholds": {
@@ -1051,6 +1305,12 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "live": not final,
         "converged": bool(run_artifact.get("converged", False)),
     }
+    labels = {a["agent_id"]: a["label"] for a in run.agents.values()}
+    for raw in run.raw:
+        if not raw["payload"].get("text"):
+            raw["payload"]["text"] = describe_event(
+                raw, labels, manifest_extra["metric"].get("label") or "loss"
+            )
     if (
         not final
         and frontier is not None
@@ -1073,6 +1333,212 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             frontier["round"] if frontier["phase"] != "finish" else frontier["round"] + 1
         )
     return run, manifest_extra
+
+
+# ---------------------------------------------------------------- ignobel
+
+
+def experiment_artifacts(out_dir, commit):
+    if not commit:
+        return {}
+    artifacts = {"log": f"runs/{commit}.log"}
+    if (Path(out_dir) / "runs" / f"{commit}.diff").is_file():
+        artifacts["diff"] = f"runs/{commit}.diff"
+    return artifacts
+
+
+def log_tail(out_dir, commit):
+    path = Path(out_dir) / "runs" / f"{commit}.log"
+    if not commit or not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8", errors="replace")
+    return text[-LOG_TAIL_CHARS:] or None
+
+
+def study_outcome(result):
+    if result.get("rejected"):
+        return f"Rejected: {result['rejected']}"
+    if "rho" not in result:
+        return "Not run"
+    verdict = (
+        "REPLICATED"
+        if result.get("confirmed")
+        else "significant but did not replicate"
+        if result.get("significant")
+        else "not significant"
+    )
+    predicted = result.get("predicted_rho")
+    vs = f" (predicted {fmt(predicted, 2)})" if predicted is not None else ""
+    return (
+        f"rho {fmt(result.get('rho'), 3)}{vs}, p {fmt(result.get('p'), 2)}, "
+        f"n {result.get('n')}: {verdict}"
+    )
+
+
+def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_ts):
+    """Ig Nobel preregistrations, results and committee awards (ignobel_studies.jsonl)."""
+    rows = read_jsonl(Path(out_dir) / "ignobel_studies.jsonl")
+    by_commit, by_prereg = {}, {}
+    for line, record in rows:
+        prereg, result = record.get("prereg") or {}, record.get("result") or {}
+        commit = record.get("commit")
+        ts = iso_ts(record.get("ts"))
+        prereg_key = json.dumps(prereg, sort_keys=True)
+        original = by_commit.get(commit) if commit else None
+        if record.get("role") == "critic" or (not commit and prereg_key in by_prereg):
+            original = original or by_prereg.get(prereg_key)
+        eid = experiments_by_commit.get(commit)
+        experiment = run.entities["experiments"].get(eid) or {}
+        agent = next(
+            (n for n, a in run.agents.items() if a["agent_id"] == experiment.get("agent_id")),
+            None,
+        )
+        round_ = experiment.get("round") or round_of_ts(starts, ts)
+        common = {
+            "round_": round_,
+            "phase": "evaluate",
+            "ts": ts,
+            "file": "ignobel_studies.jsonl",
+            "line": line,
+            "native_type": "study",
+        }
+        if original and (record.get("role") == "critic" or not commit):
+            replicate = {
+                key: result.get(key)
+                for key in ("rho", "p", "n", "halves", "significant", "replicated", "confirmed")
+            }
+            run.entities["studies"][original]["replications"].append(replicate)
+            run.emit(
+                "study.replicated",
+                **{**common, "phase": "critic"},
+                agent="critic",
+                refs={"study_id": original, **({"experiment_id": eid} if eid else {})},
+                payload={**replicate, "text": f"Critic re-ran the study: {study_outcome(result)}"},
+            )
+            continue
+        dataset = prereg.get("dataset") or {}
+        sid = run.put(
+            "studies",
+            f"study:{line}",
+            {
+                "agent_id": experiment.get("agent_id"),
+                "experiment_id": eid,
+                "commit": commit,
+                "round": round_,
+                "field": prereg.get("field"),
+                "study_type": prereg.get("study_type"),
+                "question": prereg.get("question"),
+                "hypothesis": prereg.get("hypothesis"),
+                "mechanism": prereg.get("mechanism"),
+                "dataset": {
+                    key: dataset.get(key)
+                    for key in ("url", "x", "x_level", "x_per", "y", "y_level", "y_per")
+                    if dataset.get(key) is not None
+                },
+                "dataset_id": result.get("dataset_id"),
+                "direction": prereg.get("direction"),
+                "predicted_rho": prereg.get("predicted_rho"),
+                "rho": result.get("rho"),
+                "p": result.get("p"),
+                "n": result.get("n"),
+                "halves": result.get("halves"),
+                "significant": result.get("significant"),
+                "replicated": result.get("replicated"),
+                "confirmed": bool(result.get("confirmed")),
+                "headline": result.get("headline"),
+                "rejected": result.get("rejected"),
+                "outcome": study_outcome(result),
+                "citations": result.get("citations") or prereg.get("citations") or [],
+                "replications": [],
+                "committee": None,
+                "tick": None,
+            },
+        )
+        if commit:
+            by_commit[commit] = sid
+        by_prereg.setdefault(prereg_key, sid)
+        refs = {"study_id": sid, **({"experiment_id": eid} if eid else {})}
+        x, y = dataset.get("x"), dataset.get("y")
+        run.emit(
+            "study.registered",
+            **common,
+            agent=agent,
+            sub=10,
+            refs=refs,
+            payload={
+                "field": prereg.get("field"),
+                "question": prereg.get("question"),
+                "x": x,
+                "y": y,
+                "predicted_rho": prereg.get("predicted_rho"),
+                "text": f"Preregistered: {prereg.get('question') or prereg.get('hypothesis')}"
+                + (f" ({x} vs {y})" if x and y else ""),
+            },
+        )
+        run.emit(
+            "study.result",
+            **common,
+            agent=agent,
+            sub=11,
+            refs=refs,
+            payload={
+                "rho": result.get("rho"),
+                "predicted_rho": result.get("predicted_rho"),
+                "p": result.get("p"),
+                "n": result.get("n"),
+                "replicated": result.get("replicated"),
+                "confirmed": bool(result.get("confirmed")),
+                "rejected": result.get("rejected"),
+                "headline": result.get("headline"),
+                "text": study_outcome(result),
+            },
+        )
+    studies = run.entities["studies"]
+    for line, score in read_jsonl(Path(out_dir) / "scores.jsonl"):
+        sid = by_commit.get(score.get("commit")) or next(
+            (
+                key
+                for key, study in studies.items()
+                if study["headline"] == score.get("headline")
+                and study["dataset"].get("url") == score.get("dataset")
+            ),
+            None,
+        )
+        if sid is None:
+            continue
+        committee = {
+            "score": score.get("committee"),
+            "rejected": score.get("rejected"),
+            "verdicts": score.get("verdicts"),
+        }
+        studies[sid]["committee"] = committee
+        study = studies[sid]
+        agent = next((n for n, a in run.agents.items() if a["agent_id"] == study["agent_id"]), None)
+        outcome = (
+            f"rejected ({score['rejected']})"
+            if score.get("rejected")
+            else f"score {fmt(score.get('committee'), 3)}"
+        )
+        run.emit(
+            "award.issued",
+            round_=last_round,
+            phase="finish",
+            ts=all_ts[-1] if all_ts else None,
+            agent=agent,
+            file="scores.jsonl",
+            line=line,
+            native_type="committee",
+            refs={
+                "study_id": sid,
+                **({"experiment_id": study["experiment_id"]} if study["experiment_id"] else {}),
+            },
+            payload={
+                **committee,
+                "award": "Ig Nobel committee",
+                "headline": study["headline"],
+                "text": f"Ig Nobel committee: {study['headline']}: {outcome}",
+            },
+        )
 
 
 # ---------------------------------------------------------------- reducer
@@ -1277,6 +1743,7 @@ def build(run, extra):
         },
         "agents": list(run.agents.values()),
         "provenance": {**extra["provenance"], "artifacts": {}},
+        "publish_errors": extra.get("publish_errors", []),
     }
     world = initial_world(run, extra)
     keyframes, rounds, markers = {}, [], []
@@ -1441,9 +1908,10 @@ def _copy_artifacts(out_dir, run_dir, entities):
             shutil.copyfile(source, target)
 
 
-def export(out_dir, dest, arm=None, title=None, final=True, status=None):
+def export(out_dir, dest, arm=None, title=None, final=True, status=None, pinned=None):
     out_dir = Path(out_dir)
     run, extra = export_autoresearch(out_dir, arm, title, final, status)
+    run.pinned = pinned or []
     manifest, timeline, events, keyframes = build(run, extra)
     run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
     _copy_artifacts(out_dir, run_dir, run.entities)
@@ -1452,6 +1920,36 @@ def export(out_dir, dest, arm=None, title=None, final=True, status=None):
 
 class PublishConflict(RuntimeError):
     pass
+
+
+PUBLISH_LOG = "viewer_publish_log.jsonl"
+PUBLISH_ERRORS_SHOWN = 20
+
+
+def log_publish_issue(out_dir, *, kind, message, final=False, status=None):
+    """Append a publish error/recovery to the run's log (surfaced as manifest.publish_errors)."""
+    record = {
+        "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "kind": kind,
+        "status": status,
+        "final": final,
+        "message": str(message)[:500],
+    }
+    with (Path(out_dir) / PUBLISH_LOG).open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def publish_errors(out_dir):
+    rows = read_jsonl(Path(out_dir) / PUBLISH_LOG)
+    return [
+        {
+            "ts": record.get("ts"),
+            "kind": record.get("kind") or record.get("error") or "error",
+            "final": bool(record.get("final")),
+            "message": record.get("message", ""),
+        }
+        for _, record in rows[-PUBLISH_ERRORS_SHOWN:]
+    ]
 
 
 def _atomic_write(path, data):
@@ -1483,15 +1981,39 @@ def publish(out_dir, dest, *, final=False, status=None):
         fresh_events = (fresh_dir / "events.ndjson").read_bytes()
         current_path = target / "events.ndjson"
         current_events = current_path.read_bytes() if current_path.exists() else b""
-        if not fresh_events.startswith(current_events):
-            raise PublishConflict(f"published events are not a prefix for run {run_id}")
+        recovered = not fresh_events.startswith(current_events)
+        if recovered:
+            # A late record sorted into the published prefix: keep every published
+            # event as-is and append the new ones instead of wedging the live run.
+            try:
+                pinned = [json.loads(line) for line in current_events.decode().splitlines() if line]
+            except ValueError as error:
+                raise PublishConflict(
+                    f"published events are unreadable for run {run_id}"
+                ) from error
+            log_publish_issue(
+                out_dir,
+                kind="recovered",
+                final=final,
+                status=status,
+                message="published events were not a prefix; new events appended after tick "
+                f"{len(pinned) - 1}",
+            )
+            fresh_root = Path(temp) / "recovered"
+            fresh_dir = export(out_dir, fresh_root, final=final, status=final_status, pinned=pinned)
+            fresh_events = (fresh_dir / "events.ndjson").read_bytes()
+            if not fresh_events.startswith(current_events):
+                raise PublishConflict(f"published events are not a prefix for run {run_id}")
 
         fresh_keyframes = fresh_dir / "keyframes"
         keyframe_writes = []
         if (target / "keyframes").exists():
             for current in (target / "keyframes").glob("*.json"):
                 replacement = fresh_keyframes / current.name
-                if not replacement.exists() or current.read_bytes() != replacement.read_bytes():
+                changed = (
+                    not replacement.exists() or current.read_bytes() != replacement.read_bytes()
+                )
+                if changed and not recovered:
                     raise PublishConflict(f"published keyframe changed: {current.name}")
         for frame in fresh_keyframes.glob("*.json"):
             current = target / "keyframes" / frame.name
