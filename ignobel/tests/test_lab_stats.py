@@ -1,9 +1,12 @@
+import subprocess
+
 import numpy as np
 import pytest
 
 import agents
 import lab
 import stats
+from conftest import requires_sandbox
 from memory import LocalMemory
 
 
@@ -21,6 +24,7 @@ report(a, b, direction='+', effect_size=0.4)
 """
 
 
+@requires_sandbox
 def test_run_study_mock_ok_and_budget(tmp_path):
     a = _agent("quill")
     out = lab.run_study(GOOD, a, plot_path=tmp_path / "p.svg")
@@ -28,6 +32,7 @@ def test_run_study_mock_ok_and_budget(tmp_path):
     assert out["stats"]["kind"] == "two_group" and (tmp_path / "p.svg").exists()
 
 
+@requires_sandbox
 def test_run_study_budget_exceeded():
     a = _agent("quill")
     a.budget_left = 1
@@ -35,20 +40,47 @@ def test_run_study_budget_exceeded():
     assert not out["ok"] and "BudgetExceeded" in out["stderr"] and a.budget_left == 0
 
 
+@requires_sandbox
 def test_run_study_crash_reports_stderr():
     a = _agent("quill")
     out = lab.run_study("raise ValueError('boom')", a)
     assert not out["ok"] and "boom" in out["stderr"] and out["stats"] is None
 
 
+@requires_sandbox
 def test_run_study_timeout_with_output_is_a_failed_study(monkeypatch):
-    monkeypatch.setattr(lab, "TIMEOUT_S", 1)
+    monkeypatch.setattr(lab, "TIMEOUT_S", 5)
     a = _agent("quill")
-    code = "import sys, time\nprint('@@CALLS 1', flush=True)\nprint('err', file=sys.stderr, flush=True)\ntime.sleep(30)"
+    code = "import sys, time\nprint('@@CALLS 1', flush=True)\nprint('err', file=sys.stderr, flush=True)\ntime.sleep(60)"
     out = lab.run_study(code, a)
     assert not out["ok"] and out["calls"] == 1 and "timeout" in out["stderr"] and a.budget_left == 5
+    left = subprocess.run(["docker", "ps", "-q", "--filter", "name=ignobel-study-"], capture_output=True, text=True)
+    assert left.stdout.strip() == ""
 
 
+@requires_sandbox
+def test_sandbox_cannot_read_host_files():
+    host_file = lab.HERE / "agents.yaml"
+    code = (f"from lab_runtime import report\ntry:\n    open({str(host_file)!r}).read()\nexcept OSError:\n"
+            "    report([1,2,3],[4,5,6],'+',1)\nelse:\n    raise SystemExit('read a host file')")
+    assert lab.run_study(code, _agent("quill"))["ok"]
+
+
+@requires_sandbox
+def test_sandbox_has_no_network():
+    code = ("import socket\nfrom lab_runtime import report\ntry:\n"
+            "    socket.create_connection(('1.1.1.1', 53), timeout=3)\nexcept OSError:\n"
+            "    report([1,2,3],[4,5,6],'+',1)\nelse:\n    raise SystemExit('reached the network')")
+    assert lab.run_study(code, _agent("quill"))["ok"]
+
+
+def test_no_sandbox_means_no_study(monkeypatch):
+    monkeypatch.setattr(lab.shutil, "which", lambda _: None)
+    with pytest.raises(lab.SandboxUnavailable):
+        lab.run_study(GOOD, _agent("quill"))
+
+
+@requires_sandbox
 def test_sandbox_env_has_no_keys(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret")
     a = _agent("quill")
@@ -56,6 +88,7 @@ def test_sandbox_env_has_no_keys(monkeypatch):
     assert lab.run_study(code, a)["ok"]
 
 
+@requires_sandbox
 def test_request_measurement_charges_owner_and_feeds_statistician():
     v, q = _agent("volkov"), _agent("quill")
     m1 = lab.request_measurement(v, q, {"instrument": "cups_per_hour", "args": {}})

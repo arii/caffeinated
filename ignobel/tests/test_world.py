@@ -7,6 +7,9 @@ import pytest
 
 import events
 import run_arm
+from conftest import requires_sandbox
+
+pytestmark = requires_sandbox
 
 
 def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None):

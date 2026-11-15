@@ -1,14 +1,15 @@
 """Run study code in a sandbox and serve measurement requests between labs.
 
-Mock mode: a subprocess in a temp dir with a scrubbed environment.
-Real mode: a Modal sandbox, 120s timeout, no network, no API keys.
+Study code is written by agents and never runs on the host. Both modes: 120s timeout,
+no network, no API keys, only the study's own files (and dataset copy) visible.
+Mock mode: a local Docker container (read-only, no capabilities). Real mode: a Modal sandbox.
 """
 import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 import llm
@@ -16,6 +17,11 @@ import llm
 HERE = Path(__file__).parent
 RUNTIME = HERE / "lab_runtime.py"
 TIMEOUT_S = 120
+SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE", "python:3.11-slim")
+
+
+class SandboxUnavailable(RuntimeError):
+    """No sandbox to run study code in; studies are never run on the host instead."""
 
 
 def _read_column(dataset, column, where=None, offset=0, limit=None):
@@ -54,14 +60,27 @@ def _parse(stdout: str) -> tuple[dict | None, int]:
     return result, calls
 
 
-def _run_subprocess(workdir: Path) -> tuple[str, str, int]:
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}  # no keys leak in
+def _run_docker(workdir: Path) -> tuple[str, str, int]:
+    docker = shutil.which("docker")
+    if docker is None:
+        raise SandboxUnavailable("mock mode runs studies in Docker, but `docker` is not on PATH")
+    name = f"ignobel-study-{uuid.uuid4().hex[:12]}"
+    cmd = [docker, "run", "--rm", "--name", name,
+           "--network", "none", "--read-only", "--tmpfs", "/tmp:size=16m",
+           "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+           "--memory", "512m", "--cpus", "1", "--pids-limit", "64",
+           "--user", f"{os.getuid()}:{os.getgid()}",
+           "-e", "PYTHONDONTWRITEBYTECODE=1",
+           "-v", f"{workdir}:/work:ro", "-w", "/work",
+           SANDBOX_IMAGE, "python", "-E", "-s", "study.py"]
     try:
-        p = subprocess.run([sys.executable, "-E", "-s", "study.py"], cwd=workdir, env=env,
-                           capture_output=True, text=True, timeout=TIMEOUT_S)
-        return p.stdout, p.stderr, p.returncode
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S)
     except subprocess.TimeoutExpired as e:
+        subprocess.run([docker, "rm", "-f", name], capture_output=True)
         return _text(e.stdout), _text(e.stderr) + "\ntimeout", 124
+    if p.returncode == 125:  # docker itself failed (daemon down, bad image), not the study
+        raise SandboxUnavailable(f"docker could not start the sandbox: {p.stderr.strip()}")
+    return p.stdout, p.stderr, p.returncode
 
 
 def _text(out: str | bytes | None) -> str:
@@ -123,12 +142,12 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
     try:
         (workdir / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
         shutil.copy(RUNTIME, workdir / "lab_runtime.py")
-        if ds is not None and not llm.MOCK:
+        if ds is not None:
             shutil.copy(ds, workdir / ds.name)  # the sandbox has no access to the host filesystem
             spec["dataset"] = f"/work/{ds.name}"
             (workdir / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
         (workdir / "study.py").write_text(code, encoding="utf-8")
-        stdout, stderr, rc = (_run_subprocess if llm.MOCK else _run_modal)(workdir)
+        stdout, stderr, rc = (_run_docker if llm.MOCK else _run_modal)(workdir)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     result, calls = _parse(stdout)
