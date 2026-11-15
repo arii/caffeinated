@@ -66,8 +66,7 @@ export function createWorld(): LabWorld {
   for(const x of [-3.9,3.9])box(x,2.25,12.65,.12,4.5,.18,steel);
   box(0,2.25,12.8,7.7,4.5,.025,glass);
   label('COMMON GROUND / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,'#f1ecdf','#425859',Math.PI);
-  // Timber acoustic canopy and restrained black task-light rails from study 03.
-  for(let x=-10.8;x<=10.8;x+=1.2)box(x,4.66,0,.12,.23,26,wood);
+  // Clear plaster ceiling with restrained task-light rails.
   for(const z of [-8,-1,6]) {
     box(0,4.35,z,20,.08,.07,charcoal);
     for(const x of [-7,0,7]) {

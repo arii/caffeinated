@@ -4,9 +4,9 @@ Four distinct first-person laboratories on one shared engine. Pick a visual dire
 
 - **Daylight** (`?style=realistic`): contemporary lab, believable instruments, material detail, and human research agents.
 - **Wonderworks** (`?style=cartoon`): cobalt/coral/yellow cartoon lab, rounded equipment, and expressive robot researchers.
-- **Fieldwork** (`?style=foundation`): a modular ash/ivory/ink research commons with a spatial field table and flexible experiment bays. Recommended foundation for domain-neutral research.
+- **Fieldwork** (`?style=foundation`): a modular ash/ivory/ink research commons with a spatial field table and flexible experiment bays. An alternative foundation for domain-neutral research.
 
-- **Common Ground** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s timber acoustic canopy, modular bays, shared field table, and dataset library.
+- **Common Ground** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s modular bays, shared field table, and dataset library, with a clear plaster ceiling. This is the selected default style.
 
 ## Locked stack
 

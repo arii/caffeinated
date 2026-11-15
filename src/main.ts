@@ -13,11 +13,11 @@ const consoleDialog=$<HTMLDialogElement>('console'), guide=$<HTMLDialogElement>(
 const styles={
   realistic:{factory:realistic,name:'Daylight',label:'REALISTIC LAB',description:'A contemporary working laboratory.\nDaylight, glass, and material detail.',notes:'A grounded, contemporary lab with daylight windows, wet-lab instruments, human research agents, and carefully proportioned work surfaces. Best when the experience should feel close to a real facility.'},
   cartoon:{factory:cartoon,name:'Wonderworks',label:'CARTOON LAB',description:'Big ideas. A little delightful chaos.\nA lab with personality.',notes:'A cobalt, coral, and yellow idea factory with rounded equipment and expressive robot researchers. Best when character and immediate visual storytelling are the priority.'},
-  foundation:{factory:foundation,name:'Fieldwork',label:'MODULAR FOUNDATION',description:'A warm precision workshop.\nBuilt for the next experiment.',notes:'An architectural research commons with ash, ivory, and ink accents. Modular bays give each agent and experiment a clear home. Recommended foundation for multiple scientific domains and an expanding agent team.'},
-  hybrid:{factory:hybrid,name:'Common Ground',label:'DAYLIGHT × FIELDWORK',description:'Real instruments. Warm architecture.\nA shared home for research agents.',notes:'A blend of studies 01 and 03: contemporary scientific equipment, human researchers, continuous terrazzo flooring, an ash acoustic canopy, modular work bays, a shared field table, and a dataset library.'},
+  foundation:{factory:foundation,name:'Fieldwork',label:'MODULAR FOUNDATION',description:'A warm precision workshop.\nBuilt for the next experiment.',notes:'An architectural research commons with ash, ivory, and ink accents. Modular bays give each agent and experiment a clear home. An alternative foundation for multiple scientific domains and an expanding agent team.'},
+  hybrid:{factory:hybrid,name:'Common Ground',label:'DAYLIGHT × FIELDWORK',description:'Real instruments. Warm architecture.\nA shared home for research agents.',notes:'A blend of studies 01 and 03: contemporary scientific equipment, human researchers, continuous terrazzo flooring, a clean plaster ceiling, modular work bays, a shared field table, and a dataset library.'},
 };
 type StyleId=keyof typeof styles;
-let world:LabWorld, renderer:THREE.WebGLRenderer, currentStyle:StyleId='foundation';
+let world:LabWorld, renderer:THREE.WebGLRenderer, currentStyle:StyleId='hybrid';
 let state:ResearchState=initialState(), entered=false, near:Station|null=null;
 let yaw=0,pitch=0,drag=false,lastPointer:{x:number;y:number}|null=null;
 let toastTimer:ReturnType<typeof setTimeout>, panel:'research'|'notes'|StationId='research';
@@ -85,7 +85,7 @@ window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListen
 try{
   renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=false;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.outputColorSpace=THREE.SRGBColorSpace;
   $('world').appendChild(renderer.domElement);renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Laboratory viewport: WASD to move, arrow keys to look, E to interact');
-  const requested=new URLSearchParams(location.search).get('style');switchStyle(requested&&requested in styles?requested as StyleId:'foundation');
+  const requested=new URLSearchParams(location.search).get('style');switchStyle(requested&&requested in styles?requested as StyleId:'hybrid');
   renderer.domElement.addEventListener('click',()=>lock());
   renderer.domElement.addEventListener('pointerdown',e=>{if(!entered||document.pointerLockElement)return;drag=true;lastPointer={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId);});
   renderer.domElement.addEventListener('pointermove',e=>{if(!drag||!lastPointer||document.pointerLockElement)return;yaw-=(e.clientX-lastPointer.x)*.003;pitch=THREE.MathUtils.clamp(pitch-(e.clientY-lastPointer.y)*.003,-1.2,1.2);lastPointer={x:e.clientX,y:e.clientY};});
