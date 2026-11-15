@@ -48,7 +48,7 @@ class OpenAILiveTests(unittest.TestCase):
 
     def test_role_routing(self):
         for role, model, effort, limit in [
-            ("SUPERVISOR", "gpt-6.1-sol", "medium", 4096),
+            ("SUPERVISOR", "gpt-6.1-sol", "low", 4096),
             ("WORKER_IMPLEMENT", "gpt-6-luna", "none", 600),
             ("CRITIC", "gpt-6-luna", "none", 600),
         ]:

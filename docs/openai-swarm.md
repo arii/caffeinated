@@ -1,7 +1,7 @@
 # OpenAI supervised live runner
 
 This branch replaces the local Ollama mode with OpenAI. One `gpt-6.1-sol`
-supervisor plans each round at medium reasoning effort. Eight `gpt-6-luna`
+supervisor plans each round at low reasoning effort. Eight `gpt-6-luna`
 workers execute short assignments with reasoning effort `none`; critic roles
 also use Luna. Worker calls are queued, with at most one execution and one
 repair per worker per round. This is a fixed-size team, not autonomous spawning.
