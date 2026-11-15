@@ -85,5 +85,8 @@ def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):
             raise openai.APIStatusError("no credit", response=httpx.Response(402, request=req), body=None)
         return client.api_key
 
-    assert [llm._openai_call(call) for _ in range(4)] == ["k1", "k3", "k1", "k3"]
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as pool:  # World._gather calls from threads
+        used = list(pool.map(lambda _: llm._openai_call(call), range(40)))
+    assert set(used) == {"k1", "k3"}
     assert [c.api_key for c in llm._clients] == ["k1", "k3"]

@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 from pathlib import Path
 
@@ -40,6 +41,7 @@ class LLMResult(BaseModel):
 usage = {"tokens": 0}
 _prompt_log: Path | None = None
 _clients = None
+_clients_lock = threading.Lock()
 _turn = 0
 
 
@@ -184,24 +186,27 @@ def _openai_call(fn):
     """
     import openai
     global _clients, _turn
-    if _clients is None:
-        keys = [k.strip() for k in os.environ.get("OPENAI_API_KEY", "").split(",") if k.strip()]
-        if not keys:
-            raise RuntimeError("set OPENAI_API_KEY (comma-separated for several keys), or run with MOCK=1")
-        _clients = [openai.OpenAI(api_key=k) for k in keys]  # base URL from OPENAI_BASE_URL
-    while _clients:
-        i = _turn % len(_clients)
-        _turn += 1
+    while True:
+        with _clients_lock:  # World._gather calls this from several threads
+            if _clients is None:
+                keys = [k.strip() for k in os.environ.get("OPENAI_API_KEY", "").split(",") if k.strip()]
+                if not keys:
+                    raise RuntimeError("set OPENAI_API_KEY (comma-separated for several keys), or run with MOCK=1")
+                _clients = [openai.OpenAI(api_key=k) for k in keys]  # base URL from OPENAI_BASE_URL
+            if not _clients:
+                raise RuntimeError("every OPENAI_API_KEY was rejected or is out of credit")
+            client = _clients[_turn % len(_clients)]
+            _turn += 1
         try:
-            return fn(_clients[i])
+            return fn(client)
         except openai.APIStatusError as e:
             body = e.body if isinstance(e.body, dict) else {}
             quota = e.status_code == 429 and "insufficient_quota" in json.dumps(body)
             if e.status_code not in (401, 402, 403) and not quota:
                 raise
-            _clients.pop(i)
-            _turn -= 1  # the next key slides into slot i
-    raise RuntimeError("every OPENAI_API_KEY was rejected or is out of credit")
+            with _clients_lock:  # by identity: another thread may have removed it already
+                if client in _clients:
+                    _clients.remove(client)
 
 
 # ----------------------------------------------------------------- mock data
