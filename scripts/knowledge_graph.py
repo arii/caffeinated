@@ -132,13 +132,9 @@ def build(recording):
                     {"source": sid, "target": "cite:" + work["url"], "kind": "prior work (Exa)"}
                 )
     for event in recording.get("events") or []:
-        if event.get("type") == "study.replicated":
-            commit = (event.get("payload") or {}).get("candidate_commit")
-            for study in entities.get("studies") or []:
-                if commit and study.get("commit") == commit:
-                    edges.append(
-                        {"source": event["agent_id"], "target": study["id"], "kind": "replicated"}
-                    )
+        study_id = (event.get("refs") or {}).get("study_id")
+        if event.get("type") == "study.replicated" and study_id in nodes:
+            edges.append({"source": event["agent_id"], "target": study_id, "kind": "replicated"})
 
     studies = [n for n in nodes.values() if n["kind"] == "study"]
     summary = {
