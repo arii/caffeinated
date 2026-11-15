@@ -484,7 +484,7 @@ def test_sketches_tell_how_much_two_reported_arrays_share():
 
 
 @requires_sandbox
-def test_the_first_study_of_a_finding_keeps_it(tmp_path):
+def test_the_first_study_of_a_finding_keeps_it(tmp_path, monkeypatch):
     import llm
     import score
     w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
@@ -505,13 +505,22 @@ def test_the_first_study_of_a_finding_keeps_it(tmp_path):
     for who, code, r in ((a, first, 1), (b, again, 2), (b, other, 2), (a, first, 3)):
         w._run_study(who, {"code": code}, res, r)
     ids = [e.payload["study_id"] for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"][n:]
-    rows = {r["study_id"]: r for r in score.score_events(tmp_path / "events.jsonl")}
+    abstracts = {e.payload["study_id"]: e.payload["abstract"] for e in events.read(tmp_path / "events.jsonl")
+                 if e.type == "study_result"}
+    rows = {r["study_id"]: {**r, "abstract": abstracts[r["study_id"]]} for r in score.score_events(tmp_path / "events.jsonl")}
     assert all(rows[i]["supported"] for i in ids)
     assert [rows[i].get("preceded_by") for i in ids] == [None, ids[0], None, ids[0]]
     late = {**rows[ids[1]], "score": 10, "rejected": False}
     early = {**rows[ids[0]], "score": 1, "rejected": False}
     assert score.candidate([late, early])["study_id"] == ids[0]  # the later lab cannot take the nomination
     assert score.candidate([late]) is None
+
+    # a write-up the committee rejected does not hold the finding against a later lab
+    verdict = score.committee.score_study
+    monkeypatch.setattr(score.committee, "score_study", lambda abstract, title, seed=0: {
+        **verdict(abstract, title, seed=seed), "rejected": abstract == rows[ids[0]]["abstract"]})
+    rows2 = {r["study_id"]: r for r in score.score_events(tmp_path / "events.jsonl")}
+    assert [rows2[i].get("preceded_by") for i in ids] == [None, None, None, ids[1]]
 
 
 def test_the_same_finding_is_the_same_values_from_the_same_file():

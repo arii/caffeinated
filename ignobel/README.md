@@ -36,7 +36,8 @@ Each round a daughter chooses her own research steps (`research` events):
 - **Priority:** when two supported studies report the same finding, only the earlier one is
   eligible; the later one is scored and marked `preceded_by`. Same finding means: array for array,
   at least 90% of the reported values are the same cells of the same dataset file (`evidence.finding`).
-  Two labs asking different questions of one dataset are both eligible.
+  Two labs asking different questions of one dataset are both eligible, and a study the committee
+  rejected does not hold its finding against a later one.
 
 - **Experiments needed:** when no public dataset can answer her idea, a daughter can instead write down
   the experiment it needs (`experiment` step: question, protocol, materials, design, sample size, what

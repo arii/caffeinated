@@ -53,12 +53,12 @@ def score_events(events_path: str | Path, out_path: str | Path | None = None, se
                        traceable=p["evidence"].get("traceable"),
                        datasets=[d["url"] for d in p["evidence"]["datasets"]],
                        citations=[c["url"] for c in p["evidence"]["citations"]])
-            if row["supported"]:  # priority: the first supported study of a finding keeps it
+            if row["supported"]:  # priority: the first study of a finding that is itself eligible keeps it
                 finding = p["evidence"].get("finding") or []
                 earlier = next((sid for f, sid in first if same_finding(finding, f)), None)
                 if earlier:
                     row["preceded_by"] = earlier
-                elif finding:
+                elif finding and not row["rejected"]:
                     first.append((finding, row["study_id"]))
         rows.append(row)
     with open(out_path, "w", encoding="utf-8") as f:
