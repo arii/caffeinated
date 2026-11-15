@@ -42,6 +42,17 @@ run. The ρ = 0.07 x/y coordinate study is the failure case; it also appears as 
 row because the critic re-ran it (a `study.replicated` event), not as a separate test. No committee
 score was run on the published recording.
 
+## Reproduce
+
+[REPRODUCE.md](REPRODUCE.md) explains how to recompute every published number from the
+committed artifacts, regrade the winning candidates in the sandbox, and rerun experiments.
+Releases publish a pinned image to `ghcr.io/arii/caffeinated` and attach the run artifacts as
+a Hugging Face-format dataset. The quickest check needs only Docker:
+
+```sh
+docker build -t caffeinated-repro . && docker run --rm caffeinated-repro
+```
+
 ## Run
 
 Requires Node 22.18+, Python 3.12, Git, and uv.
