@@ -323,19 +323,8 @@ def claim_registry(research_log, name, digest, predicted):
     return None, predicted
 
 
-def grade_prereg(prereg, task_dir=HERE, research_log=None):
-    task_dir = Path(task_dir)
-    url = prereg["dataset"]["url"].strip()
-    citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
-    result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
-    if problems:
-        result["rejected"] = "citations: " + "; ".join(problems)
-        return {**result, "score": 0.0}
-    try:
-        name, entry = external.ensure(url, task_dir, research_log)
-    except Exception as error:
-        result["rejected"] = f"dataset unavailable: {type(error).__name__}: {error}"
-        return {**result, "score": 0.0}
+def registered_claim(prereg, name, entry):
+    """Resolve the registered columns, levels and rates against the dataset codebook."""
     data = prereg["dataset"]
     claim = {
         "dataset": name,
@@ -356,11 +345,48 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
             raise ValueError(f"dataset.{axis}_per needs a numeric {axis} and a numeric denominator")
         pers.append(entry["variables"][claim[f"{axis}_per"]] if per else None)
     sides, trivial = check_claim(claim, {name: entry})
-    (x, x_level), (y, y_level) = sides
     if {claim["x_per"], claim["y_per"]} & {claim["x"], claim["y"]} or (
         claim["x_per"] and claim["x_per"] == claim["y_per"]
     ):
         trivial = trivial or "trivial: a denominator is shared or is the other variable"
+    return claim, sides, trivial, pers
+
+
+def preflight_source(source, task_dir=HERE, research_log=None):
+    """Problems that make a registration untestable, found without running its test."""
+    task_dir = Path(task_dir).resolve()
+    research_log = research_log or os.environ.get("TASK_RESEARCH_LOG")
+    try:
+        prereg = parse_prereg(source, load_fields(task_dir))
+        url = prereg["dataset"]["url"].strip()
+        problems = check_citations(prereg["citations"], url, task_dir, research_log)[1]
+        if problems:
+            return ["citations: " + "; ".join(problems)]
+        try:
+            name, entry = external.ensure(url, task_dir, research_log)
+        except Exception as error:
+            return [f"dataset unavailable: {type(error).__name__}: {error}"]
+        trivial = registered_claim(prereg, name, entry)[2]
+    except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
+        return [f"invalid registration: {error}"[:MAX_TEXT]]
+    return [trivial] if trivial else []
+
+
+def grade_prereg(prereg, task_dir=HERE, research_log=None):
+    task_dir = Path(task_dir)
+    url = prereg["dataset"]["url"].strip()
+    citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
+    result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
+    if problems:
+        result["rejected"] = "citations: " + "; ".join(problems)
+        return {**result, "score": 0.0}
+    try:
+        name, entry = external.ensure(url, task_dir, research_log)
+    except Exception as error:
+        result["rejected"] = f"dataset unavailable: {type(error).__name__}: {error}"
+        return {**result, "score": 0.0}
+    claim, sides, trivial, pers = registered_claim(prereg, name, entry)
+    (x, x_level), (y, y_level) = sides
     rows = read_rows(task_dir / entry["file"]) + read_rows(
         task_dir / ".cache" / "replication" / f"{name}.csv"
     )

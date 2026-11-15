@@ -552,6 +552,37 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertEqual(revised["predicted_rho"], 0.05)
         self.assertEqual(revised["score"], first["score"])
 
+    def test_preflight_flags_untestable_registrations_without_testing(self):
+        def preflight(**overrides):
+            return ignobel.preflight_source(
+                json.dumps(self.prereg(**overrides)),
+                task_dir=self.task_dir,
+                research_log=str(self.log),
+            )
+
+        self.assertEqual(preflight(), [])
+        for overrides, text in (
+            ({"dataset": {"y": "Socks"}}, "usable columns"),
+            ({"dataset": {"x_level": "1"}}, "omit x_level"),
+            ({"citations": ["S1"]}, "citations"),
+            ({"mechanism": "x" * 700}, "mechanism"),
+            ({"dataset": {"x": "Socks lost per month"}}, "trivial"),
+        ):
+            with self.subTest(overrides=overrides):
+                problems = preflight(**overrides)
+                self.assertEqual(len(problems), 1, problems)
+                self.assertIn(text, problems[0])
+        self.assertFalse((self.log.parent / "ignobel_studies.jsonl").exists())
+        self.assertEqual(self.run_prereg()["loss"], 0.0)
+        self.assertEqual(
+            sandbox.preflight_task(TESTCASES / "hadamard19", "{}"),
+            [],
+        )
+        self.assertIn(
+            "invalid registration",
+            sandbox.preflight_task(TESTCASES / "ignobel", "not json")[0],
+        )
+
     def test_unknown_column_lists_usable_columns(self):
         result = self.run_prereg(dataset={"y": "Socks"})
         self.assertEqual(result["status"], "crash")

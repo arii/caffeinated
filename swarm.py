@@ -1238,6 +1238,14 @@ def record_score_cache(repo, out_dir, results):
     path.write_text(json.dumps(cache, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def registration_problems(repo, commit):
+    """Task-specific checks a committed candidate must pass before it is scored."""
+    if not TASK:
+        return []
+    source = git(repo, "show", f"{commit}:{TARGET_FILE}", check=False)
+    return sandbox.preflight_task(TASK["dir"], source.stdout) if source.returncode == 0 else []
+
+
 def source_union(*groups):
     return list(dict.fromkeys(source for group in groups for source in group))
 
@@ -1343,6 +1351,7 @@ def worker_attempts(
     )
     attempts = []
     current_proposal = proposal
+    preflight_repaired = False
     for attempt in (1, 2, 3):
         try:
             current_proposal = validate_proposal(profile, current_proposal)
@@ -1522,6 +1531,30 @@ def worker_attempts(
                 "reasons": [str(error)],
                 "attempts": attempts,
             }
+
+        problems = registration_problems(repo, committed["commit"])
+        if problems and not preflight_repaired and attempt < 3:
+            preflight_repaired = True
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "commit": committed["commit"],
+                    "pass": False,
+                    "reasons": problems,
+                }
+            )
+            current_proposal = llm_client.call(
+                "WORKER_REPAIR",
+                agent=agent,
+                round_num=round_num,
+                values={
+                    **common,
+                    "problem": "Registration check failed before the test ran: "
+                    + "; ".join(problems),
+                    "proposal": json.dumps(current_proposal, sort_keys=True),
+                },
+            )
+            continue
 
         gate_pass, gate_record = gate_candidate(
             repo=repo,
