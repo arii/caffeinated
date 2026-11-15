@@ -452,6 +452,14 @@ def test_the_bench_only_takes_an_idea_that_survived_five_rounds(tmp_path):
     assert [x.experiments[0]["status"] for x in (a, b)] == ["requested", "requested"]
     asyncio.run(w._bench([a, b], 5))
     assert [x.experiments[0]["status"] for x in (a, b)] == ["simulated", "requested"]
+    a.propose(6, [])  # she moves on after her experiment got in: a later real return is still taken
+    inbox = tmp_path / "lab_inbox"
+    inbox.mkdir()
+    for x in (a, b):
+        rid = x.experiments[0]["id"]
+        (inbox / f"{rid}.csv").write_text("group,value\n" + "".join(f"{g},{k}.5\n" for k in range(40) for g in "ab"))
+        (inbox / f"{rid}.json").write_text('{"performed_by": "Bench Lab", "performed_at": "2026-11-14"}')
     asyncio.run(w._bench([a, b], 9))
+    assert [x.experiments[0]["status"] for x in (a, b)] == ["returned", "requested"]
     done = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "experiment_result"]
-    assert [(e.agent, e.round) for e in done] == [(a.name, 5)]
+    assert [(e.agent, e.round, e.payload["provenance"]) for e in done] == [(a.name, 5, "simulated"), (a.name, 9, "returned")]

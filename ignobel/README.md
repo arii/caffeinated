@@ -41,7 +41,8 @@ Each round a daughter chooses her own research steps (`research` events):
   `supported` and never the candidate.
 - **The bench (`bench.py`):** only an idea that has survived gets in. A request reaches the bench once
   the daughter has stayed on the line of thought it came from (the proposal and its refinements) for
-  `lab_after_rounds` rounds (5); if she drops that line for a new proposal first, it never does. No
+  `lab_after_rounds` rounds (5); if she drops that line for a new proposal first, it never does.
+  Once in, it stays in. No
   real lab is connected yet. With `bench: simulated`, each request that gets in is rehearsed once: placeholder measurements are drawn from the daughter's own prediction and her
   analysis code runs on them in the sandbox, which shows whether the protocol and analysis work and
   about how many measurements she would need. That `experiment_result` is marked
