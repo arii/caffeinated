@@ -43,11 +43,11 @@ gives novelty one. N averages these values over the last k eligible attempts in 
 | Trivial rate | Fraction with nearest preceding distance below trivial_distance (default 0.05) OR a configured trivial status (default duplicate) |
 | Overload O | max(failure rate, trivial rate), an engineering proxy rather than cognitive load |
 | Diversity | One minus the sum of squared top-level mechanism proportions over the scoped window; zero for an empty window |
-| Frontier stall | Attempts since any strict valid raw-best improvement, independently of epsilon |
+| Frontier stall | CPU round mode: distinct round keys since significant improvement; legacy attempt mode: attempts since strict raw-best improvement |
 
 Only statuses in frontier_statuses can update significant/raw best: the default and all
 three CPU profiles use keep. Discards and duplicates may carry finite scores but still
-increment stagnation and frontier stall. Duplicate descriptors join the archive, participate
+can increment stagnation and frontier stall when a new eligible patience key appears. Duplicate descriptors join the archive, participate
 in future novelty calculations and always count as trivial, independently of their distance.
 Fail status remains a separate test; CPU duplicates are not failures.
 
@@ -58,9 +58,20 @@ Default weights give:
 Diversity is diagnostic, not a fourth B term. Status metrics are normally returned to six
 decimals; regime comparisons use nine-decimal B. Empty status gives B=0, N=1 and EXPLOIT.
 
+All CPU profiles use version 3, patience=3 and patience_unit=round. Both stagnation and
+frontier stall count distinct round keys after significant improvement, excluding the
+improvement's own round; a sub-epsilon raw best does not reset these keys. Worker
+stagnation counts only that worker's keys, globally reset on significant improvement.
+Missing integer rounds get unique seq keys. Without patience_unit, legacy attempt mode
+is preserved, including archived profile hashes. The default attempt-mode patience is 5.
+
+Frustration is the crash fraction among the last k shared attempts, even for worker status;
+it is zero for an empty ledger and excluded as an additional B term. Failure rate still
+enters overload. Frustration and stuck_cells are diagnostics, not extra regime thresholds.
+
 Worker windows contain only that worker's attempts, but novelty compares against the
 shared archive. A global significant improvement resets every worker's streak; otherwise
-only the acting worker's streak increments. Frontier stall and archive size remain global;
+only the acting worker's streak/key set increments. Frontier stall and archive size remain global;
 coverage is scoped. Global regime drives allocation. CPU worker slots execute sequentially.
 
 ## Regimes and gate
@@ -70,7 +81,7 @@ The fold evaluates these conditions in order:
 1. A significant improvement selects EXPLOIT, even after convergence.
 2. Existing CONVERGED persists otherwise.
 3. Frontier stall at least three times patience and complete required top-level mechanism
-   coverage selects CONVERGED.
+   coverage, with a finite frontier-eligible best score, selects CONVERGED.
 4. Fewer than min_attempts eligible attempts selects EXPLOIT (default 3).
 5. B at least 0.85 and frontier stall at least patience selects PARADIGM_BREAKOUT;
    an existing breakout also persists while B is at least 0.55.
@@ -79,17 +90,23 @@ The fold evaluates these conditions in order:
 7. Otherwise select EXPLOIT.
 
 There is no timed cooldown. Required mechanisms default to all top-level vocabulary
-entries, including baseline. Convergence does not explicitly require an existing scored
-best and is not proof of an optimum. The conductor stops at the next round boundary,
+entries, including baseline. A scored best is required; heuristic convergence is not proof
+of an optimum. The conductor stops at the next round boundary,
 writes converged.json and publishes the terminal state; the pure meter/gate can still
-be called separately.
+be called separately. The conductor also stops any arm at a declared known optimum,
+including in the final round (currently Hadamard objective 0, with 1e-9 tolerance).
 
 Outside EXPLOIT/CONVERGED, the default gate requires distance at least 0.35 from the
 last k shared attempts (except exploit-role workers), and at least 0.25 from all failed
 or discarded attempts. Empty comparison sets impose no restriction. BREAKOUT also
 requires a top-level mechanism absent from recent attempts. CONVERGED allows only
 distance zero from an existing best descriptor. Profiles can override gate distances.
-The root wrapper adds citation checks; arm A disables meter gating, and Exa-off removes
+Stuckness applies in **every** regime: CPU profiles reject a depth-2 cell with at least
+2 crashes among its last 3 eligible attempts, including when fewer than 3 exist.
+Suggestions rank non-stuck first, then visits, failures and cell name; children of a stuck
+prefix inherit its mark. Discards/duplicates are not failures. Two-level descriptors may
+use other/<slug> (2–40 lowercase ASCII letters/digits/underscores, starting with a letter);
+the conductor logs extensions without modifying the profile. The root wrapper adds citation checks; arm A disables meter gating, and Exa-off removes
 prior-art requirements. The legacy token/Jaccard helper is a separate scoring path.
 
 ## CLI
@@ -127,15 +144,16 @@ when requested by policy. Neither participates in computing descriptor B.
 | [bixbench_mini](../testcases/bixbench_mini/boredom_profile.json) | mechanism → method; ratio-scaled value | Benchmark score, minimize |
 | [playworld_mini](../testcases/playworld_mini/boredom_profile.json) | mechanism → method; ratio-scaled value | Benchmark score, minimize |
 
-CPU profiles use k=5, knn=3 and patience=5. Epsilon is 0.005 for Hadamard and
+CPU profiles use k=5 attempts, knn=3 and patience=3 rounds. Epsilon is 0.005 for Hadamard and
 Playworld and 0.03 for BixBench. It is a configured significant-improvement threshold,
 not necessarily an empirically estimated noise floor.
 
 A new descriptor domain can use a new profile without changing meter scoring code.
 A runnable task still needs an evaluator, candidate interface, sandbox inputs and
 orchestrator integration; a profile alone does not implement an experiment.
-Closed vocabularies make comparisons reproducible, but inaccurate descriptors can
-misrepresent the work. There is no active free-text fallback.
+Declared vocabularies and logged other/slug extensions make comparisons reproducible,
+but inaccurate descriptors can misrepresent the work. Every attempt still needs a
+structured descriptor.
 
 ## Verification and limits
 

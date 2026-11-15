@@ -1,4 +1,4 @@
-# Paired meter A/B experiments
+# Artificial Scientist Swarms: paired meter A/B experiments
 
 `ab.py` compares the fixed four-worker arm A against meter-driven arm B.
 Neither arm pushes its generated commits.
@@ -56,8 +56,9 @@ retrieved content, not merely post-filtered citations.
 Both arms use the same rounds, four workers, model, Exa switch and maximum
 call count, memory backend, evaluator, and starting candidate. Candidate
 rejections and different scout allocations can change actual call and
-evaluation counts; the treatment includes allocation and gating. A converged
-B run can stop early; its final loss is carried forward through the planned
+evaluation counts; the treatment includes allocation and gating. Either arm can stop at
+a declared known optimum; B can also stop on meter convergence.
+An early-stopped run's final loss is carried forward through the planned
 round budget for AUC, and `rounds_completed` records its actual allocations.
 Equal opportunity budgets do not imply identical realized dollar spend. The driver
 clears inherited replay and ablation switches and sets `PYTHONHASHSEED`.
@@ -104,8 +105,10 @@ and `rejected` make this accounting explicit. `critic_confirmations` counts
 critic decisions; `critic_evaluated` counts only actual reruns. `distinct_cells`
 counts mechanism/method cells among non-rejected attempts, including duplicates;
 `distinct_evaluated_cells` counts only evaluated cells. `regime_counts` counts
-round allocations, and `converged` means an active allocation or status reached
-CONVERGED; A's meter is shadow-only and cannot actively converge.
+round allocations, and `converged` means run metadata/a convergence artifact or an active
+allocation/status records convergence. A's meter is shadow-only and cannot stop it,
+but a declared known optimum can stop either arm (including in the final round), so A
+may also report converged.
 
 Exa charges are summed from query-log `cost` fields. LLM dollar costs use
 logged charges if available; otherwise supply **both**
@@ -133,8 +136,7 @@ tasks, and no claim of evidence from fake runs.
 
 ## Proposed live design — do not run until approved
 
-Wait for the three fix branches and the user's explicit go and named target
-branch. The proposed pilot uses seeds **1001, 1002, 1003**, all three tasks,
+Wait for the user's explicit go and named target branch. The proposed pilot uses seeds **1001, 1002, 1003**, all three tasks,
 both arms, **8 rounds**, and **`--jobs 6`**: 9 pairs, **18 runs**, 144 arm-rounds.
 Use the same pinned Tinker model in both arms, Exa on, and local memory.
 Best loss is primary; AUC and coverage are secondary. Report effects and CIs
@@ -164,4 +166,4 @@ EXA=on MEMORY_BACKEND=local python experiments/ab.py \
   --memory-backend local --out results/ab-live-pilot
 ```
 
-Phase 1 starts no live runs. There are no GPU runs.
+Phase 1 starts no live runs.

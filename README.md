@@ -27,7 +27,7 @@ flowchart LR
 
 The human edits [program.md](program.md); agents may edit only the task's declared
 candidate file, not the grader or research rules. The objective is a **score, lower is
-better**. The running backend described here has source baseline `1cc62b0`; the separate
+better**. The running backend described here has source baseline `1ed1426`; the separate
 Ig Nobel community is described at main revision `be658b6`. Extensions that are not yet
 merged into those implementations are explicitly identified.
 
@@ -65,8 +65,9 @@ and Yu [5]. It is not evidence that a particular threshold is optimal.
 
 D'Mello and Graesser study transitions among engagement, confusion, frustration and
 boredom during complex learning [6]. That supports treating these as distinct concepts,
-rather than calling every failed experiment boredom. The CPU meter still includes a small
-failure/repetition term; the proposed Ig Nobel revision makes a stronger separation.
+rather than calling every failed experiment boredom. The CPU meter reports frustration
+separately, while its overload term still includes failure/repetition; the proposed
+Ig Nobel revision makes a stronger separation.
 
 The computational ingredients have different sources. Nearest-neighbor sparseness follows
 the novelty-search idea of Lehman and Stanley [7], but this system **does not abandon its
@@ -91,7 +92,7 @@ override the numeric acceptance rule.
 | Scout | Brief, regime, memory, research query results/extracts | Queries, source selection, grounded implementation leads and lead memory | `prompts/scout_query.md`, `scout_pick.md`, `scout_lead.md` |
 | Worker: exploit | Current best source, protocol, task inputs, status, recalled results/leads/claims | Focused local patch, descriptor, claim, predicted delta and research trailers | `prompts/worker_propose.md`; `worker_repair.md` on rejection |
 | Worker: divergent | Same inputs plus suggested/assigned under-visited cells | Alternative mechanism/method patch, source-backed claim; conductor-cell repair if needed | Same worker prompts, role/regime-dependent instructions |
-| Critic | Provisional claim, both measured scores, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`; omitted in A |
+| Critic | Provisional claim, both measured scores, previous best, recent basin history | Verdict/explanation in critic.tsv and audit event; numeric predicate remains authoritative | `prompts/critic.md`, `critic_novelty.md`; identical in A/B |
 | Gate | Commit trailers, descriptor/profile, ledger, research IDs | Pass/reasons and distance/citation audit in boredom_log.jsonl | None; `boredom.py:run_gate`, `meter.py:gate` |
 | Ig Nobel researcher (main) | Private library, ideas/studies, peer conversation and instruments | Proposals/refinements, study code, abstracts and lessons in memory/events | Inline `ignobel/agents.py`: `propose`, `refine`, `talk`, `write_study_code`, `write_abstract`, `write_lesson`; not root prompts/ |
 | Ig Nobel statistician (main) | Same agent interface; statistician specialization in AgentSpec | Research using statistical instruments; #7 adds peer design review | Same inline agent methods; #7 adds review/refine advice |
@@ -121,8 +122,9 @@ mean four concurrent experiments.
    deterministic editable-file blobs become duplicate attempts without evaluation.
 6. Deduplicate identical passing blobs within the round, evaluate unique programs inside
    Docker and identify the best provisional improvement.
-7. Apply numeric confirmation: deterministic tasks reuse the first score; other tasks run a
-   second evaluation. Outside arm A, obtain a critic explanation. Keep only a confirmed
+7. Judge prior-art novelty for candidates with hits (audit only), then apply numeric
+   confirmation: deterministic tasks reuse the first score; other tasks run a second
+   evaluation. Obtain the same critic explanation in A and B. Keep only a confirmed
    improvement and advance the conductor to it.
 8. Record outcomes and memories, update tabular/status artifacts, commit the research
    artifacts, tag attempts, optionally push, and publish the round's viewer state.
@@ -148,7 +150,7 @@ sequenceDiagram
     E-->>C: Score or crash
     opt Provisional improvement
       C->>K: Reuse deterministic score or evaluate again; apply rule
-      K-->>C: Decision and explanation outside A
+      K-->>C: Numeric decision and arm-independent explanation
     end
     C->>M: Record keep/discard/crash/duplicate and memories
     C->>C: Commit artifacts, tag attempts, optionally push
@@ -160,7 +162,9 @@ sequenceDiagram
 All three current CPU tasks declare deterministic evaluation: confirmation reuses the first
 score and records `critic_rerun="skipped (deterministic)"`. Other tasks repeat evaluation
 without independently changing seeds. At a round boundary, CONVERGED stops further work,
-writes converged.json and marks run.json/manifest converged=true. Round budgets range from
+writes converged.json and marks run.json/manifest converged=true. A known-optimum score
+also stops any arm, including when reached in the final round. Currently only Hadamard
+sets known_optimum_loss=0; the check accepts best score at most target plus 1e-9. Round budgets range from
 1 to 50. The gate verifies
 declared novelty and citation requirements, not scientific originality.
 `--no-push` suppresses remote pushes, not local branches, commits or tags; fake mode also
@@ -190,7 +194,7 @@ The profile's direction determines improvement; all three CPU tasks minimize sco
 
 ### Describing how experiments differ
 
-A descriptor is a path through a closed vocabulary, such as mechanism then method, plus
+A descriptor is a path through a declared vocabulary, such as mechanism then method, plus
 numeric parameters. A different top-level mechanism is farther away than a different
 method within the same mechanism. Distance is **not** a weighted sum over mismatched
 levels: the first differing level decides it.
@@ -231,7 +235,11 @@ For ratio scales, $`\hat x=\max(|x|,10^{-12})`$ and similarly for $`\hat y`$.
 For linear scales, $`f_p(v)=v`$; for log scales,
 $`f_p(v)=\log_{10}(\max(v,10^{-300}))`$. Given configured bounds $`l_p,u_p`$,
 $`h_p=f_p(u_p)-f_p(l_p)`$, replaced by $`1`$ if that difference is zero.
-Descriptor validation requires declared parameters with finite numeric values.
+Descriptor validation requires declared parameters with finite numeric values. Two-level
+profiles also accept `other/<slug>`: an ASCII lowercase identifier of 2–40 characters,
+starting with a letter and containing only letters, digits or underscores. New cells are
+logged in vocab_extensions.jsonl and included in subsequent prompt vocabularies without
+changing the profile or its hash.
 
 ### Novelty, progress and repeated failures
 
@@ -258,49 +266,75 @@ $`W_t`$ contains the last $`k`$ eligible attempts in the requested scope. An emp
 returns $`N_t=1`$. Neighbors may include failed and discarded attempts: repeating something
 that failed is still repetition.
 
-A significant improvement is the first valid score, or a score better than the last
-**significant** best by strictly more than $`\epsilon`$. It resets the stagnation streak;
-smaller raw improvements do not. For minimizing tasks, let $`y_t`$ be a valid score and
-$`h_{t-1}`$ the significant best:
+A frontier-eligible score is finite, numeric and has a configured frontier status:
+all CPU profiles use **keep only**. Discarded, crashed and duplicate attempts cannot move
+the best, even if they carry a numeric score. Let $`h_{t-1}`$ be the last significant best:
 
 ```math
 I_t=\mathbf{1}\!\left[
- y_t\text{ is valid}\ \land\
+ y_t\text{ is frontier-eligible}\ \land\
  (h_{t-1}\text{ is unset}\ \lor\ y_t<h_{t-1}-\epsilon)\right],
-\qquad
-h_t=
-\begin{cases}y_t,&I_t=1,\\h_{t-1},&I_t=0,\end{cases}
-\qquad
-s_t=
-\begin{cases}0,&I_t=1,\\s_{t-1}+1,&I_t=0,\end{cases}
-\qquad S_t=\min(s_t/\text{patience},1).
+\qquad h_t=\begin{cases}y_t,&I_t=1,\\h_{t-1},&I_t=0.\end{cases}
+
 ```
 
-A frontier-eligible score is finite, numeric and has a configured frontier status: all CPU
-profiles use **keep only**. Discarded, crashed and duplicate attempts cannot improve either
-best, even if they carry a numeric score.
-For a maximizing profile, reverse the inequality and add the margin. The raw frontier
-tracks **any** strict valid best-score improvement. Its stall $`F_t`$ resets to zero on such
-an improvement and otherwise increments by one, independently of $`\epsilon`$:
+For a maximizing profile, reverse the inequality and add the margin. The CPU profiles
+use patience_unit=round: stagnation and frontier stall count **distinct round keys since
+the last significant improvement**, not worker attempts. Let $`j_t`$ be the most recent
+index with $`I_{j_t}=1`$, or zero if none. An integer round is its key; an event without
+one has its own seq key. With no significant best, the excluded key below is unset:
 
 ```math
-F_t=
+K_i=
 \begin{cases}
-0,&\text{first valid score or strict raw-best improvement at }t,\\
-F_{t-1}+1,&\text{otherwise}.
+(\mathrm{round},r_i),&r_i\text{ is an integer},\\
+(\mathrm{seq},i),&\text{otherwise},
 \end{cases}
 \quad
-f_t=\frac{\sum_{i\in W_t}\mathbf{1}[\text{fail status}_i]}{|W_t|},
-\quad
-q_t=\frac{\sum_{i\in W_t}\mathbf{1}[\min_{a\in A_{i-1}}d(d_i,a)<0.05\ \lor\ \mathrm{status}_i=\mathrm{duplicate}]}{|W_t|},
-\quad O_t=\max(f_t,q_t).
+U_t=\{K_i:j_t<i\le t,\ K_i\ne K_{j_t}\},
+\qquad
+s_t=F_t=|U_t|,\qquad S_t=\min(s_t/p,1).
+
 ```
 
-Initially both streak and frontier stall are zero. For an empty preceding archive,
-the nearest distance used for triviality is one; explicit duplicate status still makes the
-attempt trivial. Empty failure/trivial windows give rates zero. The CPU fail status is crash. The overload name
-is an engineering label for the larger of failure and near-repeat rates, not a measure
-of cognitive load.
+At a significant improvement all keys reset. Later attempts in that same round do not
+increment the counter; many non-improving attempts in another round add only one key.
+For worker-scoped stagnation, restrict U to that worker's attempts; F remains shared.
+Novelty, failure, triviality and diversity windows still contain the last k **attempts**.
+The raw best score still records any strict eligible improvement, but in round mode a
+sub-epsilon improvement does not reset F.
+
+Omitting patience_unit preserves attempt-mode behavior and historical profile hashes.
+Then s increments for each non-significant attempt, while F independently resets on
+any strict raw-best improvement. Both counters start at zero.
+
+```math
+f_t=\frac{\sum_{i\in W_t}\mathbf{1}[\text{fail status}_i]}{|W_t|},
+\quad
+q_t=\frac{\sum_{i\in W_t}\mathbf{1}[\min_{a\in A_{i-1}}d(d_i,a)<0.05
+ \ \lor\ \mathrm{status}_i=\mathrm{duplicate}]}{|W_t|},
+\qquad O_t=\max(f_t,q_t).
+
+```
+
+An empty archive gives nearest distance one; explicit duplicate status still makes the
+attempt trivial. Empty windows give rates zero. CPU fail status is crash. Frustration
+is the **shared** crash fraction in the last k global attempts, even in worker status:
+
+```math
+\mathrm{frustration}_t=
+\begin{cases}
+0,&|G_t|=0,\\
+|G_t|^{-1}\displaystyle\sum_{i\in G_t}\mathbf{1}[\mathrm{status}_i=\mathrm{crash}],
+ &|G_t|>0,
+\end{cases}
+\quad G_t=\text{last }k\text{ global eligible attempts}.
+
+```
+
+Frustration is diagnostic, not an additional B term or a policy threshold. Failures
+already contribute through O; reporting frustration separately does not remove that
+contribution. This differs from the unmerged Ig Nobel meter described below.
 
 For top-level mechanism counts $`n_c`$ within the same window, the reported diversity
 is the complement of Simpson concentration [8]:
@@ -328,7 +362,7 @@ R_t=
 \begin{cases}
 \mathrm{E},&I_t=1,\\
 \mathrm{C},&R_{t-1}=\mathrm{C},\\
-\mathrm{C},&F_t\ge3p\ \land\ C_t,\\
+\mathrm{C},&\text{scored best exists}\ \land\ F_t\ge3p\ \land\ C_t,\\
 \mathrm{E},&n_t<3,\\
 \mathrm{P},&(B_t\ge0.85\land F_t\ge p)
  \ \lor\ (R_{t-1}=\mathrm{P}\land B_t\ge0.55),\\
@@ -341,8 +375,7 @@ R_t=
 This is hysteresis, not a timed cooldown: a snap or breakout persists down to the exit
 threshold $`0.55`$. A significant improvement resets even CONVERGED. Convergence is a
 coverage-and-stall heuristic, not proof of an optimum; required mechanisms default to
-all vocabulary mechanisms, including baseline. There is no explicit requirement that a
-scored best already exist before convergence. The warmup is min_attempts=3.
+all vocabulary mechanisms, including baseline. A finite frontier-eligible scored best is required before convergence. The warmup is min_attempts=3.
 
 ```mermaid
 stateDiagram-v2
@@ -352,32 +385,51 @@ stateDiagram-v2
   BOREDOM_SNAP --> PARADIGM_BREAKOUT: B >= 0.85 and stall >= patience
   BOREDOM_SNAP --> EXPLOIT: B < 0.55 or significant improvement
   PARADIGM_BREAKOUT --> EXPLOIT: B < 0.55 or significant improvement
-  EXPLOIT --> CONVERGED: coverage complete and stall >= 3 patience
-  BOREDOM_SNAP --> CONVERGED: coverage complete and stall >= 3 patience
-  PARADIGM_BREAKOUT --> CONVERGED: coverage complete and stall >= 3 patience
+  EXPLOIT --> CONVERGED: scored best, coverage and stall >= 3 patience
+  BOREDOM_SNAP --> CONVERGED: scored best, coverage and stall >= 3 patience
+  PARADIGM_BREAKOUT --> CONVERGED: scored best, coverage and stall >= 3 patience
   CONVERGED --> EXPLOIT: significant improvement
 ```
 
 The swarm uses all eligible attempts for its windows. Each worker uses its own attempts
 for novelty, failure, triviality and diversity windows, but compares novelty against the
 **shared** preceding archive. A global significant improvement resets every worker's
-streak; otherwise only the acting worker's streak increments. Frontier stall and archive
-size remain global, while coverage uses the requested scope. Worker-scoped regimes are
+streak/key set; otherwise only the acting worker adds an attempt or eligible round key.
+Frontier stall and archive size remain global, while coverage uses the requested scope. Worker-scoped regimes are
 folded through the shared event sequence. Global regime drives allocation, and workers
 with per-agent $`B\ge0.70`$ receive priority for divergent/scout assignments.
 Empty swarm status is B=0, N=1 and EXPLOIT.
 
 | CPU profile | $`\epsilon`$ | $`k`$ | knn | patience |
 | --- | --- | --- | --- | --- |
-| hadamard19 | 0.005 | 5 | 3 | 5 |
-| bixbench_mini | 0.03 | 5 | 3 | 5 |
-| playworld_mini | 0.005 | 5 | 3 | 5 |
+| hadamard19 | 0.005 | 5 | 3 | 3 rounds |
+| bixbench_mini | 0.03 | 5 | 3 | 3 rounds |
+| playworld_mini | 0.005 | 5 | 3 | 3 rounds |
 
 Profiles also specify the vocabulary, parameter scales, direction and regime instructions.
 None sets an explicit acceptance margin, weights or regime thresholds: margin falls back to
 epsilon and weights/thresholds use the defaults above. All three set attempt statuses to
 keep/discard/crash/duplicate, frontier statuses to keep and trivial statuses to duplicate;
-only crash counts as failure.
+only crash counts as failure. Version-3 CPU profiles use patience_unit=round and a stuck
+rule with window=3, min_fails=2 and depth=2.
+
+### Stuck cells
+
+Stuckness is independent of B. For each depth-2 mechanism/method cell c, take its last
+three eligible attempts (or fewer if fewer exist):
+
+```math
+\mathrm{stuck}(c)\iff
+\sum_{i\in H_c}\mathbf{1}[\mathrm{status}_i=\mathrm{crash}]\ge2,
+\qquad H_c=\text{last up to 3 attempts in cell }c.
+
+```
+
+Two crashes are enough without waiting for three attempts. Discards and duplicates are
+not crashes. Suggestions rank non-stuck cells first, then visits, failures and cell name;
+children of a stuck prefix are also marked. The meter gate rejects a stuck cell regardless
+of regime or exploit role. Arm A disables that meter gate; deterministic blob deduplication
+and ordinary citation checks remain shared.
 
 ### Gate and acceptance rules
 
@@ -432,7 +484,9 @@ m=
 For deterministic tasks, set $`y_2=y_1`$ with confirmation status ok and record the skipped
 rerun. Otherwise $`y_2`$ comes from a second evaluation. This is a numeric acceptance guard,
 not a statistical significance test or independent replication for deterministic tasks.
-Arm A skips the critic LLM but still applies this predicate.
+Both A and B use this predicate and the same critic and prior-art novelty judgement.
+Critic prompts contain no meter state. Novelty judgements are logged, not fed to B or
+used to override numeric acceptance.
 
 ### Ig Nobel: a different private meter
 
@@ -524,7 +578,7 @@ The runnable benchmark backend supports four arms:
 
 | Arm | Allocation / ablation |
 | --- | --- |
-| A: meter off | Fixed 3 exploit / 1 divergent; the divergent worker scouts if Exa is on. Meter gate disabled; no critic LLM. Shadow meter values remain available. |
+| A: meter off | Fixed 3 exploit / 1 divergent (worker-1); worker-1 scouts if Exa is on. No meter gate, suggestions or meter-driven repairs; meter fields are shadow-only, excluded from prompts/recalled assignments. |
 | B: meter on | EXPLOIT 3/1; SNAP 1/3 with up to 2 scouts; BREAKOUT 0/4 with 2 scouts when Exa is on; CONVERGED stops the run at the next round boundary. |
 | C: meter on, Exa off | The meter controls allocation, but Exa is disabled. |
 | D: meter on, local memory | The meter controls allocation, and memory defaults to local storage instead of past.dev. |
@@ -546,7 +600,8 @@ C always disables scouts; explicit memory settings can override D's local defaul
 For a meaningful comparison, hold task, starting revision, four slots, round budget,
 model and service settings constant, and use separate output directories.
 **Equal slots and rounds do not mean equal calls or tokens.** Scouting, repairs and
-criticism change cost, and A removes the critic LLM as well as meter gating.
+worker searches and meter-driven repairs change cost. A and B share critic/novelty logic;
+B's treatment is meter-driven allocation, gating and suggested cells.
 
 The separate Ig Nobel community supports full, random_snap, single, shared_memory and
 no_exchange. Single is the one-agent never-snap control; there is no literal off or
@@ -558,6 +613,12 @@ reproducibility; changing agent count, memory or exchange changes more than bore
 PR #6 is **not yet merged**: it adds timeout cleanup, Docker/Modal selection, local CPU
 embeddings, provider support, key rotation and completion handling. PR #7 and PR #8 remain
 separate extensions as described above, not one integrated system.
+
+The [paired harness](experiments/README.md) clones the same committed source for each
+task/seed/arm, runs isolated local-memory A/B arms concurrently with --jobs, and writes
+manifest.json/results.csv. The analyzer checks complete pairs and reports per-task B−A
+effects, confidence intervals and exact sign/Wilcoxon tests. Fake results validate plumbing,
+not a scientific effect. See the offline command in [Quickstart](#quickstart-and-tests).
 
 Implementation: `swarm.allocate_roles`, `swarm.arm_environment` and main's `ignobel.run_arm.ARMS`.
 
@@ -592,8 +653,15 @@ Implementation: `testcases.sandbox.run_candidate` and each task's `evaluate` mod
 
 ## Grounding and memory
 
-Scouts search for prior art and convert useful material into concrete leads. Workers cite
-those leads and sources when explaining a proposed change. Query, source and extract IDs
+Scouts search a target descriptor cell using task input excerpts, not merely the current
+best idea. Workers receive question text/data previews and can search their direction:
+divergent workers search in EXPLOIT, and workers search in SNAP/BREAKOUT; at most two
+paper/code searches are allowed per worker, including assigned-cell repair searches.
+A has no suggested cells, so normal cell-directed worker searches do not run there.
+Scouts convert useful material into concrete leads. Workers cite
+only source IDs that informed their change. Automatically found prior-art hits stay separate;
+they are not silently added to the worker's Source trailer. Novelty scores use the top
+three hits, with 0.5 as the reported pass threshold, and live in novelty.jsonl. Query, source and extract IDs
 connect research to proposals; logs retain cost, latency and cached responses.
 `EXA=off` records disabled queries without calling Exa. Finding a source is evidence of
 grounding, not proof that a proposal is novel or that the source is correct.
@@ -603,10 +671,19 @@ become retrievable records. Workers recall prior outcomes, leads and current cla
 that a new round need not rediscover every failed attempt. A/B default to past.dev;
 choose `MEMORY_BACKEND=local` for offline use.
 
-Past.dev audiences and recall identities separate arms, while run metadata and
-post-retrieval evidence filtering drop ineligible other-run records. This is application
-retrieval isolation, not separate infrastructure. Local recall reads the selected mirror;
-separate output directories isolate local arms. Retrieval is outside the CPU B calculation.
+Past.dev audiences separate arms. Application filtering accepts same-run same-arm records
+(unless explicitly tagged for another task). Across runs, only same-task/same-arm lessons,
+verdicts and failed results (discard/crash/reject/duplicate) are eligible; kept results,
+claims, leads and assignments remain run-local. Missing cross-run task metadata is dropped
+as untagged_task. Earlier-run items are labeled in worker context. Eligible local same-run
+mirror records supplement remote recall; filtering occurs before the limit. The recall
+--json response includes localSameRun alongside remote results when local-only supplements
+exist; memory_log.jsonl records kept/dropped scope counts and reasons.
+
+This is source-evidence filtering, not infrastructure or synthesized-content isolation;
+the paired harness therefore uses separate clones and local memory, not past.dev.
+The local-only backend reads its selected mirror, so use separate output directories.
+Retrieval is outside the CPU B calculation.
 
 Credential names include EXA_API_KEY, PAST_API_KEY and arm-specific PAST_API_KEY_A /
 PAST_API_KEY_B. Supply values privately in the environment, never in shared artifacts.
@@ -614,6 +691,11 @@ PAST_API_KEY_B. Supply values privately in the environment, never in shared arti
 Implementation: `research` and `memory.arm_run_scope`/`memory.scoped_pastdev_response`.
 
 ## Data model and viewer
+
+Raw assignments include frustration and stuck_cells alongside per-agent components.
+Arm A retains these as shadow diagnostics, but excludes them and B values from recalled
+assignments and prompts. Viewer boredom components and swarm events include frustration;
+stuck cells remain in the source assignment/status artifacts.
 
 The ledger is the record of attempted work. Supporting logs explain how a proposal was
 allocated, grounded, evaluated and accepted or rejected. The backend writes these under
@@ -623,19 +705,21 @@ allocated, grounded, evaluated and accepted or rejected. The backend writes thes
 | --- | --- | --- |
 | ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score, descriptor, sources, commit, round; candidate replicate_score, critic_rerun, duplicate_of, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
 | results.tsv | Four columns: commit, `loss` (score, lower is better), status, description; full metadata stays in the ledger | swarm.write_results |
-| assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, ledger/profile hashes, command/commit provenance | swarm.append_assignment |
-| boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss (best score), best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments. | boredom.run_gate; swarm.append_status |
+| assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, frustration, stuck_cells, ledger/profile hashes, command/commit provenance | swarm.append_assignment |
+| boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss (best score), best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments; status also includes frustration/stuck_cells. | boredom.run_gate; swarm.append_status |
 | research_log.jsonl | query id/purpose/agent/regime/endpoint/query/n_results/cost/latency_ms, optional disabled; source id/query_id/url/title/published/highlights; extract records when used | research.append_query_record/write_query_results/run_extract |
 | memory.jsonl | id, sourceId, label, content, author, metadata, timestamp; memory type is metadata.type, alongside arm/round/commit/status as appropriate | memory.write/append_mirror |
 | memory_log.jsonl | writes/recalls: backend, agent, query or ID, latency, evidence/source IDs, counts, pending/dropped counts; up to 20 dropped source IDs/tags for scoped recall diagnostics | memory.write/recall |
 | llm_log.jsonl | ts, role, agent, round, model, prompt_sha, full prompt, parsed response, latency_ms, usage, optional attempts | llm.LLMClient.call |
 | critic.tsv | round, commit, run1_loss and run2_loss (first and confirmation scores), accepted, verdict, why | swarm.update_critic_tsv |
 | run_id | Persisted UUID hex for memory run scope | swarm._orchestrate |
-| run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments, optional converged | swarm._write_run_artifact |
+| run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments, seed, model, memory_backend, optional converged/converged_reason | swarm._write_run_artifact |
 | boredom_profile.json | Effective profile without private `_` fields; used to reproduce meter values and verify profile hashes | swarm._orchestrate |
 | viewer_publish_log.jsonl | ts, status, final, exception class and message; written only on publish failure | swarm.publish_viewer_state |
+| novelty.jsonl | Prior-art judgement, novelty/pass, closest source, reason, prior-art IDs; audit only | swarm.judge_novelty |
+| vocab_extensions.jsonl | First occurrence of each other/slug, author, round, idea and timestamp | swarm.record_vocab_extension |
 | score_cache.json | Deterministic editable-file blob → first successful commit/score/status, scoped to this run | swarm.record_score_cache |
-| converged.json | Stop report: round, best commit/score, covered cells, attempt count and last status record | swarm._orchestrate |
+| converged.json | Stop report: round, reason meter/known_optimum_loss, best commit/score, covered cells, attempt count, last status, optional known optimum | swarm._orchestrate |
 | viewer/ | Default published index and run directories, including events, entities, keyframes, manifests and copied experiment artifacts | export_viewer.publish |
 
 Review full prompts, responses and retrieved content before sharing. Command redaction
@@ -736,9 +820,28 @@ Implementation: `export_viewer.publish`/`world_at` and `viewer.app.create_app`.
 
 ## Quickstart and tests
 
-These commands were verified offline with Python 3.10, Git and a working Docker daemon.
-The root package has no mandatory Python dependencies. Building the sandbox image downloads
-packages, but candidate containers themselves have no network.
+Use Git and a working Docker daemon. Python 3.12 is recommended (Tinker needs 3.11+).
+The host needs pandas/openpyxl for spreadsheet previews and viewer dependencies for API tests:
+
+```sh
+make setup
+. .venv/bin/activate
+```
+
+make setup installs lock-generated requirements-dev.txt into .venv, using uv when available
+and venv/pip otherwise. An existing environment is reused. With uv, Python can be downloaded;
+the pip fallback needs the selected interpreter installed. Override with
+`make setup PYTHON=python3` for an installed interpreter; this offline check used Python 3.10.
+Without make, use `PYTHON=python3 sh scripts/setup.sh`.
+
+pyproject.toml defines dependencies; uv.lock pins them. requirements.txt exports runtime plus
+Tinker; requirements-dev.txt includes all extras, including viewer tests. After changing
+dependencies use uv lock and make requirements, committing the lock and both exports together.
+Exports use --locked to reject stale locks. Direct locked setup is
+`uv sync --locked --python 3.12 --extra tinker --extra viewer`.
+Candidate dependencies remain in the separate pinned Docker image.
+
+Build the image and run an offline swarm (fresh output paths):
 
 ```sh
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
@@ -751,11 +854,9 @@ plumbing, not autonomous discovery, and still requires Docker. It creates local 
 branches, worktrees, commits and tags even with no-push: use a checkout where those writes
 are appropriate.
 
-Create a viewer environment and serve the automatic publication:
+After setup, serve the automatic publication:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r viewer/requirements.txt
 .venv/bin/python -m viewer --data /tmp/readme_check2/viewer --port 8000
 ```
 
@@ -773,14 +874,24 @@ The optional live Tinker path needs Python 3.11+, TINKER_API_KEY and TINKER_MODE
 provider calls were used in verification. Model-specific rendering dependencies must be
 checked separately.
 
-For tests, host pandas is needed by the spreadsheet-preview test; it is not required by
-the fake Hadamard command or API server:
+Run both suites in the installed host environment:
 
 ```sh
-.venv/bin/python -m pip install pandas==2.2.3
 EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s boredom_meter/tests -v
 ```
+
+For a small isolated paired-harness check, start from a committed, clean checkout:
+
+```sh
+EXA=off MEMORY_BACKEND=local .venv/bin/python experiments/ab.py --tasks hadamard19 --seeds 101 202 --rounds 1 --jobs 2 --llm fake --exa off --memory-backend local --out /tmp/readme-ab
+.venv/bin/python experiments/analyze_ab.py /tmp/readme-ab/results.csv --out /tmp/readme-ab/analysis.json
+```
+
+Use a new --out directory. The harness refuses tracked edits and clones committed source;
+--seed keys LLM sampling by role/worker/round, not evaluator datasets. Remote sampling can
+still vary. See the [harness guide](experiments/README.md) for budgets and metric definitions.
+Baseline scoring failures now print sandbox status/reason and the evaluator-log directory.
 
 The root suite covers deterministic blob caching, same-round duplicates, skipped reruns,
 convergence stops, viewer replay and API errors/stream resume. Meter tests cover duplicate
@@ -839,9 +950,3 @@ https://doi.org/10.1162/evco_a_00025
 
 [8] Simpson, E. H. (1949). “Measurement of diversity.” *Nature*, 163, 688.
 https://doi.org/10.1038/163688a0
-
-
-Exit code: 0
-
-
-Exit code: 0

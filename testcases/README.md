@@ -68,7 +68,22 @@ Deterministic critic confirmation reuses the first score and logs the skipped re
 Unbuildable fake descriptor assignments return a rejection instead of another method.
 The conductor edits only the task's declared candidate file in worker worktrees,
 evaluates commits in Docker, loads the task's boredom profile and uses the common prompts.
-No-push prevents remote pushes, not local Git writes.
+No-push prevents remote pushes, not local Git writes. --seed controls LLM sampling, not
+task datasets or evaluator seeds. --json is a memory recall option, not a swarm CLI option.
+
+CPU version-3 profiles use patience=3 rounds, k=5 attempts, knn=3, and a depth-2 stuck rule
+(at least 2 crashes in the last 3 cell attempts). Epsilon remains 0.005, 0.03 and 0.005
+respectively; no explicit accept_margin overrides epsilon. Frustration is a separate shared
+crash diagnostic; failure/repetition still contributes to B through overload.
+The conductor stops on scored-best/coverage/stall convergence, or a declared known optimum
+in any arm. Only Hadamard declares one (objective 0, accepted within 1e-9), including when
+reached in the final round. Baseline scoring failures report sandbox status/reason and the
+runs log directory rather than proceeding without a score.
+
+The [paired harness](../experiments/README.md) clones a committed clean checkout for each
+task/seed/arm, fixes the starting source and settings, and isolates local memory/caches.
+Use the [verified small offline command](../README.md#quickstart-and-tests) first. Fake
+results test plumbing rather than whether the meter improves research.
 
 Round-end and terminal viewer publication defaults to <out>/viewer. Use --viewer-dest
 to choose another export root or --no-viewer to disable it. See the
@@ -95,7 +110,7 @@ score, lower-is-better loss, record and beats_reference, plus task-specific diag
 ## Tests
 
 Follow the [root setup](../README.md#quickstart-and-tests), including viewer dependencies
-and host pandas, then run:
+and host pandas/openpyxl, then run:
 
 ```sh
 EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests
