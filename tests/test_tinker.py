@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 
 import llm
@@ -108,10 +108,8 @@ class TinkerTests(unittest.TestCase):
         self.assertEqual(completion.call_count, 2)
 
     def http_response(self, body):
-        response = Mock()
-        response.read.return_value = json.dumps(body).encode()
-        response.__enter__ = Mock(return_value=response)
-        response.__exit__ = Mock(return_value=False)
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(body).encode()
         return response
 
     def test_openai_compatible_request_uses_final_content_not_reasoning(self):

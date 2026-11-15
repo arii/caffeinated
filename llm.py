@@ -383,6 +383,7 @@ class LLMClient:
             headers={
                 "Authorization": f"Bearer {os.environ.get('TINKER_API_KEY', '')}",
                 "Content-Type": "application/json",
+                "User-Agent": "caffeinated-swarm",
             },
             method="POST",
         )

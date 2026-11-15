@@ -3,12 +3,11 @@ import itertools
 import json
 import os
 import subprocess
-import sys
 import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, patch
 
 import llm
 import swarm
@@ -430,23 +429,20 @@ class SeedAndControlTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             client = llm.LLMClient(mode="fake", seed=42, log_path=Path(tmp) / "llm.jsonl")
             client.mode = "tinker"
-            sampler, tokenizer = Mock(), Mock()
-            tokenizer.apply_chat_template.return_value = [1, 2]
-            tokenizer.eos_token_id = 99
-            tokenizer.decode.return_value = '{"ok": true}'
-            sampler.sample.return_value.result.return_value.sequences = [
-                type("Sequence", (), {"tokens": [3]})()
-            ]
-            client.tinker_sampler, client.tinker_tokenizer = sampler, tokenizer
-            sdk = Mock()
-            sdk.types.ModelInput.from_ints.return_value.to_ints.return_value = [1, 2]
-            sdk.types.SamplingParams.side_effect = lambda **kwargs: kwargs
-            with patch.dict(sys.modules, {"tinker": sdk}):
+            response = MagicMock()
+            response.__enter__.return_value.read.return_value = json.dumps(
+                {"choices": [{"message": {"content": '{"ok": true}'}}]}
+            ).encode()
+
+            def sent_seed(post):
+                return json.loads(post.call_args.args[0].data)["seed"]
+
+            with patch.object(llm, "urlopen", return_value=response) as post:
                 client.call("SCOUT_QUERY", agent="worker-1", round_num=2, values={})
-                seed1 = sampler.sample.call_args.kwargs["sampling_params"]["seed"]
+                seed1 = sent_seed(post)
                 client.call("SCOUT_QUERY", agent="worker-2", round_num=1, values={})
                 client.call("SCOUT_QUERY", agent="worker-1", round_num=2, values={})
-                seed2 = sampler.sample.call_args.kwargs["sampling_params"]["seed"]
+                seed2 = sent_seed(post)
             self.assertEqual(seed1, seed2)
             self.assertEqual(llm.read_log(client.log_path)[0]["seed"], seed1)
 
