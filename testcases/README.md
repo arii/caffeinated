@@ -82,7 +82,7 @@ runs log directory rather than proceeding without a score.
 
 The [paired harness](../experiments/README.md) clones a committed clean checkout for each
 task/seed/arm, fixes the starting source and settings, and isolates local memory/caches.
-Use the [verified small offline command](../README.md#quickstart-and-tests) first. Fake
+Use the [small offline command](../README.md#quickstart-and-tests) first. Fake
 results test plumbing rather than whether the meter improves research.
 
 Round-end and terminal viewer publication defaults to <out>/viewer. Use --viewer-dest

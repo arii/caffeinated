@@ -27,7 +27,7 @@ flowchart LR
 
 The human edits [program.md](program.md); agents may edit only the task's declared
 candidate file, not the grader or research rules. The objective is a **score, lower is
-better**. The running backend described here has source baseline `1ed1426`; the separate
+better**. The running backend described here has source baseline `a3c21cc`; the separate
 Ig Nobel community is described at main revision `be658b6`. Extensions that are not yet
 merged into those implementations are explicitly identified.
 
@@ -880,6 +880,11 @@ Run both suites in the installed host environment:
 EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s boredom_meter/tests -v
 ```
+
+The upstream `make check PYTHON=.venv/bin/python` target also runs Ruff lint/format,
+Vulture and deptry before these suites. Setup includes those tools via the development
+requirements. Docker-backed swarm tests skip if the sandbox image is unavailable;
+build it first to exercise those integrations. CI builds it before the checks.
 
 For a small isolated paired-harness check, start from a committed, clean checkout:
 
