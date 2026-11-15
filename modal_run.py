@@ -179,12 +179,17 @@ def format_memory_gb(result):
 
 
 @app.local_entrypoint()
-def main(commits: str = "", seeds: str = "", out_dir: str = "runs"):
+def main(
+    commits: str = "",
+    seeds: str = "",
+    out_dir: str = "runs",
+    seed: int = 42,
+):
     if commits and seeds:
         raise SystemExit("--commits and --seeds are mutually exclusive")
     if not commits and not seeds:
         train_src = Path("train.py").read_text(encoding="utf-8")
-        result = train.remote(train_src=train_src, label="baseline")
+        result = train.remote(train_src=train_src, label="baseline", seed=seed)
         sys.stdout.write(result.get("log", ""))
         sys.stdout.flush()
         if not is_successful(result):
@@ -255,7 +260,7 @@ def main(commits: str = "", seeds: str = "", out_dir: str = "runs"):
                 "metrics": {},
             }
             continue
-        remote_jobs.append((train_src, commit))
+        remote_jobs.append((train_src, commit, seed))
         remote_labels.append(commit)
 
     if remote_jobs:

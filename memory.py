@@ -94,6 +94,8 @@ def api_key_for_arm(arm=None):
         key = os.environ.get(f"PAST_API_KEY_{arm.upper()}")
         if key:
             return key
+        if arm.upper() == "C":
+            return None
     return os.environ.get("PAST_API_KEY")
 
 
@@ -773,8 +775,18 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     return recall_result
 
 
-def recall(query, agent, limit=8, query_timestamp=None):
-    result = _recall(query, agent, limit, query_timestamp)
+def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
+           mirror=None, log=None, arm=None):
+    result = _recall(
+        query,
+        agent,
+        limit,
+        query_timestamp,
+        backend=backend,
+        mirror=mirror,
+        log=log,
+        arm=arm,
+    )
     result.pop("_raw_response", None)
     return result
 

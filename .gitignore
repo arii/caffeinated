@@ -26,5 +26,6 @@ dev/
 /memory_log.jsonl
 /memory.jsonl
 /exa_cache/
+/.swarm_worktrees/
 run.log
 runs/

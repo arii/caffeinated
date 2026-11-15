@@ -275,7 +275,9 @@ def ledger_events(rows, repo, profile):
         events.append(
             {
                 "seq": seq,
-                "agent": message_trailer(message, "Agent") or "agent",
+                "agent": row.get("agent")
+                or message_trailer(message, "Agent")
+                or "agent",
                 "status": row.get("status"),
                 "score": score,
                 "descriptor": descriptor,
