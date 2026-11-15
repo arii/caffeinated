@@ -242,7 +242,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
         base = 3 + (n % 7)
         return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),
                 "think": max(1, min(10, base + (n >> 12) % 3 - 1)),
-                "targets_group": (n % 23) == 0,
+                "targets_group": (n % 97) == 0,
                 "reason": "mock judgement"}
     return {"text": "mock"}
 

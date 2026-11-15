@@ -10,11 +10,15 @@ exploration beats randomly timed exploration.
 
 ```bash
 cd ignobel
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-MOCK=1 .venv/bin/python run_arm.py --arm full --agents 4 --rounds 3 --seed 0 --out runs/mock
-MOCK=1 .venv/bin/python score.py --events runs/mock/events.jsonl
-MOCK=1 .venv/bin/pytest -q
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+MOCK=1 python run_arm.py --arm full --agents 4 --rounds 3 --seed 0   # -> runs/full-s0/events.jsonl
+MOCK=1 python score.py                                               # -> runs/full-s0/scores.jsonl
+MOCK=1 python validate.py                                            # judge check on data/winners.csv
+MOCK=1 pytest -q
 ```
+
+Running the same command twice gives a byte-identical `events.jsonl`. Add `--out DIR` to keep
+several runs, and `--resume` to continue a crashed run from its last saved round.
 
 `MOCK=1` swaps in a fake LLM, seeded embeddings, canned search results and a local
 subprocess sandbox. Real runs read keys from the environment; see `.env.example`.
@@ -43,3 +47,15 @@ subprocess sandbox. Real runs read keys from the environment; see `.env.example`
 | single | never | private, one agent | no |
 | shared_memory | boredom | one store for all | no |
 | no_exchange | boredom | private | no |
+
+## Notes for whoever wires in real services
+
+- `boredom_threshold` is 0.5 in `config.yaml`: an agent whose newest idea repeats its last ones
+  and whose studies are not failing is bored. Tune it after a small real run.
+- When an odd number of agents snap, the one left over talks to the farthest non-snapping agent.
+- `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call is marked TODO
+  until checked against the Modal docs. `memory.PastDevMemory` follows the request shapes in the
+  team's existing past.dev client and is also marked TODO pending the docs.
+- `data/winners.csv` and `data/controls.csv` hold placeholders; replace them with real abstracts.
+- Mock mode never writes to `data/seed_cache/`; real Exa results are cached there and committed so
+  every arm starts from the same libraries.
