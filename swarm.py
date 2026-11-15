@@ -2383,7 +2383,7 @@ def set_task_context(task_context):
 
 
 def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
-    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
+    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when its judges have a key.
 
     on_start is called just before the scorer starts. Returns True when the scorer ran
     successfully (its output should be recorded).
@@ -2391,9 +2391,10 @@ def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
     hook = (TASK or {}).get("post_run")
     if not hook:
         return False
-    if replay or llm_mode in {"fake", "openai"} or not os.environ.get("TINKER_API_KEY"):
+    judge_key = os.environ.get("IGNOBEL_JUDGE_API_KEY_ENV") or "TINKER_API_KEY"
+    if replay or llm_mode == "fake" or not os.environ.get(judge_key):
         print(
-            f"[post_run] {hook} skipped (needs --llm tinker and TINKER_API_KEY, not --replay)",
+            f"[post_run] {hook} skipped (needs {judge_key}, a real LLM and no --replay)",
             flush=True,
         )
         return False
@@ -3352,6 +3353,14 @@ def resolve_run_args(args):
     return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
 
 
+DEFAULT_SUPERVISOR_STRATEGY = (
+    "Prefer single-line changes to existing tunable constants. Give exact old/new parameter "
+    "values and an allowed mechanism/method pair to report. Do not reference functions or "
+    "parameters absent from the source. Choose modest bounded values so each test stays fast. "
+    "Different values of the same parameter are acceptable for this pilot."
+)
+
+
 def plan_supervised_workers(
     client,
     agents,
@@ -3366,6 +3375,7 @@ def plan_supervised_workers(
     mirror,
     memory_log,
     arm,
+    leads=(),
 ):
     recalled = recall_memory(
         "prior experiments, failures and promising directions for " + TASK.get("brief", "")[:200],
@@ -3385,6 +3395,15 @@ def plan_supervised_workers(
         "history": memory_text(recalled),
         "best_loss": best_val,
         "regime": status["regime"],
+        "strategy": TASK.get("supervisor_strategy") or DEFAULT_SUPERVISOR_STRATEGY,
+        "leads": "\n".join(
+            json.dumps(
+                {key: lead.get(key) for key in ("id", "source_ids", "recipe", "claimed_effect")},
+                sort_keys=True,
+            )
+            for lead in leads
+        )
+        or "none",
     }
     result = client.call("SUPERVISOR", agent="conductor", round_num=round_num, values=values)
     tasks = result.get("tasks")
@@ -3619,6 +3638,12 @@ def _orchestrate(args, publish_state, cleanup):
         supervisor_tokens=args.supervisor_tokens or 4096,
         max_cost_usd=args.max_cost_usd,
     )
+    if llm_client.mode == "openai" and llm_client.supervised and not args.replay:
+        # In-run judge calls (Ig Nobel committee) share the run's OpenAI ledger and ceiling.
+        os.environ["OPENAI_BUDGET_LEDGER"] = str(
+            llm_client.log_path.with_name("openai_budget.jsonl")
+        )
+        os.environ["OPENAI_MAX_COST_USD"] = str(args.max_cost_usd)
     critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
     provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
     run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
@@ -3766,7 +3791,7 @@ def _orchestrate(args, publish_state, cleanup):
                 live_publish.watch(out_dir, publisher.request)
                 publisher.request()
             leads = run_scouts(
-                [] if llm_client.supervised else allocation["scouts"],
+                allocation["scouts"] if not llm_client.supervised or TASK.get("scout") else [],
                 profile=profile,
                 events=events_for_scouts,
                 status=status,
@@ -3802,6 +3827,7 @@ def _orchestrate(args, publish_state, cleanup):
                     memory_mirror,
                     memory_log,
                     args.arm,
+                    leads=all_leads,
                 )
             for agent in agents:
                 role = allocation["roles"][agent]

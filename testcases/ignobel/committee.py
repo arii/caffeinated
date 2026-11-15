@@ -11,6 +11,7 @@ and prior-work evidence the same way every time.
 Judge A uses gpt-oss-120b and judge B uses Qwen3.5 on Tinker by default; neither is
 the Kimi generator model. IGNOBEL_JUDGE_BASE_URL and IGNOBEL_JUDGE_API_KEY_ENV point
 the judges at another OpenAI-compatible endpoint (with IGNOBEL_JUDGE_A_MODEL/_B_MODEL).
+On the official OpenAI endpoint, judge calls count against OPENAI_BUDGET_LEDGER when set.
 
 `score_run.py` writes a post-run report from the cached in-run verdicts.
 """
@@ -271,6 +272,26 @@ def _normalize_targets_group(value):
     raise ValueError("targets_group must be a boolean or the string 'true' or 'false'")
 
 
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+JUDGE_TOKENS = 4096
+
+
+def _reserve_openai_budget(model, prompt):
+    """Charge a judge call to the swarm's OpenAI run ledger when the swarm set one."""
+    ledger = os.environ.get("OPENAI_BUDGET_LEDGER")
+    if not ledger:
+        return
+    import openai_live
+
+    openai_live.reserve(
+        ledger,
+        model=model,
+        prompt=prompt,
+        limit=JUDGE_TOKENS,
+        budget=float(os.environ.get("OPENAI_MAX_COST_USD", "1")),
+    )
+
+
 def _complete(model, system, user):
     """One judge chat completion (OpenAI-compatible endpoint), seed 0, no reasoning knobs."""
     import llm
@@ -279,16 +300,30 @@ def _complete(model, system, user):
         os.environ.get("IGNOBEL_JUDGE_BASE_URL")
         or os.environ.get("TINKER_BASE_URL", llm.TINKER_BASE_URL)
     ).rstrip("/")
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user + "\nReturn a single JSON object only."},
-        ],
-        "max_tokens": 4096,
-        "temperature": 0.0,
-        "seed": 0,
-    }
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user + "\nReturn a single JSON object only."},
+    ]
+    official_openai = base_url == OPENAI_BASE_URL
+    if official_openai:
+        # OpenAI reasoning models reject max_tokens and non-default temperature.
+        payload = {
+            "model": model,
+            "messages": messages,
+            "max_completion_tokens": JUDGE_TOKENS,
+            "reasoning_effort": "low",
+            "response_format": {"type": "json_object"},
+            "seed": 0,
+            "store": False,
+        }
+    else:
+        payload = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": JUDGE_TOKENS,
+            "temperature": 0.0,
+            "seed": 0,
+        }
     request = urllib.request.Request(
         f"{base_url}/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
@@ -300,6 +335,8 @@ def _complete(model, system, user):
         method="POST",
     )
     for attempt in range(3):
+        if official_openai:
+            _reserve_openai_budget(model, system + "\n" + user)
         try:
             with urllib.request.urlopen(request, timeout=300) as response:
                 return json.loads(response.read().decode("utf-8"))["choices"][0]["message"]
