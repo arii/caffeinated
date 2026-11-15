@@ -1,15 +1,16 @@
 /** Cinema (Director) Mode: a deterministic, compressed highlight cut of one real recording. */
 import type {ReplayEvent} from './replay';
 
-export const CINEMA_DURATION=72;
+export const CINEMA_DURATION=64;
 export type CinemaPhase='hook'|'trap'|'snap'|'breakthrough'|'proof';
 export const CINEMA_PHASES:readonly {phase:CinemaPhase;start:number;caption:string}[]=[
  {phase:'hook',start:0,caption:'AI researchers get stuck.'},
- {phase:'trap',start:8,caption:'Local tweaks. Rising boredom.'},
- {phase:'snap',start:22,caption:'Boredom triggers real scouting.'},
- {phase:'breakthrough',start:40,caption:'Verified breakthrough.'},
- {phase:'proof',start:58,caption:'Artificial Scientist Swarms.'},
+ {phase:'trap',start:6,caption:'Local tweaks. Rising boredom.'},
+ {phase:'snap',start:20,caption:'Boredom triggers real scouting.'},
+ {phase:'breakthrough',start:36,caption:'Verified breakthrough.'},
+ {phase:'proof',start:54,caption:'Artificial Scientist Swarms.'},
 ];
+export const CAPTION_SECONDS=2.8;
 export interface CinemaAgent{id:string;name:string;bored:boolean}
 export interface CinemaPlan{
  keys:[number,number][];weights:Map<number,number>;
@@ -43,7 +44,7 @@ export function cinemaPlan(events:readonly ReplayEvent[],agents:readonly CinemaA
   .map(e=>({tick:e.tick,agentId:e.agentId||'',title:String(e.message).split(';')[0].trim(),tool:String(e.payload?.tool||(e.payload?.kind==='snap'?'snap search':'literature'))}));
  const shares=sorted.filter(e=>e.type==='items.shared'&&e.tick>snap.tick&&e.tick<nextRound).map(e=>({tick:e.tick,agentId:e.agentId||''}));
  const lastScout=Math.max(snap.tick+10,...papers.map(p=>p.tick),...shares.map(s=>s.tick));
- const keys:[number,number][]=[[0,startTick],[8,startTick+(snap.tick-startTick)*.4],[21,snap.tick-3],[25,snap.tick+1],[36,Math.min(lastScout+1,nextRound-1)],[40,Math.max(nextRound,firstStudy-6)],[50,best.tick],[56,endTick],[CINEMA_DURATION,endTick]];
+ const keys:[number,number][]=[[0,0],[6,startTick],[19,snap.tick-3],[23,snap.tick+1],[32,Math.min(lastScout+1,nextRound-1)],[36,Math.max(nextRound,firstStudy-6)],[46,best.tick],[52,endTick],[CINEMA_DURATION,endTick]];
  for(let i=1;i<keys.length;i++)keys[i][1]=Math.max(keys[i][1],keys[i-1][1]);
  const weights=new Map<number,number>();
  for(const e of sorted)if(!quiet.has(e.type))weights.set(Math.floor(e.tick),Math.min(3,(weights.get(Math.floor(e.tick))||0)+1));
