@@ -41,6 +41,12 @@ class ExportHfDatasetTest(unittest.TestCase):
             path = Path(tmp) / "replay.zip"
             path.write_bytes(buffer.getvalue())
             self.assertTrue(export_hf_dataset.has_secret(path))
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.comment = b"past_sk_abcdefgh123"
+                archive.writestr("clean.txt", b"ok")
+            path.write_bytes(buffer.getvalue())
+            self.assertTrue(export_hf_dataset.has_secret(path))
 
 
 if __name__ == "__main__":

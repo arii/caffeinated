@@ -57,8 +57,10 @@ def contents(name, data):
         yield from contents(name[:-3], gzip.decompress(data))
     elif name.endswith(".zip"):
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            for entry in archive.namelist():
-                yield from contents(entry, archive.read(entry))
+            yield archive.comment
+            for info in archive.infolist():
+                yield info.filename.encode() + b"\n" + info.comment + b"\n" + info.extra
+                yield from contents(info.filename, archive.read(info))
     else:
         yield data
 
