@@ -27,7 +27,7 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 TASK = HERE.parent / "ignobel_mini"
 sys.path.insert(0, str(TASK))
-from judge_text import tokens  # noqa: E402
+from judge_text import tokens
 
 CORPUS = HERE / "ignobel_judge_corpus.json"
 WIKI_REVID = 1385733309
@@ -56,7 +56,9 @@ def strip_wiki(text):
 def cited_titles(text):
     return [
         strip_wiki(t).strip(" .")
-        for t in re.findall(r"\{\{\s*cite journal[^{}]*?\|\s*title\s*=\s*([^|}]+)", text, flags=re.I)
+        for t in re.findall(
+            r"\{\{\s*cite journal[^{}]*?\|\s*title\s*=\s*([^|}]+)", text, flags=re.I
+        )
     ]
 
 
@@ -137,7 +139,11 @@ def train(positives, negatives):
         b -= 0.5 * g.mean()
     p = 1 / (1 + np.exp(-(x @ w + b)))
     accuracy = float(((p > 0.5) == (y == 1)).mean())
-    return {word: round(float(value), 5) for word, value in zip(vocab, w) if abs(value) > 1e-4}, round(float(b), 5), accuracy
+    return (
+        {word: round(float(value), 5) for word, value in zip(vocab, w) if abs(value) > 1e-4},
+        round(float(b), 5),
+        accuracy,
+    )
 
 
 def main():
@@ -168,8 +174,12 @@ def main():
         "bias": bias,
         "weights": dict(sorted(weights.items())),
     }
-    (TASK / "judge.json").write_text(json.dumps(judge, indent=0, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"positives={len(positives)} negatives={len(corpus['negatives'])} vocab={len(weights)} train_acc={accuracy:.3f}")
+    (TASK / "judge.json").write_text(
+        json.dumps(judge, indent=0, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(
+        f"positives={len(positives)} negatives={len(corpus['negatives'])} vocab={len(weights)} train_acc={accuracy:.3f}"
+    )
 
 
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ from urllib.parse import urlsplit
 import prepare
 
 HERE = Path(__file__).resolve().parent
-MAX_DATASETS = 3
 MIN_ROWS = 60
 OPEN_DATA_HOSTS = (
     "raw.githubusercontent.com",
@@ -62,7 +61,12 @@ def doi_title(citation, task_dir=HERE):
     if not match:
         return None
     doi = match.group(1).rstrip(".").lower()
-    cache = Path(task_dir) / ".cache" / "doi" / (hashlib.sha256(doi.encode()).hexdigest()[:16] + ".json")
+    cache = (
+        Path(task_dir)
+        / ".cache"
+        / "doi"
+        / (hashlib.sha256(doi.encode()).hexdigest()[:16] + ".json")
+    )
     if cache.is_file():
         return json.loads(cache.read_text(encoding="utf-8")).get("title")
     request = urllib.request.Request(
@@ -116,14 +120,19 @@ def check_url(url, research_log=None):
     host = safe_url(url).hostname.lower()
     open_host = any(host == h or host.endswith("." + h) for h in OPEN_DATA_HOSTS)
     if not open_host and not cited(url, research_log):
-        raise ValueError("host is not an open-data host and the URL is not cited in the research log")
+        raise ValueError(
+            "host is not an open-data host and the URL is not cited in the research log"
+        )
 
 
 def ensure(url, task_dir=HERE, research_log=None):
     """Return (id, codebook entry) for url, downloading and splitting it on first use."""
     name = dataset_id(url)
     entry_path = Path(task_dir) / "data" / f"{name}.codebook.json"
-    if entry_path.is_file() and (Path(task_dir) / ".cache" / "replication" / f"{name}.csv").is_file():
+    if (
+        entry_path.is_file()
+        and (Path(task_dir) / ".cache" / "replication" / f"{name}.csv").is_file()
+    ):
         return name, json.loads(entry_path.read_text(encoding="utf-8"))
     check_url(url, research_log)
     previous = prepare.HERE, prepare.URL_CHECK
@@ -144,7 +153,9 @@ def _build(url, name, entry_path):
         "delimiter": "\t" if path.endswith((".tsv", ".tab")) else ",",
     }
     entry = prepare.build(name, spec)
-    with (prepare.HERE / ".cache" / "replication" / f"{name}.csv").open(encoding="utf-8", newline="") as stream:
+    with (prepare.HERE / ".cache" / "replication" / f"{name}.csv").open(
+        encoding="utf-8", newline=""
+    ) as stream:
         entry["n_rows"] = entry["n_discovery"] + sum(1 for _ in csv.reader(stream)) - 1
     if entry["n_rows"] < MIN_ROWS or len(entry["variables"]) < 2:
         raise ValueError(f"needs at least {MIN_ROWS} rows and 2 usable columns")

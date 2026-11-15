@@ -56,7 +56,9 @@ def betainc(a, b, x):
         return 0.0
     if x >= 1:
         return 1.0
-    front = math.exp(math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log(1 - x))
+    front = math.exp(
+        math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log(1 - x)
+    )
     if x < (a + 1) / (a + b + 2):
         return front * _betacf(a, b, x) / a
     return 1 - front * _betacf(b, a, 1 - x) / b

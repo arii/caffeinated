@@ -16,10 +16,10 @@ import ast
 import hashlib
 import json
 import os
-from pathlib import Path
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -46,7 +46,10 @@ def judge_prompts(path=ROOT / "ignobel" / "committee.py"):
     for node in tree.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in ("JUDGE_A_SYSTEM", "JUDGE_B_SYSTEM"):
+                if isinstance(target, ast.Name) and target.id in (
+                    "JUDGE_A_SYSTEM",
+                    "JUDGE_B_SYSTEM",
+                ):
                     prompts[target.id[6].lower()] = ast.literal_eval(node.value)
     if set(prompts) != {"a", "b"}:
         raise RuntimeError(f"judge prompts not found in {path}")
@@ -63,7 +66,7 @@ def models():
 def abstract(prereg, graded):
     return "\n".join(
         [
-            f'Field: {prereg["field"]} ({prereg["study_type"]})',
+            f"Field: {prereg['field']} ({prereg['study_type']})",
             f'Question: "{prereg["question"]}"',
             f'Hypothesis: "{prereg["hypothesis"]}"',
             f'Proposed mechanism: "{prereg["mechanism"]}"',
@@ -110,7 +113,12 @@ def _complete(model, system, user):
     for attempt in range(3):
         try:
             with urllib.request.urlopen(request, timeout=300) as response:
-                return json.loads(response.read().decode("utf-8"))["choices"][0]["message"].get("content") or ""
+                return (
+                    json.loads(response.read().decode("utf-8"))["choices"][0]["message"].get(
+                        "content"
+                    )
+                    or ""
+                )
         except urllib.error.HTTPError as error:
             if error.code in (429, 500, 502, 503, 504) and attempt < 2:
                 time.sleep(5 * (attempt + 1))
@@ -150,7 +158,7 @@ def score_study(text, title, task_dir=HERE, ask=None):
     """Both judges' verdicts; score in [0, 1] = min over judges of min(laugh, think) / 10."""
     ask = ask or _ask
     prompts, names = judge_prompts(), models()
-    user = f"{UNTRUSTED_NOTE}\n\nTitle: \"{title}\"\n\nAbstract:\n{text}"
+    user = f'{UNTRUSTED_NOTE}\n\nTitle: "{title}"\n\nAbstract:\n{text}'
     verdicts = {which: ask(names[which], prompts[which], user, task_dir) for which in ("a", "b")}
     rejected = any(v["targets_group"] for v in verdicts.values())
     per_judge = {which: min(v["laugh"], v["think"]) for which, v in verdicts.items()}

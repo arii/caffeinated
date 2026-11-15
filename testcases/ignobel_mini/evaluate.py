@@ -26,12 +26,11 @@ loss  = 1 - score
 import csv
 import hashlib
 import json
-import math
 import os
-from pathlib import Path
 import re
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -39,10 +38,10 @@ for path in (ROOT, HERE):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from judge_text import likeness, tokens
-from stats import spearman
 import committee
 import external
+from judge_text import likeness, tokens
+from stats import spearman
 
 ALPHA = 0.005
 RHO_FULL = 0.2
@@ -52,7 +51,6 @@ MAX_WORD_OVERLAP = 0.5
 MIN_CITATIONS = 2
 MAX_CITATIONS = 8
 MAX_TEXT = 600
-RECORD_LOSS = None
 TEXT_FIELDS = ("question", "hypothesis", "mechanism")
 
 
@@ -118,7 +116,9 @@ def check_claim(claim, codebook):
         level = claim.get(f"{axis}_level")
         if variable["kind"] == "categorical":
             if level not in variable["levels"]:
-                raise ValueError(f"{axis}_level must be one of the codebook levels of {claim[axis]}")
+                raise ValueError(
+                    f"{axis}_level must be one of the codebook levels of {claim[axis]}"
+                )
         elif level is not None:
             raise ValueError(f"{axis} is numeric; omit {axis}_level")
         sides.append((variable, level))
@@ -139,8 +139,7 @@ def check_claim(claim, codebook):
 def association(rows, claim, sides):
     (x, x_level), (y, y_level) = sides
     pairs = [
-        (encode(x, x_level, row[claim["x"]]), encode(y, y_level, row[claim["y"]]))
-        for row in rows
+        (encode(x, x_level, row[claim["x"]]), encode(y, y_level, row[claim["y"]])) for row in rows
     ]
     pairs = [(a, b) for a, b in pairs if a is not None and b is not None]
     xs, ys = [a for a, _ in pairs], [b for _, b in pairs]
@@ -168,7 +167,9 @@ def parse_prereg(source, fields):
         if not isinstance(value, str) or not value.strip() or len(value) > MAX_TEXT:
             raise ValueError(f"{key} must be a non-empty string of at most {MAX_TEXT} characters")
     citations = prereg.get("citations")
-    if not isinstance(citations, list) or any(not isinstance(c, str) or not c.strip() for c in citations):
+    if not isinstance(citations, list) or any(
+        not isinstance(c, str) or not c.strip() for c in citations
+    ):
         raise ValueError("citations must be a list of Exa source ids (S<k>) or URLs")
     if len(citations) > MAX_CITATIONS:
         raise ValueError(f"at most {MAX_CITATIONS} citations")
@@ -184,7 +185,11 @@ def parse_prereg(source, fields):
     if prereg.get("direction") not in ("positive", "negative"):
         raise ValueError("direction must be 'positive' or 'negative'")
     predicted = prereg.get("predicted_rho")
-    if isinstance(predicted, bool) or not isinstance(predicted, (int, float)) or not 0 < predicted <= 1:
+    if (
+        isinstance(predicted, bool)
+        or not isinstance(predicted, (int, float))
+        or not 0 < predicted <= 1
+    ):
         raise ValueError("predicted_rho must be a number in (0, 1]")
     return prereg
 
@@ -226,7 +231,9 @@ def check_citations(citations, dataset_url, task_dir, research_log):
                     problems.append(f"{url}: DOI lookup failed ({type(error).__name__})")
                     continue
                 if not real:
-                    problems.append(f"{url} is neither a registered DOI nor found by this run's research or in sources.json")
+                    problems.append(
+                        f"{url} is neither a registered DOI nor found by this run's research or in sources.json"
+                    )
                     continue
         url = external.canonical_citation(url)
         if url == external.canonical_citation(dataset_url):
@@ -235,7 +242,9 @@ def check_citations(citations, dataset_url, task_dir, research_log):
         resolved.append(url)
     resolved = list(dict.fromkeys(resolved))
     if len(resolved) < MIN_CITATIONS:
-        problems.append(f"needs at least {MIN_CITATIONS} distinct verified citations, got {len(resolved)}")
+        problems.append(
+            f"needs at least {MIN_CITATIONS} distinct verified citations, got {len(resolved)}"
+        )
     return resolved, problems
 
 
@@ -267,7 +276,10 @@ def claim_registry(research_log, name, digest, predicted):
     previous = registry.get(name)
     if previous is not None:
         if previous["test"] != digest:
-            return "dataset already used by another registered test in this run (one confirmatory test per dataset)", predicted
+            return (
+                "dataset already used by another registered test in this run (one confirmatory test per dataset)",
+                predicted,
+            )
         return None, previous["predicted_rho"]
     registry[name] = {"test": digest, "predicted_rho": predicted}
     temporary = path.with_suffix(".tmp")
@@ -301,12 +313,16 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     }
     sides, trivial = check_claim(claim, {name: entry})
     (x, x_level), (y, y_level) = sides
-    rows = read_rows(task_dir / entry["file"]) + read_rows(task_dir / ".cache" / "replication" / f"{name}.csv")
+    rows = read_rows(task_dir / entry["file"]) + read_rows(
+        task_dir / ".cache" / "replication" / f"{name}.csv"
+    )
     n, rho, p, problem = association(rows, claim, sides)
     predicted = float(prereg["predicted_rho"])
     rejected = trivial or problem
     if rejected is None:
-        rejected, predicted = claim_registry(research_log, entry.get("sha256") or name, test_hash(prereg), predicted)
+        rejected, predicted = claim_registry(
+            research_log, entry.get("sha256") or name, test_hash(prereg), predicted
+        )
     sign = 1 if prereg["direction"] == "positive" else -1
     confirmed = rejected is None and p < ALPHA and rho * sign > 0
     calibration = min(abs(rho), predicted) / max(abs(rho), predicted) if rho else 0.0
@@ -326,7 +342,11 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
         "judge": committee.mode(),
     }
     if graded["judge"] == "committee":
-        verdict = committee.score_study(committee.abstract(prereg, graded), prereg["question"], task_dir) if confirmed else None
+        verdict = (
+            committee.score_study(committee.abstract(prereg, graded), prereg["question"], task_dir)
+            if confirmed
+            else None
+        )
         funny = verdict["score"] if verdict else 0.0
         graded["committee"] = verdict
         if verdict and verdict["rejected"]:
@@ -355,9 +375,15 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     loss = 1.0 - score
     out = []
     if prereg:
-        out += [f"field: {prereg['field']} / {prereg['study_type']}", f"question: {prereg['question']}"]
+        out += [
+            f"field: {prereg['field']} / {prereg['study_type']}",
+            f"question: {prereg['question']}",
+        ]
     if graded:
-        out += [f"citations: {len(graded['citations'])} verified", f"dataset: {prereg['dataset']['url']} -> {graded['dataset_id']}"]
+        out += [
+            f"citations: {len(graded['citations'])} verified",
+            f"dataset: {prereg['dataset']['url']} -> {graded['dataset_id']}",
+        ]
         if "headline" in graded:
             out += [
                 f"registered test: {graded['headline']}",

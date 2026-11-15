@@ -11,7 +11,6 @@ Relative paths resolve against FiveThirtyEight's data repo at a pinned commit.
 import csv
 import hashlib
 import io
-import json
 import re
 import urllib.request
 from pathlib import Path
@@ -21,7 +20,9 @@ COMMIT = "4c1ff5e3aef1816ae04af63218015066e186c147"
 BASE = f"https://raw.githubusercontent.com/fivethirtyeight/data/{COMMIT}"
 MAX_LEVELS = 25
 MAX_BYTES = 5_000_000
-DROP = re.compile(r"^(RespondentID|StartDate|EndDate|page_id|name|urlslug|FIRST APPEARANCE|EPISODE|TITLE)$")
+DROP = re.compile(
+    r"^(RespondentID|StartDate|EndDate|page_id|name|urlslug|FIRST APPEARANCE|EPISODE|TITLE)$"
+)
 DEMOGRAPHIC = re.compile(
     r"^(Gender|Age|Household Income|Education|Location \(Census Region\)|US Region|"
     r"What is your gender\?|How much total combined money.*|How would you describe where you live\?|"
@@ -54,7 +55,11 @@ def source_url(path):
 
 def fetch(path):
     url = source_url(path)
-    name = path.replace("/", "__") if url != path else "url_" + hashlib.sha256(url.encode()).hexdigest()[:16]
+    name = (
+        path.replace("/", "__")
+        if url != path
+        else "url_" + hashlib.sha256(url.encode()).hexdigest()[:16]
+    )
     cache = HERE / ".cache" / "raw" / name
     if not cache.exists():
         cache.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +103,9 @@ def read_table(path, spec):
         group = last if (sub and option) or unnamed else name
         if not sub and " - " in name and "select all that apply" in name.lower():
             group = name.split(" - ")[0]
-        columns.append({"source": name, "label": spec.get("label_prefix", "") + label, "group": group})
+        columns.append(
+            {"source": name, "label": spec.get("label_prefix", "") + label, "group": group}
+        )
     return columns, rows
 
 
@@ -107,7 +114,13 @@ def load(spec):
     for path in spec["files"]:
         columns, rows = read_table(path, spec)
         if "source_column" in spec:
-            columns.append({"source": spec["source_column"], "label": "Publisher wiki", "group": "Publisher wiki"})
+            columns.append(
+                {
+                    "source": spec["source_column"],
+                    "label": "Publisher wiki",
+                    "group": "Publisher wiki",
+                }
+            )
             publisher = "Marvel" if "marvel" in path else "DC"
             rows = [row + [publisher] for row in rows]
         tables.append((columns, rows))
@@ -118,7 +131,13 @@ def load(spec):
             merged.extend(rows)
             continue
         position = {c["source"]: i for i, c in enumerate(columns)}
-        merged.extend([row[position[n]] if position.get(n) is not None and position[n] < len(row) else "" for n in names] for row in rows)
+        merged.extend(
+            [
+                row[position[n]] if position.get(n) is not None and position[n] < len(row) else ""
+                for n in names
+            ]
+            for row in rows
+        )
     return tables[0][0], merged
 
 
@@ -145,7 +164,7 @@ def build(name, spec):
         groups.setdefault(column["group"], []).append(len(keep))
         keep.append((index, column, values, numeric, distinct))
     table = []
-    for position, (index, column, values, numeric, distinct) in enumerate(keep):
+    for position, (_index, column, values, numeric, distinct) in enumerate(keep):
         vid = f"v{position + 1:02d}"
         members = groups[column["group"]]
         checkbox = len(members) > 1 or "select all that apply" in column["group"].lower()
@@ -153,10 +172,12 @@ def build(name, spec):
             if len(members) > 1:
                 answered = [any(keep[m][2][r] for m in members) for r in range(len(rows))]
             else:
-                neighbours = [keep[i][2] for i in (position - 1, position + 1) if 0 <= i < len(keep)]
+                neighbours = [
+                    keep[i][2] for i in (position - 1, position + 1) if 0 <= i < len(keep)
+                ]
                 answered = [any(n[r] for n in neighbours) for r in range(len(rows))]
             values = [v or ("(not selected)" if answered[r] else "") for r, v in enumerate(values)]
-            distinct = sorted(set(v for v in values if v))
+            distinct = sorted({v for v in values if v})
         variables[vid] = {
             "label": column["label"],
             "group": column["group"],
@@ -174,7 +195,10 @@ def build(name, spec):
         bucket = int(hashlib.sha256(f"{name}:{r}".encode()).hexdigest(), 16) % 2
         (discovery if bucket == 0 else replication).append(record)
     header = list(variables)
-    for path, part in ((HERE / "data" / f"{name}.csv", discovery), (HERE / ".cache" / "replication" / f"{name}.csv", replication)):
+    for path, part in (
+        (HERE / "data" / f"{name}.csv", discovery),
+        (HERE / ".cache" / "replication" / f"{name}.csv", replication),
+    ):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", newline="", encoding="utf-8") as stream:
             writer = csv.writer(stream)

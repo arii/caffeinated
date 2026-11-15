@@ -15,9 +15,8 @@ import swarm
 from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
-from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
-
 from testcases.ignobel_mini import evaluate as ignobel
+from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
@@ -410,11 +409,8 @@ class IgnobelPreregTests(unittest.TestCase):
     URL = "https://raw.githubusercontent.com/example/odd/main/socks.csv"
 
     def setUp(self):
-        sys.path.insert(0, str(TESTCASES / "ignobel_mini"))
-        import external
-        import prepare
-
-        self.external, self.prepare = external, prepare
+        self.external, self.prepare = ignobel.external, ignobel.external.prepare
+        prepare = self.prepare
         self.tmp = tempfile.TemporaryDirectory()
         self.task_dir = Path(self.tmp.name)
         for name in ("judge.json", "boredom_profile.json", "sources.json"):
@@ -427,7 +423,10 @@ class IgnobelPreregTests(unittest.TestCase):
         self.log.parent.mkdir()
         self.log.write_text(
             "".join(
-                json.dumps({"type": "source", "id": f"S{k}", "url": f"https://doi.org/10.1/socks{k}"}) + "\n"
+                json.dumps(
+                    {"type": "source", "id": f"S{k}", "url": f"https://doi.org/10.1/socks{k}"}
+                )
+                + "\n"
                 for k in (1, 2)
             )
         )
@@ -471,8 +470,12 @@ class IgnobelPreregTests(unittest.TestCase):
         graded = result["graded"]
         self.assertTrue(graded["confirmed"], graded)
         self.assertGreater(graded["score"], 0)
-        self.assertEqual(graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"])
-        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', graded["headline"])
+        self.assertEqual(
+            graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"]
+        )
+        self.assertIn(
+            'higher "Dryer age (years)" goes with higher "Socks lost per month"', graded["headline"]
+        )
         self.assertIn("candidate_executed: false", result["stdout"])
 
     def test_wrong_direction_and_poor_calibration(self):
@@ -486,20 +489,37 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertLess(vague["score"], sharp["score"])
 
     def test_citations_must_come_from_research_or_vetted_sources(self):
-        for citations in (["S1"], ["S1", "S9"], ["S1", "https://doi.org/10.1/made-up"], ["S1", self.URL]):
-            with self.subTest(citations=citations), patch.object(self.external, "doi_title", return_value=None):
+        for citations in (
+            ["S1"],
+            ["S1", "S9"],
+            ["S1", "https://doi.org/10.1/made-up"],
+            ["S1", self.URL],
+        ):
+            with (
+                self.subTest(citations=citations),
+                patch.object(self.external, "doi_title", return_value=None),
+            ):
                 graded = self.run_prereg(citations=citations)["graded"]
                 self.assertEqual(graded["score"], 0.0)
                 self.assertIn("citations", graded["rejected"])
         same_paper = ["doi:10.1002/bdm.414", "https://doi.org/10.1002/BDM.414"]
-        with patch.object(self.external, "doi_title", return_value="A domain-specific risk-attitude scale"):
+        with patch.object(
+            self.external, "doi_title", return_value="A domain-specific risk-attitude scale"
+        ):
             graded = self.run_prereg(log=False, citations=same_paper)["graded"]
         self.assertEqual(graded["score"], 0.0)
         self.assertIn("got 1", graded["rejected"])
         real_doi = ["S1", "https://doi.org/10.1038/294580a0"]
-        with patch.object(self.external, "doi_title", return_value="Sexual activity reduces lifespan of male fruitflies"):
+        with patch.object(
+            self.external,
+            "doi_title",
+            return_value="Sexual activity reduces lifespan of male fruitflies",
+        ):
             self.assertGreater(self.run_prereg(citations=real_doi)["graded"]["score"], 0)
-        vetted = ["https://doi.org/10.1002/bdm.414", "https://doi.org/10.1046/j.1360-0443.2002.00163.x"]
+        vetted = [
+            "https://doi.org/10.1002/bdm.414",
+            "https://doi.org/10.1046/j.1360-0443.2002.00163.x",
+        ]
         self.assertGreater(self.run_prereg(log=False, citations=vetted)["graded"]["score"], 0)
 
     def test_one_registered_test_per_dataset_per_run(self):
@@ -507,7 +527,9 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertGreater(self.run_prereg()["graded"]["score"], 0)
         for url in (self.URL, self.URL + "#again", self.URL + "?copy=1"):
             with self.subTest(url=url):
-                other = self.run_prereg(dataset={"url": url, "x": "Favourite colour", "x_level": "red"})["graded"]
+                other = self.run_prereg(
+                    dataset={"url": url, "x": "Favourite colour", "x_level": "red"}
+                )["graded"]
                 self.assertEqual(other["score"], 0.0)
                 self.assertIn("one confirmatory test per dataset", other["rejected"])
 
@@ -571,14 +593,19 @@ class IgnobelPreregTests(unittest.TestCase):
                         self.external.ensure(url, self.task_dir)
 
     def test_redirects_and_private_resolution_are_blocked(self):
-        with patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("10.0.0.5", 443))]):
-            with self.assertRaises(ValueError):
-                self.external.safe_url("https://raw.githubusercontent.com/a.csv")
+        with (
+            patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("10.0.0.5", 443))]),
+            self.assertRaises(ValueError),
+        ):
+            self.external.safe_url("https://raw.githubusercontent.com/a.csv")
         handler = self.prepare.CheckedRedirect()
         previous = self.prepare.URL_CHECK
         self.prepare.URL_CHECK = self.external.safe_url
         try:
-            for target in ("http://raw.githubusercontent.com/a.csv", "https://169.254.169.254/latest"):
+            for target in (
+                "http://raw.githubusercontent.com/a.csv",
+                "https://169.254.169.254/latest",
+            ):
                 with self.subTest(target=target), self.assertRaises(ValueError):
                     handler.redirect_request(None, None, 302, "Found", {}, target)
         finally:
@@ -590,20 +617,31 @@ class IgnobelPreregTests(unittest.TestCase):
         hidden = (self.task_dir / ".cache" / "replication" / f"{name}.csv").read_text()
         self.assertEqual(first.count("\n") + hidden.count("\n") - 2, 200)
         self.assertEqual(self.external.ensure(self.URL, self.task_dir)[1], entry)
-        self.assertEqual({v["label"] for v in entry["variables"].values()}, {"Socks lost per month", "Dryer age (years)", "Favourite colour"})
-
+        self.assertEqual(
+            {v["label"] for v in entry["variables"].values()},
+            {"Socks lost per month", "Dryer age (years)", "Favourite colour"},
+        )
 
     def test_committee_judges_confirmed_findings(self):
-        import committee
+        committee = ignobel.committee
 
         seen = []
 
         def ask(model, system, user, task_dir):
             seen.append((model, system, user))
             laugh = 8 if "Ig Nobel" in system else 6
-            return {"laugh": laugh, "think": 7, "targets_group": False, "reason": "ok", "model": model}
+            return {
+                "laugh": laugh,
+                "think": 7,
+                "targets_group": False,
+                "reason": "ok",
+                "model": model,
+            }
 
-        with patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}), patch.object(committee, "_ask", ask):
+        with (
+            patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}),
+            patch.object(committee, "_ask", ask),
+        ):
             result = self.run_prereg()
             unconfirmed = self.run_prereg(direction="negative")
         graded = result["graded"]
@@ -617,12 +655,21 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertEqual(unconfirmed["graded"]["score"], 0.0)
 
     def test_committee_rejects_jokes_about_groups(self):
-        import committee
+        committee = ignobel.committee
 
         def ask(model, system, user, task_dir):
-            return {"laugh": 9, "think": 9, "targets_group": "Ig Nobel" in system, "reason": "", "model": model}
+            return {
+                "laugh": 9,
+                "think": 9,
+                "targets_group": "Ig Nobel" in system,
+                "reason": "",
+                "model": model,
+            }
 
-        with patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}), patch.object(committee, "_ask", ask):
+        with (
+            patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}),
+            patch.object(committee, "_ask", ask),
+        ):
             graded = self.run_prereg()["graded"]
         self.assertEqual(graded["score"], 0.0)
         self.assertIn("group of people", graded["rejected"])
@@ -630,8 +677,7 @@ class IgnobelPreregTests(unittest.TestCase):
 
 class IgnobelTaskTests(unittest.TestCase):
     def test_committee_prompts_come_from_ignobel_project(self):
-        sys.path.insert(0, str(TESTCASES / "ignobel_mini"))
-        import committee
+        committee = ignobel.committee
 
         prompts = committee.judge_prompts()
         self.assertIn("LAUGH", prompts["a"])
