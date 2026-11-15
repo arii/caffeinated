@@ -309,11 +309,12 @@ def _complete(model, system, user):
                 continue
             detail = error.read().decode("utf-8", "replace")[:300]
             raise RuntimeError(f"judge endpoint returned HTTP {error.code}: {detail}") from error
-        except urllib.error.URLError as error:
+        except (urllib.error.URLError, TimeoutError) as error:
             if attempt < 2:
                 time.sleep(5 * (attempt + 1))
                 continue
-            raise RuntimeError(f"judge endpoint request failed: {error.reason}") from error
+            reason = getattr(error, "reason", error)
+            raise RuntimeError(f"judge endpoint request failed: {reason}") from error
 
 
 def _ask(model, system, user, task_dir):

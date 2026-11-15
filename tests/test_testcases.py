@@ -1435,6 +1435,18 @@ class IgnobelTaskTests(unittest.TestCase):
         ):
             committee.require_key()
 
+    def test_committee_retries_a_read_timeout(self):
+        committee = ignobel_score_run.committee
+        body = io.BytesIO(json.dumps({"choices": [{"message": {"content": "{}"}}]}).encode())
+        ok = MagicMock()
+        ok.__enter__.return_value = body
+        with (
+            patch.object(committee.urllib.request, "urlopen", side_effect=[TimeoutError(), ok]),
+            patch.object(committee.time, "sleep") as sleep,
+        ):
+            self.assertEqual(committee._complete("m", "s", "u"), {"content": "{}"})
+        sleep.assert_called_once()
+
     def test_committee_prompts_are_the_two_judges(self):
         prompts = ignobel_score_run.committee.judge_prompts()
         self.assertEqual(set(prompts), {"a", "b"})
