@@ -1509,6 +1509,33 @@ def local_candidate_precheck(*, repo, out_dir, profile, role, proposal, cited_so
     return reasons
 
 
+def cached_blob_entry(repo, out_dir, proposal, source_text):
+    if not TASK.get("deterministic"):
+        return None
+    try:
+        edited = apply_edits_to_text(source_text, proposal["edits"])
+    except (EditError, KeyError, TypeError):
+        return None
+    result = subprocess.run(
+        ["git", "-C", str(repo), "hash-object", "--stdin"],
+        input=edited.encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        raise RuntimeError("could not hash the edited task file for score-cache check")
+    cache_path = Path(out_dir) / "score_cache.json"
+    if not cache_path.exists():
+        return None
+    cache = json.loads(cache_path.read_text(encoding="utf-8"))
+    entry = cache.get(result.stdout.decode("ascii").strip())
+    if isinstance(entry, dict):
+        return entry
+    if entry:
+        return {"commit": entry}
+    return None
+
+
 def deduplicate_round_candidates(repo, candidates, out_dir):
     if not TASK.get("deterministic"):
         return candidates
@@ -2209,11 +2236,19 @@ def worker_attempts(
         )
         if precheck_reasons:
             precheck_failures[attempt] = precheck_reasons
+            cached_duplicate = (
+                cached_blob_entry(repo, out_dir, current_proposal, candidate_source)
+                if len(precheck_reasons) == 1
+                and precheck_reasons[0].startswith("duplicate: blob already scored as ")
+                else None
+            )
             attempts.append(
                 {
                     "attempt": attempt,
+                    "call_id": getattr(llm_client, "last_call_id", None),
                     "precheck": True,
                     "pass": False,
+                    "outcome": "duplicate" if cached_duplicate else "rejected",
                     "reasons": precheck_reasons,
                 }
             )
@@ -2225,8 +2260,11 @@ def worker_attempts(
                 return with_call_ids(
                     {
                         "agent": agent,
-                        "status": "reject",
-                        "score": None,
+                        "status": "duplicate" if cached_duplicate else "reject",
+                        "score": cached_duplicate.get("loss") if cached_duplicate else None,
+                        "duplicate_of": cached_duplicate.get("commit")
+                        if cached_duplicate
+                        else None,
                         "commit": "",
                         "descriptor": current_proposal["descriptor"],
                         "sources": cited_sources,
@@ -2291,8 +2329,9 @@ def worker_attempts(
             return with_call_ids(
                 {
                     "agent": agent,
-                    "status": "reject",
-                    "score": None,
+                    "status": "duplicate" if cached_duplicate else "reject",
+                    "score": cached_duplicate.get("loss") if cached_duplicate else None,
+                    "duplicate_of": cached_duplicate.get("commit") if cached_duplicate else None,
                     "commit": "",
                     "descriptor": current_proposal["descriptor"],
                     "sources": cited_sources,

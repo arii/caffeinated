@@ -338,6 +338,59 @@ class LocalPrecheckTests(unittest.TestCase):
                 )
         self.assertEqual(reasons, ["duplicate: blob already scored as previously-scored"])
 
+    def test_cached_blob_precheck_is_recorded_as_an_attempt_duplicate(self):
+        swarm.configure_task(SimpleNamespace(task="hadamard19"))
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = llm.LLMClient(mode="fake", log_path=output / "llm_log.jsonl")
+            duplicate_reason = ["duplicate: blob already scored as cached-commit"]
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(swarm, "local_candidate_precheck", side_effect=[duplicate_reason] * 2),
+                patch.object(
+                    swarm,
+                    "cached_blob_entry",
+                    return_value={"commit": "cached-commit", "loss": 0.5},
+                ),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=3,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+            event = swarm.add_result_event(
+                profile, output / "ledger.jsonl", result, 3, result["status"], result["score"]
+            )
+            attempts = list(meter.attempt_events(profile, [event]))
+        self.assertEqual(result["status"], "duplicate")
+        self.assertEqual(result["duplicate_of"], "cached-commit")
+        self.assertEqual([item["status"] for item in attempts], ["duplicate"])
+
     def test_repeated_precheck_failure_repairs_once_and_never_commits(self):
         swarm.configure_task(SimpleNamespace(task="hadamard19"))
         task = swarm.TASK
