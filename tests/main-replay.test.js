@@ -4,11 +4,12 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 import {sortedRecordings} from '../src/engine/replay.ts';
+import {pickerOptions} from '../src/engine/runInfo.ts';
 
 const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 function harness(rows=[],recording=null,query=''){
  const elements=new Map(),attached=[],errors=[];
- const context={recording,recordingManifests:[],sortedRecordings,URLSearchParams,location:{href:`http://localhost/${query}`},URL,
+ const context={recording,recordingManifests:[],sortedRecordings,pickerOptions,URLSearchParams,location:{href:`http://localhost/${query}`},URL,
   request:async()=>rows,esc:String,toast:message=>errors.push(message),
   attachRecording:async id=>attached.push(id),
   $:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);}};
