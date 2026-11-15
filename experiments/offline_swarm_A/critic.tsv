@@ -1,0 +1,2 @@
+round	commit	seed42_val_bpb	seed43_val_bpb	accepted	verdict	why
+1	661a2bd79dd507295bd55ef1ebdb4d3ed8b1c5cb	0.977491	0.977491	true	not-applicable	Arm A omits the critic LLM.

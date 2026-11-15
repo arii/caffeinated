@@ -1,0 +1,10 @@
+{
+  "arm": "B",
+  "command": "MEMORY_BACKEND=local EXA_API_KEY=... python3 swarm.py --arm B --rounds 6 --llm fake --gpu fake --no-push --out experiments/offline_swarm_B",
+  "swarm_commit": "45f7fe5",
+  "llm": "fake",
+  "gpu": "fake",
+  "exa": "live",
+  "memory_backend": "local",
+  "note": "Offline protocol run: deterministic fake LLM proposals and fake GPU scores (sha256 of commit), real Exa searches. llm_log.jsonl and exa_cache/ omitted to keep the fixture small."
+}

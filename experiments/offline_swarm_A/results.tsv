@@ -1,0 +1,27 @@
+commit	val_bpb	memory_gb	status	description	agent	round
+7017194	0.995814	44.0	keep	baseline	baseline	0
+2e7ebae39d7eeb199979b0ec0b5850a017bb8170	0.996465	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	1
+cffe519ade873ae0e8383acc49ff0c9569371e89	0.990942	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	1
+e27426b97a77be432ddf28c74d8eb32d32444863	0.977796	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	1
+661a2bd79dd507295bd55ef1ebdb4d3ed8b1c5cb	0.977491	44.0	keep	[EXPLOIT] Adjust total_batch_size to 2**18	worker-4	1
+661a2bd79dd507295bd55ef1ebdb4d3ed8b1c5cb	0.977491	44.0	keep	critic seed-43 confirmation for Adjust total_batch_size to 2**18	critic	1
+f90d6a0c5a734431ec1e589441887d1d3c7301a6	0.988732	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	2
+a6b7877bfcd00d6747321d9005559545d375aaf3	0.982959	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	2
+01c8071d9ca808180b1a3da500ebabc7426a97d5	0.992502	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	2
+3dd6d6e0e943033510ee6bc975815ed6c71219b0	0.980822	44.0	discard	[EXPLOIT] Adjust total_batch_size to 2**17	worker-4	2
+7687ab21562475edeb8a6e4aee1ab005c1622125	0.994320	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	3
+4874f139a6f96f47b06609c8db459851c13253ce	0.977332	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	3
+ca6cd326bc31b7fe4003f4491e8564374bdeee78	0.987596	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	3
+26652dbc2135906cafb8c3572107d893a7192fb6	0.995534	44.0	discard	[EXPLOIT] Adjust total_batch_size to 2**17	worker-4	3
+1f5efda06ba3f45e653a5eb7f727fe973f42050a	0.997217	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	4
+6590b1fe648c62abecda2de132b8b573600c54ac	0.999885	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	4
+022493a45f5a711c005389a73e0019cc6a2b7236	0.978363	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	4
+648586f8787dc1f9f3b835f28fa4dc98ab94b7f0	0.979853	44.0	discard	[EXPLOIT] Adjust total_batch_size to 2**17	worker-4	4
+e8927495defd7fa5bcbe6dacbad6ed4fbd8093db	0.995178	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	5
+f5fd847960da2ec237253096f5974e84f0e2aa35	0.987900	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	5
+d219cd3fb72b1989b5f0ec99f68e66efb2f3066a	0.993867	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	5
+216db8ec080f8873d923e33bd12d70fb0106597f	0.993614	44.0	discard	[EXPLOIT] Adjust total_batch_size to 2**17	worker-4	5
+d1b1d431d647667297c147b474b4881233db5762	0.993951	44.0	discard	[EXPLOIT] Adjust matrix_lr to 0.041	worker-1	6
+a805b9900ebdb6668a33922cae7dcd7834180ce7	0.981624	44.0	discard	[EXPLOIT] Adjust warmdown_ratio to 0.55	worker-2	6
+978005500328cf1928bbf44122601d5a05c32144	0.985864	44.0	discard	[EXPLOIT] Adjust embedding_lr to 0.61	worker-3	6
+19e90d6e5efdb4ad1bc48ee6238b1a295f70380e	0.995477	44.0	discard	[EXPLOIT] Adjust total_batch_size to 2**17	worker-4	6

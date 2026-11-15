@@ -1,0 +1,4 @@
+[
+ { "file": "data/fixtures/offline_swarm.trace.json", "label": "Swarm B vs A · offline protocol run (fake LLM/GPU, live Exa)" },
+ { "file": "data/nov14.trace.json", "label": "Nov 14 · single-agent H100 runs (boredom vs control)" }
+]

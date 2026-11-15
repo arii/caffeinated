@@ -1,0 +1,2 @@
+round	commit	seed42_val_bpb	seed43_val_bpb	accepted	verdict	why
+1	67c8b03834cddc4cf8cc9ba7140e7b9e2aa68722	0.977569	0.977569	true	replicated	The seed-43 result matches the candidate run.
