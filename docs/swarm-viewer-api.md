@@ -1,6 +1,89 @@
 # Swarm viewer API and data model (`swarm-viewer/v1`)
 
-Status: proposal. Nothing here is implemented yet.
+Status: design contract with an implementation on the autoresearch branch.
+This document describes the Artificial Scientist Swarms viewer. The status below
+distinguishes implemented behavior from the design shapes retained in §§1–7.
+
+## Implementation status
+
+The autoresearch branch implements the static
+[exporter](https://github.com/arii/caffeinated/blob/autoresearch/export_viewer.py),
+incremental round-end/final publishing (commit 91e6e26) and a read-only FastAPI
+[server](https://github.com/arii/caffeinated/tree/autoresearch/viewer)
+(commit add9002). These modules are on that branch, not this main checkout.
+The details below were checked against autoresearch at 34f1821.
+
+From an autoresearch checkout, install dependencies and serve an export root:
+
+```sh
+python -m pip install -r viewer/requirements.txt
+python -m viewer --data /path/to/export-root --port 8000
+```
+
+The export root contains index.json and UUID-named run directories. The CLI binds
+to 127.0.0.1. Static export supports both source formats:
+
+```sh
+python export_viewer.py /path/to/run --swarm autoresearch --dest /path/to/export-root
+python export_viewer.py /path/to/ignobel-run --swarm ignobel --dest /path/to/export-root
+```
+
+### Implemented HTTP routes
+
+All paths below are GET routes under /api/v1.
+
+| Path | Implemented behavior |
+| --- | --- |
+| /runs | Summaries from index.json |
+| /runs/{run_id} | Manifest |
+| /runs/{run_id}/timeline | Timeline and keyframe ticks |
+| /runs/{run_id}/world | WorldSnapshot; at=tick=T, at=round=R, at=ts=ISO or a bare tick; latest by default |
+| /runs/{run_id}/events | Paged events/next_after; after, until, agent_id, type, limit; NDJSON is a bounded page |
+| /runs/{run_id}/agents/{agent_id} | Identity/state/entities/history; native ID or UUID; same at selectors |
+| /runs/{run_id}/agents/{agent_id}/{collection} | questions, observations, hypotheses, experiments, rewards, diary, memory or llm_calls; until, before, limit |
+| /runs/{run_id}/ledger | Experiment entities; until, agent_id, status |
+| /runs/{run_id}/discoveries | Discoveries; until |
+| /runs/{run_id}/entities/{kind}/{entity_id} | Full entity; native is null unless a raw record was attached |
+| /runs/{run_id}/artifacts/{path} | Files confined to the exported artifacts directory |
+| /runs/{run_id}/stream | SSE with after/Last-Event-ID resume and run.status messages |
+
+Event pages default to 500 and cap at 5000; collection pages default to 100 and cap
+at 1000. Unknown runs/agents/entities return 404; invalid world selectors return 416.
+SSE polls complete exported event lines every 0.1 seconds, emits status heartbeats
+every 15 seconds and closes at terminal status.
+
+The conductor publishes after each round and on exit, by default to <out>/viewer.
+Use --viewer-dest PATH or --no-viewer to change or disable it. Publishing appends
+only an event suffix, preserves keyframes and refuses non-prefix histories.
+Files are replaced atomically one at a time, not as a directory transaction.
+Publish errors are logged without stopping research. Terminal publication adds
+run.finished and sets live=false. Visibility is round-level rather than worker-log tailing.
+
+### Contract differences and access boundary
+
+The schemas and endpoint table below remain design targets. Implementation differences:
+
+- Terminal status is finished/stopped, rather than the completed/failed vocabulary.
+- Run summaries lack compare_group/best and top-level ticks/rounds. Artifact hashes in
+  provenance.artifacts remain empty; current CPU provenance omits the legacy gpu field.
+- Entity files contain arrays, not ID-keyed maps. Raw native source records are not
+  guaranteed. Full prompt/response records live in llm_calls entities.
+- The CPU phase is evaluate. Snapshot activity training is a legacy wire token for CPU
+  candidate evaluation; the activity/station names below are retained for compatibility.
+- NDJSON is a bounded page, not a continuing stream; SSE supplies live updates.
+- Artifact paths are directory-confined, but the contract's extension allowlist is not
+  enforced. Authentication and automatic credential scrubbing are absent.
+- Exported accept_margin defaults to zero if omitted; conductor acceptance falls back to eps.
+- The frontend/Python shared fixture proposed in §5 is not supplied on these branches.
+
+Handlers read exported files only, with no run-control, inference or memory-write routes.
+Launch the server without swarm credentials; process-environment isolation is the
+operator's responsibility. CORS permits HTTP localhost/127.0.0.1 GET origins, not
+general access control. Running responses use weak ETags/no-cache; finished/stopped
+responses use content hashes/immutable caching. The run index is always revalidated.
+Matching ETags return 304.
+
+## Design contract
 
 The lab frontend gets **read-only** access to a swarm run. A viewer scrubs a timeline, pauses
 the world at any time step, walks between agents, and opens one to see its role, boredom, the
@@ -14,13 +97,13 @@ The design has three parts:
 3. A small set of **GET endpoints** (with an optional SSE stream for live runs), plus a static-file
    layout that uses the same shapes, so replay works without a server.
 
-Producers are adapters over the artifacts the swarms already write. The swarms themselves do not
-change, except for the small logging gaps listed in [Gaps](#gaps-in-current-logs).
+Producers adapt the artifacts the swarms write. The CPU conductor now also writes run metadata
+and publishes exports; [log coverage](#gaps-in-current-logs) describes available and missing inputs.
 
 | swarm | code | native artifacts |
 |---|---|---|
-| autoresearch | `swarm.py` on `autoresearch` | `ledger.jsonl`, `assignments.jsonl`, `boredom_log.jsonl`, `research_log.jsonl`, `memory.jsonl`, `memory_log.jsonl`, `llm_log.jsonl`, `critic.tsv`, `run.json` |
-| ignobel | `ignobel/world.py` on `main` | `events.jsonl` (schema in `ignobel/events.md`), `scores.jsonl`, `state.json`, prompt log, `plots/` |
+| autoresearch | `swarm.py` on `autoresearch` | `ledger.jsonl`, `assignments.jsonl`, `boredom_log.jsonl`, `research_log.jsonl`, `memory.jsonl`, `memory_log.jsonl`, `llm_log.jsonl`, `critic.tsv`, `results.tsv`, `run_id`, `run.json`, `boredom_profile.json`, optional `viewer_publish_log.jsonl`, `runs/`, default `viewer/` |
+| ignobel | `ignobel/world.py` on `main` | `events.jsonl` (schema in `ignobel/events.md`), `scores.jsonl`, `state.json`, `prompts.jsonl`, `plots/` |
 
 This replaces the per-experiment `caffeinated-trace/v1` (`export_trace.py`, closed PR #4), which
 has no per-agent state between experiments. It also extends the `ResearchEvent` envelope in
@@ -35,15 +118,15 @@ and `version`/`runId`/`eventId` map one-to-one.
 |---|---|---|
 | `tick` | int ≥ 0 | **Primary index.** One per normalized event, strictly increasing, gap-free within a run. "Pause at T" means "every event with `tick ≤ T` has happened". |
 | `round` | int ≥ 0 | The swarm's natural step: an autoresearch round or an ignobel round. 0 is setup (baseline, seeding). |
-| `phase` | enum | Position within a round, e.g. `assign → research → propose → gate → train → critic → status` (autoresearch) or `boredom → talk → share → snap → propose → study → diary` (ignobel). Used for ordering and for the scrubber's sub-ticks. |
-| `ts` | ISO-8601 or `null` | Source wall-clock time **only if the source record had one**. It is never invented. The ignobel `events.jsonl` and the autoresearch `ledger.jsonl` have no timestamps. |
+| `phase` | enum | Position within a round, e.g. `assign → research → propose → gate → evaluate → critic → status` (autoresearch) or `boredom → talk → share → snap → propose → study → diary` (ignobel). Used for ordering and for the scrubber's sub-ticks. |
+| `ts` | ISO-8601 or `null` | Source wall-clock time **only if the source record had one**. It is never invented. Ig Nobel events have no timestamps; current CPU ledger rows carry `ts`. |
 
 The frontend owns animation time. It interpolates between ticks and never treats it as data.
 
 **Ordering rule (exporter).** autoresearch writes several files, so events are merged by
-`(round, phase rank, ts, file, line)`. A ledger row has no `ts`, so it takes the `ts` of its
-matching `gate` record (same `candidate_commit`) for `experiment.started`, and the `ts` of the
-following `status` record for `experiment.finished`. ignobel uses file order. Running the exporter
+`(round, phase rank, ts, file, line)`. Current CPU ledger timestamps are used for both experiment
+events; older rows without `ts` borrow the matching gate timestamp for `experiment.started`
+and a following status timestamp for `experiment.finished` when available. Ig Nobel uses file order. Running the exporter
 twice on the same artifacts must produce byte-identical output.
 
 **Keyframes.** The server or exporter stores a full `WorldSnapshot` at the end of every round (and
@@ -92,7 +175,7 @@ interface RunManifest {
   time: { ticks: number; rounds: number; ts_start: string | null; ts_end: string | null };
   agents: AgentIdentity[];
   provenance: {
-    llm: string; gpu: string; exa: string; memory_backend: string;
+    llm: string; gpu: string; exa: string; memory_backend: string; // gpu is a legacy contract field
     command: string; swarm_commit: string;
     artifacts: Record<string, string>; // file -> sha256[:16]
   };
@@ -286,9 +369,9 @@ interface SwarmEvent<T extends EventType = EventType, P = unknown> {
 | `discovery.made` | `Discovery` | critic `keep` that improves the best by more than `eps` | `study_result.replicated` (+ `scores.jsonl` picks at the end) |
 | `llm.called` | `LlmCall` (no prompt body) | `llm_log.jsonl` | prompt log |
 
-† The autoresearch `assignment` records only per-agent `B`. `boredom_meter.meter.fold` is
-deterministic, so the exporter recomputes per-agent components from `ledger.jsonl[:seq]` with the
-logged `profile_sha256`, and fails if the hashes don't match.
+† Current assignments record full per_agent_boredom as well as per_agent_B and ledger/profile
+hashes. The exporter recomputes components against each assignment's logged ledger prefix,
+checks hashes and verifies logged B/components. Older assignments may contain only B.
 
 Unknown `type` values are ignored by the reducer, so new types do not require a version bump.
 Renaming or removing a field does.
@@ -333,7 +416,7 @@ fetched separately and filtered by `until=T`.
 ## 4. HTTP API
 
 Base path `/api/v1`. **GET only.** JSON, plus NDJSON where noted. No auth in development. The
-server never holds swarm credentials, because it reads artifacts only. Completed runs are immutable,
+server reads artifacts only and should be launched without swarm credentials. Completed runs are immutable,
 so their responses carry `ETag` and `Cache-Control: immutable`.
 
 Time selectors, accepted wherever `at` appears: `tick=T` | `round=R` (end of round R) |
@@ -404,15 +487,13 @@ and offline. The server endpoints and keyframes exist for long or live runs.
 
 ### 4.2 Live mode (optional)
 
-Live mode is cheap, because the producers already append JSONL. A tailer process watches the
-run's artifact files, parses only complete lines (skipping a partial last line), assigns the next
-`tick` using the ordering rule, appends to `events.ndjson`, and pushes the event over SSE. A client
-reconnects with `Last-Event-ID` / `after=` and receives no duplicates.
+The CPU conductor publishes after each round and on exit. The server reads those published
+files and tails complete events.ndjson lines for SSE. It does not watch raw worker logs
+or assign new ticks itself. Resume uses Last-Event-ID or after, with lifecycle status messages.
 
-Real autoresearch rounds take about 8 minutes (Modal GPU burst), so live mode is a slow-moving
-world. Pausing in live mode freezes only the client's view; the swarm keeps running and the client
-buffers events. Fake-LLM/fake-GPU runs finish in seconds, so they are better replayed than watched
-live.
+Candidates execute on CPU in Docker. Round duration depends on task, proposal, research and
+inference settings. Pausing freezes only the client's view; the swarm continues and the client
+can buffer events. Offline fake-inference runs are convenient replay fixtures.
 
 ---
 
@@ -427,8 +508,7 @@ function reduce(world: WorldSnapshot, e: SwarmEvent): WorldSnapshot  // pure, to
 - Ignore an event if `e.tick ≤ world.tick` (deduplication) or if its `type` is unknown.
 - `activity`/`station` change only on that agent's own events. The mapping is in §6.
 - The Python exporter and the TS reducer must produce identical snapshots at every keyframe. A
-  shared fixture test (`fixtures/offline_swarm_B.viewer/`) checks this in both suites, as trace v1
-  did.
+  shared cross-language fixture is a design requirement, not a currently supplied test.
 
 ## 6. Activity → station (default room mapping)
 
@@ -482,21 +562,21 @@ The room factory can override this mapping. Backend IDs and states do not depend
 
 ## Gaps in current logs
 
-These are small producer-side changes that make the viewer exact instead of inferred:
+Current CPU runs have closed several gaps from the original proposal:
 
-1. **Recall attribution (autoresearch).** `memory.recall` logs `agent: "autoresearch"`
-   (`RECALL_IDENTITY`) instead of the worker, so trace v1 had to *infer* `recalled_by`. Pass the
-   worker's name through `recall_memory(..., author)`. Until then, `recalled_by[].inferred = true`.
-2. **Ledger timestamps.** `ledger.jsonl` rows have no `ts`. Add `ts` in `meter.submit`, or accept
-   the gate/status borrowing in §1.
-3. **Per-agent boredom components.** `assignments.jsonl` stores only `per_agent_B`. Either log
-   `meter.status(profile, events, agent=a)` in full, or keep the exporter recompute (†).
-4. **Reasoning text.** `llm_log.jsonl` keeps the prompt and the final/parsed response. The Tinker
-   native renderer separates reasoning from content, but the reasoning is not stored. If the viewer
-   should show chain-of-thought, add `reasoning` to each `attempts[]` entry. Otherwise "reasoning"
-   in the UI is the `rationale` field plus the prompt and response.
-5. **ignobel timestamps.** `events.jsonl` has none (it is byte-identical by design). The viewer uses
-   `tick` only, which is fine.
+1. **Recall attribution.** The conductor passes worker identities into recall logging.
+   Older generic identities still require inference.
+2. **Ledger timestamps.** Current baseline, candidate and critic records carry ts; older
+   inputs use the gate/status fallback in §1. Unavailable timestamps remain null.
+3. **Per-agent components.** Assignments include full per_agent_boredom, B and hashes.
+   The exporter recomputes against the logged prefix to verify them.
+4. **Run provenance.** run.json records the starting commit, redacted command and lifecycle;
+   boredom_profile.json preserves the effective profile. Exported artifact hashes remain empty.
+5. **Model text.** llm_log.jsonl stores prompts, parsed responses and provider-returned
+   attempt content/reasoning when available. A proposal's rationale and recorded response
+   provide the available explanations; additional internal reasoning is not guaranteed.
+6. **Ig Nobel timestamps.** events.jsonl intentionally omits wall-clock timestamps;
+   file order and ticks supply replay time.
 
 ## Out of scope
 
