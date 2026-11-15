@@ -21,7 +21,8 @@ export function humanizeRole(role?:string){if(!role)return '';const r=role.repla
 const EVENTS:Record<string,string>={'run.started':'Run started','run.finished':'Run finished','round.started':'New round','agent.assigned':'Assignment','boredom.measured':'Boredom measured','question.asked':'Question asked','observation.received':'Observation','hypothesis.proposed':'Idea proposed','gate.checked':'Novelty gate','experiment.started':'Experiment started','experiment.finished':'Experiment finished','verdict.issued':'Critic verdict','discovery.made':'New best','memory.written':'Memory saved','diary.written':'Notes written','llm.called':'Model call','message.sent':'Message','items.shared':'Shared findings','study.registered':'Study registered','study.result':'Study result','award.issued':'Award'};
 export function eventLabel(type:string){return EVENTS[type]||type.replaceAll('.',' ').replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());}
 /** Placeholder messages (the event type itself) are not worth quoting. */
-export function meaningfulMessage(text?:string){const t=text?.trim()||'';return !!t&&!/^[a-z_]+(?: · [a-z_]+)+$/i.test(t)&&!/^[[{]/.test(t);}
+function isJson(t:string){if(!/^[[{]/.test(t))return false;try{return typeof JSON.parse(t)==='object';}catch{return /^\{\s*"|^\[\s*[{["]/.test(t);}}
+export function meaningfulMessage(text?:string){const t=text?.trim()||'';return !!t&&!/^[a-z_]+(?: · [a-z_]+)+$/i.test(t)&&!isJson(t);}
 export function eventCaption(e:{type:string;message?:string},agentName?:string,max=110){
  const head=[eventLabel(e.type),agentName].filter(Boolean).join(' · ');
  if(!meaningfulMessage(e.message))return head;
