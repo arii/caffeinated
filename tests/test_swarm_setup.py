@@ -207,6 +207,15 @@ class ResumeStateTests(unittest.TestCase):
         self.assertEqual((self.out / "run_id").read_text(), "abc\n")
         self.assertFalse((self.out / "vocab_extensions.jsonl").exists())
 
+    def test_restore_keeps_paid_openai_budget_reservations(self):
+        (self.out / "ledger.jsonl").write_text('{"round": 1}\n', encoding="utf-8")
+        swarm.write_checkpoint(
+            self.out, round_num=1, arm_commit="c", best_val=1.0, best_commit="b", viewer_dir=None
+        )
+        (self.out / "openai_budget.jsonl").write_text('{"reserved_usd": 0.01}\n', encoding="utf-8")
+        swarm.restore_checkpoint(self.out, swarm.read_checkpoint(self.out))
+        self.assertEqual((self.out / "openai_budget.jsonl").read_text(), '{"reserved_usd": 0.01}\n')
+
     def test_restore_refuses_a_log_shorter_than_its_checkpoint(self):
         (self.out / "ledger.jsonl").write_text('{"round": 1}\n', encoding="utf-8")
         swarm.write_checkpoint(
