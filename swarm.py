@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 import tarfile
+import urllib.parse
 import uuid
 from contextlib import ExitStack, contextmanager, redirect_stdout, suppress
 from datetime import datetime, timezone
@@ -1556,6 +1557,14 @@ def dig(data, path):
     return data
 
 
+def normalize_url(url):
+    """Lowercase the case-insensitive scheme and host of a URL; keep its path case."""
+    parts = urllib.parse.urlsplit(url)
+    return urllib.parse.urlunsplit(
+        parts._replace(scheme=parts.scheme.lower(), netloc=parts.netloc.lower())
+    )
+
+
 def describe_idea(profile, proposal, source_text):
     """Add idea tags and confidence params from a JSON editable file, per profile `idea_fields`."""
     spec = profile.get("idea_fields")
@@ -1574,7 +1583,7 @@ def describe_idea(profile, proposal, source_text):
             words = re.findall(r"[a-z][a-z0-9]{2,}", value.casefold())
             tags.extend(f"{field['tag']}:{word}" for word in words)
         else:
-            tags.append(f"{field['tag']}:{value.strip()}")
+            tags.append(f"{field['tag']}:{normalize_url(value.strip())}")
     descriptor = proposal["descriptor"]
     if tags:
         descriptor["idea"] = sorted(set(tags))

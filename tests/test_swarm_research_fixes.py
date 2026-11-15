@@ -1960,7 +1960,7 @@ class IgnobelIdeaDescriptorTest(unittest.TestCase):
         new = json.dumps(
             {
                 "predicted_rho": -0.62,
-                "dataset": {"url": "https://x.org/D.csv", "x": "Shell size", "y": "Price"},
+                "dataset": {"url": "HTTPS://X.org/D.csv", "x": "Shell size", "y": "Price"},
             }
         )
         proposal = {
