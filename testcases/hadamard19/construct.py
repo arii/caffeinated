@@ -3,7 +3,9 @@
 Print {"matrix": [[...]]}: 19 rows of 19 entries, each the integer 1 or -1.
 Baseline: random restarts plus greedy single-entry flips, scored with a float determinant.
 """
+
 import json
+
 import numpy as np
 
 N = 19
@@ -24,8 +26,9 @@ def objective(matrix):
 
 for _ in range(RESTARTS):
     if CONSTRUCTION:
-        a = np.array([[1 if (j - i) % N < (N + 1) // 2 else -1
-                       for j in range(N)] for i in range(N)])
+        a = np.array(
+            [[1 if (j - i) % N < (N + 1) // 2 else -1 for j in range(N)] for i in range(N)]
+        )
     else:
         a = rng.choice([-1, 1], size=(N, N))
     cur = objective(a)

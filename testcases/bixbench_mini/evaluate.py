@@ -2,9 +2,9 @@
 
 import json
 import math
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -34,9 +34,7 @@ def grade(key, answers):
         elif expected["mode"] == "range":
             correct[qid] = expected["lo"] <= value <= expected["hi"]
         else:
-            correct[qid] = abs(value - expected["value"]) <= 1e-9 * max(
-                1.0, abs(expected["value"])
-            )
+            correct[qid] = abs(value - expected["value"]) <= 1e-9 * max(1.0, abs(expected["value"]))
     return correct
 
 

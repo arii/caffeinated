@@ -3,33 +3,40 @@
 
 import argparse
 import csv
-from contextlib import contextmanager, redirect_stdout
-from datetime import datetime, timezone
 import io
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import uuid
+from contextlib import contextmanager, redirect_stdout
+from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
-from boredom import descriptor_meter as meter
 import llm
 import memory
 import research
+from boredom import descriptor_meter as meter
 from testcases import sandbox
-
 
 ROOT = Path(__file__).resolve().parent
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
 BOREDOM_COMPONENTS = (
-    "B", "regime", "novelty", "stagnation", "overload",
-    "fail_rate", "trivial_rate", "diversity", "frontier_stall", "frustration",
+    "B",
+    "regime",
+    "novelty",
+    "stagnation",
+    "overload",
+    "fail_rate",
+    "trivial_rate",
+    "diversity",
+    "frontier_stall",
+    "frustration",
 )
 TESTCASES = ROOT / "testcases"
 TARGET_FILE = None
@@ -125,9 +132,7 @@ def create_arm_worktrees(repo, arm, start_commit):
     worktree_root = repo / ".swarm_worktrees" / arm
     conductor = worktree_root / "conductor"
     agents_root = worktree_root
-    branch = unique_branch(
-        repo, f"swarm-{arm}-{datetime.now().strftime('%Y%m%d')}"
-    )
+    branch = unique_branch(repo, f"swarm-{arm}-{datetime.now().strftime('%Y%m%d')}")
     git(repo, "branch", branch, start_commit)
     conductor.parent.mkdir(parents=True, exist_ok=True)
     if conductor.exists():
@@ -147,9 +152,7 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
         git(path, "switch", "--detach", base_commit)
     else:
         git(repo, "worktree", "add", "--detach", str(path), base_commit)
-    branch = unique_branch(
-        repo, f"swarm-{arm}-r{round_num}-{agent}-a{attempt}"
-    )
+    branch = unique_branch(repo, f"swarm-{arm}-r{round_num}-{agent}-a{attempt}")
     git(path, "switch", "-c", branch)
     return path, branch
 
@@ -157,9 +160,7 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
-    agent_status = {
-        agent: meter.status(profile, events, agent=agent) for agent in agents
-    }
+    agent_status = {agent: meter.status(profile, events, agent=agent) for agent in agents}
     per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
         (agent for agent in agents if per_agent[agent] >= 0.70),
@@ -169,9 +170,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     scouts = []
 
     def divergent_worker():
-        return bored[0] if bored else min(
-            agents, key=lambda agent: (per_agent[agent], agent)
-        )
+        return bored[0] if bored else min(agents, key=lambda agent: (per_agent[agent], agent))
 
     if arm == "A":
         roles = dict.fromkeys(agents, "exploit")
@@ -179,8 +178,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         roles[scout] = "divergent"
         scouts = [scout] if exa_enabled else []
         rationale = (
-            "Arm A fixes three exploit slots and one divergent slot; "
-            "it scouts when Exa is enabled."
+            "Arm A fixes three exploit slots and one divergent slot; it scouts when Exa is enabled."
         )
     elif regime == "BOREDOM_SNAP":
         if exa_enabled:
@@ -197,9 +195,9 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
             roles[agent] = "divergent"
         non_scouts = [agent for agent in agents if agent not in scouts]
         remaining_divergent = 3 - len(scouts)
-        for agent in sorted(
-            non_scouts, key=lambda agent: (per_agent[agent], agent)
-        )[:remaining_divergent]:
+        for agent in sorted(non_scouts, key=lambda agent: (per_agent[agent], agent))[
+            :remaining_divergent
+        ]:
             roles[agent] = "divergent"
         rationale = (
             f"SNAP assigns one exploit and three divergent slots; "
@@ -215,9 +213,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
                 )
                 scouts.extend(remaining[: 2 - len(scouts)])
         roles = dict.fromkeys(agents, "divergent")
-        rationale = (
-            f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
-        )
+        rationale = f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
     else:
         roles = dict.fromkeys(agents, "exploit")
         divergent_agent = divergent_worker()
@@ -306,9 +302,7 @@ def suggest_cells(profile, events):
 def format_cells(cells):
     if not cells:
         return "none"
-    return ", ".join(
-        f"{item['cell']} (visits={item['visits']})" for item in cells
-    )
+    return ", ".join(f"{item['cell']} (visits={item['visits']})" for item in cells)
 
 
 def common_values(agent, round_num, role, status, agent_b, best_commit, best_val, profile):
@@ -333,9 +327,7 @@ def memory_text(result):
     entries = []
     for item in result.get("results", []):
         content = str(item.get("content") or "").replace("\n", " ")
-        earlier = any(
-            source.get("scope") == "cross_run" for source in item.get("sources") or []
-        )
+        earlier = any(source.get("scope") == "cross_run" for source in item.get("sources") or [])
         label = f"{item.get('kind', 'unknown')}{', earlier-run' if earlier else ''}"
         entries.append(f"#{item.get('rank', '?')} [{label}] {content[:500]}")
     return "\n".join(entries) if entries else "No matching memories."
@@ -518,10 +510,7 @@ def worker_search_cell(agent, role, status, assigned_cell="none"):
 def cell_search_query(cell):
     mechanism, _, method = str(cell).partition("/")
     topic = (TASK or {}).get("search_topic") or (TASK or {}).get("brief", "")[:120]
-    return (
-        f"{topic}: {method.replace('_', ' ')} approach "
-        f"({mechanism.replace('_', ' ')})"
-    )
+    return f"{topic}: {method.replace('_', ' ')} approach ({mechanism.replace('_', ' ')})"
 
 
 def worker_search(agent, cell, kinds, *, status, out_dir, replay):
@@ -565,13 +554,23 @@ def critic_common_values(round_num, best_commit, best_val, profile):
     return values
 
 
-def critic_review(llm_client, *, round_num, candidate, events, first_score, second_score,
-                  accepted, previous_best_commit, previous_best_val, profile):
+def critic_review(
+    llm_client,
+    *,
+    round_num,
+    candidate,
+    events,
+    first_score,
+    second_score,
+    accepted,
+    previous_best_commit,
+    previous_best_val,
+    profile,
+):
     basin = [
         event
         for event in events
-        if event.get("descriptor", {}).get("mechanism")
-        == candidate["descriptor"]["mechanism"]
+        if event.get("descriptor", {}).get("mechanism") == candidate["descriptor"]["mechanism"]
     ][-5:]
     claim = {
         "idea": candidate["idea"],
@@ -591,16 +590,15 @@ def critic_review(llm_client, *, round_num, candidate, events, first_score, seco
         "claim": json.dumps(claim, sort_keys=True),
         "predicted_delta": str(candidate.get("predicted_delta")),
         "basin_results": json.dumps(basin, sort_keys=True),
-        "novelty": (
-            "n/a" if candidate.get("novelty") is None else f"{candidate['novelty']:.2f}"
-        ),
+        "novelty": ("n/a" if candidate.get("novelty") is None else f"{candidate['novelty']:.2f}"),
         "prior_art": json.dumps(candidate.get("prior_hits", [])[:3], sort_keys=True),
     }
     return llm_client.call("CRITIC", agent="critic", round_num=round_num, values=values)
 
 
-def judge_novelty(candidates, *, llm_client, out_dir, round_num, status, profile,
-                  best_commit, best_val):
+def judge_novelty(
+    candidates, *, llm_client, out_dir, round_num, status, profile, best_commit, best_val
+):
     """Critic scores each idea against its prior-art hits; logged, never fed to the meter."""
     items = [candidate for candidate in candidates if candidate.get("prior_hits")]
     if not items:
@@ -639,27 +637,32 @@ def judge_novelty(candidates, *, llm_client, out_dir, round_num, status, profile
             novelty = None
         candidate["novelty"] = novelty
         candidate["prior_art_pass"] = None if novelty is None else novelty >= NOVELTY_PASS
-        append_jsonl(Path(out_dir) / "novelty.jsonl", {
-            "ts": timestamp(),
-            "round": round_num,
-            "agent": candidate["agent"],
-            "commit": candidate.get("commit") or None,
-            "idea": candidate.get("idea", ""),
-            "novelty": novelty,
-            "prior_art_pass": candidate["prior_art_pass"],
-            "closest": item.get("closest"),
-            "why": str(item.get("why") or response.get("error") or "")[:300],
-            "prior_art": [hit["id"] for hit in candidate["prior_hits"]],
-        })
+        append_jsonl(
+            Path(out_dir) / "novelty.jsonl",
+            {
+                "ts": timestamp(),
+                "round": round_num,
+                "agent": candidate["agent"],
+                "commit": candidate.get("commit") or None,
+                "idea": candidate.get("idea", ""),
+                "novelty": novelty,
+                "prior_art_pass": candidate["prior_art_pass"],
+                "closest": item.get("closest"),
+                "why": str(item.get("why") or response.get("error") or "")[:300],
+                "prior_art": [hit["id"] for hit in candidate["prior_hits"]],
+            },
+        )
 
 
 def vocab_with_extensions(profile, out_dir):
     vocab = json.loads(json.dumps(profile.get("vocab", {})))
-    slugs = sorted({
-        record["cell"].split("/", 1)[1]
-        for record in read_jsonl(Path(out_dir) / "vocab_extensions.jsonl")
-        if record.get("cell")
-    })
+    slugs = sorted(
+        {
+            record["cell"].split("/", 1)[1]
+            for record in read_jsonl(Path(out_dir) / "vocab_extensions.jsonl")
+            if record.get("cell")
+        }
+    )
     if slugs:
         vocab["other"] = slugs
     return vocab
@@ -672,10 +675,16 @@ def record_vocab_extension(out_dir, profile, descriptor, *, agent, round_num, id
     cell = meter.cell_key(profile, descriptor, 2)
     if any(record.get("cell") == cell for record in read_jsonl(path)):
         return
-    append_jsonl(path, {
-        "ts": timestamp(), "round": round_num, "agent": agent,
-        "cell": cell, "idea": idea,
-    })
+    append_jsonl(
+        path,
+        {
+            "ts": timestamp(),
+            "round": round_num,
+            "agent": agent,
+            "cell": cell,
+            "idea": idea,
+        },
+    )
     print(f"vocabulary extension: {cell}")
 
 
@@ -684,18 +693,19 @@ def known_optimum_reached(best_val):
     return target is not None and best_val <= float(target) + KNOWN_OPTIMUM_TOLERANCE
 
 
-def write_converged(out_dir, profile, events, status, *, round_num, best_commit,
-                    best_val, reason):
+def write_converged(out_dir, profile, events, status, *, round_num, best_commit, best_val, reason):
     status_record = read_jsonl(Path(out_dir) / "boredom_log.jsonl")
     converged = {
         "round": round_num,
         "reason": reason,
         "best_commit": best_commit,
         "best_loss": best_val,
-        "cells_covered": sorted({
-            meter.cell_key(profile, event["descriptor"], 2)
-            for event in meter.attempt_events(profile, events)
-        }),
+        "cells_covered": sorted(
+            {
+                meter.cell_key(profile, event["descriptor"], 2)
+                for event in meter.attempt_events(profile, events)
+            }
+        ),
         "attempt_count": len(list(meter.attempt_events(profile, events))),
         "status_record": status_record[-1] if status_record else status,
     }
@@ -800,9 +810,7 @@ def run_scouts(
             },
         )
         source_id = str(pick.get("source_id") or "")
-        source = next(
-            (item for item in sources if item.get("id") == source_id), None
-        )
+        source = next((item for item in sources if item.get("id") == source_id), None)
         if source is None:
             source = sources[0]
             source_id = str(source.get("id"))
@@ -819,11 +827,7 @@ def run_scouts(
             ),
         )
         extract = next(
-            (
-                item.get("summary")
-                for item in extract_records
-                if item.get("type") == "extract"
-            ),
+            (item.get("summary") for item in extract_records if item.get("type") == "extract"),
             "",
         )
         lead_values = {
@@ -902,9 +906,7 @@ def validate_proposal(profile, proposal):
     proposal["source_ids"] = sources
     proposal["predicted_delta"] = predicted_delta
     proposal["lead_id"] = proposal.get("lead_id") or None
-    if proposal["lead_id"] is not None and not re.fullmatch(
-        r"[A-Za-z0-9_-]+", proposal["lead_id"]
-    ):
+    if proposal["lead_id"] is not None and not re.fullmatch(r"[A-Za-z0-9_-]+", proposal["lead_id"]):
         raise ValueError("lead_id must contain only letters, digits, '_' or '-'")
     proposal["descriptor"] = json.loads(json.dumps(descriptor))
     return proposal
@@ -925,9 +927,7 @@ def apply_edits(source_path, edits):
         old = edit["old"]
         if not old or edited.count(old) != 1:
             count = edited.count(old) if old else 0
-            raise EditError(
-                f"edit {index}: old text must occur exactly once (found {count})"
-            )
+            raise EditError(f"edit {index}: old text must occur exactly once (found {count})")
         edited = edited.replace(old, edit["new"], 1)
     Path(source_path).write_text(edited, encoding="utf-8")
 
@@ -937,9 +937,7 @@ def descriptor_trailer(descriptor):
     method = str(descriptor["method"])
     params = descriptor.get("params") or {}
     value = params.get("value")
-    return f"{mechanism}/{method}" + (
-        f" value={float(value):g}" if value is not None else ""
-    )
+    return f"{mechanism}/{method}" + (f" value={float(value):g}" if value is not None else "")
 
 
 def commit_candidate(
@@ -976,7 +974,15 @@ def commit_candidate(
         f"Attempt: {attempt}",
     ]
     git(worktree, "add", "--", TARGET_FILE)
-    commit_args = ["-c", "user.name=Autoresearch Swarm", "-c", "user.email=swarm@localhost", "commit", "-m", subject]
+    commit_args = [
+        "-c",
+        "user.name=Autoresearch Swarm",
+        "-c",
+        "user.email=swarm@localhost",
+        "commit",
+        "-m",
+        subject,
+    ]
     for line in trailer_lines:
         commit_args.extend(["-m", line])
     git(worktree, *commit_args)
@@ -1001,10 +1007,16 @@ def gate_candidate(
             cached = cache[blob]
             reason = f"duplicate: blob already scored as {cached['commit']}"
             record = {
-                "type": "gate", "ts": timestamp(), "candidate_commit": commit,
-                "candidate_blob": blob, "pass": False, "reasons": [reason],
-                "descriptor": descriptor, "role": role,
-                "duplicate_of": cached["commit"], "score": cached.get("loss"),
+                "type": "gate",
+                "ts": timestamp(),
+                "candidate_commit": commit,
+                "candidate_blob": blob,
+                "pass": False,
+                "reasons": [reason],
+                "descriptor": descriptor,
+                "role": role,
+                "duplicate_of": cached["commit"],
+                "score": cached.get("loss"),
             }
             append_jsonl(Path(out_dir) / "boredom_log.jsonl", record)
             return False, record
@@ -1045,24 +1057,26 @@ def deduplicate_round_candidates(repo, candidates, out_dir):
             seen[blob] = candidate
             unique.append(candidate)
             continue
-        reason = (
-            f"duplicate: same editable blob as {previous['commit']} in this round"
+        reason = f"duplicate: same editable blob as {previous['commit']} in this round"
+        candidate.update(
+            {
+                "status": "duplicate",
+                "score": None,
+                "duplicate_of": previous["commit"],
+                "same_round_duplicate": True,
+                "reasons": [reason],
+            }
         )
-        candidate.update({
-            "status": "duplicate",
-            "score": None,
-            "duplicate_of": previous["commit"],
-            "same_round_duplicate": True,
-            "reasons": [reason],
-        })
         attempts = list(candidate.get("attempts") or [])
         attempt_number = attempts[-1].get("attempt", 1) if attempts else 1
-        attempts.append({
-            "attempt": attempt_number,
-            "commit": candidate["commit"],
-            "pass": False,
-            "reasons": [reason],
-        })
+        attempts.append(
+            {
+                "attempt": attempt_number,
+                "commit": candidate["commit"],
+                "pass": False,
+                "reasons": [reason],
+            }
+        )
         candidate["attempts"] = attempts
         append_jsonl(
             Path(out_dir) / "boredom_log.jsonl",
@@ -1090,10 +1104,14 @@ def record_score_cache(repo, out_dir, results):
         if result.get("status") != "ok" or result.get("loss") is None:
             continue
         blob = git_text(repo, "rev-parse", f"{commit}:{TARGET_FILE}")
-        cache.setdefault(blob, {
-            "commit": commit, "loss": result.get("loss"),
-            "status": result.get("status"),
-        })
+        cache.setdefault(
+            blob,
+            {
+                "commit": commit,
+                "loss": result.get("loss"),
+                "status": result.get("status"),
+            },
+        )
     path.write_text(json.dumps(cache, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
@@ -1156,9 +1174,7 @@ def worker_attempts(
     )
     current_base = base_commit
     candidate_source = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
-    common = common_values(
-        agent, round_num, role, status, agent_b, best_commit, best_val, profile
-    )
+    common = common_values(agent, round_num, role, status, agent_b, best_commit, best_val, profile)
     search_cell = worker_search_cell(agent, role, status)
     worker_sources = []
     searches_used = 0
@@ -1173,17 +1189,21 @@ def worker_attempts(
         for item in [*all_leads, *([lead] if lead else [])]
         for source_id in item.get("source_ids", [])
     }
-    common.update({
-        "search_cell": search_cell or "none",
-        "worker_sources": render_source_list(worker_sources) if search_cell else "No search run.",
-        "task_inputs": (TASK or {}).get("prompt_values", {}).get("task_context", "(none)"),
-        "suggested_cells": format_cells(status.get("suggested_cells", [])),
-        "reasons": "none",
-        "assigned_cell": "none",
-        "candidate_source": candidate_source,
-        "fake_targets": TASK.get("fake_targets", []),
-        "fake_edits": TASK.get("fake_edits", []),
-    })
+    common.update(
+        {
+            "search_cell": search_cell or "none",
+            "worker_sources": render_source_list(worker_sources)
+            if search_cell
+            else "No search run.",
+            "task_inputs": (TASK or {}).get("prompt_values", {}).get("task_context", "(none)"),
+            "suggested_cells": format_cells(status.get("suggested_cells", [])),
+            "reasons": "none",
+            "assigned_cell": "none",
+            "candidate_source": candidate_source,
+            "fake_targets": TASK.get("fake_targets", []),
+            "fake_edits": TASK.get("fake_edits", []),
+        }
+    )
     proposal = llm_client.call(
         "WORKER_PROPOSE",
         agent=agent,
@@ -1208,28 +1228,28 @@ def worker_attempts(
             )
             if mismatch_reason:
                 raise ValueError(mismatch_reason)
-            valid_leads = {
-                item.get("id") for item in all_leads if item.get("id")
-            }
+            valid_leads = {item.get("id") for item in all_leads if item.get("id")}
             if lead and lead.get("id"):
                 valid_leads.add(lead["id"])
-            if (
-                current_proposal.get("lead_id")
-                and current_proposal["lead_id"] not in valid_leads
-            ):
+            if current_proposal.get("lead_id") and current_proposal["lead_id"] not in valid_leads:
                 raise ValueError("lead_id must reference a lead offered this round")
         except (ValueError, TypeError) as error:
-            if (
-                common["assigned_cell"] != "none"
-                and str(error).startswith("unbuildable assignment: ")
+            if common["assigned_cell"] != "none" and str(error).startswith(
+                "unbuildable assignment: "
             ):
                 return {
-                    "agent": agent, "status": "reject", "score": None,
-                    "commit": "", "descriptor": current_proposal.get("descriptor", {}),
-                    "sources": [], "lead": None,
+                    "agent": agent,
+                    "status": "reject",
+                    "score": None,
+                    "commit": "",
+                    "descriptor": current_proposal.get("descriptor", {}),
+                    "sources": [],
+                    "lead": None,
                     "idea": current_proposal.get("idea", ""),
-                    "predicted_delta": None, "role": role,
-                    "reasons": [str(error)], "attempts": attempts,
+                    "predicted_delta": None,
+                    "role": role,
+                    "reasons": [str(error)],
+                    "attempts": attempts,
                 }
             if attempt == 1:
                 current_proposal = llm_client.call(
@@ -1244,12 +1264,18 @@ def worker_attempts(
                 )
                 if current_proposal.get("status") == "reject":
                     return {
-                        "agent": agent, "status": "reject", "score": None,
-                        "commit": "", "descriptor": common["assigned_descriptor"],
-                        "sources": [], "lead": None,
+                        "agent": agent,
+                        "status": "reject",
+                        "score": None,
+                        "commit": "",
+                        "descriptor": common["assigned_descriptor"],
+                        "sources": [],
+                        "lead": None,
                         "idea": "assigned cell has no buildable fake target",
-                        "predicted_delta": None, "role": role,
-                        "reasons": [current_proposal["reason"]], "attempts": attempts,
+                        "predicted_delta": None,
+                        "role": role,
+                        "reasons": [current_proposal["reason"]],
+                        "attempts": attempts,
                     }
                 continue
             return {
@@ -1278,9 +1304,7 @@ def worker_attempts(
             n=3,
         )
         prior_sources = [
-            str(item["id"])
-            for item in source_records(prior_records)
-            if item.get("id")
+            str(item["id"]) for item in source_records(prior_records) if item.get("id")
         ]
         prior_query = next(
             (item for item in prior_records if item.get("type") == "query"),
@@ -1390,14 +1414,14 @@ def worker_attempts(
         candidate = {
             "agent": agent,
             "status": (
-                "pending" if gate_pass
-                else "duplicate" if gate_record.get("duplicate_of") is not None
+                "pending"
+                if gate_pass
+                else "duplicate"
+                if gate_record.get("duplicate_of") is not None
                 else "reject"
             ),
             "score": (
-                gate_record.get("score")
-                if gate_record.get("duplicate_of") is not None
-                else None
+                gate_record.get("score") if gate_record.get("duplicate_of") is not None else None
             ),
             "duplicate_of": gate_record.get("duplicate_of"),
             "commit": committed["commit"],
@@ -1420,8 +1444,12 @@ def worker_attempts(
         }
         if not any(reason.startswith("invalid-descriptor") for reason in candidate["reasons"]):
             record_vocab_extension(
-                out_dir, profile, current_proposal["descriptor"],
-                agent=agent, round_num=round_num, idea=current_proposal["idea"],
+                out_dir,
+                profile,
+                current_proposal["descriptor"],
+                agent=agent,
+                round_num=round_num,
+                idea=current_proposal["idea"],
             )
         if candidate["status"] == "duplicate":
             return candidate
@@ -1435,45 +1463,69 @@ def worker_attempts(
             eligible = []
             for cell in cells:
                 descriptor = dict(zip(profile["levels"], cell["cell"].split("/")))
-                values = [event["descriptor"].get("params", {}).get("value")
-                          for event in events
-                          if meter.cell_key(profile, event["descriptor"], 2) == cell["cell"]]
+                values = [
+                    event["descriptor"].get("params", {}).get("value")
+                    for event in events
+                    if meter.cell_key(profile, event["descriptor"], 2) == cell["cell"]
+                ]
                 values = [abs(value) for value in values if isinstance(value, (int, float))]
                 spec = profile.get("params", {}).get("value", {})
                 if values and spec.get("scale") == "ratio":
                     descriptor["params"] = {"value": max(max(values), 1e-12) * spec["ratio"]}
-                if cell["cell"] != "baseline/none" and cell["cell"] not in reserved and meter.gate(
-                    profile, events, descriptor, role=role, sources=["assigned"]
-                )["pass"]:
+                if (
+                    cell["cell"] != "baseline/none"
+                    and cell["cell"] not in reserved
+                    and meter.gate(profile, events, descriptor, role=role, sources=["assigned"])[
+                        "pass"
+                    ]
+                ):
                     eligible.append((cell["cell"], descriptor))
             if not eligible:
-                eligible = [(cell["cell"], dict(zip(profile["levels"], cell["cell"].split("/")))) for cell in cells
-                            if cell["cell"] != "baseline/none" and cell["cell"] not in reserved]
+                eligible = [
+                    (cell["cell"], dict(zip(profile["levels"], cell["cell"].split("/"))))
+                    for cell in cells
+                    if cell["cell"] != "baseline/none" and cell["cell"] not in reserved
+                ]
             if eligible:
                 common["assigned_cell"], common["assigned_descriptor"] = eligible[0]
                 reserved.append(common["assigned_cell"])
                 if searches_used < MAX_WORKER_SEARCHES:
                     worker_sources = worker_search(
-                        agent, common["assigned_cell"], ["paper"],
-                        status=status, out_dir=out_dir, replay=replay,
+                        agent,
+                        common["assigned_cell"],
+                        ["paper"],
+                        status=status,
+                        out_dir=out_dir,
+                        replay=replay,
                     )
                     searches_used += 1
                     common["search_cell"] = common["assigned_cell"]
                     common["worker_sources"] = render_source_list(worker_sources)
                 current_proposal = llm_client.call(
-                    "WORKER_REPAIR", agent=agent, round_num=round_num,
-                    values={**common, "problem": "Implement exactly the conductor-assigned cell. Required descriptor: "
-                            + json.dumps(common["assigned_descriptor"], sort_keys=True),
-                            "proposal": json.dumps(current_proposal, sort_keys=True)},
+                    "WORKER_REPAIR",
+                    agent=agent,
+                    round_num=round_num,
+                    values={
+                        **common,
+                        "problem": "Implement exactly the conductor-assigned cell. Required descriptor: "
+                        + json.dumps(common["assigned_descriptor"], sort_keys=True),
+                        "proposal": json.dumps(current_proposal, sort_keys=True),
+                    },
                 )
                 if current_proposal.get("status") == "reject":
                     return {
-                        "agent": agent, "status": "reject", "score": None,
-                        "commit": "", "descriptor": common["assigned_descriptor"],
-                        "sources": [], "lead": None,
+                        "agent": agent,
+                        "status": "reject",
+                        "score": None,
+                        "commit": "",
+                        "descriptor": common["assigned_descriptor"],
+                        "sources": [],
+                        "lead": None,
                         "idea": "assigned cell has no buildable fake target",
-                        "predicted_delta": None, "role": role,
-                        "reasons": [current_proposal["reason"]], "attempts": attempts,
+                        "predicted_delta": None,
+                        "role": role,
+                        "reasons": [current_proposal["reason"]],
+                        "attempts": attempts,
                     }
                 continue
         if attempt == 1:
@@ -1519,8 +1571,7 @@ def critic_accepts(profile, first_score, second_score, previous_best, status):
     return (
         status == "ok"
         and second_score is not None
-        and (first_score + float(second_score)) / 2
-        < previous_best - acceptance_margin(profile)
+        and (first_score + float(second_score)) / 2 < previous_best - acceptance_margin(profile)
     )
 
 
@@ -1608,14 +1659,10 @@ def local_task_result(repo, commit, out_dir):
 def run_evaluations(repo, commits, out_dir):
     if not commits:
         return {}, ""
-    results = {
-        commit: local_task_result(repo, commit, out_dir) for commit in commits
-    }
+    results = {commit: local_task_result(repo, commit, out_dir) for commit in commits}
     for commit, result in results.items():
         score = result["loss"]
-        print(
-            f"{commit}\t{score if score is None else f'{score:.6f}'}\t{result['status']}"
-        )
+        print(f"{commit}\t{score if score is None else f'{score:.6f}'}\t{result['status']}")
     return results, ""
 
 
@@ -1654,8 +1701,14 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score):
     }
     if candidate.get("duplicate_of") is not None:
         event["duplicate_of"] = candidate["duplicate_of"]
-    for key in ("novelty", "prior_art_pass", "prior_art_sources", "offered_sources",
-                "worker_search_cell", "worker_searches"):
+    for key in (
+        "novelty",
+        "prior_art_pass",
+        "prior_art_sources",
+        "offered_sources",
+        "worker_search_cell",
+        "worker_searches",
+    ):
         if candidate.get(key) is not None:
             event[key] = candidate[key]
     return meter.submit(profile, ledger_path, event)
@@ -1778,8 +1831,7 @@ def write_round_summary(events, candidate_count):
     distinct_cells = {
         f"{event['descriptor']['mechanism']}/{event['descriptor']['method']}"
         for event in events
-        if event.get("kind") == "candidate"
-        and isinstance(event.get("descriptor"), dict)
+        if event.get("kind") == "candidate" and isinstance(event.get("descriptor"), dict)
     }
     regimes = {}
     for event in events:
@@ -1910,10 +1962,16 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
         export_viewer.publish(out_dir, dest, final=final, status=status)
     except Exception as error:
         try:
-            append_jsonl(out_dir / "viewer_publish_log.jsonl", {
-                "ts": timestamp(), "status": status, "final": final,
-                "error": type(error).__name__, "message": str(error),
-            })
+            append_jsonl(
+                out_dir / "viewer_publish_log.jsonl",
+                {
+                    "ts": timestamp(),
+                    "status": status,
+                    "final": final,
+                    "error": type(error).__name__,
+                    "message": str(error),
+                },
+            )
         except Exception as log_error:
             print(f"viewer publish log failed: {type(log_error).__name__}", file=sys.stderr)
         print(f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr)
@@ -1931,14 +1989,10 @@ def _orchestrate(args, publish_state):
     profile = meter.load_profile(profile_path)
     start_commit = git_text(repo, "rev-parse", "HEAD")
     exa_enabled = (
-        args.arm != "C"
-        and os.environ.get("EXA", "").casefold() != "off"
-        and args.exa != "off"
+        args.arm != "C" and os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
     )
     effective_no_push = args.no_push or args.llm == "fake"
-    branch, conductor, agents_root = create_arm_worktrees(
-        repo, args.arm, start_commit
-    )
+    branch, conductor, agents_root = create_arm_worktrees(repo, args.arm, start_commit)
     if args.out:
         out_dir = Path(args.out).resolve()
     else:
@@ -1946,8 +2000,10 @@ def _orchestrate(args, publish_state):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "runs").mkdir(parents=True, exist_ok=True)
     (out_dir / "exa_cache").mkdir(parents=True, exist_ok=True)
-    viewer_dest = None if args.no_viewer else (
-        Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer"
+    viewer_dest = (
+        None
+        if args.no_viewer
+        else (Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer")
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
     run_id_path = out_dir / "run_id"
@@ -1961,13 +2017,23 @@ def _orchestrate(args, publish_state):
     (out_dir / "boredom_profile.json").write_text(
         json.dumps(profile_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    _write_run_artifact(out_dir, {
-        "run_id": run_id, "task": args.task, "arm": args.arm, "status": "running",
-        "seed": args.seed, "rounds": args.rounds, "workers": len(AGENTS),
-        "llm": args.llm, "exa": "on" if exa_enabled else "off",
-        "profile_path": "boredom_profile.json", "profile_sha256": profile["_hash"],
-        **provenance,
-    })
+    _write_run_artifact(
+        out_dir,
+        {
+            "run_id": run_id,
+            "task": args.task,
+            "arm": args.arm,
+            "status": "running",
+            "seed": args.seed,
+            "rounds": args.rounds,
+            "workers": len(AGENTS),
+            "llm": args.llm,
+            "exa": "on" if exa_enabled else "off",
+            "profile_path": "boredom_profile.json",
+            "profile_sha256": profile["_hash"],
+            **provenance,
+        },
+    )
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
     critic_path = out_dir / "critic.tsv"
@@ -2033,9 +2099,7 @@ def _orchestrate(args, publish_state):
 
         for round_num in range(1, args.rounds + 1):
             events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(
-                profile, events, AGENTS, args.arm, exa_enabled
-            )
+            allocation = allocate_roles(profile, events, AGENTS, args.arm, exa_enabled)
             status = {
                 **allocation,
                 "ledger_sha256": allocation["ledger_sha256"],
@@ -2043,12 +2107,14 @@ def _orchestrate(args, publish_state):
             }
             if allocation["regime"] == "CONVERGED" or known_optimum_reached(best_val):
                 write_converged(
-                    out_dir, profile, events, status, round_num=round_num,
-                    best_commit=best_metric_commit, best_val=best_val,
-                    reason=(
-                        "known_optimum_loss" if known_optimum_reached(best_val)
-                        else "meter"
-                    ),
+                    out_dir,
+                    profile,
+                    events,
+                    status,
+                    round_num=round_num,
+                    best_commit=best_metric_commit,
+                    best_val=best_val,
+                    reason=("known_optimum_loss" if known_optimum_reached(best_val) else "meter"),
                 )
                 break
             events_for_scouts = list(events)
@@ -2123,22 +2189,21 @@ def _orchestrate(args, publish_state):
                 candidate_records.append(candidate)
 
             judge_novelty(
-                candidate_records, llm_client=llm_client, out_dir=out_dir,
-                round_num=round_num, status=status, profile=profile,
-                best_commit=best_metric_commit, best_val=best_val,
+                candidate_records,
+                llm_client=llm_client,
+                out_dir=out_dir,
+                round_num=round_num,
+                status=status,
+                profile=profile,
+                best_commit=best_metric_commit,
+                best_val=best_val,
             )
             pending_candidates = [
-                candidate
-                for candidate in candidate_records
-                if candidate.get("status") == "pending"
+                candidate for candidate in candidate_records if candidate.get("status") == "pending"
             ]
-            run_candidates = deduplicate_round_candidates(
-                repo, pending_candidates, out_dir
-            )
+            run_candidates = deduplicate_round_candidates(repo, pending_candidates, out_dir)
             commits = [candidate["commit"] for candidate in run_candidates]
-            evaluation_results, _ = run_evaluations(
-                repo, commits, out_dir / "runs"
-            )
+            evaluation_results, _ = run_evaluations(repo, commits, out_dir / "runs")
             record_score_cache(repo, out_dir, evaluation_results)
             for candidate in candidate_records:
                 if candidate.get("same_round_duplicate"):
@@ -2153,15 +2218,11 @@ def _orchestrate(args, publish_state):
                 if (
                     candidate["evaluation_status"] == "ok"
                     and candidate["score"] is not None
-                    and candidate_is_provisional(
-                        profile, candidate["score"], best_val
-                    )
+                    and candidate_is_provisional(profile, candidate["score"], best_val)
                 ):
                     provisional.append(candidate)
             provisional_best = (
-                min(provisional, key=lambda item: float(item["score"]))
-                if provisional
-                else None
+                min(provisional, key=lambda item: float(item["score"])) if provisional else None
             )
             critic_event = None
             accepted = False
@@ -2170,7 +2231,9 @@ def _orchestrate(args, publish_state):
                 previous_best_commit = best_metric_commit
                 critic_dir = out_dir / "runs" / "critic_confirmation"
                 critic_result = critic_confirmation_result(
-                    repo, provisional_best["commit"], provisional_best["score"],
+                    repo,
+                    provisional_best["commit"],
+                    provisional_best["score"],
                     critic_dir,
                 )
                 if critic_result.get("critic_rerun"):
@@ -2208,9 +2271,7 @@ def _orchestrate(args, publish_state):
                     previous_best_val=previous_best_val,
                     profile=profile,
                 )
-                critic_record["verdict"] = str(
-                    verdict.get("verdict") or "untested-in-source"
-                )
+                critic_record["verdict"] = str(verdict.get("verdict") or "untested-in-source")
                 critic_record["why"] = str(verdict.get("why") or "")
                 write_memory_item(
                     "verdict",
@@ -2248,8 +2309,7 @@ def _orchestrate(args, publish_state):
                     "round": round_num,
                     "lead": provisional_best.get("lead"),
                     "description": (
-                        f"critic second-evaluation confirmation for "
-                        f"{provisional_best['idea']}"
+                        f"critic second-evaluation confirmation for {provisional_best['idea']}"
                     ),
                     "role": "critic",
                     "predicted_delta": provisional_best.get("predicted_delta"),
@@ -2322,12 +2382,8 @@ def _orchestrate(args, publish_state):
                 )
 
             events = write_results(ledger_path, results_path)
-            _status_after, _status_record = append_status(
-                out_dir, profile, events, args.arm
-            )
-            copy_target = copy_artifacts_to_arm_branch(
-                out_dir, conductor, args.arm
-            )
+            _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
+            copy_target = copy_artifacts_to_arm_branch(out_dir, conductor, args.arm)
             commit_arm_artifacts(conductor, copy_target, round_num)
             for candidate in candidate_records:
                 if candidate.get("commit"):
@@ -2338,9 +2394,7 @@ def _orchestrate(args, publish_state):
                     git(conductor, "tag", tag, candidate["commit"])
                     tags_this_run.append(tag)
             if critic_event is not None:
-                tag = unique_tag(
-                    repo, f"run/swarm_{args.arm}/{round_num}-critic"
-                )
+                tag = unique_tag(repo, f"run/swarm_{args.arm}/{round_num}-critic")
                 git(conductor, "tag", tag, critic_event["commit"])
                 tags_this_run.append(tag)
             if not effective_no_push:
@@ -2362,8 +2416,13 @@ def _orchestrate(args, publish_state):
                 print(f"round {round_num}: no candidate confirmed")
             if known_optimum_reached(best_val):
                 write_converged(
-                    out_dir, profile, events, status, round_num=round_num + 1,
-                    best_commit=best_metric_commit, best_val=best_val,
+                    out_dir,
+                    profile,
+                    events,
+                    status,
+                    round_num=round_num + 1,
+                    best_commit=best_metric_commit,
+                    best_val=best_val,
                     reason="known_optimum_loss",
                 )
                 break
@@ -2409,9 +2468,7 @@ def build_parser():
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
-    parser.add_argument(
-        "--llm", choices=("openai", "tinker", "fake"), default="openai"
-    )
+    parser.add_argument("--llm", choices=("openai", "tinker", "fake"), default="openai")
     parser.add_argument(
         "--task",
         required=True,
@@ -2423,7 +2480,9 @@ def build_parser():
     parser.add_argument("--exa", choices=("on", "off"), default="on")
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
-    parser.add_argument("--viewer-dest", help="directory for live viewer exports (default: <out>/viewer)")
+    parser.add_argument(
+        "--viewer-dest", help="directory for live viewer exports (default: <out>/viewer)"
+    )
     parser.add_argument("--no-viewer", action="store_true")
     return parser
 

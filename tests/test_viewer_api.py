@@ -6,9 +6,9 @@ import unittest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from test_export_viewer import autoresearch_run
 
 import export_viewer
-from test_export_viewer import autoresearch_run
 from viewer.app import _read_events, create_app
 
 
@@ -38,8 +38,12 @@ class ViewerApiTests(unittest.TestCase):
         self.assertEqual(world.status_code, 200)
         frame = json.loads((self.run_dir / "keyframes" / f"{tick}.json").read_text())
         self.assertEqual(world.json()["agents"], frame["agents"])
-        self.assertEqual(self.client.get(base + "/world", params={"at": "round=1"}).status_code, 200)
-        self.assertEqual(self.client.get(base + "/world", params={"at": "tick=99999"}).status_code, 416)
+        self.assertEqual(
+            self.client.get(base + "/world", params={"at": "round=1"}).status_code, 200
+        )
+        self.assertEqual(
+            self.client.get(base + "/world", params={"at": "tick=99999"}).status_code, 416
+        )
 
         events = self.client.get(base + "/events", params={"limit": 2}).json()
         self.assertEqual(len(events["events"]), 2)
@@ -54,8 +58,14 @@ class ViewerApiTests(unittest.TestCase):
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.json()["identity"]["agent_id"], worker["agent_id"])
         for collection in (
-            "questions", "observations", "hypotheses", "experiments", "rewards",
-            "diary", "memory", "llm_calls",
+            "questions",
+            "observations",
+            "hypotheses",
+            "experiments",
+            "rewards",
+            "diary",
+            "memory",
+            "llm_calls",
         ):
             self.assertEqual(
                 self.client.get(base + f"/agents/worker-1/{collection}").status_code, 200
@@ -63,13 +73,17 @@ class ViewerApiTests(unittest.TestCase):
         self.assertEqual(self.client.get(base + "/ledger").status_code, 200)
         self.assertEqual(self.client.get(base + "/discoveries").status_code, 200)
 
-        experiment_id = next(iter(json.loads(
-            (self.run_dir / "entities" / "experiments.json").read_text()
-        )))["id"]
-        self.assertEqual(self.client.get(base + f"/entities/experiment/{experiment_id}").status_code, 200)
+        experiment_id = next(
+            iter(json.loads((self.run_dir / "entities" / "experiments.json").read_text()))
+        )["id"]
+        self.assertEqual(
+            self.client.get(base + f"/entities/experiment/{experiment_id}").status_code, 200
+        )
         self.assertEqual(self.client.get(base + "/entities/experiment/missing").status_code, 404)
         self.assertEqual(self.client.get("/api/v1/runs/missing").json(), {"error": "unknown_run"})
-        self.assertEqual(self.client.get(base + "/agents/missing").json(), {"error": "unknown_agent"})
+        self.assertEqual(
+            self.client.get(base + "/agents/missing").json(), {"error": "unknown_agent"}
+        )
 
     def test_artifacts_etags_and_cors(self):
         base = f"/api/v1/runs/{self.run_id}"
@@ -123,9 +137,7 @@ class ViewerApiTests(unittest.TestCase):
         manifest = json.loads((self.run_dir / "manifest.json").read_text())
         manifest["baseline"] = 0.058514
         events = _read_events(self.run_dir / "events.ndjson")
-        world = export_viewer.world_at(
-            events, manifest, {}, 0, keyframes={}
-        )
+        world = export_viewer.world_at(events, manifest, {}, 0, keyframes={})
         self.assertEqual(world["tick"], 0)
         self.assertEqual(world["swarm"]["baseline"], 0.058514)
         self.assertEqual(
@@ -140,7 +152,7 @@ class ViewerApiTests(unittest.TestCase):
         after = existing[-1]["tick"]
         appended = {**existing[-1], "tick": after + 1, "event_id": "test:next"}
         data = (json.dumps(appended, sort_keys=True) + "\n").encode()
-        events_path.write_bytes(events_path.read_bytes() + data[:len(data) // 2])
+        events_path.write_bytes(events_path.read_bytes() + data[: len(data) // 2])
         self.assertEqual(_read_events(events_path), existing)
 
         result = {}
@@ -157,7 +169,7 @@ class ViewerApiTests(unittest.TestCase):
         self.assertTrue(started.wait(2))
         time.sleep(0.1)
         with events_path.open("ab") as stream:
-            stream.write(data[len(data) // 2:])
+            stream.write(data[len(data) // 2 :])
         manifest_path = self.run_dir / "manifest.json"
         manifest = json.loads(manifest_path.read_text())
         manifest["time"]["ticks"] = after + 2
@@ -173,9 +185,7 @@ class ViewerApiTests(unittest.TestCase):
         self.assertIn(f"id: {after + 1}", result["body"])
         self.assertIn('"status": "finished"', result["body"])
 
-        resumed = self.client.get(
-            base + "/stream", headers={"Last-Event-ID": str(after + 1)}
-        )
+        resumed = self.client.get(base + "/stream", headers={"Last-Event-ID": str(after + 1)})
         self.assertEqual(resumed.status_code, 200)
         self.assertNotIn("event: swarm-event", resumed.text)
         self.assertIn("event: run.status", resumed.text)

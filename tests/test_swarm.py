@@ -1,21 +1,20 @@
+import csv
+import itertools
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-import csv
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
+import export_viewer
 import llm
 import swarm
-import export_viewer
 from boredom import descriptor_meter as meter
-import itertools
-
 from test_testcases import DOCKER_AVAILABLE, DOCKER_SKIP_REASON
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +41,9 @@ class FakeLLMTests(unittest.TestCase):
             swarm.validate_proposal(profile, proposal)
             self.assertEqual(len(proposal["edits"]), 1)
             self.assertNotEqual(proposal["edits"][0]["old"], proposal["edits"][0]["new"])
-        self.assertGreater(len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1)
+        self.assertGreater(
+            len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1
+        )
 
     def test_assigned_cell_uses_task_knob(self):
         task = swarm.load_task("hadamard19")
@@ -64,7 +65,8 @@ class FakeLLMTests(unittest.TestCase):
             if mechanism not in {"construction", "objective"}:
                 continue
             proposal = llm.fake_assigned_proposal(
-                f"{mechanism}/{method}", source,
+                f"{mechanism}/{method}",
+                source,
                 {"mechanism": mechanism, "method": method},
                 fake_targets=task["fake_targets"],
             )
@@ -93,12 +95,11 @@ class FakeLLMTests(unittest.TestCase):
         self.assertEqual(reason, "unbuildable assignment: objective/log_det")
 
     def test_deterministic_critic_uses_first_score_without_rerun(self):
-        with patch.object(swarm, "TASK", {"deterministic": True}), patch(
-            "swarm.run_evaluations", side_effect=AssertionError("unexpected rerun")
+        with (
+            patch.object(swarm, "TASK", {"deterministic": True}),
+            patch("swarm.run_evaluations", side_effect=AssertionError("unexpected rerun")),
         ):
-            result = swarm.critic_confirmation_result(
-                Path("."), "commit", 0.123, Path("critic")
-            )
+            result = swarm.critic_confirmation_result(Path("."), "commit", 0.123, Path("critic"))
         self.assertEqual(result["loss"], 0.123)
         self.assertEqual(result["critic_rerun"], "skipped (deterministic)")
 
@@ -109,13 +110,9 @@ class AllocationTests(unittest.TestCase):
         for arm in ("A", "B"):
             allocation = swarm.allocate_roles(profile, [], arm=arm, exa_enabled=True)
             self.assertEqual(len(allocation["scouts"]), 1)
-            self.assertEqual(
-                allocation["roles"][allocation["scouts"][0]], "divergent"
-            )
+            self.assertEqual(allocation["roles"][allocation["scouts"][0]], "divergent")
         self.assertEqual(
-            list(swarm.allocate_roles(profile, [], arm="A")["roles"].values()).count(
-                "exploit"
-            ),
+            list(swarm.allocate_roles(profile, [], arm="A")["roles"].values()).count("exploit"),
             3,
         )
         self.assertEqual(
@@ -188,9 +185,7 @@ class SandboxedSwarmTests(unittest.TestCase):
         (repo / ".gitignore").write_text(".swarm_worktrees/\n", encoding="utf-8")
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
         subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
-        subprocess.run(
-            ["git", "config", "user.email", "test@example.com"], cwd=repo, check=True
-        )
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
         subprocess.run(["git", "add", "."], cwd=repo, check=True)
         subprocess.run(["git", "commit", "-qm", "baseline"], cwd=repo, check=True)
         return repo
@@ -228,9 +223,7 @@ class SandboxedSwarmTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         ledger = [
-            json.loads(line)
-            for line in (out / "ledger.jsonl").read_text().splitlines()
-            if line
+            json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines() if line
         ]
         return ledger, out
 
@@ -250,8 +243,13 @@ class SandboxedSwarmTests(unittest.TestCase):
             shutil.copytree(out, prefix)
             end_ts = statuses[round_num - 1]["ts"]
             for name in (
-                "assignments.jsonl", "ledger.jsonl", "boredom_log.jsonl",
-                "research_log.jsonl", "memory.jsonl", "memory_log.jsonl", "llm_log.jsonl",
+                "assignments.jsonl",
+                "ledger.jsonl",
+                "boredom_log.jsonl",
+                "research_log.jsonl",
+                "memory.jsonl",
+                "memory_log.jsonl",
+                "llm_log.jsonl",
             ):
                 path = prefix / name
                 if not path.exists():
@@ -268,8 +266,10 @@ class SandboxedSwarmTests(unittest.TestCase):
                         keep = stamp is None or stamp <= end_ts
                     filtered.append(record) if keep else None
                 path.write_text(
-                    "".join(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n"
-                            for record in filtered),
+                    "".join(
+                        json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n"
+                        for record in filtered
+                    ),
                     encoding="utf-8",
                 )
             for name in ("critic.tsv", "results.tsv"):
@@ -277,9 +277,10 @@ class SandboxedSwarmTests(unittest.TestCase):
                 if path.exists():
                     with path.open(encoding="utf-8", newline="") as stream:
                         reader = csv.DictReader(stream, delimiter="\t")
-                        fields, filtered = reader.fieldnames, [
-                            row for row in reader if int(row.get("round") or 0) <= round_num
-                        ]
+                        fields, filtered = (
+                            reader.fieldnames,
+                            [row for row in reader if int(row.get("round") or 0) <= round_num],
+                        )
                     with path.open("w", encoding="utf-8", newline="") as stream:
                         writer = csv.DictWriter(stream, fieldnames=fields, delimiter="\t")
                         writer.writeheader()
@@ -288,7 +289,9 @@ class SandboxedSwarmTests(unittest.TestCase):
             run_artifact["status"] = "running"
             (prefix / "run.json").write_text(json.dumps(run_artifact), encoding="utf-8")
             run_dir = export_viewer.publish(
-                prefix, destination, final=round_num == 3,
+                prefix,
+                destination,
+                final=round_num == 3,
                 status="finished" if round_num == 3 else "running",
             )
             snapshot = parent / f"snapshot-{round_num}"
@@ -297,10 +300,16 @@ class SandboxedSwarmTests(unittest.TestCase):
         fresh_root = parent / "one-shot"
         fresh_run = export_viewer.export(out, fresh_root)
         self.assertEqual(
-            {p.relative_to(snapshots[-1]).as_posix(): p.read_bytes()
-             for p in snapshots[-1].rglob("*") if p.is_file()},
-            {p.relative_to(fresh_run).as_posix(): p.read_bytes()
-             for p in fresh_run.rglob("*") if p.is_file()},
+            {
+                p.relative_to(snapshots[-1]).as_posix(): p.read_bytes()
+                for p in snapshots[-1].rglob("*")
+                if p.is_file()
+            },
+            {
+                p.relative_to(fresh_run).as_posix(): p.read_bytes()
+                for p in fresh_run.rglob("*")
+                if p.is_file()
+            },
         )
         return snapshots
 
@@ -314,18 +323,19 @@ class SandboxedSwarmTests(unittest.TestCase):
             for previous, current in itertools.pairwise(event_files):
                 self.assertTrue(current.startswith(previous))
             manifests = [json.loads((path / "manifest.json").read_text()) for path in snapshots]
-            self.assertEqual([manifest["status"] for manifest in manifests],
-                             ["running", "running", "finished"])
+            self.assertEqual(
+                [manifest["status"] for manifest in manifests], ["running", "running", "finished"]
+            )
             event_rows = [
-                [json.loads(line) for line in data.decode().splitlines()]
-                for data in event_files
+                [json.loads(line) for line in data.decode().splitlines()] for data in event_files
             ]
             self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[0]))
             self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[1]))
             self.assertTrue(any(event["type"] == "run.finished" for event in event_rows[2]))
-            frames = [{path.name: path.read_bytes()
-                       for path in (snapshot / "keyframes").glob("*.json")}
-                      for snapshot in snapshots]
+            frames = [
+                {path.name: path.read_bytes() for path in (snapshot / "keyframes").glob("*.json")}
+                for snapshot in snapshots
+            ]
             for previous, current in itertools.pairwise(frames):
                 for name, data in previous.items():
                     self.assertEqual(current[name], data)
@@ -337,17 +347,32 @@ class SandboxedSwarmTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = self.create_repo(tmp, "publish-failure")
             out = Path(tmp) / "out"
-            args = swarm.build_parser().parse_args([
-                "--task", "hadamard19", "--rounds", "1", "--llm", "fake",
-                "--no-push", "--out", str(out), "--repo", str(repo),
-            ])
+            args = swarm.build_parser().parse_args(
+                [
+                    "--task",
+                    "hadamard19",
+                    "--rounds",
+                    "1",
+                    "--llm",
+                    "fake",
+                    "--no-push",
+                    "--out",
+                    str(out),
+                    "--repo",
+                    str(repo),
+                ]
+            )
             env = {"EXA": "off", "MEMORY_BACKEND": "local"}
-            with patch.dict(os.environ, env), patch(
-                "export_viewer.publish", side_effect=RuntimeError("test publish failure")
+            with (
+                patch.dict(os.environ, env),
+                patch("export_viewer.publish", side_effect=RuntimeError("test publish failure")),
             ):
                 result = swarm.orchestrate(args)
             self.assertEqual(result["arm"], "B")
-            entries = [json.loads(line) for line in (out / "viewer_publish_log.jsonl").read_text().splitlines()]
+            entries = [
+                json.loads(line)
+                for line in (out / "viewer_publish_log.jsonl").read_text().splitlines()
+            ]
             self.assertGreaterEqual(len(entries), 2)
             ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
             self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
@@ -357,10 +382,21 @@ class SandboxedSwarmTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = self.create_repo(tmp, "converged")
             out = Path(tmp) / "out"
-            args = swarm.build_parser().parse_args([
-                "--task", "hadamard19", "--rounds", "10", "--llm", "fake",
-                "--no-push", "--out", str(out), "--repo", str(repo),
-            ])
+            args = swarm.build_parser().parse_args(
+                [
+                    "--task",
+                    "hadamard19",
+                    "--rounds",
+                    "10",
+                    "--llm",
+                    "fake",
+                    "--no-push",
+                    "--out",
+                    str(out),
+                    "--repo",
+                    str(repo),
+                ]
+            )
             original = meter.load_profile
 
             def quick_profile(path):
@@ -373,8 +409,9 @@ class SandboxedSwarmTests(unittest.TestCase):
                 )
                 return profile
 
-            with patch.dict(os.environ, {"EXA": "off", "MEMORY_BACKEND": "local"}), patch(
-                "swarm.meter.load_profile", side_effect=quick_profile
+            with (
+                patch.dict(os.environ, {"EXA": "off", "MEMORY_BACKEND": "local"}),
+                patch("swarm.meter.load_profile", side_effect=quick_profile),
             ):
                 swarm.orchestrate(args)
             summary = json.loads((out / "converged.json").read_text())
@@ -382,9 +419,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             profile = original(PROFILE)
             profile["attempt_statuses"] = ["keep", "discard", "crash", "reject", "duplicate"]
             self.assertLess(summary["round"], 10)
-            self.assertLess(
-                max(event.get("round", 0) for event in ledger), summary["round"]
-            )
+            self.assertLess(max(event.get("round", 0) for event in ledger), summary["round"])
             self.assertEqual(
                 round(summary["best_loss"], 6),
                 summary["status_record"]["best_loss"],
@@ -403,14 +438,10 @@ class SandboxedSwarmTests(unittest.TestCase):
             repo = self.create_repo(tmp, "dedup")
             out = Path(tmp) / "out"
             out.mkdir()
-            args = swarm.build_parser().parse_args(
-                ["--task", "hadamard19", "--llm", "fake"]
-            )
+            args = swarm.build_parser().parse_args(["--task", "hadamard19", "--llm", "fake"])
             swarm.configure_task(args)
             commit = swarm.git_text(repo, "rev-parse", "HEAD")
-            swarm.record_score_cache(
-                repo, out, {commit: {"loss": 0.5, "status": "ok"}}
-            )
+            swarm.record_score_cache(repo, out, {commit: {"loss": 0.5, "status": "ok"}})
             passed, record = swarm.gate_candidate(
                 repo=repo, out_dir=out, profile_path=PROFILE, commit=commit
             )
@@ -445,9 +476,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             repo = self.create_repo(tmp, "same-round-dedup")
             out = Path(tmp) / "out"
             out.mkdir()
-            args = swarm.build_parser().parse_args(
-                ["--task", "hadamard19", "--llm", "fake"]
-            )
+            args = swarm.build_parser().parse_args(["--task", "hadamard19", "--llm", "fake"])
             swarm.configure_task(args)
             first_commit = swarm.git_text(repo, "rev-parse", "HEAD")
             subprocess.run(
@@ -478,18 +507,14 @@ class SandboxedSwarmTests(unittest.TestCase):
                     ("worker-2", second_commit),
                 )
             ]
-            evaluation_candidates = swarm.deduplicate_round_candidates(
-                repo, candidates, out
-            )
+            evaluation_candidates = swarm.deduplicate_round_candidates(repo, candidates, out)
             self.assertEqual(len(evaluation_candidates), 1)
             self.assertEqual(evaluation_candidates[0]["commit"], first_commit)
             duplicate = candidates[1]
             self.assertEqual(duplicate["status"], "duplicate")
             self.assertEqual(duplicate["duplicate_of"], first_commit)
             self.assertTrue(duplicate["same_round_duplicate"])
-            gate_record = json.loads(
-                (out / "boredom_log.jsonl").read_text().splitlines()[-1]
-            )
+            gate_record = json.loads((out / "boredom_log.jsonl").read_text().splitlines()[-1])
             self.assertFalse(gate_record["pass"])
             self.assertEqual(gate_record["duplicate_of"], first_commit)
 

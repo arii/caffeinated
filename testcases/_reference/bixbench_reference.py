@@ -1,12 +1,14 @@
 """Reference analysis used only to confirm the mini benchmark is solvable. Do not expose to agents."""
+
 import json
 import sys
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from scipy import stats
-import statsmodels.formula.api as smf
 import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from scipy import stats
 from statsmodels.stats.power import TTestIndPower
 
 D = Path(__file__).resolve().parent.parent / "bixbench_mini" / "data"

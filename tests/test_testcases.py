@@ -1,7 +1,6 @@
 import csv
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -9,10 +8,11 @@ import sys
 import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 
-from boredom import descriptor_meter as meter
 import swarm
+from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
@@ -20,12 +20,16 @@ from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_fra
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
 DOCKER_DAEMON_AVAILABLE = sandbox.docker_available()
-DOCKER_IMAGE_AVAILABLE = DOCKER_DAEMON_AVAILABLE and subprocess.run(
-    ["docker", "image", "inspect", "caffeinated-testcases:py311-v1"],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL,
-    check=False,
-).returncode == 0
+DOCKER_IMAGE_AVAILABLE = (
+    DOCKER_DAEMON_AVAILABLE
+    and subprocess.run(
+        ["docker", "image", "inspect", "caffeinated-testcases:py311-v1"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode
+    == 0
+)
 DOCKER_AVAILABLE = DOCKER_IMAGE_AVAILABLE
 DOCKER_SKIP_REASON = "Docker daemon and caffeinated-testcases:py311-v1 image required"
 
@@ -71,9 +75,7 @@ class EvaluatorTests(unittest.TestCase):
                 for edit in task.get("fake_edits", []):
                     meter.validate_descriptor(loaded, edit["descriptor"])
                 for target in task.get("fake_targets", []):
-                    meter.validate_descriptor(
-                        loaded, {"mechanism": target[1], "method": target[2]}
-                    )
+                    meter.validate_descriptor(loaded, {"mechanism": target[1], "method": target[2]})
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_edit_changes_each_task_score(self):
@@ -131,10 +133,7 @@ class EvaluatorTests(unittest.TestCase):
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_non_pm1_matrix(self):
-        source = (
-            "import json\n"
-            'print(json.dumps({"matrix": [[2] * 19] * 19}))\n'
-        )
+        source = 'import json\nprint(json.dumps({"matrix": [[2] * 19] * 19}))\n'
         result = task_evaluation("hadamard19", source)
         self.assertEqual(result["status"], "crash")
         self.assertEqual(result["reason"], "invalid_output")
@@ -143,10 +142,9 @@ class EvaluatorTests(unittest.TestCase):
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_rejects_valid_output_followed_by_crash(self):
-        source = (
-            (TESTCASES / "hadamard19" / "construct.py").read_text(encoding="utf-8")
-            + "\nraise SystemExit(3)\n"
-        )
+        source = (TESTCASES / "hadamard19" / "construct.py").read_text(
+            encoding="utf-8"
+        ) + "\nraise SystemExit(3)\n"
         result = task_evaluation("hadamard19", source)
         self.assertEqual(result["status"], "crash")
         self.assertEqual(result["reason"], "candidate_failed")
@@ -303,12 +301,8 @@ class SwarmTaskModeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
             (task_dir / "data").mkdir()
-            (task_dir / "questions.json").write_text(
-                '{"q1": "mean of a?"}', encoding="utf-8"
-            )
-            (task_dir / "data" / "t.csv").write_text(
-                "a,b\n" + "1,2\n" * 50, encoding="utf-8"
-            )
+            (task_dir / "questions.json").write_text('{"q1": "mean of a?"}', encoding="utf-8")
+            (task_dir / "data" / "t.csv").write_text("a,b\n" + "1,2\n" * 50, encoding="utf-8")
             context = swarm.build_task_context(
                 task_dir, ["questions.json", "data/t.csv", "missing.csv"]
             )
@@ -358,8 +352,7 @@ class SwarmTaskModeTests(unittest.TestCase):
                 key: value
                 for key, value in os.environ.items()
                 if not any(
-                    marker in key.upper()
-                    for marker in ("KEY", "TOKEN", "SECRET", "PASSWORD")
+                    marker in key.upper() for marker in ("KEY", "TOKEN", "SECRET", "PASSWORD")
                 )
             }
             env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
@@ -387,9 +380,7 @@ class SwarmTaskModeTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-            with (out_dir / "results.tsv").open(
-                newline="", encoding="utf-8"
-            ) as stream:
+            with (out_dir / "results.tsv").open(newline="", encoding="utf-8") as stream:
                 rows = list(csv.DictReader(stream, delimiter="\t"))
             self.assertEqual(rows[0]["description"], "baseline")
             self.assertEqual(len(rows), 5)

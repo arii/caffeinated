@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """OpenAI, Tinker, and offline clients for swarm JSON prompts."""
 
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-
 ROOT = Path(__file__).resolve().parent
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
+
+
 def timestamp():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -148,20 +149,19 @@ def fake_response(role, values):
         fake_edits = values.get("fake_edits") or []
         if fake_edits:
             agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
-            target_index = (
-                (int(agent_match.group(1)) - 1) % len(fake_edits)
-                if agent_match
-                else 0
-            )
+            target_index = (int(agent_match.group(1)) - 1) % len(fake_edits) if agent_match else 0
             target_index = (target_index + values.get("fake_offset", 0)) % len(fake_edits)
             # A previous kept edit may have consumed this exact old text.
             # Select the next applicable canned edit rather than aborting a run.
             for offset in range(len(fake_edits)):
                 index = (target_index + offset) % len(fake_edits)
                 target = fake_edits[index]
-                if (isinstance(target.get("old"), str) and target["old"]
-                        and candidate_source.count(target["old"]) == 1
-                        and target["old"] != target.get("new")):
+                if (
+                    isinstance(target.get("old"), str)
+                    and target["old"]
+                    and candidate_source.count(target["old"]) == 1
+                    and target["old"] != target.get("new")
+                ):
                     target_index = index
                     break
             else:
@@ -184,11 +184,7 @@ def fake_response(role, values):
         fake_targets = values.get("fake_targets") or []
         if fake_targets:
             agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
-            target_index = (
-                (int(agent_match.group(1)) - 1) % len(fake_targets)
-                if agent_match
-                else 0
-            )
+            target_index = (int(agent_match.group(1)) - 1) % len(fake_targets) if agent_match else 0
             target_index = (target_index + values.get("fake_offset", 0)) % len(fake_targets)
             name, mechanism, method, increment = fake_targets[target_index]
             match = re.search(
@@ -219,9 +215,7 @@ def fake_response(role, values):
     raise ValueError(f"no fake response for role {role}")
 
 
-def fake_assigned_proposal(
-    cell, candidate_source, descriptor=None, fake_edits=(), fake_targets=()
-):
+def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(), fake_targets=()):
     mechanism, method = cell.split("/")
     value = (descriptor or {}).get("params", {}).get("value")
     target = next(
@@ -235,11 +229,7 @@ def fake_assigned_proposal(
     )
     if target is None and fake_targets:
         target = next(
-            (
-                item
-                for item in fake_targets
-                if item[1] == mechanism and item[2] == method
-            ),
+            (item for item in fake_targets if item[1] == mechanism and item[2] == method),
             None,
         )
         if target is None:
@@ -264,11 +254,16 @@ def fake_assigned_proposal(
         return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
     assigned_value = value or (descriptor or {}).get("params", {}).get("value")
     return {
-        "descriptor": {"mechanism": mechanism, "method": method,
-                       **({"params": {"value": assigned_value}} if assigned_value is not None else {})},
+        "descriptor": {
+            "mechanism": mechanism,
+            "method": method,
+            **({"params": {"value": assigned_value}} if assigned_value is not None else {}),
+        },
         "idea": f"Test assigned {cell}",
         "rationale": "Implement the conductor-assigned descriptor cell.",
-        "lead_id": None, "source_ids": [], "predicted_delta": -0.001,
+        "lead_id": None,
+        "source_ids": [],
+        "predicted_delta": -0.001,
         "edits": [{"old": old, "new": new}],
     }
 
@@ -379,8 +374,7 @@ class LLMClient:
                     from tml_renderers import renderers
                 except ImportError as error:
                     raise RuntimeError(
-                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; "
-                        "see program.md"
+                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; see program.md"
                     ) from error
                 self.tinker_renderer = renderers.KimiK31Pro.low()
             self.tinker_service = tinker.ServiceClient()
@@ -394,9 +388,7 @@ class LLMClient:
             from tml_renderers.tinker import token_spans_to_tinker_model_input
 
             spans, parser = self.tinker_renderer.render_for_completion(
-                chat.MessageList.from_openai_chat_dicts(
-                    [{"role": "user", "content": prompt}]
-                )
+                chat.MessageList.from_openai_chat_dicts([{"role": "user", "content": prompt}])
             )
             model_input = token_spans_to_tinker_model_input(spans)
             stop = self.tinker_renderer.stop()
@@ -408,14 +400,20 @@ class LLMClient:
             )
             model_input = tinker.types.ModelInput.from_ints(tokens)
             stop = [self.tinker_tokenizer.eos_token_id]
-        sequence = self.tinker_sampler.sample(
-            prompt=model_input,
-            num_samples=1,
-            sampling_params=tinker.types.SamplingParams(
-                max_tokens=8192, temperature=0.3, stop=stop,
-                **({"seed": self.sampling_seed} if self.sampling_seed is not None else {}),
-            ),
-        ).result().sequences[0]
+        sequence = (
+            self.tinker_sampler.sample(
+                prompt=model_input,
+                num_samples=1,
+                sampling_params=tinker.types.SamplingParams(
+                    max_tokens=8192,
+                    temperature=0.3,
+                    stop=stop,
+                    **({"seed": self.sampling_seed} if self.sampling_seed is not None else {}),
+                ),
+            )
+            .result()
+            .sequences[0]
+        )
         usage = {
             "prompt_tokens": len(model_input.to_ints()),
             "completion_tokens": len(sequence.tokens),
@@ -468,15 +466,15 @@ class LLMClient:
                         f"Tinker returned invalid JSON after one retry: {error}"
                     ) from error
                 request_prompt = (
-                    prompt + "\nYour previous response could not be parsed: "
-                    + str(error) + "\nReturn a single valid JSON object only."
+                    prompt
+                    + "\nYour previous response could not be parsed: "
+                    + str(error)
+                    + "\nReturn a single valid JSON object only."
                 )
 
     def _request(self, prompt):
         api_key = os.environ.get("OPENAI_API_KEY")
-        base_url = os.environ.get(
-            "OPENAI_BASE_URL", "https://api.openai.com/v1"
-        ).rstrip("/")
+        base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],

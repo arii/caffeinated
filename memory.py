@@ -3,23 +3,22 @@
 
 import argparse
 import csv
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from boredom import commit_message, source_trailers
 from research import read_log
-
 
 DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
@@ -209,8 +208,9 @@ def append_mirror(mirror, payload, source_id):
     append_jsonl(mirror, record)
 
 
-def append_write_log(log, memory_id, mem_type, author, backend, latency_ms,
-                     completed_ms, audience=None):
+def append_write_log(
+    log, memory_id, mem_type, author, backend, latency_ms, completed_ms, audience=None
+):
     record = {
         "type": "write",
         "ts": utc_now(),
@@ -326,19 +326,14 @@ def api_request(method, path, payload=None, api_key=None):
     except HTTPError as error:
         raise RuntimeError(f"past.dev returned HTTP {error.code}") from error
     except URLError as error:
-        raise RuntimeError(
-            f"past.dev request failed: {safe_text(error.reason)}"
-        ) from error
+        raise RuntimeError(f"past.dev request failed: {safe_text(error.reason)}") from error
     try:
         result = json.loads(response_body)
     except json.JSONDecodeError as error:
-        raise RuntimeError(
-            f"past.dev returned invalid JSON: {safe_text(response_body)}"
-        ) from error
+        raise RuntimeError(f"past.dev returned invalid JSON: {safe_text(response_body)}") from error
     if not isinstance(result, dict):
         raise RuntimeError(
-            f"unexpected past.dev response for {method} {path}: "
-            f"{safe_text(response_body)}"
+            f"unexpected past.dev response for {method} {path}: {safe_text(response_body)}"
         )
     return result
 
@@ -356,8 +351,7 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
         raise RuntimeError(
-            "unexpected past.dev ingestion response: "
-            f"{safe_text(json.dumps(response))}"
+            f"unexpected past.dev ingestion response: {safe_text(json.dumps(response))}"
         )
     if not wait:
         return None
@@ -375,9 +369,7 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
         if remaining <= 0:
             raise RuntimeError(f"timed out waiting for ingestion {ingestion_id}")
         time.sleep(min(interval, remaining))
-        result = api_request(
-            "GET", f"/ingest/{quote(str(ingestion_id), safe='')}", api_key=api_key
-        )
+        result = api_request("GET", f"/ingest/{quote(str(ingestion_id), safe='')}", api_key=api_key)
         status = result.get("status")
         if status == "completed":
             return int((time.monotonic() - started_at) * 1000)
@@ -386,24 +378,36 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
             raise RuntimeError(f"ingestion failed: {safe_text(failure)}")
         if status != "processing":
             raise RuntimeError(
-                "unexpected past.dev ingestion status: "
-                f"{safe_text(json.dumps(result))}"
+                f"unexpected past.dev ingestion status: {safe_text(json.dumps(result))}"
             )
 
 
-def write(type, id, content, author, metadata, timestamp=None, wait=False,
-          *, backend=None, mirror=None, log=None, arm=None, run_id=None):
+def write(
+    type,
+    id,
+    content,
+    author,
+    metadata,
+    timestamp=None,
+    wait=False,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+):
     mem_type = type
     memory_id = id
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
     when = timestamp or utc_now()
-    payload = memory_payload(
-        mem_type, memory_id, content, author, metadata, when
-    )
+    payload = memory_payload(mem_type, memory_id, content, author, metadata, when)
     if backend == "pastdev":
-        scope = arm_run_scope(arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id"))
+        scope = arm_run_scope(
+            arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
+        )
         payload["metadata"].update(scope or {})
         if scope and not memory_id.startswith("run:"):
             payload["id"] = f"{memory_id}@{scope['run_id'][:12]}"
@@ -430,9 +434,7 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
         started_at = time.monotonic()
         response = api_request("POST", "/ingest", payload, api_key=api_key)
         latency_ms = int((time.monotonic() - started_at) * 1000)
-        completed_ms = wait_for_ingestion(
-            response, wait, api_key=api_key, started_at=started_at
-        )
+        completed_ms = wait_for_ingestion(response, wait, api_key=api_key, started_at=started_at)
         source_id = response.get("sourceId") or memory_id
         ingestion_id = response.get("ingestionId")
         append_mirror(mirror_path, payload, source_id)
@@ -556,14 +558,10 @@ def sync(args):
         api_key=api_key,
     )
     latency_ms = int((time.monotonic() - started_at) * 1000)
-    completed_ms = wait_for_ingestion(
-        response, args.wait, api_key=api_key, started_at=started_at
-    )
+    completed_ms = wait_for_ingestion(response, args.wait, api_key=api_key, started_at=started_at)
     ingestion_id = response.get("ingestionId")
     if not ingestion_id:
-        raise RuntimeError(
-            f"unexpected past.dev batch response: {safe_text(json.dumps(response))}"
-        )
+        raise RuntimeError(f"unexpected past.dev batch response: {safe_text(json.dumps(response))}")
     response_items = response.get("items") or []
     ordinals = [
         response_item.get("ordinal")
@@ -622,9 +620,7 @@ def read_mirror(mirror):
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError as error:
-                raise ValueError(
-                    f"invalid JSON in {path}, line {line_number}"
-                ) from error
+                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
     return records
 
 
@@ -695,8 +691,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
     ]
     documents = [word_tokens(record.get("content")) for record in records]
     document_frequency = {
-        word: sum(word in document for document in documents)
-        for word in query_words
+        word: sum(word in document for document in documents) for word in query_words
     }
     inverse_frequency = {
         word: math.log((len(records) + 1) / (frequency + 1)) + 1
@@ -704,11 +699,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
     }
     scored = []
     for index, (record, document) in enumerate(zip(records, documents)):
-        score = sum(
-            inverse_frequency[word]
-            for word in query_words
-            if word in document
-        )
+        score = sum(inverse_frequency[word] for word in query_words if word in document)
         if score <= 0:
             continue
         metadata = record.get("metadata") or {}
@@ -726,8 +717,7 @@ def local_recall_results(query, limit, query_timestamp, mirror):
                         {
                             "sourceId": source_id,
                             "label": record.get("label", ""),
-                            "author": record.get("author")
-                            or metadata.get("author"),
+                            "author": record.get("author") or metadata.get("author"),
                             "type": metadata.get("type") or record.get("type"),
                         }
                     ],
@@ -746,8 +736,7 @@ def normalize_pastdev_results(response, mirror):
     raw_results = response.get("results")
     if not isinstance(raw_results, list):
         raise RuntimeError(
-            "unexpected past.dev recall response: "
-            f"{safe_text(json.dumps(response))}"
+            f"unexpected past.dev recall response: {safe_text(json.dumps(response))}"
         )
     mirror_index = mirror_source_index(mirror)
     results = []
@@ -851,8 +840,19 @@ def merge_same_run_mirror(results, local_results, limit):
     return [{**result, "rank": rank} for rank, result in enumerate(merged[:limit], 1)]
 
 
-def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-            mirror=None, log=None, arm=None, run_id=None, log_agent=None):
+def _recall(
+    query,
+    agent,
+    limit=8,
+    query_timestamp=None,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+    log_agent=None,
+):
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
@@ -871,9 +871,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         results = []
         used_tokens = 0
     elif backend == "local":
-        results, used_tokens = local_recall_results(
-            query, limit, cutoff, mirror_path
-        )
+        results, used_tokens = local_recall_results(query, limit, cutoff, mirror_path)
     else:
         scope = arm_run_scope(arm, run_id)
         api_key = api_key_for_arm(arm)
@@ -909,11 +907,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
                     dropped_source_ids.append(str(source_id))
                     tags = source.get("tags") or []
                     for tag in tags if isinstance(tags, list) else [tags]:
-                        tag_id = (
-                            tag.get("id") or tag.get("tagId")
-                            if isinstance(tag, dict)
-                            else tag
-                        )
+                        tag_id = tag.get("id") or tag.get("tagId") if isinstance(tag, dict) else tag
                         if isinstance(tag_id, str):
                             dropped_tags.append(tag_id)
         raw_response = response
@@ -932,12 +926,14 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             )
             local_index = mirror_source_index(mirror_path)
             local_results = [
-                result for result in local_results
+                result
+                for result in local_results
                 if all(
                     scope_decision(
                         (local_index.get(str(source.get("sourceId"))) or {}).get("metadata"),
                         scope,
-                    ) == "same_run"
+                    )
+                    == "same_run"
                     for source in result.get("sources") or []
                 )
             ][:limit]
@@ -951,8 +947,10 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             }
             results = merge_same_run_mirror(results, local_results, limit)
             local_only = [
-                result for result in results
-                if not {source.get("sourceId") for source in result.get("sources") or []} & remote_ids
+                result
+                for result in results
+                if not {source.get("sourceId") for source in result.get("sources") or []}
+                & remote_ids
             ]
             local_same_run = len(local_only)
             if local_only and isinstance(raw_response, dict):
@@ -986,12 +984,14 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         "dropped_tags": list(dict.fromkeys(dropped_tags))[:20],
     }
     if scope_stats:
-        log_record.update({
-            "same_run_kept": scope_stats["same_run_kept"],
-            "cross_run_kept": scope_stats["cross_run_kept"],
-            "dropped_reasons": scope_stats["dropped_reasons"],
-            "local_same_run": local_same_run,
-        })
+        log_record.update(
+            {
+                "same_run_kept": scope_stats["same_run_kept"],
+                "cross_run_kept": scope_stats["cross_run_kept"],
+                "dropped_reasons": scope_stats["dropped_reasons"],
+                "local_same_run": local_same_run,
+            }
+        )
     if audience:
         log_record["audience"] = audience
     append_recall_log(log_path, log_record)
@@ -1006,8 +1006,19 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     return recall_result
 
 
-def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-           mirror=None, log=None, arm=None, run_id=None, log_agent=None):
+def recall(
+    query,
+    agent,
+    limit=8,
+    query_timestamp=None,
+    *,
+    backend=None,
+    mirror=None,
+    log=None,
+    arm=None,
+    run_id=None,
+    log_agent=None,
+):
     result = _recall(
         query,
         agent,
@@ -1057,10 +1068,7 @@ def recall_command(args):
             content = str(item.get("content") or "")[:300]
             print(f"#{item['rank']} {occurred_at} [{item['kind']}] {content}")
             for source in item.get("sources") or []:
-                print(
-                    f"   from: {source.get('sourceId', '')} — "
-                    f"{source.get('label', '')}"
-                )
+                print(f"   from: {source.get('sourceId', '')} — {source.get('label', '')}")
     return 0
 
 
