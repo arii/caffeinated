@@ -39,9 +39,33 @@ fix. Arm B uses Exa and past.dev memory by default; `--exa off` and
 `--memory-backend local` run without those keys. `swarm.py` owns
 `.swarm_worktrees/<arm>/`: it locks it against a concurrent run of the same arm,
 prunes deleted worktrees, discards leftovers of earlier runs (moving an
-uncommitted `experiments/swarm_<arm>/` aside to `conductor.stale-<time>/`) and
-reuses an arm branch an earlier run left without commits. Removing
-`.swarm_worktrees/` by hand is never required.
+uncommitted `experiments/swarm_<arm>/` aside to
+`experiments/swarm_<arm>.prev-<time>/`, where the Lab still discovers its
+recording, and marking a killed run `stopped`) and reuses an arm branch an
+earlier run left without commits. Removing `.swarm_worktrees/` by hand is never
+required. Agent attempts run in detached worktrees, so a run creates one branch
+(the arm branch); candidate tags are namespaced per run as
+`run/swarm_<arm>/<run_id[:8]>/<round>-<agent>`.
+
+Per-round arm commits hold only the small, append-only research state
+(ledger, results, critic, memory, assignments, boredom log, score cache).
+The viewer export, `runs/`, `exa_cache/`, `llm_log.jsonl` and
+`research_log.jsonl` stay out of them; when the run ends one final commit adds
+`llm_log.jsonl.gz`, `research_log.jsonl.gz`, `runs.tar.gz` and
+`exa_cache.tar.gz`. Rebuild a viewer export with `export_viewer.py <out>`.
+
+Long runs (up to 50 rounds) survive crashes: after every committed round the
+swarm writes `resume_checkpoint.json` (round, arm commit, log byte lengths,
+published-event length). `swarm.py --resume <out>` continues a crashed or killed
+run with the same run id, ledger, score cache, memory mirror, arm branch and
+settings from `run.json`; it truncates a half-written round, cuts the published
+recording back to its checkpointed prefix so later publishes still append, and
+deletes that round's tags. `--rounds N` extends the run; conflicting `--task`,
+`--arm`, `--seed`, `--llm`, `--model`, `--exa` or `--memory-backend` values are
+rejected. A worker whose LLM call fails after retries records a `crash` row
+for that attempt and the round goes on; if every worker fails, the run stops so
+it can be resumed once the provider recovers. SIGTERM stops a run cleanly
+(status `stopped`).
 
 `pyproject.toml` defines dependencies and `uv.lock` pins their resolved versions.
 `requirements.txt` exports the host runtime; `requirements-dev.txt` also

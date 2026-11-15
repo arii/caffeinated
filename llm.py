@@ -272,6 +272,10 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
     }
 
 
+class LLMError(RuntimeError):
+    """A model request failed after its retries; the caller may record it and go on."""
+
+
 class LLMClient:
     def __init__(
         self,
@@ -342,12 +346,16 @@ class LLMClient:
             if self.fake_delay:
                 time.sleep(self.fake_delay)
             response = fake_response(role, prompt_values)
-        elif self.mode == "tinker":
-            response, usage = self._request_tinker(prompt)
         else:
-            response, usage = self._request(prompt)
+            try:
+                if self.mode == "tinker":
+                    response, usage = self._request_tinker(prompt)
+                else:
+                    response, usage = self._request(prompt)
+            except RuntimeError as error:
+                raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
-            raise RuntimeError(f"LLM role {role} response must be a JSON object")
+            raise LLMError(f"LLM role {role} response must be a JSON object")
         record = {
             "ts": timestamp(),
             "role": role.upper(),
