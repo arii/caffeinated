@@ -16,6 +16,7 @@ import export_viewer
 from boredom import descriptor_meter as meter
 import itertools
 
+from test_testcases import DOCKER_AVAILABLE, DOCKER_SKIP_REASON
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = ROOT / "testcases/hadamard19/boredom_profile.json"
@@ -303,6 +304,7 @@ class SandboxedSwarmTests(unittest.TestCase):
         )
         return snapshots
 
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_three_round_ledgers_match_with_real_docker_evaluator(self):
         with tempfile.TemporaryDirectory() as tmp:
             first, first_out = self.run_three_rounds(Path(tmp), "out-one")
@@ -330,6 +332,7 @@ class SandboxedSwarmTests(unittest.TestCase):
         self.assertEqual(self.without_commits(first), self.without_commits(second))
         self.assertEqual(sum(row.get("kind") == "candidate" for row in first), 12)
 
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_viewer_publish_failure_does_not_stop_swarm(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = self.create_repo(tmp, "publish-failure")
@@ -349,6 +352,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
             self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
 
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_run_stops_early_when_converged(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = self.create_repo(tmp, "converged")

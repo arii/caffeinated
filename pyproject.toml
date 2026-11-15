@@ -57,7 +57,7 @@ ignore = [
 "testcases/**/*.py" = ["E402"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["boredom", "export_viewer", "llm", "memory", "meter", "research", "swarm", "testcases", "viewer"]
+known-first-party = ["boredom", "export_viewer", "llm", "memory", "meter", "research", "swarm", "testcases", "test_testcases", "viewer"]
 
 [tool.vulture]
 paths = [".", "vulture_whitelist.py"]
@@ -66,7 +66,7 @@ min_confidence = 60
 ignore_decorators = ["@app.get", "@app.exception_handler", "@app.middleware"]
 
 [tool.deptry]
-known_first_party = ["meter", "testcases", "test_export_viewer", "viewer"]
+known_first_party = ["meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
 # testcases/ candidate and evaluator code runs inside the Docker sandbox image, whose deps live in testcases/Dockerfile.
 exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees"]
 pep621_dev_dependency_groups = ["dev"]

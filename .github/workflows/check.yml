@@ -23,5 +23,7 @@ jobs:
           activate-environment: true
       - name: Install dev and viewer dependencies
         run: uv pip install -r pyproject.toml --extra dev --extra viewer
+      - name: Build testcase sandbox image
+        run: docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
       - name: make check
         run: make check PYTHON=python
