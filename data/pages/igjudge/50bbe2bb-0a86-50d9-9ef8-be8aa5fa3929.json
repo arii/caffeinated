@@ -35,6 +35,7 @@
   "ideas": [
     {
       "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+      "baseline": true,
       "classification": "Moderate Potential",
       "committee": "not judged",
       "error": null,
@@ -115,6 +116,7 @@
     },
     {
       "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -194,6 +196,7 @@
     },
     {
       "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.1",
       "error": null,
@@ -274,6 +277,7 @@
     },
     {
       "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -354,6 +358,7 @@
     },
     {
       "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "not judged",
       "error": null,
@@ -433,6 +438,7 @@
     },
     {
       "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -512,6 +518,7 @@
     },
     {
       "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "not judged",
       "error": null,
@@ -592,6 +599,7 @@
     },
     {
       "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -671,6 +679,7 @@
     },
     {
       "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -751,6 +760,7 @@
     },
     {
       "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "score 0.1",
       "error": null,
@@ -831,6 +841,7 @@
     },
     {
       "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -911,6 +922,7 @@
     },
     {
       "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.1",
       "error": null,
@@ -990,6 +1002,7 @@
     },
     {
       "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -1070,6 +1083,7 @@
     },
     {
       "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -1150,6 +1164,7 @@
     },
     {
       "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -1229,6 +1244,7 @@
     },
     {
       "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "score 0.2",
       "error": null,
@@ -1308,6 +1324,7 @@
     },
     {
       "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "not judged",
       "error": null,
@@ -1388,6 +1405,7 @@
     },
     {
       "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -1468,6 +1486,7 @@
     },
     {
       "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -1548,6 +1567,7 @@
     },
     {
       "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+      "baseline": false,
       "classification": "Very Low Potential",
       "committee": "not judged",
       "error": null,
@@ -1628,6 +1648,7 @@
     },
     {
       "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+      "baseline": false,
       "classification": "Low Potential",
       "committee": "score 0.1",
       "error": null,
@@ -1709,113 +1730,63 @@
   "leaderboard": [
     {
       "rank": 1,
-      "study_id": "study:1",
-      "total": 58.5
-    },
-    {
-      "rank": 2,
-      "study_id": "study:18",
-      "total": 54.0
-    },
-    {
-      "rank": 3,
       "study_id": "study:22",
       "total": 47.0
     },
     {
-      "rank": 4,
-      "study_id": "study:8",
-      "total": 46.0
-    },
-    {
-      "rank": 5,
+      "rank": 2,
       "study_id": "study:2",
       "total": 42.0
     },
     {
-      "rank": 6,
+      "rank": 3,
       "study_id": "study:10",
       "total": 41.5
     },
     {
-      "rank": 7,
-      "study_id": "study:6",
-      "total": 41.5
-    },
-    {
-      "rank": 8,
+      "rank": 4,
       "study_id": "study:11",
       "total": 40.5
     },
     {
-      "rank": 9,
-      "study_id": "study:12",
-      "total": 39.5
-    },
-    {
-      "rank": 10,
-      "study_id": "study:20",
-      "total": 39.0
-    },
-    {
-      "rank": 11,
-      "study_id": "study:4",
-      "total": 38.5
-    },
-    {
-      "rank": 12,
+      "rank": 5,
       "study_id": "study:17",
       "total": 37.5
     },
     {
-      "rank": 13,
+      "rank": 6,
       "study_id": "study:9",
       "total": 37.5
     },
     {
-      "rank": 14,
+      "rank": 7,
       "study_id": "study:13",
       "total": 36.5
     },
     {
-      "rank": 15,
+      "rank": 8,
       "study_id": "study:15",
       "total": 36.5
     },
     {
-      "rank": 16,
-      "study_id": "study:7",
-      "total": 36.5
-    },
-    {
-      "rank": 17,
+      "rank": 9,
       "study_id": "study:14",
       "total": 34.0
     },
     {
-      "rank": 18,
+      "rank": 10,
       "study_id": "study:16",
       "total": 33.0
     },
     {
-      "rank": 19,
-      "study_id": "study:19",
-      "total": 33.0
-    },
-    {
-      "rank": 20,
+      "rank": 11,
       "study_id": "study:3",
       "total": 32.0
-    },
-    {
-      "rank": 21,
-      "study_id": "study:21",
-      "total": 26.0
     }
   ],
   "model": "gpt-5.5",
   "prompt_sha256": "045355b84b2efe52347e4178f7f6d7e2f761017887ed0a2dccd5c4804d5ff529",
   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
   "schema": "igjudge/v1",
-  "winner": "study:1"
+  "winner": "study:22"
 }

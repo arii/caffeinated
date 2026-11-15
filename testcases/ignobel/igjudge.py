@@ -4,6 +4,7 @@ python -m testcases.ignobel.igjudge RECORDING_OR_RUN_DIR --out artifact.json
 """
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -168,12 +169,34 @@ def read_jsonl(path):
     ]
 
 
+def baseline_agents(manifest_path):
+    if not manifest_path.is_file():
+        return set()
+    agents = json.loads(manifest_path.read_text(encoding="utf-8")).get("agents") or []
+    return {
+        a.get("agent_id")
+        for a in agents
+        if a.get("type") == "baseline" or a.get("native_id") == "baseline"
+    }
+
+
+def baseline_commits(results_path):
+    if not results_path.is_file():
+        return set()
+    with results_path.open(encoding="utf-8", newline="") as stream:
+        rows = csv.DictReader(stream, delimiter="\t")
+        return {
+            r["commit"][:7] for r in rows if r.get("description") == "baseline" and r.get("commit")
+        }
+
+
 def load_ideas(directory):
     directory = Path(directory)
     events = directory / "events.ndjson"
     if events.is_file():
         rows = read_jsonl(events)
         run_id = next((r["run_id"] for r in rows if r.get("run_id")), directory.name)
+        seeds = baseline_agents(directory / "manifest.json")
         entities_path = directory / "entities" / "studies.json"
         entities = json.loads(entities_path.read_text()) if entities_path.is_file() else []
         entities = {s["id"]: s for s in entities}
@@ -186,11 +209,13 @@ def load_ideas(directory):
             # Entities are exported last (post-run awards included), so they win over event payloads.
             study = {**row["payload"], **results.get(sid, {}), **entities.get(sid, {})}
             study["agent_id"] = row.get("agent_id") or study.get("agent_id") or ""
+            study["baseline"] = study["agent_id"] in seeds
             studies.setdefault(sid, study)
     else:
         run_id = directory.name
         studies = {}
         seen = set()
+        seeds = baseline_commits(directory / "results.tsv")
         for index, row in enumerate(read_jsonl(directory / "ignobel_studies.jsonl"), 1):
             prereg = row.get("prereg") or {}
             identity = row.get("commit") or json.dumps(prereg, sort_keys=True)
@@ -201,6 +226,7 @@ def load_ideas(directory):
                 **prereg,
                 **(row.get("result") or {}),
                 "agent_id": row.get("agent_id") or row.get("agent") or "",
+                "baseline": str(row.get("commit") or "")[:7] in seeds,
             }
     ideas = []
     for sid, study in studies.items():
@@ -226,6 +252,7 @@ def load_ideas(directory):
                 "title": str(study.get("question") or study.get("headline") or sid),
                 "hypothesis": str(study.get("hypothesis") or ""),
                 "agent_id": str(study.get("agent_id") or ""),
+                "baseline": bool(study.get("baseline")),
                 "gate": gate,
                 "committee": committee_status,
                 "study": study,
@@ -282,10 +309,13 @@ def judge_idea(idea, model, prompt, cache_dir=CACHE_DIR, complete=None, prior_se
     return output
 
 
+def rankable(idea):
+    """Only agent studies that passed the preregistered gates can be ranked or win."""
+    return idea["error"] is None and idea.get("gate") == "passed" and not idea.get("baseline")
+
+
 def build_artifact(run_id, model, prompt, ideas):
-    ordered = sorted(
-        (i for i in ideas if i["error"] is None), key=lambda i: (-i["total"], i["study_id"])
-    )
+    ordered = sorted(filter(rankable, ideas), key=lambda i: (-i["total"], i["study_id"]))
     return {
         "schema": "igjudge/v1",
         "run_id": run_id,
