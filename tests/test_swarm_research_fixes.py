@@ -171,5 +171,51 @@ class NoveltyAndVocabularyTests(unittest.TestCase):
         self.assertFalse(swarm.known_optimum_reached(0.0))
 
 
+class RecordingClient:
+    def __init__(self):
+        self.calls = []
+
+    def call(self, role, *, agent, round_num, values):
+        self.calls.append((role, agent, round_num, dict(values)))
+        return llm.fake_response(role, values) if hasattr(llm, "fake_response") else {}
+
+
+class CriticArmParityTests(unittest.TestCase):
+    def test_arms_a_and_b_make_identical_critic_calls(self):
+        swarm.configure_task(SimpleNamespace(task="hadamard19"))
+        profile = meter.load_profile(swarm.TASK["profile"])
+        arm_settings = {
+            "A": ({"BOREDOM": "off"}, {"swarm_B": 0.0, "regime": "EXPLOIT"}),
+            "B": ({"BOREDOM": "on"}, {"swarm_B": 0.91, "regime": "BOREDOM_SNAP"}),
+        }
+        calls = {}
+        for arm, (env, status) in arm_settings.items():
+            candidate = {
+                "agent": "worker-2", "idea": "circulant core", "commit": "c2",
+                "rationale": "r", "descriptor": {"mechanism": "construction", "method": "circulant"},
+                "sources": ["S1"], "predicted_delta": -0.01,
+                "prior_hits": [{"id": "S1", "title": "t", "highlight": "h"}],
+            }
+            events = [{"descriptor": {"mechanism": "construction", "method": "circulant"},
+                       "status": "discard", "score": 0.05}]
+            client = RecordingClient()
+            with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, env):
+                swarm.judge_novelty(
+                    [candidate], llm_client=client, out_dir=tmp, round_num=2,
+                    status=status, profile=profile, best_commit="abc", best_val=0.0585,
+                )
+                swarm.critic_review(
+                    client, round_num=2, candidate=candidate, events=events,
+                    first_score=0.05, second_score=0.05, accepted=True,
+                    previous_best_commit="abc", previous_best_val=0.0585, profile=profile,
+                )
+            calls[arm] = client.calls
+        self.assertEqual([call[0] for call in calls["A"]], ["CRITIC_NOVELTY", "CRITIC"])
+        self.assertEqual(calls["A"], calls["B"])
+        prompt = llm.render_prompt("CRITIC", calls["A"][1][3])
+        self.assertIn("top hits", prompt)
+        self.assertNotIn("0.910", prompt)
+
+
 if __name__ == "__main__":
     unittest.main()

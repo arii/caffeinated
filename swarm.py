@@ -548,6 +548,52 @@ def prior_hits(records):
     ]
 
 
+CRITIC_STATUS = {"swarm_B": 0.0, "regime": "n/a"}
+
+
+def critic_common_values(round_num, best_commit, best_val, profile):
+    """Critic prompts carry no meter state, so arms A and B judge identically."""
+    values = common_values(
+        "critic", round_num, "critic", CRITIC_STATUS, 0.0, best_commit, best_val, profile
+    )
+    values.update({"swarm_B": "n/a", "agent_B": "n/a", "regime": "critic is arm-independent"})
+    return values
+
+
+def critic_review(llm_client, *, round_num, candidate, events, first_score, second_score,
+                  accepted, previous_best_commit, previous_best_val, profile):
+    basin = [
+        event
+        for event in events
+        if event.get("descriptor", {}).get("mechanism")
+        == candidate["descriptor"]["mechanism"]
+    ][-5:]
+    claim = {
+        "idea": candidate["idea"],
+        "rationale": candidate.get("rationale", ""),
+        "lead": candidate.get("lead_claim"),
+        "sources": candidate.get("sources", []),
+    }
+    values = {
+        **critic_common_values(round_num, previous_best_commit, previous_best_val, profile),
+        "commit": candidate["commit"],
+        "author": candidate["agent"],
+        "idea": candidate["idea"],
+        "v1": f"{first_score:.6f}",
+        "v2": "n/a" if second_score is None else f"{float(second_score):.6f}",
+        "prev_best": f"{previous_best_val:.6f}",
+        "accepted": str(accepted).lower(),
+        "claim": json.dumps(claim, sort_keys=True),
+        "predicted_delta": str(candidate.get("predicted_delta")),
+        "basin_results": json.dumps(basin, sort_keys=True),
+        "novelty": (
+            "n/a" if candidate.get("novelty") is None else f"{candidate['novelty']:.2f}"
+        ),
+        "prior_art": json.dumps(candidate.get("prior_hits", [])[:3], sort_keys=True),
+    }
+    return llm_client.call("CRITIC", agent="critic", round_num=round_num, values=values)
+
+
 def judge_novelty(candidates, *, llm_client, out_dir, round_num, status, profile,
                   best_commit, best_val):
     """Critic scores each idea against its prior-art hits; logged, never fed to the meter."""
@@ -569,10 +615,7 @@ def judge_novelty(candidates, *, llm_client, out_dir, round_num, status, profile
             agent="critic",
             round_num=round_num,
             values={
-                **common_values(
-                    "critic", round_num, "critic", status, 0.0,
-                    best_commit, best_val, profile,
-                ),
+                **critic_common_values(round_num, best_commit, best_val, profile),
                 "candidates": json.dumps(listing, indent=1, sort_keys=True),
             },
         )
@@ -2141,86 +2184,50 @@ def _orchestrate(args, publish_state):
                     "v1": first_score,
                     "v2": second_score,
                     "accepted": accepted,
-                    "verdict": "not-applicable" if args.arm == "A" else "",
-                    "why": "Arm A omits the critic LLM." if args.arm == "A" else "",
+                    "verdict": "",
+                    "why": "",
                     "novelty": provisional_best.get("novelty"),
                 }
-                if args.arm != "A":
-                    basin = [
-                        event
-                        for event in events
-                        if event.get("descriptor", {}).get("mechanism")
-                        == provisional_best["descriptor"]["mechanism"]
-                    ][-5:]
-                    claim = {
-                        "idea": provisional_best["idea"],
-                        "rationale": provisional_best.get("rationale", ""),
-                        "lead": provisional_best.get("lead_claim"),
-                        "sources": provisional_best.get("sources", []),
-                    }
-                    critic_values = {
-                        **common_values(
-                            "critic",
-                            round_num,
-                            "critic",
-                            status,
-                            0.0,
-                            previous_best_commit,
-                            previous_best_val,
-                            profile,
-                        ),
+                verdict = critic_review(
+                    llm_client,
+                    round_num=round_num,
+                    candidate=provisional_best,
+                    events=events,
+                    first_score=first_score,
+                    second_score=second_score,
+                    accepted=accepted,
+                    previous_best_commit=previous_best_commit,
+                    previous_best_val=previous_best_val,
+                    profile=profile,
+                )
+                critic_record["verdict"] = str(
+                    verdict.get("verdict") or "untested-in-source"
+                )
+                critic_record["why"] = str(verdict.get("why") or "")
+                write_memory_item(
+                    "verdict",
+                    f"verdict-{args.arm}-{round_num}-{provisional_best['agent']}",
+                    json.dumps(verdict, sort_keys=True),
+                    "critic",
+                    {
+                        "arm": args.arm,
+                        "round": round_num,
                         "commit": provisional_best["commit"],
-                        "author": provisional_best["agent"],
-                        "idea": provisional_best["idea"],
-                        "v1": f"{first_score:.6f}",
-                        "v2": "n/a" if second_score is None else f"{float(second_score):.6f}",
-                        "prev_best": f"{previous_best_val:.6f}",
-                        "accepted": str(accepted).lower(),
-                        "claim": json.dumps(claim, sort_keys=True),
-                        "predicted_delta": str(provisional_best.get("predicted_delta")),
-                        "basin_results": json.dumps(basin, sort_keys=True),
-                        "novelty": (
-                            "n/a" if provisional_best.get("novelty") is None
-                            else f"{provisional_best['novelty']:.2f}"
-                        ),
-                        "prior_art": json.dumps(
-                            provisional_best.get("prior_hits", [])[:3], sort_keys=True
-                        ),
-                    }
-                    verdict = llm_client.call(
-                        "CRITIC",
-                        agent="critic",
-                        round_num=round_num,
-                        values=critic_values,
-                    )
-                    critic_record["verdict"] = str(
-                        verdict.get("verdict") or "untested-in-source"
-                    )
-                    critic_record["why"] = str(verdict.get("why") or "")
-                    write_memory_item(
-                        "verdict",
-                        f"verdict-{args.arm}-{round_num}-{provisional_best['agent']}",
-                        json.dumps(verdict, sort_keys=True),
-                        "critic",
-                        {
-                            "arm": args.arm,
-                            "round": round_num,
-                            "commit": provisional_best["commit"],
-                            "accepted": accepted,
-                        },
-                        backend=memory_backend,
-                        mirror=memory_mirror,
-                        log=memory_log,
-                        arm=args.arm,
-                    )
-                    critic_lesson_memory(
-                        verdict.get("lesson"),
-                        args.arm,
-                        round_num,
-                        backend=memory_backend,
-                        mirror=memory_mirror,
-                        log=memory_log,
-                    )
+                        "accepted": accepted,
+                    },
+                    backend=memory_backend,
+                    mirror=memory_mirror,
+                    log=memory_log,
+                    arm=args.arm,
+                )
+                critic_lesson_memory(
+                    verdict.get("lesson"),
+                    args.arm,
+                    round_num,
+                    backend=memory_backend,
+                    mirror=memory_mirror,
+                    log=memory_log,
+                )
                 update_critic_tsv(critic_path, critic_record)
                 critic_event = {
                     "kind": "critic",
