@@ -1011,8 +1011,8 @@ def validate_proposal(profile, proposal):
     sources = proposal.get("source_ids", [])
     if not isinstance(sources, list) or any(not isinstance(item, str) for item in sources):
         raise ValueError("source_ids must be a list of strings")
-    if any(not re.fullmatch(r"S\d+", item) for item in sources):
-        raise ValueError("source_ids must use the S<number> format")
+    if any(not re.fullmatch(boredom.SOURCE_ID, item) for item in sources):
+        raise ValueError("source_ids must use the S<number> (or dataset D<round>_<n>) format")
     predicted_delta = proposal.get("predicted_delta", 0.0)
     try:
         predicted_delta = float(predicted_delta)
@@ -1349,8 +1349,13 @@ def worker_attempts(
             valid_leads = {item.get("id") for item in all_leads if item.get("id")}
             if lead and lead.get("id"):
                 valid_leads.add(lead["id"])
-            if current_proposal.get("lead_id") and current_proposal["lead_id"] not in valid_leads:
-                raise ValueError("lead_id must reference a lead offered this round")
+            stray_lead = current_proposal.get("lead_id")
+            if stray_lead and stray_lead not in valid_leads:
+                current_proposal["lead_id"] = None
+                if re.fullmatch(boredom.SOURCE_ID, stray_lead):
+                    current_proposal["source_ids"] = source_union(
+                        current_proposal["source_ids"], [stray_lead]
+                    )
         except (ValueError, TypeError) as error:
             if common["assigned_cell"] != "none" and str(error).startswith(
                 "unbuildable assignment: "

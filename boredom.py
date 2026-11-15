@@ -27,6 +27,7 @@ NUMBER_PATTERN = rf"(?:{_DIGITS}(?:\.(?:{_DIGITS})?)?|\.(?:{_DIGITS}))(?:[eE][+-
 NUMBER_RE = re.compile(NUMBER_PATTERN)
 TOKEN_RE = re.compile(NUMBER_PATTERN + r"|\w+|[^\w\s]")
 WORD_RE = re.compile(r"\w+")
+SOURCE_ID = r"S\d+|D\d+_\d+"  # research sources and round-context dataset finds
 KNOB_ASSIGNMENT_RE = re.compile(r"^\s*[A-Z][A-Z0-9_]*\s*=")
 
 
@@ -224,7 +225,7 @@ def source_trailers(message):
         has_trailer = True
         for source_id in match.group(1).split(","):
             source_id = source_id.strip()
-            if re.fullmatch(r"S\d+", source_id) and source_id not in sources:
+            if re.fullmatch(SOURCE_ID, source_id) and source_id not in sources:
                 sources.append(source_id)
     return sources, has_trailer
 
