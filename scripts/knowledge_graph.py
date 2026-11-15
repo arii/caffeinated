@@ -163,7 +163,7 @@ def main(argv):
     opener = gzip.open if source.suffix == ".gz" else open
     with opener(source, "rt", encoding="utf-8") as stream:
         graph = build(json.load(stream))
-    data = json.dumps(graph, separators=(",", ":")).replace("</", "<\\/")
+    data = json.dumps(graph, separators=(",", ":")).replace("<", "\\u003c")
     target.write_text(
         TEMPLATE.read_text(encoding="utf-8").replace("__GRAPH__", data), encoding="utf-8"
     )
