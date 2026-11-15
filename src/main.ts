@@ -54,7 +54,7 @@ let yaw=0,pitch=0,drag=false,lastPointer={x:0,y:0},pointerStart:{x:number;y:numb
 let displayAliases=new Map<string,string>();
 let staticRecordingReady=false,staticLoaderMinimumElapsed=false,staticStartupFinished=false,autoPinTimer:ReturnType<typeof setTimeout>|null=null;
 const reducedMotion=prefersReducedMotion();
-const cinemaParams=new URLSearchParams(location.search),CINEMA=cinemaParams.get('cinema')==='1',CINEMA_CAPTURE=CINEMA&&cinemaParams.get('capture')==='1';
+const cinemaParams=new URLSearchParams(location.search);let CINEMA=cinemaParams.get('cinema')==='1';const CINEMA_CAPTURE=CINEMA&&cinemaParams.get('capture')==='1';
 let cinema:ReturnType<typeof createCinema>=null,cinemaStart=0;
 if(CINEMA)document.body.classList.add('cinema');
 function aliasText(value:string){return anonymizeExcerpt(value,displayAliases);}
@@ -418,7 +418,7 @@ function startExperience(){
  if(STATIC_SITE&&!staticStartupFinished){staticRecordingReady=true;maybeStartStaticExperience();return;}
  if(experienceStarted)return;
  experienceStarted=true;document.body.classList.remove('prestart');document.body.dataset.labOpen='true';$('header-actions').hidden=false;
- if(CINEMA&&recording){startCinema();return;}
+ if(CINEMA&&recording){startCinema();if(CINEMA)return;}
  if(recording){if(recording.manifest.live)seek(recording.manifest.totalTicks);else if(STATIC_SITE){playbackMode='highlights';const startTick=firstScientistTick(recording);highlightList=highlightStops(recording,startTick);highlightElapsed=0;seek(startTick);}else if(tick>=recording.manifest.totalTicks)seek(0);playing=true;announcedTick=tick;}
  if(STATIC_SITE){
   world.camera.fov=innerWidth<760?62:48;world.camera.updateProjectionMatrix();
@@ -456,9 +456,9 @@ function scheduleAutoPin(){
  autoPinTimer=setTimeout(tryPin,3000);
 }
 function startCinema(){
- playing=false;skipGrow();$('loading').hidden=true;world.camera.fov=46;world.camera.updateProjectionMatrix();
  cinema=createCinema({world,renderer,recording:recording!,seek,updateWorld});
- if(!cinema){toast('Cinema mode needs a recording with a BOREDOM_SNAP followed by a discovery.');return;}
+ if(!cinema){toast('Cinema mode needs a run with a boredom snap followed by a discovery.');document.body.classList.remove('cinema');CINEMA=false;return;}
+ playing=false;skipGrow();$('loading').hidden=true;world.camera.fov=46;world.camera.updateProjectionMatrix();
  cinemaStart=performance.now();
  (window as unknown as {__cinema:unknown}).__cinema={ready:true,duration:cinema.duration,render:(t:number)=>cinema!.render(t)};
 }

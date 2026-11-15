@@ -18,8 +18,29 @@ const events=[
 test('cinema plan needs a real snap followed by a discovery',()=>{
  assert.equal(cinemaPlan(events.filter(e=>e.type!=='discovery.made'),agents,100),null);
  const plan=cinemaPlan(events,agents,100);
- assert.equal(plan.snapTick,50);assert.equal(plan.breakthroughAgent,'m');assert.deepEqual(plan.boredAgents,['m']);
+ assert.equal(plan.snapTick,50);assert.equal(plan.breakthroughAgent,'m');assert.equal(plan.bestTick,91);assert.deepEqual(plan.boredAgents,['m']);
  assert.equal(plan.verdict.label,'Ig Nobel candidate');assert.equal(plan.papers[0].title,'Paper one');
+});
+
+test('final-round snap keeps the breakthrough beat inside the recorded run',()=>{
+ const finalRound=[
+  {tick:50,type:'boredom.measured',agentId:'a',round:2,payload:{B:.74,regime:'BOREDOM_SNAP'}},
+  {tick:91,type:'discovery.made',agentId:'a',payload:{reward:.9}},
+ ];
+ const plan=cinemaPlan(finalRound,agents,100),best=plan.keys.find(([t])=>t===46)[1];
+ assert.equal(best,91);assert.equal(plan.bestTick,91);
+ for(let i=1;i<plan.keys.length;i++)assert.ok(plan.keys[i][1]>=plan.keys[i-1][1]);
+ assert.ok(plan.keys.every(([,tick])=>tick<=100));
+});
+
+test('best discovery tick follows the highest-reward event, including repeated agents',()=>{
+ const repeated=[
+  {tick:50,type:'boredom.measured',agentId:'a',round:2,payload:{B:.74,regime:'BOREDOM_SNAP'}},
+  {tick:90,type:'discovery.made',agentId:'a',payload:{reward:.2}},
+  {tick:120,type:'discovery.made',agentId:'a',payload:{reward:.9}},
+ ];
+ const plan=cinemaPlan(repeated,[{id:'a',name:'Ada',bored:false}],130);
+ assert.equal(plan.bestTick,120);assert.equal(plan.keys.find(([t])=>t===46)[1],120);
 });
 
 test('cinema time maps monotonically onto recorded ticks and lands the beats',()=>{

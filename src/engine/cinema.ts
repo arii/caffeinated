@@ -15,7 +15,7 @@ export interface CinemaAgent{id:string;name:string;bored:boolean}
 export interface CinemaPlan{
  keys:[number,number][];weights:Map<number,number>;
  snapTick:number;snapAgent:string;foundedTick:number;boredAgents:string[];
- discoveries:{tick:number;agentId:string;reward:number}[];breakthroughAgent:string;
+ discoveries:{tick:number;agentId:string;reward:number}[];breakthroughAgent:string;bestTick:number;
  replicated:number[];boredom:{tick:number;agentId:string;value:number;regime:string;round:number}[];
  papers:{tick:number;agentId:string;title:string;tool:string}[];shares:{tick:number;agentId:string}[];
  verdict?:{tick:number;agentId:string;label:string};startTick:number;endTick:number;
@@ -33,22 +33,26 @@ export function cinemaPlan(events:readonly ReplayEvent[],agents:readonly CinemaA
  const after=discoveries.filter(d=>d.tick>snap.tick),best=after.reduce((a,b)=>b.reward>a.reward?b:a,after[0]);
  const replicated=sorted.filter(e=>e.type==='experiment.finished'&&e.payload?.status==='replicated').map(e=>e.tick);
  const startTick=Math.max(0,(boredom[0]?.tick??0)-2);
- const nextRound=boredom.find(b=>b.tick>snap.tick&&b.round>(snap.round||0))?.tick??snap.tick+60;
- const firstStudy=sorted.find(e=>e.tick>nextRound&&e.type==='experiment.finished')?.tick??best.tick-10;
+ const nextRound=boredom.find(b=>b.tick>snap.tick&&b.round>(snap.round||0))?.tick??null;
+ const firstStudy=nextRound==null?null:sorted.find(e=>e.tick>nextRound&&e.type==='experiment.finished')?.tick??best.tick-10;
  const verdicts=sorted.filter(e=>e.type==='verdict.issued'&&e.tick>=best.tick);
  const top=verdicts.find(v=>/candidate|award|winner/i.test(String(v.payload?.verdict||'')));
  const endTick=Math.min(totalTicks,Math.max(best.tick+4,verdicts.at(-1)?.tick??best.tick+12));
  const boredAgents=agents.filter(a=>a.bored).map(a=>a.id);
  const foundedTick=sorted.find(e=>e.type==='agent.assigned'&&boredAgents.includes(e.agentId||'')&&e.tick>=snap.tick)?.tick??snap.tick+1;
- const papers=sorted.filter(e=>e.type==='observation.received'&&e.tick>snap.tick&&e.tick<nextRound&&['sources','snap'].includes(String(e.payload?.kind||''))&&e.message&&e.message!=='(untitled)')
+ const scoutingEnd=nextRound??best.tick;
+ const papers=sorted.filter(e=>e.type==='observation.received'&&e.tick>snap.tick&&e.tick<scoutingEnd&&['sources','snap'].includes(String(e.payload?.kind||''))&&e.message&&e.message!=='(untitled)')
   .map(e=>({tick:e.tick,agentId:e.agentId||'',title:String(e.message).split(';')[0].trim(),tool:String(e.payload?.tool||(e.payload?.kind==='snap'?'snap search':'literature'))}));
- const shares=sorted.filter(e=>e.type==='items.shared'&&e.tick>snap.tick&&e.tick<nextRound).map(e=>({tick:e.tick,agentId:e.agentId||''}));
- const lastScout=Math.max(snap.tick+10,...papers.map(p=>p.tick),...shares.map(s=>s.tick));
- const keys:[number,number][]=[[0,0],[6,startTick],[19,snap.tick-3],[23,snap.tick+1],[32,Math.min(lastScout+1,nextRound-1)],[36,Math.max(nextRound,firstStudy-6)],[46,best.tick],[52,endTick],[CINEMA_DURATION,endTick]];
+ const shares=sorted.filter(e=>e.type==='items.shared'&&e.tick>snap.tick&&e.tick<scoutingEnd).map(e=>({tick:e.tick,agentId:e.agentId||''}));
+ const boundBeat=(tick:number)=>Math.min(best.tick-1,Math.max(snap.tick+1,Math.min(totalTicks,tick)));
+ const lastScout=boundBeat(Math.max(snap.tick+10,...papers.map(p=>p.tick),...shares.map(s=>s.tick)));
+ const nextRoundBeat=nextRound==null?best.tick-1:boundBeat(nextRound);
+ const firstStudyBeat=firstStudy==null?best.tick-16:firstStudy-6;
+ const keys:[number,number][]=[[0,0],[6,Math.min(totalTicks,startTick)],[19,Math.min(totalTicks,snap.tick-3)],[23,Math.min(best.tick,totalTicks,snap.tick+1)],[32,boundBeat(Math.min(lastScout+1,(nextRoundBeat??best.tick)-1))],[36,boundBeat(Math.max(nextRound==null?snap.tick+1:nextRoundBeat,firstStudyBeat))],[46,best.tick],[52,endTick],[CINEMA_DURATION,endTick]];
  for(let i=1;i<keys.length;i++)keys[i][1]=Math.max(keys[i][1],keys[i-1][1]);
  const weights=new Map<number,number>();
  for(const e of sorted)if(!quiet.has(e.type))weights.set(Math.floor(e.tick),Math.min(3,(weights.get(Math.floor(e.tick))||0)+1));
- return {keys,weights,snapTick:snap.tick,snapAgent:snap.agentId,foundedTick,boredAgents,discoveries,breakthroughAgent:best.agentId,replicated,boredom,papers,shares,
+ return {keys,weights,snapTick:snap.tick,snapAgent:snap.agentId,foundedTick,boredAgents,discoveries,breakthroughAgent:best.agentId,bestTick:best.tick,replicated,boredom,papers,shares,
   verdict:top?{tick:top.tick,agentId:top.agentId||'',label:String(top.payload?.verdict)}:undefined,startTick,endTick};
 }
 

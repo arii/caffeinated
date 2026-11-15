@@ -21,8 +21,8 @@ export function createCinema(host:CinemaHost){
  if(!plan)return null;
  const p:CinemaPlan=plan,name=(id:string)=>agents.find(a=>a.id===id)?.name||'Lab';
  const timeOf=(tick:number)=>{for(let t=0;t<=CINEMA_DURATION;t+=1/60)if(cinemaTickAt(p,t)>=tick)return t;return CINEMA_DURATION;};
- const snapT=timeOf(p.snapTick),foundedT=timeOf(p.foundedTick),bestT=timeOf(p.discoveries.find(d=>d.agentId===p.breakthroughAgent&&d.tick>p.snapTick)!.tick);
- const discoveryTs=p.discoveries.filter(d=>d.tick>p.snapTick).map(d=>({t:timeOf(d.tick),best:d.agentId===p.breakthroughAgent,agentId:d.agentId}));
+ const snapT=timeOf(p.snapTick),foundedT=timeOf(p.foundedTick),bestT=timeOf(p.bestTick);
+ const discoveryTs=p.discoveries.filter(d=>d.tick>p.snapTick).map(d=>({t:timeOf(d.tick),best:d.tick===p.bestTick,agentId:d.agentId}));
  const verdictT=p.verdict?timeOf(p.verdict.tick):CINEMA_DURATION;
  const root=document.createElement('div');root.id='cinema';root.setAttribute('aria-hidden','true');
  const replicatedAfter=p.replicated.filter(t=>t>p.snapTick).length;
