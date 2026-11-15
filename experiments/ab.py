@@ -3,6 +3,7 @@
 
 import argparse
 from collections import Counter
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 import csv
 import hashlib
 import json
@@ -177,6 +178,29 @@ def write_csv(path, rows):
     temporary.replace(path)
 
 
+def write_manifest(path, manifest):
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(manifest, indent=2) + "\n")
+    temporary.replace(path)
+
+
+def run_arm(run, repo, commit, settings, env):
+    """The worker owns only this arm's clone, files, and subprocess."""
+    location = Path(run["location"])
+    location.mkdir(parents=True)
+    clone, run_dir = location / "repo", location / "run"
+    subprocess.run(["git", "clone", "--quiet", "--no-hardlinks", "--no-checkout", str(repo), str(clone)], check=True)
+    git(clone, "checkout", "--quiet", "--detach", commit)
+    with (location / "stdout.log").open("w") as stdout, (location / "stderr.log").open("w") as stderr:
+        result = subprocess.run(run["command"], cwd=clone,
+                                env={**env, "PYTHONHASHSEED": str(run["seed"])},
+                                stdout=stdout, stderr=stderr)
+    if result.returncode:
+        raise RuntimeError(f"arm failed (exit {result.returncode}); inspect {location}")
+    return summarize(run_dir, {**settings, "task": run["task"], "seed": run["seed"], "arm": run["arm"],
+                               "task_inputs_sha256": task_inputs_digest(clone, run["task"])})
+
+
 def run_experiment(args):
     if args.llm != "fake" and not args.live:
         raise ValueError("live LLM calls require --live after approval")
@@ -190,6 +214,8 @@ def run_experiment(args):
         raise ValueError("rounds must be between 1 and 10")
     if args.exa_max_calls < 1:
         raise ValueError("exa-max-calls must be positive")
+    if args.jobs < 1:
+        raise ValueError("jobs must be positive")
     rates = (args.llm_input_usd_per_million, args.llm_output_usd_per_million)
     if (rates[0] is None) != (rates[1] is None) or any(v is not None and (not math.isfinite(v) or v < 0) for v in rates):
         raise ValueError("provide both nonnegative finite LLM token rates, or neither")
@@ -208,17 +234,15 @@ def run_experiment(args):
         "exa_max_calls": args.exa_max_calls, "memory_backend": "local",
         "rates": rates if rates[0] is not None else None,
     }
-    manifest = {**settings, "tasks": args.tasks, "seeds": args.seeds,
+    manifest = {**settings, "tasks": args.tasks, "seeds": args.seeds, "jobs": args.jobs,
                 "memory_note": "Local fallback: separate clone, mirror and run ID for every task/seed/arm; past.dev unused.",
-                "order_seed": args.order_seed, "runs": []}
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+                "order_seed": args.order_seed, "status": "running", "runs": []}
     env = os.environ.copy()
     # Prevent inherited ablation, replay, cache, or memory settings from changing a pair.
     for key in ("BOREDOM", "GROUNDING", "PRIOR_ART", "EXA_REPLAY", "AUTORESEARCH_RUN_ID",
                 "MEMORY_MIRROR", "MEMORY_LOG", "AUTORESEARCH_ARM"):
         env.pop(key, None)
     env.update({"EXA": args.exa, "MEMORY_BACKEND": "local", "EXA_MAX_CALLS": str(args.exa_max_calls)})
-    rows = []
     order = random.Random(args.order_seed)
     for task in args.tasks:
         for seed in args.seeds:
@@ -226,25 +250,48 @@ def run_experiment(args):
             order.shuffle(arms)
             for arm in arms:
                 location = out / task / f"seed-{seed}" / arm
-                location.mkdir(parents=True)
                 clone, run_dir = location / "repo", location / "run"
-                subprocess.run(["git", "clone", "--quiet", "--no-hardlinks", "--no-checkout", str(repo), str(clone)], check=True)
-                git(clone, "checkout", "--quiet", "--detach", commit)
                 command = [sys.executable, str(clone / "swarm.py"), "--repo", str(clone),
                            "--task", task, "--arm", arm, "--rounds", str(args.rounds),
                            "--seed", str(seed), "--llm", args.llm, "--model", model,
                            "--exa", args.exa, "--memory-backend", "local", "--out", str(run_dir),
                            "--no-push", "--no-viewer"]
-                manifest["runs"].append({"task": task, "seed": seed, "arm": arm, "command": command})
-                (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-                print(f"{task} seed={seed} arm={arm}", flush=True)
-                with (location / "stdout.log").open("w") as stdout, (location / "stderr.log").open("w") as stderr:
-                    result = subprocess.run(command, cwd=clone, env={**env, "PYTHONHASHSEED": str(seed)}, stdout=stdout, stderr=stderr)
-                if result.returncode:
-                    raise RuntimeError(f"arm failed (exit {result.returncode}); inspect {location}; no later runs started")
-                rows.append(summarize(run_dir, {**settings, "task": task, "seed": seed, "arm": arm,
-                                               "task_inputs_sha256": task_inputs_digest(clone, task)}))
-                write_csv(out / "results.csv", rows)
+                manifest["runs"].append({"task": task, "seed": seed, "arm": arm, "command": command,
+                                         "location": str(location), "status": "pending"})
+    manifest_path = out / "manifest.json"
+    write_manifest(manifest_path, manifest)
+    # Only the coordinator writes shared artifacts. Submit at most jobs arms,
+    # stop submitting on failure, and collect successes from arms already running.
+    rows, futures, errors, cursor = {}, {}, [], 0
+    with ThreadPoolExecutor(max_workers=args.jobs) as executor:
+        while futures or (cursor < len(manifest["runs"]) and not errors):
+            while not errors and len(futures) < args.jobs and cursor < len(manifest["runs"]):
+                run = manifest["runs"][cursor]
+                run["status"] = "running"
+                print(f"{run['task']} seed={run['seed']} arm={run['arm']}", flush=True)
+                futures[executor.submit(run_arm, run, repo, commit, settings, env)] = cursor
+                cursor += 1
+            write_manifest(manifest_path, manifest)
+            done, _ = wait(futures, return_when=FIRST_COMPLETED)
+            for future in sorted(done, key=futures.__getitem__):
+                index = futures.pop(future)
+                run = manifest["runs"][index]
+                try:
+                    rows[index] = future.result()
+                except Exception as error:
+                    run.update(status="failed", error=str(error))
+                    errors.append(f"{run['task']} seed={run['seed']} arm={run['arm']}: {error}")
+                else:
+                    run["status"] = "finished"
+                    write_csv(out / "results.csv", [rows[i] for i in sorted(rows)])
+            write_manifest(manifest_path, manifest)
+    for run in manifest["runs"]:
+        if run["status"] == "pending":
+            run["status"] = "not_started"
+    manifest["status"] = "failed" if errors else "finished"
+    write_manifest(manifest_path, manifest)
+    if errors:
+        raise RuntimeError("; ".join(errors) + "; stopped scheduling; already running arms were collected")
     return out / "results.csv"
 
 
@@ -255,6 +302,7 @@ def build_parser():
     parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
     parser.add_argument("--seeds", nargs="+", type=int, required=True)
     parser.add_argument("--rounds", type=int, default=5)
+    parser.add_argument("--jobs", type=int, default=1, help="maximum independent arms running concurrently")
     parser.add_argument("--llm", choices=("fake", "tinker"), default="fake")
     parser.add_argument("--model")
     parser.add_argument("--exa", choices=("off", "on"), default="off")

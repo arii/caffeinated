@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from unittest.mock import Mock, patch
 
@@ -125,6 +126,8 @@ class CollectionTests(unittest.TestCase):
         parser = ab.build_parser()
         for extra, message in ((["--llm", "tinker"], "--live"),
                                (["--seeds", "1", "1"], "distinct"),
+                               (["--jobs", "0"], "jobs"),
+                               (["--jobs", "-1"], "jobs"),
                                (["--exa", "on"], "fake validation")):
             args = parser.parse_args(["--out", "/unused", "--seeds", "1"] + extra)
             with self.assertRaisesRegex(ValueError, message):
@@ -159,11 +162,21 @@ class CollectionTests(unittest.TestCase):
 
     def test_driver_isolates_clones_and_matches_all_budgets(self):
         with tempfile.TemporaryDirectory() as tmp:
-            args = ab.build_parser().parse_args(["--repo", tmp, "--out", str(Path(tmp) / "out"), "--tasks", "hadamard19", "--seeds", "11", "22"])
+            args = ab.build_parser().parse_args(["--repo", tmp, "--out", str(Path(tmp) / "out"), "--tasks", "hadamard19", "--seeds", "11", "22", "--jobs", "2"])
             commands, summaries = [], []
+            barrier, lock = threading.Barrier(2), threading.Lock()
+            active = peak = 0
 
             def execute(command, **kwargs):
+                nonlocal active, peak
                 commands.append((command, kwargs))
+                if "--arm" in command:
+                    with lock:
+                        active += 1
+                        peak = max(peak, active)
+                    barrier.wait(timeout=5)
+                    with lock:
+                        active -= 1
                 return subprocess.CompletedProcess(command, 0)
 
             def summarize(path, settings):
@@ -178,6 +191,10 @@ class CollectionTests(unittest.TestCase):
                 result = ab.run_experiment(args)
             with result.open() as stream:
                 self.assertEqual(len(list(csv.DictReader(stream))), 4)
+            self.assertEqual(peak, 2)
+            manifest = json.loads((result.parent / "manifest.json").read_text())
+            self.assertEqual((manifest["jobs"], manifest["status"]), (2, "finished"))
+            self.assertTrue(all(r["status"] == "finished" for r in manifest["runs"]))
             self.assertEqual(len({str(p) for p, _ in summaries}), 4)
             swarms = [(c, k) for c, k in commands if "--arm" in c]
             self.assertEqual(len(swarms), 4)
@@ -190,6 +207,40 @@ class CollectionTests(unittest.TestCase):
             self.assertEqual({s["rounds"] for _, s in summaries}, {5})
             self.assertEqual({s["workers"] for _, s in summaries}, {4})
             self.assertEqual({s["source_commit"] for _, s in summaries}, {"abc"})
+
+    def test_parallel_failure_drains_running_arms_without_starting_queued_arms(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            args = ab.build_parser().parse_args(["--repo", tmp, "--out", str(out), "--tasks", "hadamard19", "--seeds", "11", "22", "--jobs", "2"])
+            barrier, failed_written, started = threading.Barrier(2), threading.Event(), []
+            original_write = ab.write_manifest
+
+            def write_manifest(path, manifest):
+                original_write(path, manifest)
+                if any(r["status"] == "failed" for r in manifest["runs"]):
+                    failed_written.set()
+
+            def run_arm(run, *unused):
+                started.append((run["seed"], run["arm"]))
+                barrier.wait(timeout=5)
+                if run["arm"] == "A":
+                    raise RuntimeError("planned failure")
+                if not failed_written.wait(timeout=5):
+                    raise AssertionError("failure was not checkpointed while the other arm ran")
+                return {"task": run["task"], "seed": run["seed"], "arm": run["arm"]}
+
+            with patch.object(ab, "git", side_effect=lambda repo, *parts: "abc" if parts[0] == "rev-parse" else ""), patch.object(ab, "run_arm", side_effect=run_arm), patch.object(ab, "write_manifest", side_effect=write_manifest):
+                with self.assertRaisesRegex(RuntimeError, "planned failure"):
+                    ab.run_experiment(args)
+            self.assertEqual(set(started), {(11, "A"), (11, "B")})
+            manifest = json.loads((out / "manifest.json").read_text())
+            self.assertEqual(manifest["status"], "failed")
+            self.assertEqual([r["status"] for r in manifest["runs"] if r["seed"] == 22], ["not_started", "not_started"])
+            with (out / "results.csv").open() as stream:
+                self.assertEqual([r["arm"] for r in csv.DictReader(stream)], ["B"])
+
+    def test_jobs_defaults_to_serial(self):
+        self.assertEqual(ab.build_parser().parse_args(["--out", "unused", "--seeds", "1"]).jobs, 1)
 
 
 class SeedAndControlTests(unittest.TestCase):

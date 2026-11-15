@@ -24,7 +24,7 @@ committed checkout:
 
 ```sh
 EXA=off MEMORY_BACKEND=local python experiments/ab.py \
-  --seeds 101 202 --rounds 5 --llm fake --exa off \
+  --seeds 101 202 --rounds 5 --jobs 6 --llm fake --exa off \
   --memory-backend local --out results/ab-fake
 python experiments/analyze_ab.py results/ab-fake/results.csv \
   --out results/ab-fake/analysis.json
@@ -62,6 +62,15 @@ round budget for AUC, and `rounds_completed` records its actual allocations.
 Equal opportunity budgets do not imply identical realized dollar spend. The driver
 clears inherited replay and ablation switches and sets `PYTHONHASHSEED`.
 The manifest records settings and randomized within-pair execution order.
+`--jobs N` bounds the number of arms in flight (default `1`, serial).
+At higher concurrency, each arm still owns its clone, output directory,
+environment, caches, and local memory. Only the coordinator writes the manifest
+and CSV, atomically; CSV rows retain the planned order regardless of completion
+order. The manifest lists the full plan and each arm's status. After an observed
+failure, no more arms are submitted; already running arms finish and their
+successful rows are saved before the driver exits with an error. Queued arms
+are marked `not_started`. Parallel live runs share provider rate limits and
+host resources, so concurrency need not yield a proportional speedup.
 
 The installed `tinker==0.39.0` SDK was checked without a live call:
 `SamplingParams` has an explicit `seed: Optional[int] = None` signature
@@ -124,18 +133,35 @@ tasks, and no claim of evidence from fake runs.
 
 ## Proposed live design — do not run until approved
 
-Wait for the three fix branches and the user's named target branch. Then use
-10 distinct seeds (1001–1010), all three tasks, 10 rounds, and the same pinned
-Tinker model in both arms, Exa on, local memory. Best loss is the primary
-endpoint; AUC and coverage are secondary. This is 30 paired comparisons,
-60 arms, 600 arm-rounds. Report effects and CIs per task; ten seeds still
-provide limited power and do not guarantee a conclusive result. For formal
-claims, apply a predeclared multiplicity correction across the three primary
-task tests.
+Wait for the three fix branches and the user's explicit go and named target
+branch. The proposed pilot uses seeds **1001, 1002, 1003**, all three tasks,
+both arms, **8 rounds**, and **`--jobs 6`**: 9 pairs, **18 runs**, 144 arm-rounds.
+Use the same pinned Tinker model in both arms, Exa on, and local memory.
+Best loss is primary; AUC and coverage are secondary. Report effects and CIs
+per task. Three seeds per task are exploratory: even three nonzero differences
+all pointing the same way cannot give a two-sided exact sign/Wilcoxon p below
+0.25. The bootstrap is unstable at this size. This pilot cannot establish
+conventional statistical significance; a confirmatory study would need more
+seeds and predeclared correction across the three primary task tests.
 
 Using the supplied estimate per three-round arm ($0.60–1.40 Tinker + $0.13
-Exa, 6–13 minutes), linear scaling gives approximately $120–280 Tinker + $26
-Exa = **$146–306**, and 20–43 hours sequentially. Reserve roughly 25% extra
-($183–383 total) for retries/longer prompts; scaling is uncertain. There are
-no GPU runs. Use `--llm tinker --live --exa on --rounds 10 --seeds ...` only
-after approval and only on the specified branch. Phase 1 starts no live runs.
+Exa, 6–13 minutes), linear scaling by `18 * 8 / 3` gives $28.80–67.20 Tinker +
+$6.24 Exa = **$35.04–73.44**. A 25% retry/longer-prompt reserve gives
+**$43.80–91.80** (budget roughly **$44–92**). Each eight-round arm would take
+16–34.7 minutes; three waves of six give **48–104 minutes** before setup,
+retries, provider throttling, or CPU/Docker contention (4.8–10.4 arm-hours
+of work in total). These are extrapolations, not measured eight-round costs
+or guaranteed runtimes. Early convergence and policy-dependent call counts
+can also change actual spend.
+
+Only after approval, from a clean checkout of the named branch:
+
+```sh
+EXA=on MEMORY_BACKEND=local python experiments/ab.py \
+  --tasks hadamard19 bixbench_mini playworld_mini \
+  --seeds 1001 1002 1003 --rounds 8 --jobs 6 \
+  --llm tinker --model "$TINKER_MODEL" --live --exa on \
+  --memory-backend local --out results/ab-live-pilot
+```
+
+Phase 1 starts no live runs. There are no GPU runs.
