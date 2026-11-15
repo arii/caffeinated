@@ -3,6 +3,7 @@
 
 import argparse
 import csv
+import fcntl
 import io
 import json
 import math
@@ -170,40 +171,22 @@ def arm_lock(worktree_root):
     """Keep two runs from sharing (and cleaning) the same arm's worktrees."""
     worktree_root.mkdir(parents=True, exist_ok=True)
     path = worktree_root / ".lock"
-    for _ in range(2):
-        try:
-            descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            try:
-                owner = int(path.read_text(encoding="utf-8").strip() or 0)
-            except (OSError, ValueError):
-                owner = 0
-            if owner and owner != os.getpid() and pid_alive(owner):
-                raise RuntimeError(
-                    f"another swarm.py run (pid {owner}) is using {worktree_root}; "
-                    "wait for it to finish or run from a separate clone"
-                ) from None
-            path.unlink(missing_ok=True)
-            continue
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(f"{os.getpid()}\n")
-        break
-    else:
-        raise RuntimeError(f"could not lock {worktree_root}")
+    descriptor = os.open(path, os.O_CREAT | os.O_RDWR)
     try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        owner = os.read(descriptor, 32).decode("utf-8", "replace").strip() or "unknown"
+        os.close(descriptor)
+        raise RuntimeError(
+            f"another swarm.py run (pid {owner}) is using {worktree_root}; "
+            "wait for it to finish or run from a separate clone"
+        ) from None
+    try:
+        os.ftruncate(descriptor, 0)
+        os.write(descriptor, f"{os.getpid()}\n".encode())
         yield
     finally:
-        path.unlink(missing_ok=True)
-
-
-def pid_alive(pid):
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+        os.close(descriptor)
 
 
 def is_worktree_root(path):

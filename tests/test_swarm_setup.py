@@ -122,14 +122,13 @@ class WorktreeRecoveryTests(unittest.TestCase):
 
     def test_lock_rejects_a_live_concurrent_run(self):
         root = self.repo / ".swarm_worktrees/B"
-        root.mkdir(parents=True)
-        (root / ".lock").write_text(f"{os.getppid()}\n", encoding="utf-8")
-        with self.assertRaisesRegex(RuntimeError, "another swarm.py run"), swarm.arm_lock(root):
-            pass
+        with swarm.arm_lock(root):
+            self.assertEqual((root / ".lock").read_text().strip(), str(os.getpid()))
+            with self.assertRaisesRegex(RuntimeError, f"pid {os.getpid()}"), swarm.arm_lock(root):
+                pass
         (root / ".lock").write_text("999999999\n", encoding="utf-8")
         with swarm.arm_lock(root):
             self.assertEqual((root / ".lock").read_text().strip(), str(os.getpid()))
-        self.assertFalse((root / ".lock").exists())
 
 
 if __name__ == "__main__":
