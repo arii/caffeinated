@@ -114,3 +114,4 @@ html,body{max-width:100%;overflow-x:hidden}
  #moment{top:112px}
 }
 @media(max-height:500px) and (orientation:landscape){.replay-bar{left:auto;width:min(420px,52vw)!important;max-height:88dvh}.sidebar{top:auto;bottom:8px;left:8px;transform:none;flex-direction:column}.side-drawer{left:auto!important;right:0;width:min(420px,60vw)!important;top:0!important;max-height:100dvh!important;border-radius:16px 0 0 16px}dialog.character-popup{left:auto!important;width:min(440px,60vw)!important;max-height:100dvh;top:0!important;border-radius:16px 0 0 16px}}
+.proxy-chip{font-size:8px;color:#e8d9b8;border:1px dashed #dfcba566;border-radius:10px;padding:2px 8px;white-space:normal!important;max-width:100%}.proxy-note{font-size:10px;color:#e8d9b8;border-left:2px solid #dfcba5;padding-left:9px}

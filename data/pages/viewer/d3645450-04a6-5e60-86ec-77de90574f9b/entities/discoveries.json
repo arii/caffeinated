@@ -1,0 +1,18 @@
+[
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+  "id": "discovery:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+  "improvement": 1.0,
+  "lineage": {
+   "hypothesis_id": "hypothesis:2",
+   "lead": null,
+   "source_ids": []
+  },
+  "metric_value": 0.0,
+  "previous_best": 1.0,
+  "round": 1,
+  "tick": 92,
+  "title": "Register fruity candies lose FiveThirtyEight candy matchups"
+ }
+]

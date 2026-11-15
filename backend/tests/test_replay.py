@@ -212,3 +212,14 @@ class ReplayTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TaskProxyNoteTest(unittest.TestCase):
+    def test_proxy_note_comes_from_the_task_definition(self):
+        from backend.replay import task_proxy_note
+
+        note = task_proxy_note({"provenance": {"command": ["swarm.py", "--task", "hadamard19"]}})
+        self.assertEqual(note, "exact; known optimum")
+        self.assertIn("pre-registered", task_proxy_note({"title": "Ig Nobel Prize hunt · x"}))
+        self.assertEqual(task_proxy_note({"provenance": {"command": "swarm.py --task ../etc"}}), "")
+        self.assertEqual(task_proxy_note({}), "")

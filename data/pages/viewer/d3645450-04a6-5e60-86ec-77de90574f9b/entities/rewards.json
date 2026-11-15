@@ -1,0 +1,233 @@
+[
+ {
+  "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+  "experiment_id": "experiment:c2b3598",
+  "id": "reward:1",
+  "metric_value": 1.0,
+  "reference": null,
+  "round": 0,
+  "status": "keep",
+  "tick": 4,
+  "value": 0.0
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+  "id": "reward:10",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 2,
+  "status": "discard",
+  "tick": 170,
+  "value": 0.0
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:558d1e71f099a90f2371b175814bba0e878990f9",
+  "id": "reward:11",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 3,
+  "status": "discard",
+  "tick": 240,
+  "value": 0.0
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "experiment_id": "experiment:6c70151bdc8e447cbf6d19dbf1f1e9dfa1779f7b",
+  "id": "reward:12",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 3,
+  "status": "discard",
+  "tick": 242,
+  "value": 0.0
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "experiment_id": "experiment:94a81e12306ecef1ac8989eaeaf2d436744f5590",
+  "id": "reward:13",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 3,
+  "status": "discard",
+  "tick": 244,
+  "value": 0.0
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "experiment_id": "experiment:9935f48bb50fd992cd0a2d91c77c3812f615c5fc",
+  "id": "reward:14",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 3,
+  "status": "discard",
+  "tick": 246,
+  "value": 0.0
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:seq-15",
+  "id": "reward:15",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 4,
+  "status": "reject",
+  "tick": 335,
+  "value": 0.0
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "experiment_id": "experiment:seq-16",
+  "id": "reward:16",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 4,
+  "status": "reject",
+  "tick": 337,
+  "value": 0.0
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "experiment_id": "experiment:seq-17",
+  "id": "reward:17",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 4,
+  "status": "reject",
+  "tick": 339,
+  "value": 0.0
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "experiment_id": "experiment:seq-18",
+  "id": "reward:18",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 4,
+  "status": "reject",
+  "tick": 341,
+  "value": 0.0
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:seq-19",
+  "id": "reward:19",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 5,
+  "status": "reject",
+  "tick": 430,
+  "value": 0.0
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+  "id": "reward:2",
+  "metric_value": 0.0,
+  "reference": 1.0,
+  "round": 1,
+  "status": "keep",
+  "tick": 77,
+  "value": 100.0
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "experiment_id": "experiment:seq-20",
+  "id": "reward:20",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 5,
+  "status": "reject",
+  "tick": 432,
+  "value": 0.0
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "experiment_id": "experiment:seq-21",
+  "id": "reward:21",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 5,
+  "status": "reject",
+  "tick": 434,
+  "value": 0.0
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "experiment_id": "experiment:seq-22",
+  "id": "reward:22",
+  "metric_value": null,
+  "reference": 0.0,
+  "round": 5,
+  "status": "reject",
+  "tick": 436,
+  "value": 0.0
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "experiment_id": "experiment:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+  "id": "reward:3",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 1,
+  "status": "discard",
+  "tick": 79,
+  "value": 0.0
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "experiment_id": "experiment:d671661a5506057773d15dd3f39af5681fc2895b",
+  "id": "reward:4",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 1,
+  "status": "discard",
+  "tick": 81,
+  "value": 0.0
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "experiment_id": "experiment:e8e058fc8a680bdef1581645f1e875237ec415ba",
+  "id": "reward:5",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 1,
+  "status": "discard",
+  "tick": 83,
+  "value": 0.0
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+  "id": "reward:7",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 2,
+  "status": "discard",
+  "tick": 164,
+  "value": 0.0
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+  "id": "reward:8",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 2,
+  "status": "discard",
+  "tick": 166,
+  "value": 0.0
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+  "id": "reward:9",
+  "metric_value": 0.0,
+  "reference": 0.0,
+  "round": 2,
+  "status": "discard",
+  "tick": 168,
+  "value": 0.0
+ }
+]

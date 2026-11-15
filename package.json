@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "tsc --noEmit && vite build",
+    "build:pages": "bash scripts/build_pages.sh",
     "preview": "vite preview --host 127.0.0.1 --port 4175",
     "test": "node --test tests/*.test.js",
     "dev:frontend": "vite",

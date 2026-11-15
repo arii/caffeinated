@@ -1,0 +1,68 @@
+[
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "id": "diary:13",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r2-worker-1-a1"
+  ],
+  "round": 2,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 121
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "id": "diary:15",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r2-worker-3-a1"
+  ],
+  "round": 2,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 141
+ },
+ {
+  "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "id": "diary:2",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r1-worker-1-a1"
+  ],
+  "round": 1,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 30
+ },
+ {
+  "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "id": "diary:3",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r1-worker-2-a1"
+  ],
+  "round": 1,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 41
+ },
+ {
+  "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "id": "diary:4",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r1-worker-3-a1"
+  ],
+  "round": 1,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 52
+ },
+ {
+  "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "id": "diary:5",
+  "kind": "rationale",
+  "refs": [
+   "memory:claim-B-r1-worker-4-a1"
+  ],
+  "round": 1,
+  "text": "Apply a distinct task-specific edit for offline runs.",
+  "tick": 63
+ }
+]

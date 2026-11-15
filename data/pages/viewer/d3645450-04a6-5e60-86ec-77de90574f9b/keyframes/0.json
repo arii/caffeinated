@@ -1,0 +1,214 @@
+{
+ "agents": [
+  {
+   "activity": "idle",
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [],
+ "in_flight": {
+  "conversations": [],
+  "experiment_ids": []
+ },
+ "phase": "assign",
+ "recent_events": [
+  {
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "event_id": "3b3b81b5-10c5-5c7f-97ff-b0da36299b3d",
+   "payload": {
+    "arm": "B",
+    "native_run_id": "0303243dad0346ec98ddc9e654af6cfe",
+    "text": "Run started (arm B)"
+   },
+   "phase": "assign",
+   "refs": {},
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "run_id",
+    "line": 1,
+    "native_type": "run"
+   },
+   "tick": 0,
+   "ts": "2026-11-15T08:17:45.270369Z",
+   "type": "run.started"
+  }
+ ],
+ "round": 0,
+ "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "swarm": {
+  "B": null,
+  "baseline": 1.0,
+  "best": null,
+  "frontier_stall": null,
+  "regime": null
+ },
+ "tick": 0,
+ "totals": {
+  "discoveries": 0,
+  "experiments": 0,
+  "memory_items": 0,
+  "questions": 0,
+  "sources": 0,
+  "tokens": 0
+ },
+ "ts": "2026-11-15T08:17:45.270369Z"
+}

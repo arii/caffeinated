@@ -69,6 +69,30 @@ def event_message(event):
     )[:3000]
 
 
+TESTCASES = Path(__file__).resolve().parents[1] / "testcases"
+
+
+def task_proxy_note(manifest):
+    """The task's honest benchmark caveat (testcases/<task>/task.json proxy_note), if known."""
+    command = (manifest.get("provenance") or {}).get("command") or []
+    parts = command.split() if isinstance(command, str) else list(command)
+    task = manifest.get("task") or ""
+    for i, part in enumerate(parts):
+        if part == "--task" and i + 1 < len(parts):
+            task = parts[i + 1]
+        elif str(part).startswith("--task="):
+            task = str(part).split("=", 1)[1]
+    if not task and "ig nobel" in str(manifest.get("title", "")).lower():
+        task = "ignobel"
+    path = TESTCASES / str(task) / "task.json"
+    if not task or "/" in str(task) or not path.is_file():
+        return ""
+    try:
+        return str(json.loads(path.read_text()).get("proxy_note") or "")
+    except (OSError, ValueError):
+        return ""
+
+
 def build_recording(native_manifest, native_events, entities, sample=True, stale=False):
     """Pure deterministic fold. Entity lookups never import late verdicts/results.
 
@@ -129,6 +153,9 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
             llm = provider
     except (ValueError, IndexError):
         pass
+    note = task_proxy_note(manifest)
+    if note:
+        manifest.setdefault("proxy_note", note)
     manifest["description"] = (
         (
             "Recorded offline run · fake LLM (scripted agents)"
