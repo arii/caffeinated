@@ -50,6 +50,12 @@ def dataset_id(url):
 DOI = re.compile(r"(?:https?://(?:dx\.)?doi\.org/|doi:)?(10\.\d{4,9}/\S+)", re.I)
 
 
+def canonical_citation(citation):
+    """One key per work: DOI forms collapse to https://doi.org/<lowercase doi>."""
+    match = DOI.fullmatch(citation.strip())
+    return "https://doi.org/" + match.group(1).rstrip(".").lower() if match else citation.strip()
+
+
 def doi_title(citation, task_dir=HERE):
     """Title of a real DOI-registered work (Crossref, cached), or None if it does not exist."""
     match = DOI.fullmatch(citation.strip())

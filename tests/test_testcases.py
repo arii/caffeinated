@@ -489,6 +489,11 @@ class IgnobelPreregTests(unittest.TestCase):
                 graded = self.run_prereg(citations=citations)["graded"]
                 self.assertEqual(graded["score"], 0.0)
                 self.assertIn("citations", graded["rejected"])
+        same_paper = ["doi:10.1002/bdm.414", "https://doi.org/10.1002/BDM.414"]
+        with patch.object(self.external, "doi_title", return_value="A domain-specific risk-attitude scale"):
+            graded = self.run_prereg(log=False, citations=same_paper)["graded"]
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("got 1", graded["rejected"])
         real_doi = ["S1", "https://doi.org/10.1038/294580a0"]
         with patch.object(self.external, "doi_title", return_value="Sexual activity reduces lifespan of male fruitflies"):
             self.assertGreater(self.run_prereg(citations=real_doi)["graded"]["score"], 0)

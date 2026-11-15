@@ -225,7 +225,8 @@ def check_citations(citations, dataset_url, task_dir, research_log):
                 if not real:
                     problems.append(f"{url} is neither a registered DOI nor found by this run's research or in sources.json")
                     continue
-        if url == dataset_url:
+        url = external.canonical_citation(url)
+        if url == external.canonical_citation(dataset_url):
             problems.append("the dataset itself is not a citation")
             continue
         resolved.append(url)
