@@ -4,7 +4,10 @@
 import argparse
 import json
 import math
+import statistics
 from pathlib import Path
+
+EXA_ENDPOINTS = frozenset({"/search", "/contents", "/findSimilar", "/answer"})
 
 
 def read_jsonl(path):
@@ -48,13 +51,43 @@ def _cost_value(record):
     return None
 
 
-def _research_costs(records):
+def _latency_ms_p50(records):
+    latencies = [
+        record["latency_ms"]
+        for record in records
+        if isinstance(record.get("latency_ms"), (int, float))
+        and not isinstance(record["latency_ms"], bool)
+        and math.isfinite(record["latency_ms"])
+        and record["latency_ms"] >= 0
+    ]
+    return statistics.median(latencies) if latencies else None
+
+
+def _pastdev_usage(records):
+    usage = {}
+    for operation in ("write", "recall"):
+        matching = [
+            record
+            for record in records
+            if record.get("backend") == "pastdev" and record.get("type") == operation
+        ]
+        usage[operation] = {
+            "records": len(matching),
+            "latency_ms_p50": _latency_ms_p50(matching),
+        }
+    return usage
+
+
+def _research_costs(records, memory_records=()):
     totals = {"exa": 0.0, "past_dev": 0.0}
     counts = {"exa": 0, "past_dev": 0}
     cost_fields = {
         "exa": ("exa_cost_usd", "exa_cost"),
         "past_dev": ("past_dev_cost_usd", "pastdev_cost_usd", "past_dev_cost", "pastdev_cost"),
     }
+    exa_calls = [
+        record for record in records if str(record.get("endpoint", "")).strip() in EXA_ENDPOINTS
+    ]
     for record in records:
         explicit = False
         for service, fields in cost_fields.items():
@@ -74,15 +107,35 @@ def _research_costs(records):
             str(record.get(field, ""))
             for field in ("provider", "service", "backend", "endpoint", "source")
         ).casefold()
-        service = "past_dev" if "past" in descriptor else "exa" if "exa" in descriptor else None
+        endpoint = str(record.get("endpoint", "")).strip()
+        service = (
+            "exa"
+            if endpoint in EXA_ENDPOINTS
+            else "past_dev"
+            if "past" in descriptor
+            else "exa"
+            if "exa" in descriptor
+            else None
+        )
         cost = _cost_value(record)
         if service is not None and cost is not None:
             totals[service] += cost
             counts[service] += 1
-    return {
+    result = {
         service: {"cost_usd": round(totals[service], 9), "records": counts[service]}
         for service in totals
     }
+    result["exa"].update(
+        {
+            "calls": len(exa_calls),
+            "latency_ms_p50": _latency_ms_p50(exa_calls),
+        }
+    )
+    result["past_dev"].update(_pastdev_usage(memory_records))
+    if counts["past_dev"] == 0:
+        result["past_dev"]["cost_usd"] = None
+        result["past_dev"]["cost_note"] = "not reported by past.dev API"
+    return result
 
 
 def build_report(run_dir, prices=None):
@@ -126,7 +179,10 @@ def build_report(run_dir, prices=None):
             "completion_tokens": total_completion_tokens,
             "models": dict(sorted(calls_by_model.items())),
         },
-        "research_costs": _research_costs(read_jsonl(run_dir / "research_log.jsonl")),
+        "research_costs": _research_costs(
+            read_jsonl(run_dir / "research_log.jsonl"),
+            read_jsonl(run_dir / "memory_log.jsonl"),
+        ),
     }
 
 
