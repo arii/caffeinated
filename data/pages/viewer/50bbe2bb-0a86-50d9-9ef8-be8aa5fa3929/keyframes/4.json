@@ -232,6 +232,7 @@
    "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
    "event_id": "b4ef5b61-3cb1-5c43-93c3-67ed7c5357df",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": "In the steak-risk-survey data (raw.githubusercontent.com), answering \"Rare\" to \"How do you like your steak prepared?\" goes with answering \"Yes\" to \"Do you ever smoke cigarettes?\"",
     "n": 428,
@@ -290,7 +291,7 @@
     "metric_value": 1.0,
     "reward": 0.0,
     "status": "keep",
-    "text": "Result keep: replication loss 1, reward +0.0%"
+    "text": "Result keep: interesting-finding loss 1, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {

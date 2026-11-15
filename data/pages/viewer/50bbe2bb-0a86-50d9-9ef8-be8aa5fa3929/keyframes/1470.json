@@ -550,7 +550,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "reject",
-    "text": "Result reject: replication loss n/a, reward +0.0%"
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -600,7 +600,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "crash",
-    "text": "Result crash: replication loss n/a, reward +0.0%"
+    "text": "Result crash: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -650,7 +650,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "crash",
-    "text": "Result crash: replication loss n/a, reward +0.0%"
+    "text": "Result crash: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -700,7 +700,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "crash",
-    "text": "Result crash: replication loss n/a, reward +0.0%"
+    "text": "Result crash: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {

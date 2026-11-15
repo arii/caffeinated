@@ -320,6 +320,7 @@
    "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
    "event_id": "445221d5-c96a-5a7d-bbe5-00d9e6d6d97b",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the cake data (vincentarelbundock.github.io), higher \"temperature\" goes with higher \"angle\"",
     "n": 270,
@@ -379,6 +380,7 @@
    "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
    "event_id": "9527a1e3-7873-5697-9c63-15daced1701d",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the cats data (vincentarelbundock.github.io), higher \"Bwt\" goes with higher \"Hwt\"",
     "n": 144,
@@ -438,6 +440,7 @@
    "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
    "event_id": "0f57b78b-99ff-55ba-983c-a527af1bad1b",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": null,
     "n": null,
@@ -497,6 +500,7 @@
    "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "event_id": "c1e68e48-7d8b-5822-a20e-2ca65d60369d",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the drinks data (raw.githubusercontent.com), higher \"beer_servings\" goes with higher \"wine_servings\"",
     "n": 193,
@@ -556,7 +560,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -607,7 +611,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -658,7 +662,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -709,7 +713,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {

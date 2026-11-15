@@ -517,6 +517,7 @@
    "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "event_id": "cbba8d4e-cf69-53ac-84b4-c28a03cf632b",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": null,
     "n": null,
@@ -576,7 +577,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "reject",
-    "text": "Result reject: replication loss n/a, reward +0.0%"
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -627,7 +628,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "reject",
-    "text": "Result reject: replication loss n/a, reward +0.0%"
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -678,7 +679,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "reject",
-    "text": "Result reject: replication loss n/a, reward +0.0%"
+    "text": "Result reject: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -729,7 +730,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {

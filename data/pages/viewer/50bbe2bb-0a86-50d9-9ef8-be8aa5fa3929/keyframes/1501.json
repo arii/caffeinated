@@ -1,0 +1,1471 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 13,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 1484,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:47be227"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:47be227",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 1471,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "assigned",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "boredom": {
+    "B": 0.49,
+    "components": {
+     "diversity": 0.56,
+     "fail_rate": 0.0,
+     "frustration": 0.8,
+     "novelty": 0.8,
+     "overload": 0.4,
+     "stagnation": 0.8,
+     "trivial_rate": 0.4
+    },
+    "measured_tick": 1476,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 12,
+    "keeps": 1,
+    "memory_writes": 35,
+    "observations": 181,
+    "questions": 101,
+    "tokens": 229993
+   },
+   "diary_head": {
+    "diary_id": "diary:118",
+    "excerpt": "The acoustic leads still lack a usable multi-column CSV, so this divergent proposal uses Forbes' unused 17-observation mountain boiling-point experiment with exact numeric headers. Boiling occurs when vapour pressure equals ambient pressure"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-47",
+    "hypothesis_id": "hypothesis:118",
+    "question_id": "question:Q116"
+   },
+   "last_observation_id": "observation:S312",
+   "last_question_id": "question:Q116",
+   "last_reward": {
+    "experiment_id": "experiment:seq-47",
+    "metric_value": null,
+    "reward_id": "reward:47",
+    "status": "reject",
+    "tick": 1459,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 1472,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "assigned",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "boredom": {
+    "B": 0.64,
+    "components": {
+     "diversity": 0.72,
+     "fail_rate": 0.2,
+     "frustration": 0.8,
+     "novelty": 0.666667,
+     "overload": 0.4,
+     "stagnation": 1.0,
+     "trivial_rate": 0.4
+    },
+    "measured_tick": 1477,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 12,
+    "keeps": 0,
+    "memory_writes": 24,
+    "observations": 96,
+    "questions": 56,
+    "tokens": 122215
+   },
+   "diary_head": {
+    "diary_id": "diary:109",
+    "excerpt": "This uses the unused alloparental-provisioning CSV but tests genetic-offspring attendance and feeding, distinct from worker-1's unrelated-fledgling pair and from the previously mentioned begging hypothesis. Attending offspring creates repea"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-48",
+    "hypothesis_id": "hypothesis:109",
+    "question_id": "question:Q117"
+   },
+   "last_observation_id": "observation:S315",
+   "last_question_id": "question:Q117",
+   "last_reward": {
+    "experiment_id": "experiment:seq-48",
+    "metric_value": null,
+    "reward_id": "reward:48",
+    "status": "crash",
+    "tick": 1461,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 1473,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "searching",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "boredom": {
+    "B": 0.74,
+    "components": {
+     "diversity": 0.72,
+     "fail_rate": 0.4,
+     "frustration": 0.8,
+     "novelty": 0.533333,
+     "overload": 0.8,
+     "stagnation": 1.0,
+     "trivial_rate": 0.8
+    },
+    "measured_tick": 1478,
+    "regime": "BOREDOM_SNAP",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 12,
+    "keeps": 0,
+    "memory_writes": 23,
+    "observations": 94,
+    "questions": 56,
+    "tokens": 115033
+   },
+   "diary_head": {
+    "diary_id": "diary:80",
+    "excerpt": "This exploits the successful strong-monotonic design on an unused behavioral dataset while testing a published gym-attendance experiment rather than repeating a nearby acoustic idea. Pre-experiment attendance captures established exercise h"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-49",
+    "hypothesis_id": "hypothesis:80",
+    "question_id": "question:recall-280"
+   },
+   "last_observation_id": "observation:recall-280",
+   "last_question_id": "question:recall-280",
+   "last_reward": {
+    "experiment_id": "experiment:seq-49",
+    "metric_value": null,
+    "reward_id": "reward:49",
+    "status": "crash",
+    "tick": 1463,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": true,
+   "since_tick": 1490,
+   "station": "explorer",
+   "type": "worker"
+  },
+  {
+   "activity": "assigned",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "boredom": {
+    "B": 0.605,
+    "components": {
+     "diversity": 0.8,
+     "fail_rate": 0.2,
+     "frustration": 0.8,
+     "novelty": 0.7,
+     "overload": 0.2,
+     "stagnation": 1.0,
+     "trivial_rate": 0.2
+    },
+    "measured_tick": 1479,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 12,
+    "keeps": 0,
+    "memory_writes": 25,
+    "observations": 107,
+    "questions": 63,
+    "tokens": 144113
+   },
+   "diary_head": {
+    "diary_id": "diary:111",
+    "excerpt": "This abandons the exhausted acoustic-coordinate design for an unused, straightforward domestic-energy dataset with exact numeric headers. Outdoor temperature drives space-heating demand: colder weeks require more gas to maintain indoor comf"
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-50",
+    "hypothesis_id": "hypothesis:111",
+    "question_id": "question:Q119"
+   },
+   "last_observation_id": "observation:S321",
+   "last_question_id": "question:Q119",
+   "last_reward": {
+    "experiment_id": "experiment:seq-50",
+    "metric_value": null,
+    "reward_id": "reward:50",
+    "status": "crash",
+    "tick": 1465,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 1475,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 3,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 24679
+   },
+   "diary_head": {
+    "diary_id": "diary:8",
+    "excerpt": "Keep prioritizing mechanism-backed associations in directly downloadable datasets with verified numeric headers: this candidate scored 0.000000 on both seeds. Do not register another test on the SPASS dataset this run, and avoid treating ar"
+   },
+   "focus": {
+    "partner_agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 1471,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "25797bf0-b2e0-5d92-b8f1-114f404f98e8"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "4c465584-2795-5949-97ec-1ea1e61bc43c"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   ],
+   [
+    "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+    "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "finish",
+ "recent_events": [
+  {
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "event_id": "49cdf495-0a8c-5228-b553-881a00a9fcb1",
+   "payload": {
+    "kind": "assignment",
+    "text": "Sleep & Medicine Lab, you are on divergent this round and scout for leads (SNAP assigns one exploit and three divergent slots; 2 divergent workers scout).",
+    "to_agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   },
+   "phase": "assign",
+   "refs": {
+    "to_agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "assignments.jsonl",
+    "line": 13,
+    "native_type": "assignment"
+   },
+   "tick": 1482,
+   "ts": "2026-11-15T08:53:07.291999Z",
+   "type": "message.sent"
+  },
+  {
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "event_id": "0d1b488f-9c1d-51b9-a0d2-0b10ef4775f2",
+   "payload": {
+    "kind": "assignment",
+    "text": "Mind & Money Lab, you are on divergent this round (SNAP assigns one exploit and three divergent slots; 2 divergent workers scout).",
+    "to_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "phase": "assign",
+   "refs": {
+    "to_agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "assignments.jsonl",
+    "line": 13,
+    "native_type": "assignment"
+   },
+   "tick": 1483,
+   "ts": "2026-11-15T08:53:07.291999Z",
+   "type": "message.sent"
+  },
+  {
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "event_id": "85ee75e3-bc69-571f-bb9a-affdb91d1779",
+   "payload": {
+    "excerpt": "Assignment: regime BOREDOM_SNAP; roles worker-1 divergent, worker-2 exploit, worker-3 divergent, worker-4 divergent; SNAP assigns one exploit and three divergent slots; 2 divergent workers scout.",
+    "text": "Assignment: regime BOREDOM_SNAP; roles worker-1 divergent, worker-2 exploit, worker-3 divergent, worker-4 divergent; SNAP assigns one exploit and three divergent slots; 2 divergent workers scout.",
+    "type": "assignment"
+   },
+   "phase": "assign",
+   "refs": {
+    "memory_id": "memory:assignment-B-13@065dd413fd17"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 123,
+    "native_type": "assignment"
+   },
+   "tick": 1484,
+   "ts": "2026-11-15T08:53:07.586150Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "3cf6f35e-5f75-53f7-811a-a79669d3e485",
+   "payload": {
+    "kind": "sources",
+    "summary": "Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+    "text": "Found: Dataset of impulse responses from variable acoustics room Arni at Aalto Acoustic Labs",
+    "url": "https://doi.org/10.5281/zenodo.6985104"
+   },
+   "phase": "research",
+   "refs": {
+    "observation_id": "observation:D13_1",
+    "question_id": "question:None",
+    "source_id": "source:D13_1"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "research_log.jsonl",
+    "line": 485,
+    "native_type": "source"
+   },
+   "tick": 1485,
+   "ts": "2026-11-15T08:53:09.439002Z",
+   "type": "observation.received"
+  },
+  {
+   "agent_id": null,
+   "event_id": "f81bf122-0377-5fc9-85bd-4923f25d71ec",
+   "payload": {
+    "kind": "sources",
+    "summary": "Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+    "text": "Found: Drivers of alloparental provisioning of fledglings in a colonially-breeding bird",
+    "url": "https://doi.org/10.5061/dryad.s7h44j15m"
+   },
+   "phase": "research",
+   "refs": {
+    "observation_id": "observation:D13_2",
+    "question_id": "question:None",
+    "source_id": "source:D13_2"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "research_log.jsonl",
+    "line": 486,
+    "native_type": "source"
+   },
+   "tick": 1486,
+   "ts": "2026-11-15T08:53:12.151960Z",
+   "type": "observation.received"
+  },
+  {
+   "agent_id": null,
+   "event_id": "a1008818-344e-5d94-bdb7-1bd6a3ac7364",
+   "payload": {
+    "kind": "sources",
+    "summary": "Gym Use Behavioral Economics Experiment",
+    "text": "Found: Gym Use Behavioral Economics Experiment",
+    "url": "https://doi.org/10.5281/zenodo.18866086"
+   },
+   "phase": "research",
+   "refs": {
+    "observation_id": "observation:D13_3",
+    "question_id": "question:None",
+    "source_id": "source:D13_3"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "research_log.jsonl",
+    "line": 487,
+    "native_type": "source"
+   },
+   "tick": 1487,
+   "ts": "2026-11-15T08:53:14.613494Z",
+   "type": "observation.received"
+  },
+  {
+   "agent_id": null,
+   "event_id": "7934b679-d0b2-5fb2-8d16-5afcd77efbeb",
+   "payload": {
+    "kind": "sources",
+    "summary": "Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+    "text": "Found: Behavioral economics approach to reduce injectable discontinuation rate in rural Ethiopia",
+    "url": "https://doi.org/10.5281/zenodo.3529744"
+   },
+   "phase": "research",
+   "refs": {
+    "observation_id": "observation:D13_4",
+    "question_id": "question:None",
+    "source_id": "source:D13_4"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "research_log.jsonl",
+    "line": 488,
+    "native_type": "source"
+   },
+   "tick": 1488,
+   "ts": "2026-11-15T08:53:14.613675Z",
+   "type": "observation.received"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "ea965986-ad62-5eaf-bc04-4a56de587fbf",
+   "payload": {
+    "backend": "pastdev",
+    "kind": "recall",
+    "text": "lessons and results that identify exhausted or already tried directions"
+   },
+   "phase": "research",
+   "refs": {
+    "question_id": "question:recall-280"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory_log.jsonl",
+    "line": 280,
+    "native_type": "recall"
+   },
+   "tick": 1489,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "question.asked"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "0b087cb1-7593-5671-a8b9-e0a1e5c0914b",
+   "payload": {
+    "authors": [
+     "worker-1",
+     "worker-4",
+     "worker-3"
+    ],
+    "kind": "memories",
+    "memory_ids": [
+     "memory:claim-B-r10-worker-1-a1@065dd413fd17",
+     "memory:claim-B-r1-worker-4-a1@065dd413fd17",
+     "memory:lead-B-11-worker-1@065dd413fd17",
+     "memory:claim-B-r1-worker-3-a1@065dd413fd17",
+     "memory:lead-B-8-worker-1@065dd413fd17"
+    ],
+    "n_results": 5,
+    "text": "Recalled 5 memories from worker-1, worker-4, worker-3"
+   },
+   "phase": "research",
+   "refs": {
+    "observation_id": "observation:recall-280",
+    "question_id": "question:recall-280"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory_log.jsonl",
+    "line": 280,
+    "native_type": "recall"
+   },
+   "tick": 1490,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "observation.received"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "26660f0c-3364-5bec-b946-b66a7f67bf09",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the content data (zenodo.org), higher \"x (m)\" goes with higher \"y (m)\"",
+    "judges": {
+     "a": {
+      "laugh": 3,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract is a tongue‑in‑cheek claim that higher x‑coordinates correlate with higher y‑coordinates, a trivial geometric observation presented as a statistically significant result. The humor comes from the absurdity of treating a basic spatial relationship as a novel finding. There is no substant",
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The chuckle comes from the mismatch between the grand pre-registered framing and the payoff: with n=78,559, a correlation of just rho=0.07 is 'statistically significant' at p=2.5e-85, and the preregistered magnitude prediction (|rho|=0.45) missed by roughly sixfold yet is scored 'confirmed' on the s",
+      "think": 4
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "Field type: ID)\n- Time.elapsed..s.: Number of seconds elapsed ... began recording (Field type: Numeric)\n- ... proxy reading (Field type: Numeric)\n- X..m.: Location of the ... logger in meters east in ",
+      "title": "Microclimate proxy measurements from a logging gradient in Malaysian Borneo (BALI project) | Zenodo",
+      "url": "https://zenodo.org/records/3266822"
+     },
+     {
+      "snippet": "flocking sheep to a herding dog. bioRxiv, pp.2024-05. [bioRXiv preprint](https://www.biorxiv.org/content/10.1101/2024.05.24.595762v1.abstract) ... 23.2.0.2485118 ( ... .dat` are trial number, sheep ID",
+      "title": "Collective responses of flocking sheep to a herding dog",
+      "url": "https://doi.org/10.5281/zenodo.13959841"
+     },
+     {
+      "snippet": "This dataset contains the surface height topographies used in the numerical simulations ... Several topographies of different system sizes were generated (e.g., 2048-8, 4096-16, 8192-32), characterize",
+      "title": "Surface height data used for the calculations presented in arXiv:2507.14054 and arXiv:2508.15492",
+      "url": "https://doi.org/10.5281/zenodo.16931849"
+     },
+     {
+      "snippet": "ID x,m y,m z,m t,s u,m\n...\n-1.57 1.25 -5.4126\n...\n2.3891 -2.6162 -1.\n...\n68 -0.59 2.0750 ... .99 -2.52 1.11 -1.7661 -2.0316 -1.3124\n...\n1.08 -1.1790 -1.\n...\n1.05 -0.6531 -0.8645 -1.2028 4.\n...\n87 -0.5",
+      "title": "",
+      "url": "https://zenodo.org/records/5007024/files/DataS2.txt?download=1"
+     },
+     {
+      "snippet": "0 -24.23 -0.91 -6.\n...\n.41 -2.47 -0.6506 -0.\n...\n49 -8.34 1.0500 ... .07 -9.42 -2.45 -0.7301 -0.\n...\n8.38 1.0667 9.06 -9.42 -2.43 ... 0.8170 -0.1488 1.4338 3\n...\n.80 -8.42 1.0833 9.05 -9.\n...\n.01 -9.4",
+      "title": "",
+      "url": "https://zenodo.org/records/5007024/files/DataS1.txt?download=1"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the content data (zenodo.org), higher \"x (m)\" goes with higher \"y (m)\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 3,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract is a tongue‑in‑cheek claim that higher x‑coordinates correlate with higher y‑coordinates, a trivial geometric observation presented as a statistically significant result. The humor comes from the absurdity of treating a basic spatial relationship as a novel finding. There is no substant",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The chuckle comes from the mismatch between the grand pre-registered framing and the payoff: with n=78,559, a correlation of just rho=0.07 is 'statistically significant' at p=2.5e-85, and the preregistered magnitude prediction (|rho|=0.45) missed by roughly sixfold yet is scored 'confirmed' on the s",
+      "targets_group": false,
+      "think": 4
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+    "study_id": "study:2"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 1,
+    "native_type": "committee"
+   },
+   "tick": 1491,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "724049e4-a0a8-5275-aeb9-a453c024c9b4",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the survey data (vincentarelbundock.github.io), higher \"Wr.Hnd\" goes with higher \"Height\"",
+    "judges": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward, pre‑registered correlation between wrist‑hand ratio and height in a public dataset. The result is not humorous and offers no surprising insight beyond confirming a known anthropometric relationship. Prior work already documents the association, so the idea is ",
+      "think": 2
+     },
+     "b": {
+      "laugh": 5,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a clean, honestly reported confirmation: bigger wrists go with taller people (rho = 0.645, n = 208, p = 6.7e-26), pre-registered and predicted in advance, so a skeptic can check it without embarrassment. The prior-work hit is about heteroscedasticity estimators and only mentions w_hnd ",
+      "think": 5
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "Table 2 revealed the OLS regression estimates and the estimated standard errors and p values for every regression coefficient. Pulse rate is significantly related to clap, height and w_hnd with p-valu",
+      "title": "Heteroscedasticity of unknown form: a comparison of five heteroscedasticity-consistent covariance matrix (hccm) estimators",
+      "url": "https://doi.org/10.4314/gjpas.v29i1.10"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the survey data (vincentarelbundock.github.io), higher \"Wr.Hnd\" goes with higher \"Height\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward, pre‑registered correlation between wrist‑hand ratio and height in a public dataset. The result is not humorous and offers no surprising insight beyond confirming a known anthropometric relationship. Prior work already documents the association, so the idea is ",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 5,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a clean, honestly reported confirmation: bigger wrists go with taller people (rho = 0.645, n = 208, p = 6.7e-26), pre-registered and predicted in advance, so a skeptic can check it without embarrassment. The prior-work hit is about heteroscedasticity estimators and only mentions w_hnd ",
+      "targets_group": false,
+      "think": 5
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:4ed976c653f61b9d297879a6d8e081027d220e30",
+    "study_id": "study:9"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 2,
+    "native_type": "committee"
+   },
+   "tick": 1492,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "d2efb605-aa08-5b5d-957f-688996dc4f61",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the cake data (vincentarelbundock.github.io), higher \"temperature\" goes with higher \"angle\"",
+    "judges": {
+     "a": {
+      "laugh": 4,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract plays on a pun between ‘temperature’ and ‘angle’ in a cake dataset, which may elicit a mild chuckle but is not a particularly striking or original joke. The underlying claim is a simple correlation that is already well known in the data and offers no new scientific insight, so the ‘thin",
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The suggestive pairing of 'temperature' and 'angle' earns a mild chuckle, but the science is a modest descriptive result: a statistically significant yet weak-to-moderate positive rank correlation (rho = 0.363, n = 270) between two columns in a public dataset, with the preregistered prediction overs",
+      "think": 3
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "values obtained from the temperature sweep test are given in Figure 4 . As the temperature increased, the tan δ values for all the samples were > 1, i.e., the phase angle was greater than ... , protei",
+      "title": "Effects of Egg on Cake Batter Rheology and Sponge Cake Texture",
+      "url": "https://doi.org/10.1111/jfpe.14765"
+     },
+     {
+      "snippet": "is a high-demand bakery product with a unique texture, where crumb structure is a determining factor for its textural quality and ... , this study was aimed to evaluate the texture of pogácsa using th",
+      "title": "Influence of Baking Temperature and Formulation on Physical, Sensorial, and Morphological Properties of Pogácsa Cake: An Image Analysis Study",
+      "url": "https://doi.org/10.3390/foods11030321"
+     },
+     {
+      "snippet": "2\n0\n  \n\nd\n e\n...\nEffect of temperature on static contact angles\nThe case of static contact angles is less clear :\n• Θ= a.T + b (De Ruijter, ... 1969)\n• cos(Θ)= a.T + b (\n...\nAdamson, 1973)\n• One",
+      "title": "",
+      "url": "https://normandie-univ.hal.science/hal-03209550v1/file/wetting_Duchemin.pdf"
+     },
+     {
+      "snippet": "Laser-forming is sheet metal bending processing caused by the thermal stresses in the sheet irradiated by a laser beam. Therefore final bending angle of the irradiated sheet depends on the temperature",
+      "title": "Influence of temperature and process parameters on bending angle in laser forming",
+      "url": "https://kanazawa-u.repo.nii.ac.jp/?action=repository_uri&item_id=8879"
+     },
+     {
+      "snippet": "As heat is applied to a batter system, a temperature gradient is established and water is evaporated from the surface simultaneously ... during the heating process, temperature profiles and water loss",
+      "title": "Food Microstructure: An Integrative Approach",
+      "url": "https://digitalcommons.usu.edu/foodmicrostructure/vol1/iss1/2"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the cake data (vincentarelbundock.github.io), higher \"temperature\" goes with higher \"angle\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 4,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract plays on a pun between ‘temperature’ and ‘angle’ in a cake dataset, which may elicit a mild chuckle but is not a particularly striking or original joke. The underlying claim is a simple correlation that is already well known in the data and offers no new scientific insight, so the ‘thin",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The suggestive pairing of 'temperature' and 'angle' earns a mild chuckle, but the science is a modest descriptive result: a statistically significant yet weak-to-moderate positive rank correlation (rho = 0.363, n = 270) between two columns in a public dataset, with the preregistered prediction overs",
+      "targets_group": false,
+      "think": 3
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:5d7a7536b9179dff75fa4e41fade219c473aa5e4",
+    "study_id": "study:10"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 3,
+    "native_type": "committee"
+   },
+   "tick": 1493,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "event_id": "a2d63b7a-733b-530b-9b78-b6718fe20d72",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the Cars93 data (vincentarelbundock.github.io), higher \"Weight\" goes with lower \"MPG.city\"",
+    "judges": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely restates a well‑known, textbook relationship between vehicle weight and fuel efficiency. It offers no novel insight or surprising twist, so it is unlikely to elicit a laugh or provoke deep thought. The humor is minimal, and the idea is trivial and already established in prior wor",
+      "think": 2
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is clean and real (rho = -0.893 across 93 cars, p = 2.8e-33), but the finding is textbook: heavier vehicles need more energy and typically carry larger engines, so city MPG falls. The prior-work hits (Cars93 documentation, MPG response sets, vehicle weight/engine tables) confirm this rela",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "-world MPG highway, which represent fuel-efficiency-based cleaner-performance outcomes under overall, city, and highway ... reflect the relationship between vehicle-level operational burdens and desir",
+      "title": "Integrating behavioral insights into cleaner production efficiency: a prospect theory-enhanced DEA analysis of the automotive industry",
+      "url": "https://doi.org/10.1038/s41598-026-61865-0"
+     },
+     {
+      "snippet": "## Cars93\n\nData from 93 Cars on Sale in the USA in 1993\n\n## Description\n\nThe Cars93 data frame has 93 rows and 27 columns.\n\n## Format\n\nManufacturer Manufacturer.\n\nType Type: a factor with levels \"Smal",
+      "title": "The diversity and conservation of mammals in the Dodo Coastal Forest in southwestern Côte d’Ivoire, western Africa: a preliminary study",
+      "url": "https://doi.org/10.11609/jott.4641.11.6.13654-13666"
+     },
+     {
+      "snippet": "## --------------------------------------------------------------------## (4) An example of subset selection in the context of Multiple Linear anneal 9 ## Regression. Variable 5 (average car price) in",
+      "title": "subselect: Selecting Variable Subsets",
+      "url": "https://doi.org/10.32614/cran.package.subselect"
+     },
+     {
+      "snippet": "values.\n\nThe response variables are:\n\n• y 1 : Miles Per Gallon: City • y 2 : Miles Per Gallon: Highway • y 3 : Price In this case, it seems intuitive that the two MPG responses will be correlated, but",
+      "title": "Curds and Whey: Little Miss Muffit's Contribution to Multivariate Linear Regression",
+      "url": "https://doi.org/10.26076/13b8-a7c4"
+     },
+     {
+      "snippet": "Table 3: Characteristics of ICE Vehicles of Various Types\n\nType Curb Weight\n...\nCD Af Ft 2 Rolling resist. coeff.\n\nPmax kW 0-60mph sec\n...\n23.7 .007 180 8.0\n...\n19/25\n\nMid-size SUV 1910 .42 28.0 .008 ",
+      "title": "Feasible Café Standard Increases Using Emerging Diesel and Hybrid-Electric Technologies for Light-Duty Vehicles in the United States",
+      "url": "http://escholarship.org/uc/item/0hv6r005"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the Cars93 data (vincentarelbundock.github.io), higher \"Weight\" goes with lower \"MPG.city\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely restates a well‑known, textbook relationship between vehicle weight and fuel efficiency. It offers no novel insight or surprising twist, so it is unlikely to elicit a laugh or provoke deep thought. The humor is minimal, and the idea is trivial and already established in prior wor",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is clean and real (rho = -0.893 across 93 cars, p = 2.8e-33), but the finding is textbook: heavier vehicles need more energy and typically carry larger engines, so city MPG falls. The prior-work hits (Cars93 documentation, MPG response sets, vehicle weight/engine tables) confirm this rela",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:023d5cd52105e9d8e4da1fd9da885942a5ccd7e5",
+    "study_id": "study:14"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 4,
+    "native_type": "committee"
+   },
+   "tick": 1494,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "7e095d2c-7de2-5953-8d8f-ab335f90a405",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the msleep data (vincentarelbundock.github.io), higher \"bodywt\" goes with lower \"sleep_total\"",
+    "judges": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward negative correlation between body weight and total sleep time in a public dataset. It contains no humor or satirical elements, so the laugh score is low. The idea is testable but not particularly novel or non‑trivial, and prior work on similar relationships is ",
+      "think": 3
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a clean, preregistered, correctly predicted negative correlation (rho = -0.535, p = 1.9e-07, n = 83) on the familiar ggplot2 msleep dataset, and the 'heavier animals sleep less' pattern is a mildly amusing fun fact that readers will recognize. But it is a re-derivation of an already we",
+      "think": 3
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "| | --- | --- | --- | --- | --- | | $ genus | : chr | | \"Acinonyx\" \"Aotus\" \"Aplodontia\" | \"Blarina\" ... | | $ vore | : chr | | \"carni\" \"omni\" \"herbi\" \"omni\" | ... | | $ order | : chr | | \"Carnivora\" \"",
+      "title": "vtreat: a data.frame Processor for Predictive Modeling",
+      "url": "https://doi.org/10.5281/zenodo.3265462"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the msleep data (vincentarelbundock.github.io), higher \"bodywt\" goes with lower \"sleep_total\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward negative correlation between body weight and total sleep time in a public dataset. It contains no humor or satirical elements, so the laugh score is low. The idea is testable but not particularly novel or non‑trivial, and prior work on similar relationships is ",
+      "targets_group": false,
+      "think": 3
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a clean, preregistered, correctly predicted negative correlation (rho = -0.535, p = 1.9e-07, n = 83) on the familiar ggplot2 msleep dataset, and the 'heavier animals sleep less' pattern is a mildly amusing fun fact that readers will recognize. But it is a re-derivation of an already we",
+      "targets_group": false,
+      "think": 3
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:7aca64ad62e385c81ff77909737809776146f834",
+    "study_id": "study:15"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 5,
+    "native_type": "committee"
+   },
+   "tick": 1495,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "bdea4507-0a03-5bc1-be93-d5ffffb0e33e",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the Pima.te data (vincentarelbundock.github.io), higher \"bmi\" goes with higher \"skin\"",
+    "judges": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a trivial, well‑established correlation between BMI and skin‑fold thickness in a public dataset. It offers no novel insight or absurd twist, so it is unlikely to elicit a laugh beyond a mild chuckle at its obviousness. The result is already documented in prior work, so the THINK",
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a strong, highly significant BMI–skin-fold correlation (rho=0.663, p=2e-43), but this is already well established in prior work (reported correlations of 0.82–0.85 in comparable samples) and is textbook physiology, so the preregistered confirmation adds methodological neatness rather t",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "first factor is positive correlated with both 'BMI' and 'SkinThickness', this factor can be named as 'Obesity ... obese. But BMI is not the only measure of obesity. In order to diagnose obesity more a",
+      "title": "Prediction of Pima Indians Diabetes with Machine Learning Algorithms",
+      "url": "https://escholarship.org/uc/item/6rh07945"
+     },
+     {
+      "snippet": "Body mass index (BMI) acts as a casual factor for developing many diseases such as cardiovascular, breast cancer, heart, diabetes etc. The article presents the impacts of BMI on gestational diabetes P",
+      "title": "The Impacts of Body Mass Index on Gestational Diabetes Pima Indian Heritage Women",
+      "url": "https://doi.org/10.33140/ijdmd.06.01.03"
+     },
+     {
+      "snippet": ".07 (Figure 1 ). Among males BMI correlates significantly with triceps skin fold thickness Spearman's r=0. ... Among females no significant correlation was found between BMI and biceps skin fold thick",
+      "title": "Correlation of body mass index with biceps and triceps skin fold thickness",
+      "url": "https://doi.org/10.18203/2394-6040.ijcmph20201459"
+     },
+     {
+      "snippet": "in the triceps was 22±6.02 mm, abdominal was 24.41±5.84 mm, and suprailiac was ... triceps SFT (ρ=0.816,P=0.000), BMI and Abdominal SFT (ρ=0.854,P=0.000) and BMI and suprailiac SFT (ρ=0.850,P=0.000). ",
+      "title": "Relationship between Body Mass Index and Skin Fold Thickness in Young Females",
+      "url": "https://doi.org/10.9734/jpri/2021/v33i35b31919"
+     },
+     {
+      "snippet": "In this study, the type 2 diabetes prediction dataset was collected from the Pima Indians Diabetes database. This dataset includes 768 samples and 8 features such as ... number of samples based on the",
+      "title": "Predicting and classifying type 2 diabetes using a transparent ensemble model combining random forest, k-nearest neighbor, and neural networks | Scientific Reports",
+      "url": "https://www.nature.com/articles/s41598-025-31562-5"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the Pima.te data (vincentarelbundock.github.io), higher \"bmi\" goes with higher \"skin\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a trivial, well‑established correlation between BMI and skin‑fold thickness in a public dataset. It offers no novel insight or absurd twist, so it is unlikely to elicit a laugh beyond a mild chuckle at its obviousness. The result is already documented in prior work, so the THINK",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a strong, highly significant BMI–skin-fold correlation (rho=0.663, p=2e-43), but this is already well established in prior work (reported correlations of 0.82–0.85 in comparable samples) and is textbook physiology, so the preregistered confirmation adds methodological neatness rather t",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:9cda8753f42b91c8cc1b41ce29b638812fab201f",
+    "study_id": "study:16"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 6,
+    "native_type": "committee"
+   },
+   "tick": 1496,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "e3735190-ffb7-5e43-a753-68fc39d9590b",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the nlschools data (vincentarelbundock.github.io), higher \"IQ\" goes with higher \"lang\"",
+    "judges": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely reports a well‑known, highly significant correlation between IQ and language scores in a public dataset. It offers no novel insight or clever twist, so it is unlikely to elicit a laugh. The idea is trivial and already established in prior literature, so it does not provoke deep t",
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a solid, cleanly measured correlation (rho = 0.619, n = 2287) between IQ and language scores in schoolchildren, and it is trivially explainable to a skeptic. But it is also entirely unsurprising: prior work already documents moderate-to-strong IQ-language associations, genetic overlap ",
+      "think": 3
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "vii The data were statistically analyzed, and Pearson second order partial correlation coefficients controlled for age and sex of the subject revealed some significant relationships among the WISC-R v",
+      "title": "Relationships between the Wechsler Intelligence Scale for Children-Revised and selected child language measures",
+      "url": "https://commons.und.edu/context/theses/article/12141/viewcontent/MASTER_27S_20THESIS_201991_20BOHOSACK_20T1991_20B635.pdf"
+     },
+     {
+      "snippet": "moderate to strong positive genetic correlations with full-scale IQ (range = 0.52 to 0.77), educational ... = 0.50 to 0.68), likely reflecting the ... traits with performance IQ (range = 0.20 to 0.35)",
+      "title": "Genome-wide analyses of individual differences in quantitatively assessed reading- and language-related skills in up to 34,000 people",
+      "url": "https://doi.org/10.1073/pnas.2202764119"
+     },
+     {
+      "snippet": "full-day audio recordings (Language ENvironment Analysis, LENA) to demonstrate long-term associations between early language exposure and subsequent child language and IQ ... languagebased interaction",
+      "title": "Early Language Exposure and Middle School Language and IQ: Implications for Primary Prevention",
+      "url": "https://doi.org/10.1542/peds.2018-2234"
+     },
+     {
+      "snippet": "(P < .001), and there was no difference within the 3 language ... to be correlated with language score (r = .309, P = .012). The children with language impairment were associated with lower IQ scores.",
+      "title": "Cognitive Development in Children With Language Impairment, and Correlation Between Language and Intelligence Development in Kindergarten Children With Developmental Delay - Su-Fen Liao, Jui-Ching Liu, Chun-Ling Hsu, Ming-Yuh Chang, Tung-Ming Chang, Helen Cheng, 2015",
+      "url": "https://journals.sagepub.com/doi/10.1177/0883073814535486"
+     },
+     {
+      "snippet": "after one school year of L2 exposure (T1) to determine whether ... also identified as contributing factors, suggesting a more intricate relationship between cognitive abilities and L2 learning than pr",
+      "title": "The relationship between second language acquisition and nonverbal cognitive abilities",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30550337/"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.2,
+    "text": "Ig Nobel committee: In the nlschools data (vincentarelbundock.github.io), higher \"IQ\" goes with higher \"lang\": score 0.2",
+    "verdicts": {
+     "a": {
+      "laugh": 2,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely reports a well‑known, highly significant correlation between IQ and language scores in a public dataset. It offers no novel insight or clever twist, so it is unlikely to elicit a laugh. The idea is trivial and already established in prior literature, so it does not provoke deep t",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a solid, cleanly measured correlation (rho = 0.619, n = 2287) between IQ and language scores in schoolchildren, and it is trivially explainable to a skeptic. But it is also entirely unsurprising: prior work already documents moderate-to-strong IQ-language associations, genetic overlap ",
+      "targets_group": false,
+      "think": 3
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:f3e73afc6c8813690a680e780b2b4ff80a6b6318",
+    "study_id": "study:17"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 7,
+    "native_type": "committee"
+   },
+   "tick": 1497,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+   "event_id": "83784ae8-0fb2-545e-bb1d-87146bbf417b",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the sleepstudy data (vincentarelbundock.github.io), higher \"Days\" goes with higher \"Reaction\"",
+    "judges": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely states a well‑known correlation in a standard sleep‑study dataset; it offers no humor or novel insight, and it does not target any group.",
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "This is a pre-registered confirmation of the canonical lme4 'sleepstudy' result: reaction times rise as days of sleep deprivation accumulate (rho = 0.523, p = 5.1e-14, n = 180). The statistics are sound and the prediction was confirmed, but the relationship is textbook and the abstract itself labels",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "Throughout our discussion of lme4, we will work with a data set on the average reaction time per day for subjects in a sleep deprivation study (Belenky et al. 2003) . On day 0 the subjects had their n",
+      "title": "Fitting Linear Mixed-Effects Models Using lme4",
+      "url": "https://doi.org/10.18637/jss.v067.i01"
+     },
+     {
+      "snippet": "sufficient to stabilize performance, although at a reduced level. These adaptive changes are hypothesized to restrict brain operational capacity and to persist for several days after normal sleep dura",
+      "title": "Patterns of performance degradation and restoration during sleep restriction and subsequent recovery: A sleep dose-response study | Request PDF",
+      "url": "https://www.researchgate.net/publication/10884947_Patterns_of_performance_degradation_and_restoration_during_sleep_restriction_and_subsequent_recovery_A_sleep_dose-response_study"
+     },
+     {
+      "snippet": "We use the sleepstudy data in R package lme4 as an illustration, which contains a sleep-deprived group of 18 subjects for ... days of the study in [24]. Day0 and Day1 were adaptation and training, so ",
+      "title": "Fiducial Inference in Linear Mixed-Effects Models",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11854194/"
+     },
+     {
+      "snippet": "1,3,5,9 for b i = 0 and b i = 1. It is seen that the distributions have quite different forms and variances vary across ... . The mean reaction time increases as well as the variances increase over da",
+      "title": "A General Framework for Random Effects Models for Binary, Ordinal, Count Type and Continuous Dependent Variables Including Variable Selection",
+      "url": "https://doi.org/10.48550/arxiv.2404.17792"
+     },
+     {
+      "snippet": "to spend three hours of their daily time in bed for one week. The speed (mean and fastest ... volunteer has an identifier Subject. Additionally the number of days of sleep restriction at each measurem",
+      "title": "Conditional Model Selection in Mixed-Effects Models with cAIC4",
+      "url": "https://doi.org/10.18637/jss.v099.i08"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.1,
+    "text": "Ig Nobel committee: In the sleepstudy data (vincentarelbundock.github.io), higher \"Days\" goes with higher \"Reaction\": score 0.1",
+    "verdicts": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract merely states a well‑known correlation in a standard sleep‑study dataset; it offers no humor or novel insight, and it does not target any group.",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 2,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "This is a pre-registered confirmation of the canonical lme4 'sleepstudy' result: reaction times rise as days of sleep deprivation accumulate (rho = 0.523, p = 5.1e-14, n = 180). The statistics are sound and the prediction was confirmed, but the relationship is textbook and the abstract itself labels",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:b59e8e386e737aaa1501eeef428d6a41aa9558f4",
+    "study_id": "study:3"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 8,
+    "native_type": "committee"
+   },
+   "tick": 1498,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "a7940f42-5314-5545-9408-091beb06ff99",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the cats data (vincentarelbundock.github.io), higher \"Bwt\" goes with higher \"Hwt\"",
+    "judges": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward, textbook correlation between body weight and heart weight in cats—a well‑established physiological relationship. It offers no humor or novelty, so it would not elicit a laugh. The idea is trivial and already known, so it does not provoke deeper scientific thou",
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a strong, highly significant correlation between body weight and heart weight in cats (rho = 0.791, p = 4.4e-32, n = 144), which is exactly what the pre-registered prediction anticipated. There is a wry, 'science has confirmed the obvious' charm to it — bigger cats have bigger hearts —",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "Linear regression models are the most popular models. The homoscedasticity tests for linear models in the literature referenced above require assumptions, such as normality and parametric variance fun",
+      "title": "Quasi-Likelihood Ratio Tests for Homoscedasticity in Linear Regression",
+      "url": "https://doi.org/10.22237/jmasm/1556669460"
+     },
+     {
+      "snippet": "and microscopic scores were expressed as mean values. Body weights (Bwt), heart weights (Hwt) and Hwt/Bwt ratio were expressed as mean ± 1SD. Student΄s t-test was used for comparison data between grou",
+      "title": "Autoimunskog miokarditisa primenom pentoksifilina",
+      "url": "http://farfar.pharmacy.bg.ac.rs/handle/123456789/501"
+     },
+     {
+      "snippet": "B, G, H), kidney (RWT; C, D, I, J) or lung (LWT; E, F, K, L) weights in the four genotypes under standard fat diet (SFD ... 30, N(KO, SFD) = 38, N(KO, HFD) = ... ) = 38, N(KO, SFD) = 58, N(KO, HFD) = ",
+      "title": "Figure 2 | Scientific Reports",
+      "url": "https://www.nature.com/articles/s41598-021-86587-3/figures/2"
+     },
+     {
+      "snippet": "model: N(WT, SFD) = 44, N(WT, HFD) = 38, N( ... , N(KO, HFD) = 54.*p < 0.05. SFD standard diet, HFD high fat diet, BWT body weight, TL tibia length, HWT heart weight, RWT renal weight, LWT lung weight",
+      "title": "Figure 1 | Scientific Reports",
+      "url": "https://www.nature.com/articles/s41598-021-86587-3/figures/1"
+     },
+     {
+      "snippet": "induced increases in Hwt/bwt and LVwt/ bwt ratio. As shown in Figures 1C and D , HYDRO-infused rats showed significantly ... ANP and BNP mRNA expression in LV tissues compared to control rats, a marke",
+      "title": "Possible Contribution of Mineralocorticoid Receptor Activation on Glucocorticoid-Induced Left Ventricular Remodeling in Adrenalectomized Rat",
+      "url": "https://doi.org/10.3329/jbsp.v8i1.16639"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.1,
+    "text": "Ig Nobel committee: In the cats data (vincentarelbundock.github.io), higher \"Bwt\" goes with higher \"Hwt\": score 0.1",
+    "verdicts": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward, textbook correlation between body weight and heart weight in cats—a well‑established physiological relationship. It offers no humor or novelty, so it would not elicit a laugh. The idea is trivial and already known, so it does not provoke deeper scientific thou",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 4,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a strong, highly significant correlation between body weight and heart weight in cats (rho = 0.791, p = 4.4e-32, n = 144), which is exactly what the pre-registered prediction anticipated. There is a wry, 'science has confirmed the obvious' charm to it — bigger cats have bigger hearts —",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:329d2b2ea8f815d8e9afd1eec0ac9626ed28107c",
+    "study_id": "study:11"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 9,
+    "native_type": "committee"
+   },
+   "tick": 1499,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+   "event_id": "063d515c-340d-5e1e-b793-f12d62c814b7",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the drinks data (raw.githubusercontent.com), higher \"beer_servings\" goes with higher \"wine_servings\"",
+    "judges": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a simple, expected correlation between beer and wine servings in a public dataset. It offers no humorous twist or novel insight, and the relationship is well established in prior work. Thus it scores low on both laugh and think, with no target group.",
+      "think": 2
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The finding is a strong, statistically solid positive correlation between beer and wine servings (rho = 0.716, n = 193), but it is essentially a 'well, of course' result: prior work already reports that beverage-consumption types covary strongly (R = 0.874 in a regression of alcohol consumption), so",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "Linear regression of data in spss in the model summary, as the Table 1 shows R = 0.874.87.4% The change in the total alcohol content of beverages consumed per liter of the population can be explained ",
+      "title": "Analysis of Environmental and Human Habit Factors on Where People Drink the Most Beer, Wine and Spirits",
+      "url": "https://doi.org/10.2991/978-94-6463-198-2_14"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.1,
+    "text": "Ig Nobel committee: In the drinks data (raw.githubusercontent.com), higher \"beer_servings\" goes with higher \"wine_servings\": score 0.1",
+    "verdicts": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a simple, expected correlation between beer and wine servings in a public dataset. It offers no humorous twist or novel insight, and the relationship is well established in prior work. Thus it scores low on both laugh and think, with no target group.",
+      "targets_group": false,
+      "think": 2
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The finding is a strong, statistically solid positive correlation between beer and wine servings (rho = 0.716, n = 193), but it is essentially a 'well, of course' result: prior work already reports that beverage-consumption types covary strongly (R = 0.874 in a regression of alcohol consumption), so",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:4ac9d468f7f2c6638d0e0d2c44912ff93f2b25f5",
+    "study_id": "study:13"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 10,
+    "native_type": "committee"
+   },
+   "tick": 1500,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  },
+  {
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+   "event_id": "1fefb2d4-8f3b-5086-9ef8-1000a878a4f0",
+   "payload": {
+    "available": true,
+    "award": "Ig Nobel committee",
+    "headline": "In the content data (zenodo.org), higher \"Distance between resident shell and joiner shell (cm)\" goes with lower \"Aggression count\" per \"Model offset term (sec)\"",
+    "judges": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward correlation between shell distance and aggression in hermit crabs, with no humorous content or target group. The relationship is already well documented in prior studies, so the idea is not novel or non‑trivial.",
+      "think": 3
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a modest negative correlation (rho = -0.389, n = 161) showing that hermit-crab aggression declines as the distance between resident and joiner shells increases — essentially, animals fight more when rivals are closer. That is a well-established, textbook-style pattern in territorial an",
+      "think": 2
+     }
+    },
+    "prior_work": [
+     {
+      "snippet": "they were assigned to a resident or intruder treatment. An intruder shelter was then positioned 20, 60 or 120 cm from the resident ... ) played a larger role in influencing agonistic behaviour than di",
+      "title": "Hierarchical decision making: resource distribution exhibits stronger effect on crayfish dominance relationships and shelter occupation than prior social experience and resource ownership",
+      "url": "https://doi.org/10.1163/1568539x-00003292"
+     },
+     {
+      "snippet": "All statistical analyses were conducted in R (v. ... To test whether shell manipulations influenced the aggression by the resident fish toward the presented fish, we fit a generalized linear mixed eff",
+      "title": "Social and spatial conflict drive resident aggression toward outsiders in a group-living fish",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34690545/"
+     },
+     {
+      "snippet": "was manipulated by altering the number of shelters in the arena. ... pervasive influence on contest outcome of the relative body sizes of the contestants. We ... levels of aggression. Dominance, but n",
+      "title": "Shelter Availability, Occupancy, and Residency in Size‐Asymmetric Contests Between Rusty Crayfish,Orconectes rusticus",
+      "url": "https://doi.org/10.1111/j.1439-0310.2011.01996.x"
+     },
+     {
+      "snippet": ") and interacting with the intruder (within two body lengths of ... was also recorded. From a signalling perspective, we scored the time visually displaying ... dorsal fin and/or fanning the tail towa",
+      "title": "Context-dependent multimodal behaviour in a coral reef fish: Stage 1 & 2 total duration and count data in behaviour trials",
+      "url": "https://zenodo.org/records/10839613"
+     },
+     {
+      "snippet": "We assessed the asymmetries in fighting ability based on the differences in body mass between the\n...\nlooser fit, even if that meant losing a tighter fitting shell of ... number of bouts of rapping an",
+      "title": "Getting a new shell, from whom? Free association in agonistic interactions can result in unexpected outcomes in hermit crabs",
+      "url": "https://doi.org/10.21203/rs.3.rs-2958331/v1"
+     }
+    ],
+    "prior_work_available": true,
+    "rejected": false,
+    "score": 0.1,
+    "text": "Ig Nobel committee: In the content data (zenodo.org), higher \"Distance between resident shell and joiner shell (cm)\" goes with lower \"Aggression count\" per \"Model offset term (sec)\": score 0.1",
+    "verdicts": {
+     "a": {
+      "laugh": 1,
+      "model": "openai/gpt-oss-20b",
+      "reason": "The abstract reports a straightforward correlation between shell distance and aggression in hermit crabs, with no humorous content or target group. The relationship is already well documented in prior studies, so the idea is not novel or non‑trivial.",
+      "targets_group": false,
+      "think": 3
+     },
+     "b": {
+      "laugh": 3,
+      "model": "minimaxai/minimax-m3.1-flash",
+      "reason": "The result is a modest negative correlation (rho = -0.389, n = 161) showing that hermit-crab aggression declines as the distance between resident and joiner shells increases — essentially, animals fight more when rivals are closer. That is a well-established, textbook-style pattern in territorial an",
+      "targets_group": false,
+      "think": 2
+     }
+    }
+   },
+   "phase": "finish",
+   "refs": {
+    "experiment_id": "experiment:9d5f54e72a290894c3bd0ca242205759662ae47e",
+    "study_id": "study:22"
+   },
+   "round": 13,
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "scores.jsonl",
+    "line": 11,
+    "native_type": "committee"
+   },
+   "tick": 1501,
+   "ts": "2026-11-15T08:53:15.268785Z",
+   "type": "award.issued"
+  }
+ ],
+ "round": 13,
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
+ "swarm": {
+  "B": 0.77,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+   "experiment_id": "experiment:0e2d9dc6302963e2e9d674400725bad0fcc7cc9f",
+   "metric_value": 0.0,
+   "tick": 126
+  },
+  "frontier_stall": 24,
+  "regime": "BOREDOM_SNAP"
+ },
+ "tick": 1501,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 49,
+  "memory_items": 123,
+  "questions": 276,
+  "sources": 357,
+  "tokens": 636033
+ },
+ "ts": "2026-11-15T08:53:15.268785Z"
+}

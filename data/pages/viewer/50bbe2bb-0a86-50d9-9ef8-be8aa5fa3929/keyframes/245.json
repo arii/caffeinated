@@ -320,6 +320,7 @@
    "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
    "event_id": "3e1cc87d-566d-53b9-8980-8d875f3fa6b7",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": null,
     "n": null,
@@ -379,6 +380,7 @@
    "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
    "event_id": "69a34e6e-4953-5195-a69d-dbff10b4c685",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": null,
     "n": null,
@@ -438,6 +440,7 @@
    "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
    "event_id": "8fda7800-7651-5767-8c74-59f6fbbcd291",
    "payload": {
+    "committee": null,
     "confirmed": false,
     "headline": null,
     "n": null,
@@ -497,6 +500,7 @@
    "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "event_id": "9e2ce805-54a5-58a6-a9aa-5f7995b7237d",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the survey data (vincentarelbundock.github.io), higher \"Wr.Hnd\" goes with higher \"Height\"",
     "n": 208,
@@ -556,7 +560,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -607,7 +611,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -658,7 +662,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -709,7 +713,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {

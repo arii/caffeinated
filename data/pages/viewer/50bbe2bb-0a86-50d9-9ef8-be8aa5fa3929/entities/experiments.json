@@ -78,6 +78,7 @@
    "replicate_score": null,
    "text": "Critic verdict replicated: The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
    "verdict": "replicated",
+   "vetoed": false,
    "why": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently."
   }
  },

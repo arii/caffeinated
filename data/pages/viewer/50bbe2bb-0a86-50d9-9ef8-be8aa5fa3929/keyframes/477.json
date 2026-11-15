@@ -320,6 +320,7 @@
    "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
    "event_id": "ad675dac-d9a4-5974-b06a-ab26b40f679e",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the Cars93 data (vincentarelbundock.github.io), higher \"Weight\" goes with lower \"MPG.city\"",
     "n": 93,
@@ -379,6 +380,7 @@
    "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
    "event_id": "4a5acfaf-1237-506a-9f0e-3a650f8e79e4",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the msleep data (vincentarelbundock.github.io), higher \"bodywt\" goes with lower \"sleep_total\"",
     "n": 83,
@@ -438,6 +440,7 @@
    "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
    "event_id": "a4dc1265-82a4-579c-a0a4-e868b747db94",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the Pima.te data (vincentarelbundock.github.io), higher \"bmi\" goes with higher \"skin\"",
     "n": 332,
@@ -497,6 +500,7 @@
    "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "event_id": "7d63226b-f3ce-52d7-a21c-aa27c347f173",
    "payload": {
+    "committee": null,
     "confirmed": true,
     "headline": "In the nlschools data (vincentarelbundock.github.io), higher \"IQ\" goes with higher \"lang\"",
     "n": 2287,
@@ -556,7 +560,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -607,7 +611,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -658,7 +662,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -709,7 +713,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {

@@ -352,7 +352,7 @@
     "metric_value": null,
     "reward": 0.0,
     "status": "crash",
-    "text": "Result crash: replication loss n/a, reward +0.0%"
+    "text": "Result crash: interesting-finding loss n/a, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -403,7 +403,7 @@
     "metric_value": 0.0,
     "reward": 0.0,
     "status": "discard",
-    "text": "Result discard: replication loss 0, reward +0.0%"
+    "text": "Result discard: interesting-finding loss 0, reward +0.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -454,7 +454,7 @@
     "metric_value": 1.0,
     "reward": -100.0,
     "status": "discard",
-    "text": "Result discard: replication loss 1, reward -100.0%"
+    "text": "Result discard: interesting-finding loss 1, reward -100.0%"
    },
    "phase": "evaluate",
    "refs": {
@@ -719,6 +719,7 @@
     "replicate_score": null,
     "text": "Critic verdict replicated: The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently.",
     "verdict": "replicated",
+    "vetoed": false,
     "why": "The preregistered SPASS coordinate association achieved loss 0.000000 on both seed 42 and seed 43, so it met the significance, sign, and split-half replication criteria consistently."
    },
    "phase": "critic",
@@ -743,7 +744,7 @@
    "payload": {
     "metric_value": 0.0,
     "previous_best": 1.0,
-    "text": "New best replication loss 0: Test whether street sound sources line up along a diagonal corridor, so x and y",
+    "text": "New best interesting-finding loss 0: Test whether street sound sources line up along a diagonal corridor, so x and y",
     "title": "Test whether street sound sources line up along a diagonal corridor, so x and y"
    },
    "phase": "critic",

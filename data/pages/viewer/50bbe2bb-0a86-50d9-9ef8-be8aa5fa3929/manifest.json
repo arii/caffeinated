@@ -83,9 +83,9 @@
  "converged": false,
  "live": false,
  "metric": {
-  "description": "1 - (replicated and significant): 0 = the study replicated, 1 = it did not",
+  "description": "1 - score: unconfirmed or group-targeting studies score 0; otherwise score = 0.25 + 0.75 * committee score (lower judge's min(laugh, think)/10). With IGNOBEL_COMMITTEE=off (explicit gate-only scoring), confirmed studies score 1.0; otherwise the committee requires TINKER_API_KEY.",
   "direction": "minimize",
-  "label": "replication loss",
+  "label": "interesting-finding loss",
   "name": "loss",
   "unit": ""
  },
@@ -109,6 +109,7 @@
    "--out",
    "/home/ubuntu/longruns2/out-ignobel"
   ],
+  "critic_model": "unknown",
   "exa": "live",
   "llm": "moonshotai/Kimi-K3.1-Pro:peft:262144",
   "llm_mode": "tinker",
@@ -124,7 +125,7 @@
  "swarm": "autoresearch",
  "time": {
   "rounds": 13,
-  "ticks": 1492,
+  "ticks": 1503,
   "ts_end": "2026-11-15T08:53:15.268785Z",
   "ts_start": "2026-11-15T08:09:19.810226Z"
  },
