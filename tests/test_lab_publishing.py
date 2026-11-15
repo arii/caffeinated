@@ -179,6 +179,10 @@ class ReadableExportTests(unittest.TestCase):
             self.assertEqual(hypotheses[0]["rationale"], "escape local optima")
             self.assertFalse(any(m["text"].startswith("{") for m in entities["memory"].values()))
             self.assertTrue(entities["memory"]["memory:m3"]["text"].startswith("Re-proposes"))
+            self.assertEqual(
+                entities["memory"]["memory:m3"]["repeat_of"], hypotheses[0]["memory_id"]
+            )
+            self.assertIn(hypotheses[0]["memory_id"], entities["memory"])
             self.assertTrue(all(e["payload"].get("text") for e in events))
 
             messages = [e for e in events if e["type"] == "message.sent"]
@@ -203,6 +207,37 @@ class ReadableExportTests(unittest.TestCase):
             for kind in ("study.registered", "study.result", "study.replicated", "award.issued"):
                 self.assertEqual(types.count(kind), 1, kind)
             self.assertEqual(manifest["publish_errors"], [])
+
+    def test_plain_text_claims_stay_distinct_hypotheses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            memory = [json.loads(line) for line in (out / "memory.jsonl").read_text().splitlines()]
+            other = {
+                **memory[1],
+                "id": "m4",
+                "content": "simulated annealing",
+                "timestamp": "2026-11-14T10:11:00Z",
+                "metadata": {"type": "claim", "round": 2, "commit": "c2"},
+            }
+            write_jsonl(out / "memory.jsonl", [*memory, other])
+            _, _, entities = read_bundle(export_viewer.export(out, root / "dest"))
+            texts = sorted(h["text"] for h in entities["hypotheses"].values())
+            self.assertEqual(texts, ["simulated annealing", "tabu walks"])
+            self.assertFalse(any("repeat_of" in m for m in entities["memory"].values()))
+
+    def test_committee_awards_after_final_publish_do_not_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = self.run_with_extras(root)
+            scores = (out / "scores.jsonl").read_text()
+            (out / "scores.jsonl").unlink()
+            dest = root / "viewer"
+            export_viewer.publish(out, dest, final=False, status="running")
+            (out / "scores.jsonl").write_text(scores)
+            run_dir = export_viewer.publish(out, dest, final=True, status="finished")
+            events, _, _ = read_bundle(run_dir)
+            self.assertEqual([e["type"] for e in events].count("award.issued"), 1)
 
     def test_ignobel_metric_label_comes_from_task(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -288,9 +323,23 @@ class SwarmOptionTests(unittest.TestCase):
             patch("swarm.subprocess.run") as run,
             redirect_stdout(io.StringIO()) as stdout,
         ):
-            swarm.run_post_run_hook("out", "tinker")
+            self.assertFalse(swarm.run_post_run_hook("out", "tinker"))
         run.assert_not_called()
         self.assertIn("skipped", stdout.getvalue())
+
+    def test_post_run_committee_reports_success(self):
+        task = {"post_run": "score_run.py", "dir": Path("testcases/ignobel")}
+        with (
+            patch.object(swarm, "TASK", task),
+            patch.dict("os.environ", {"TINKER_API_KEY": "x"}),
+            patch("swarm.subprocess.run") as run,
+            redirect_stdout(io.StringIO()),
+        ):
+            run.return_value.returncode = 0
+            run.return_value.stdout = "scored 1"
+            self.assertTrue(swarm.run_post_run_hook("out", "tinker"))
+            run.return_value.returncode = 1
+            self.assertFalse(swarm.run_post_run_hook("out", "tinker"))
 
 
 if __name__ == "__main__":

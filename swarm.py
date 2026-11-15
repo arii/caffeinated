@@ -1722,15 +1722,18 @@ def set_task_context(task_context):
 
 
 def run_post_run_hook(out_dir, llm_mode):
-    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker."""
+    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
+
+    Returns True when the scorer ran successfully (its output should be recorded).
+    """
     hook = (TASK or {}).get("post_run")
     if not hook:
-        return
+        return False
     if llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
         print(
             f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY)", flush=True
         )
-        return
+        return False
     command = [sys.executable, str(TASK["dir"] / hook), "--run", str(out_dir)]
     try:
         proc = subprocess.run(
@@ -1738,9 +1741,10 @@ def run_post_run_hook(out_dir, llm_mode):
         )
     except subprocess.TimeoutExpired:
         print(f"[post_run] {hook} timed out", flush=True)
-        return
+        return False
     output = (proc.stdout if proc.returncode == 0 else proc.stderr).strip()
     print(f"[post_run] {hook} exit {proc.returncode}: {output[-2000:]}", flush=True)
+    return proc.returncode == 0
 
 
 def refresh_round_context(out_dir, round_num, cells):
@@ -2674,7 +2678,10 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
 
-    run_post_run_hook(out_dir, args.llm)
+    if run_post_run_hook(out_dir, args.llm):
+        record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
+        if not effective_no_push:
+            git(conductor, "push", "origin", branch)
     return {
         "arm": args.arm,
         "branch": branch,

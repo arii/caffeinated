@@ -902,9 +902,11 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "native_type": label,
         }
         fields = claim_fields(item) if label == "claim" else {}
-        idea = clean_label(fields.get("idea")) or "(no idea text)"
-        repeat_of = seen_claims.get((author, idea.casefold())) if label == "claim" else None
         text = memory_text(label, item)
+        idea = clean_label(fields.get("idea") or text)
+        earlier = seen_claims.get((author, idea.casefold())) if label == "claim" and idea else None
+        repeat_of = earlier and earlier[1]
+        idea = idea or "(no idea text)"
         if repeat_of:
             text = f"Re-proposes: {text}"
             run.entities["memory"][mid]["text"] = text
@@ -918,11 +920,11 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         if label == "lead":
             lead_authors[item.get("id")] = (agent, mid)
         if label == "claim" and repeat_of:
-            claims[(author, round_)] = repeat_of
+            claims[(author, round_)] = earlier[0]
         elif label == "claim":
             hid = f"hypothesis:{meta.get('commit') or line}"
             claims[(author, round_)] = hid
-            seen_claims[(author, idea.casefold())] = hid
+            seen_claims[(author, idea.casefold())] = (hid, mid)
             lead_id = fields.get("lead_id") or meta.get("lead")
             run.put(
                 "hypotheses",
@@ -2010,9 +2012,9 @@ def publish(out_dir, dest, *, final=False, status=None):
         if (target / "keyframes").exists():
             for current in (target / "keyframes").glob("*.json"):
                 replacement = fresh_keyframes / current.name
-                changed = (
-                    not replacement.exists() or current.read_bytes() != replacement.read_bytes()
-                )
+                # A keyframe the fresh export no longer emits (events appended to the last
+                # round moved its end) is still valid: its event prefix is unchanged.
+                changed = replacement.exists() and current.read_bytes() != replacement.read_bytes()
                 if changed and not recovered:
                     raise PublishConflict(f"published keyframe changed: {current.name}")
         for frame in fresh_keyframes.glob("*.json"):
