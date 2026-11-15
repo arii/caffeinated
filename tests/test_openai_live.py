@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import tempfile
@@ -116,3 +117,44 @@ class OpenAILiveTests(unittest.TestCase):
             openai_live.reserve(
                 self.path / "ledger", model="gpt-6-luna", prompt="x" * 32000, limit=600, budget=1
             )
+
+
+class IgNobelCommitteeOpenAITests(unittest.TestCase):
+    def test_official_endpoint_uses_reasoning_payload_and_shared_ledger(self):
+        import importlib
+        import os
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "testcases" / "ignobel"))
+        committee = importlib.import_module("committee")
+        sent = []
+
+        def fake_urlopen(req, timeout=0):
+            sent.append(json.loads(req.data))
+            return io.BytesIO(
+                json.dumps(
+                    {"choices": [{"message": {"content": '{"laugh":5}'}, "finish_reason": "stop"}]}
+                ).encode()
+            )
+
+        with tempfile.TemporaryDirectory() as d:
+            ledger = Path(d) / "openai_budget.jsonl"
+            env = {
+                "IGNOBEL_JUDGE_BASE_URL": "https://api.openai.com/v1",
+                "IGNOBEL_JUDGE_API_KEY_ENV": "OPENAI_API_KEY",
+                "OPENAI_API_KEY": "test-key-not-real",
+                "OPENAI_BUDGET_LEDGER": str(ledger),
+                "OPENAI_MAX_COST_USD": "20",
+            }
+            with (
+                patch.dict(os.environ, env),
+                patch("urllib.request.urlopen", fake_urlopen),
+                contextlib.suppress(Exception),
+            ):
+                committee._complete("gpt-6.1-sol", "system", "user")
+            self.assertTrue(sent)
+            payload = sent[0]
+            self.assertIn("max_completion_tokens", payload)
+            self.assertNotIn("max_tokens", payload)
+            self.assertNotIn("temperature", payload)
+            self.assertTrue(ledger.read_text().strip())
