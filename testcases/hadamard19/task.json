@@ -58,7 +58,7 @@
     },
     {
      "old": "\n\nfor _ in range(RESTARTS):\n",
-     "new": "\n\ndef tabu_search(a, iters):\n    \"\"\"Best-improvement single flips with a tabu list; det ratios come from the inverse.\"\"\"\n    a = a.astype(float)\n    inv = np.linalg.inv(a)\n    logdet = np.linalg.slogdet(a)[1]\n    top, top_logdet = a.copy(), logdet\n    tabu = np.zeros((N, N), dtype=int)\n    for it in range(1, iters + 1):\n        gains = np.log(np.abs(1.0 - 2.0 * a * inv.T) + 1e-300)\n        allowed = (tabu < it) | (logdet + gains > top_logdet + 1e-9)\n        gains = np.where(allowed, gains, -np.inf)\n        i, j = np.unravel_index(np.argmax(gains), gains.shape)\n        ratio = 1.0 - 2.0 * a[i, j] * inv[j, i]\n        inv -= np.outer(inv[:, i], inv[j, :]) * (-2.0 * a[i, j]) / ratio\n        a[i, j] *= -1\n        logdet += gains[i, j]\n        tabu[i, j] = it + TABU_TENURE\n        if logdet > top_logdet + 1e-9:\n            top, top_logdet = a.copy(), logdet\n    return top.astype(int)\n\n\nfor _ in range(RESTARTS):\n"
+     "new": "\n\ndef tabu_search(a, iters):\n    \"\"\"Best-improvement single flips with a tabu list; det ratios come from the inverse.\n\n    Gains are rounded so ties break by index the same way on every CPU/BLAS.\n    \"\"\"\n    a = a.astype(float)\n    logdet = np.linalg.slogdet(a)[1]\n    top, top_logdet = a.copy(), logdet\n    tabu = np.zeros((N, N), dtype=int)\n    for it in range(1, iters + 1):\n        inv = np.linalg.inv(a)\n        gains = np.round(np.log(np.abs(1.0 - 2.0 * a * inv.T) + 1e-300), 6)\n        allowed = (tabu < it) | (logdet + gains > top_logdet + 1e-9)\n        gains = np.where(allowed, gains, -np.inf)\n        i, j = np.unravel_index(np.argmax(gains), gains.shape)\n        a[i, j] *= -1\n        logdet = np.linalg.slogdet(a)[1]\n        tabu[i, j] = it + TABU_TENURE\n        if logdet > top_logdet + 1e-9:\n            top, top_logdet = a.copy(), logdet\n    return top.astype(int)\n\n\nfor _ in range(RESTARTS):\n"
     },
     {
      "old": "    if cur > best_det:\n",
@@ -67,52 +67,48 @@
    ]
   },
   {
-   "idea": "Raise the tabu budget from 80 to 150 steps",
+   "idea": "Raise the tabu budget from 80 to 300 steps",
    "descriptor": {
     "mechanism": "search",
     "method": "budget",
     "params": {
-     "value": 150
+     "value": 300
     }
    },
    "old": "TABU_ITERS = 80\nTABU_TENURE = 20\n",
-   "new": "TABU_ITERS = 150\nTABU_TENURE = 20\n"
+   "new": "TABU_ITERS = 300\nTABU_TENURE = 20\n"
   },
   {
-   "idea": "Raise the tabu budget from 150 to 500 steps",
+   "idea": "Run 16 restarts of a 500-step, tenure-15 tabu search",
    "descriptor": {
     "mechanism": "search",
-    "method": "budget",
+    "method": "restarts",
     "params": {
-     "value": 500
+     "value": 16
     }
    },
-   "old": "TABU_ITERS = 150\nTABU_TENURE = 20\n",
-   "new": "TABU_ITERS = 500\nTABU_TENURE = 20\n"
+   "edits": [
+    {
+     "old": "RESTARTS = 4\n",
+     "new": "RESTARTS = 16\n"
+    },
+    {
+     "old": "TABU_ITERS = 300\nTABU_TENURE = 20\n",
+     "new": "TABU_ITERS = 500\nTABU_TENURE = 15\n"
+    }
+   ]
   },
   {
-   "idea": "Halve the tabu tenure to 10 and spend 300 steps",
+   "idea": "Double the tabu tenure to 30 to escape the restarts' shared plateau",
    "descriptor": {
     "mechanism": "search",
     "method": "tabu",
     "params": {
-     "value": 10
+     "value": 30
     }
    },
-   "old": "TABU_ITERS = 500\nTABU_TENURE = 20\n",
-   "new": "TABU_ITERS = 300\nTABU_TENURE = 10\n"
-  },
-  {
-   "idea": "Raise the tenure-10 tabu budget from 300 to 500 steps",
-   "descriptor": {
-    "mechanism": "search",
-    "method": "budget",
-    "params": {
-     "value": 500
-    }
-   },
-   "old": "TABU_ITERS = 300\nTABU_TENURE = 10\n",
-   "new": "TABU_ITERS = 500\nTABU_TENURE = 10\n"
+   "old": "TABU_ITERS = 500\nTABU_TENURE = 15\n",
+   "new": "TABU_ITERS = 500\nTABU_TENURE = 30\n"
   }
  ]
 }

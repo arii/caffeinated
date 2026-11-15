@@ -99,7 +99,7 @@ fast-forward merge (`tests/test_testcases.py` runs one per task in CI):
 
 | task | baseline loss | reference loss | fake trajectory reaches |
 |---|---|---|---|
-| `hadamard19` | 0.0585 | 0 (known optimum) | 0 after 5 kept edits (tabu search with determinant/inverse rank-one updates) |
+| `hadamard19` | 0.0585 | 0 (known optimum) | 0 after 4 kept edits (tabu search scored by determinant ratios from the inverse, then budget, restarts and tenure) |
 | `bixbench_mini` | 0.882 | ≈ 0.477 (published accuracy 0.523) | 0 after 10 kept answer fixes (SEM, Cohen's d, Shapiro-Wilk, power, interaction F, logistic regressions) |
 | `playworld_mini` | 0.851 | 0.640 (8-frame memory) | 0.277 (persistent map with dead reckoning, unlimited memory, blocking, switch/lamp toggling) |
 | `ignobel` | 1 (rare-steak smokers, not significant) | none: open-ended | 0: fruity candies are liked less (FiveThirtyEight candy power ranking), confirmed on the real public data; a second real registration (FiveThirtyEight flying etiquette) cannot beat a confirmed 0 |
