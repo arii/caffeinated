@@ -24,7 +24,7 @@ test('recorded tool usage is computed from events and source cards',()=>{
  assert.deepEqual(researchToolUsage(recording),{exaSearches:119,sourceCards:357,pastdevRecalls:157,memoryWrites:123});
 });
 
-test('pre-committee finalists are ten distinct ranked studies with no award claims',()=>{
+test('the real run shows ten ranked finalists and the recorded no-award committee verdict',()=>{
  const finalists=researchFinalists(recording),ids=finalists.map(item=>item.id);
  assert.equal(finalists.length,10);
  assert.equal(new Set(ids).size,10);
@@ -32,7 +32,10 @@ test('pre-committee finalists are ten distinct ranked studies with no award clai
  assert.ok(finalists.every((item,index)=>index===0||Math.abs(finalists[index-1].rho)>=Math.abs(item.rho)));
  assert.ok(finalists.every(item=>item.lab&&item.dataset&&Math.abs(item.rho)>=.1));
  const html=preCommitteeResultsHtml(config,recording,esc);
- assert.ok(html.indexOf('Tools used in this run')<html.indexOf('Finalists — awaiting committee judging'));
+ assert.ok(html.indexOf('Tools used in this run')<html.indexOf('Committee verdict: no award'));
+ assert.doesNotMatch(html,/Finalists — awaiting committee judging/);
+ assert.equal(researchCommitteeScores(recording).length,11);
+ assert.match(html,/openai\/gpt-oss-20b/);assert.match(html,/minimaxai\/minimax-m3\.1-flash/);
  assert.match(html,/119/);assert.match(html,/357/);assert.match(html,/157/);assert.match(html,/123/);
  assert.match(html,/Source cards; some papers repeat\./);
  assert.match(html,/data-open-evidence[^>]*>See sources/);
