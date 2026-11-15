@@ -168,6 +168,34 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
 
+    def test_duplicate_experiment_maps_to_discard_with_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            reason = "duplicate: blob already scored as c1"
+            ledger = [
+                json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()
+            ]
+            ledger.append({
+                "seq": 4, "round": 2, "kind": "candidate", "agent": "worker-2",
+                "status": "duplicate", "score": 0.5, "commit": "c2",
+                "duplicate_of": "c1", "gate_reasons": [reason],
+                "descriptor": {"mechanism": "search", "method": "tabu"},
+            })
+            write_jsonl(out / "ledger.jsonl", ledger)
+
+            _, events, _, _, entities = self.export(out, root / "dest")
+            experiment = entities["experiments"]["experiment:c2"]
+            self.assertEqual(experiment["status"], "discard")
+            self.assertIn(reason, experiment["gate"]["reasons"])
+            self.assertEqual(entities["rewards"]["reward:4"]["status"], "discard")
+            finished = next(
+                event for event in events
+                if event["type"] == "experiment.finished"
+                and event["refs"].get("experiment_id") == "experiment:c2"
+            )
+            self.assertEqual(finished["payload"]["status"], "discard")
+
     def test_export_is_deterministic_and_seek_matches_keyframes(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

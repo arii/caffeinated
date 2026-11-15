@@ -161,7 +161,7 @@ class SandboxedSwarmTests(unittest.TestCase):
     def without_commits(self, value):
         if isinstance(value, str):
             return re.sub(
-                r"(duplicate: blob already scored as )\S+",
+                r"(duplicate: (?:blob already scored as|same editable blob as) )\S+",
                 r"\1<commit>",
                 value,
             )
@@ -169,7 +169,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             return {
                 key: self.without_commits(item)
                 for key, item in value.items()
-                if "commit" not in key and key != "ts"
+                if "commit" not in key and key not in {"duplicate_of", "ts"}
             }
         if isinstance(value, list):
             return [self.without_commits(item) for item in value]
@@ -414,6 +414,79 @@ class SandboxedSwarmTests(unittest.TestCase):
                 record["reasons"],
                 [f"duplicate: blob already scored as {commit}"],
             )
+            self.assertEqual(record["duplicate_of"], commit)
+            self.assertEqual(record["score"], 0.5)
+            profile = meter.load_profile(PROFILE)
+            event = swarm.add_result_event(
+                profile,
+                out / "ledger.jsonl",
+                {
+                    "agent": "worker-1",
+                    "commit": commit,
+                    "descriptor": {"mechanism": "search", "method": "restarts"},
+                    "duplicate_of": record["duplicate_of"],
+                    "reasons": record["reasons"],
+                },
+                1,
+                "duplicate",
+                record["score"],
+            )
+            self.assertEqual(event["status"], "duplicate")
+            self.assertEqual(event["score"], 0.5)
+            self.assertEqual(event["duplicate_of"], commit)
+
+    def test_same_round_duplicate_is_evaluated_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "same-round-dedup")
+            out = Path(tmp) / "out"
+            out.mkdir()
+            args = swarm.build_parser().parse_args(
+                ["--task", "hadamard19", "--llm", "fake"]
+            )
+            swarm.configure_task(args)
+            first_commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            subprocess.run(
+                ["git", "commit", "--allow-empty", "-m", "same editable blob"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            second_commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            self.assertNotEqual(first_commit, second_commit)
+            self.assertEqual(
+                swarm.git_text(repo, "rev-parse", f"{first_commit}:{swarm.TARGET_FILE}"),
+                swarm.git_text(repo, "rev-parse", f"{second_commit}:{swarm.TARGET_FILE}"),
+            )
+            candidates = [
+                {
+                    "agent": agent,
+                    "status": "pending",
+                    "score": None,
+                    "commit": commit,
+                    "descriptor": {"mechanism": "search", "method": "restarts"},
+                    "role": "exploit",
+                    "attempts": [{"attempt": 1, "commit": commit, "pass": True, "reasons": []}],
+                    "reasons": [],
+                }
+                for agent, commit in (
+                    ("worker-1", first_commit),
+                    ("worker-2", second_commit),
+                )
+            ]
+            evaluation_candidates = swarm.deduplicate_round_candidates(
+                repo, candidates, out
+            )
+            self.assertEqual(len(evaluation_candidates), 1)
+            self.assertEqual(evaluation_candidates[0]["commit"], first_commit)
+            duplicate = candidates[1]
+            self.assertEqual(duplicate["status"], "duplicate")
+            self.assertEqual(duplicate["duplicate_of"], first_commit)
+            self.assertTrue(duplicate["same_round_duplicate"])
+            gate_record = json.loads(
+                (out / "boredom_log.jsonl").read_text().splitlines()[-1]
+            )
+            self.assertFalse(gate_record["pass"])
+            self.assertEqual(gate_record["duplicate_of"], first_commit)
 
 
 if __name__ == "__main__":

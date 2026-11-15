@@ -476,7 +476,15 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             eid = f"experiment:{commit or 'seq-' + str(row.get('seq'))}"
             experiments_by_commit[commit] = eid
             metric = number(row.get("score"))
-            status = row.get("status")
+            ledger_status = row.get("status")
+            status = "discard" if ledger_status == "duplicate" else ledger_status
+            gate_reasons = list(row.get("gate_reasons") or [])
+            if ledger_status == "duplicate" and not any(
+                "duplicate" in reason.lower() for reason in gate_reasons
+            ):
+                gate_reasons.append(
+                    f"duplicate: duplicate of {row.get('duplicate_of') or 'unknown'}"
+                )
             started = row.get("ts") or gate_ts.get(commit)
             finished_ts = row.get("ts")
             if not finished_ts and started:
@@ -496,7 +504,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 "regime_label": row.get("regime_label"), "status": status, "metric_value": metric,
                 "replicate_score": row.get("replicate_score"), "predicted_delta": row.get("predicted_delta"),
                 "lead": row.get("lead"), "source_ids": [f"source:{s}" for s in row.get("sources") or []],
-                "hypothesis_id": hid, "gate": {"reasons": row.get("gate_reasons", []),
+                "hypothesis_id": hid, "gate": {"reasons": gate_reasons,
                                                "attempts": len(row.get("gate_attempts") or [])},
                 "verdict": None, "reward_id": rid,
                 "artifacts": {"log": f"runs/{commit}.log"} if commit else {},

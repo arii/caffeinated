@@ -1,6 +1,7 @@
 import json, random, subprocess, sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -220,6 +221,52 @@ class ConvergedTest(unittest.TestCase):
         self.assertEqual(meter.fold(self.profile, autoresearch_ledger()), [])
         event = dict(autoresearch_ledger()[0], status="crash", score=None)
         self.assertEqual(meter.status(self.profile, [event])["n_attempts"], 1)
+
+    def test_duplicate_profile_defaults_and_cpu_profiles(self):
+        raw = json.loads(HADAMARD.read_text())
+        raw.pop("attempt_statuses", None)
+        raw.pop("trivial_statuses", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "profile.json"
+            path.write_text(json.dumps(raw))
+            defaults = meter.load_profile(path)
+        self.assertIn("duplicate", defaults["attempt_statuses"])
+        self.assertIn("duplicate", defaults["trivial_statuses"])
+        for task in ("hadamard19", "bixbench_mini", "playworld_mini"):
+            profile = meter.load_profile(
+                ROOT.parent / "testcases" / task / "boredom_profile.json"
+            )
+            self.assertIn("duplicate", profile["attempt_statuses"])
+            self.assertIn("duplicate", profile["trivial_statuses"])
+            self.assertNotIn("duplicate", profile["frontier_statuses"])
+
+    def test_repeated_duplicates_raise_boredom_and_leave_exploit(self):
+        descriptor = {"mechanism": "search", "method": "restarts"}
+        events = [
+            {"seq": 1, "kind": "baseline", "agent": "baseline", "status": "keep",
+             "score": 1.0, "descriptor": {"mechanism": "baseline", "method": "none"}},
+        ]
+        for seq in range(2, 7):
+            events.append({
+                "seq": seq, "kind": "candidate", "agent": "worker-1",
+                "status": "duplicate", "score": 1.0, "duplicate_of": "first",
+                "descriptor": descriptor,
+            })
+        state = meter.status(self.profile, events)
+        self.assertEqual(state["n_attempts"], len(events))
+        self.assertGreaterEqual(state["B"], self.profile["thresholds"]["snap"])
+        self.assertGreater(state["trivial_rate"], 0)
+        self.assertNotEqual(state["regime"], "EXPLOIT")
+
+    def test_duplicate_better_score_does_not_become_best(self):
+        events = [
+            {"seq": 1, "kind": "baseline", "agent": "baseline", "status": "keep",
+             "score": 1.0, "descriptor": {"mechanism": "baseline", "method": "none"}},
+            {"seq": 2, "kind": "candidate", "agent": "worker-1", "status": "duplicate",
+             "score": 0.1, "duplicate_of": "first",
+             "descriptor": {"mechanism": "search", "method": "restarts"}},
+        ]
+        self.assertEqual(meter.status(self.profile, events)["best"], 1.0)
 
     def test_required_mechanisms_from_profile(self):
         self.profile["required_mechanisms"] = ["search"]

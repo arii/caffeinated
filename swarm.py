@@ -753,11 +753,13 @@ def gate_candidate(
         cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
         blob = git_text(repo, "rev-parse", f"{commit}:{TARGET_FILE}")
         if blob in cache:
-            reason = f"duplicate: blob already scored as {cache[blob]['commit']}"
+            cached = cache[blob]
+            reason = f"duplicate: blob already scored as {cached['commit']}"
             record = {
                 "type": "gate", "ts": timestamp(), "candidate_commit": commit,
                 "candidate_blob": blob, "pass": False, "reasons": [reason],
                 "descriptor": descriptor, "role": role,
+                "duplicate_of": cached["commit"], "score": cached.get("loss"),
             }
             append_jsonl(Path(out_dir) / "boredom_log.jsonl", record)
             return False, record
@@ -784,6 +786,54 @@ def gate_candidate(
     if record.get("type") != "gate" or record.get("candidate_commit") != commit:
         raise RuntimeError("boredom.py gate did not append its gate record")
     return result == 0, record
+
+
+def deduplicate_round_candidates(repo, candidates, out_dir):
+    if not TASK.get("deterministic"):
+        return candidates
+    unique = []
+    seen = {}
+    for candidate in candidates:
+        blob = git_text(repo, "rev-parse", f"{candidate['commit']}:{TARGET_FILE}")
+        previous = seen.get(blob)
+        if previous is None:
+            seen[blob] = candidate
+            unique.append(candidate)
+            continue
+        reason = (
+            f"duplicate: same editable blob as {previous['commit']} in this round"
+        )
+        candidate.update({
+            "status": "duplicate",
+            "score": None,
+            "duplicate_of": previous["commit"],
+            "same_round_duplicate": True,
+            "reasons": [reason],
+        })
+        attempts = list(candidate.get("attempts") or [])
+        attempt_number = attempts[-1].get("attempt", 1) if attempts else 1
+        attempts.append({
+            "attempt": attempt_number,
+            "commit": candidate["commit"],
+            "pass": False,
+            "reasons": [reason],
+        })
+        candidate["attempts"] = attempts
+        append_jsonl(
+            Path(out_dir) / "boredom_log.jsonl",
+            {
+                "type": "gate",
+                "ts": timestamp(),
+                "candidate_commit": candidate["commit"],
+                "candidate_blob": blob,
+                "pass": False,
+                "reasons": [reason],
+                "descriptor": candidate.get("descriptor"),
+                "role": candidate.get("role"),
+                "duplicate_of": previous["commit"],
+            },
+        )
+    return unique
 
 
 def record_score_cache(repo, out_dir, results):
@@ -1080,8 +1130,17 @@ def worker_attempts(
         )
         candidate = {
             "agent": agent,
-            "status": "pending" if gate_pass else "reject",
-            "score": None,
+            "status": (
+                "pending" if gate_pass
+                else "duplicate" if gate_record.get("duplicate_of") is not None
+                else "reject"
+            ),
+            "score": (
+                gate_record.get("score")
+                if gate_record.get("duplicate_of") is not None
+                else None
+            ),
+            "duplicate_of": gate_record.get("duplicate_of"),
             "commit": committed["commit"],
             "descriptor": current_proposal["descriptor"],
             "sources": cited_sources,
@@ -1095,10 +1154,7 @@ def worker_attempts(
             "attempts": attempts,
             "branch": committed["branch"],
         }
-        if any(
-            reason.startswith("duplicate: blob already scored as ")
-            for reason in candidate["reasons"]
-        ):
+        if candidate["status"] == "duplicate":
             return candidate
         if gate_pass:
             return candidate
@@ -1313,6 +1369,8 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score):
         "gate_attempts": candidate.get("attempts", []),
         "critic_rerun": candidate.get("critic_rerun"),
     }
+    if candidate.get("duplicate_of") is not None:
+        event["duplicate_of"] = candidate["duplicate_of"]
     return meter.submit(profile, ledger_path, event)
 
 
@@ -1778,16 +1836,24 @@ def _orchestrate(args, publish_state):
                 }.get(allocation["regime"], "EXPLOIT")
                 candidate_records.append(candidate)
 
-            run_candidates = [
+            pending_candidates = [
                 candidate
                 for candidate in candidate_records
                 if candidate.get("status") == "pending"
             ]
+            run_candidates = deduplicate_round_candidates(
+                repo, pending_candidates, out_dir
+            )
             commits = [candidate["commit"] for candidate in run_candidates]
             evaluation_results, _ = run_evaluations(
                 repo, commits, out_dir / "runs"
             )
             record_score_cache(repo, out_dir, evaluation_results)
+            for candidate in candidate_records:
+                if candidate.get("same_round_duplicate"):
+                    result = evaluation_results.get(candidate.get("duplicate_of"), {})
+                    if result.get("status") == "ok":
+                        candidate["score"] = result.get("loss")
             provisional = []
             for candidate in run_candidates:
                 result = evaluation_results.get(candidate["commit"], {})

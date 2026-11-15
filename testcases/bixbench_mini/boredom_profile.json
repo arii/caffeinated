@@ -46,6 +46,18 @@
       "ratio": 4
     }
   },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
   "fail_statuses": [
     "crash"
   ],
