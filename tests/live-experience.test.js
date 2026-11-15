@@ -86,7 +86,7 @@ test('agent identity comes from manifest fields; staff are labelled and prefixes
  assert.equal(agentIdentity({id:'r',name:'Ada'},{agent_id:'r',field:'acoustics',color:'#aabbcc'}).familyLabel,'ACOUSTICS');
  assert.equal(agentIdentity({id:'r',name:'Ada'},{agent_id:'r',color:'red;x'}).color,undefined);
  assert.equal(agentIdentity({id:'r',name:'Charlie',family:'biology',familySource:'swarm'}).familyKey,'B');
- assert.equal(agentIdentity({id:'r',name:'Charlie',family:'C',familySource:'display assignment'}).familyLabel,'CHEM');
+ assert.equal(agentIdentity({id:'r',name:'Charlie',family:'C',familySource:'display assignment'}).familyLabel,'RESEARCH');
  assert.equal(agentIdentity({id:'r',name:'Peter'}).familyLabel,'RESEARCH');
  assert.equal(agentIdentity({id:'r',name:'P2'}).familyLabel,'PHYSICS');
 });
@@ -170,6 +170,7 @@ test('agents keep manifest names; initials, run-derived descriptors and who-is-w
  assert.equal(initials('Kitchen Physics Lab'),'KP');
  assert.equal(initials('Critic'),'C');
  assert.equal(agentIdentity({id:'w',name:'Worker 1',type:'worker'}).familyLabel,'WORKER');
+ assert.equal(agentIdentity({id:'w',name:'Worker 1',type:'worker',family:'Chem',familySource:'display assignment'}).familyLabel,'WORKER');
  assert.equal(agentIdentity({id:'b',name:'Baseline',type:'baseline'}).familyLabel,'REFERENCE · BASELINE');
  const events=[{tick:1,type:'agent.assigned',agentId:'w',payload:{role:'exploit'}},{tick:2,type:'gate.checked',agentId:'w',payload:{descriptor:{mechanism:'food_science',method:'new_population'}}},{tick:5,type:'agent.assigned',agentId:'w',payload:{role:'divergent'}}];
  assert.deepEqual(agentDescriptor(events,'w',3),{role:'exploit',mechanism:'food_science',method:'new_population'});

@@ -14,7 +14,7 @@ export function agentIdentity(a:IdentityInput,m?:ManifestAgent):Identity{
  if(field)return {initial,familyKey:keyFor(field),familyLabel:field.replaceAll('_',' ').toUpperCase(),staff:false,color};
  const family=a.family||m?.family||'',source=a.familySource||m?.familySource;
  if(family&&source!=='display assignment'){const k=keyFor(family);return {initial,familyKey:k,familyLabel:LABELS[k]||family.toUpperCase(),staff:false,color};}
- const prefix=/^[BCP]\d+$/.test(a.name)?a.name[0]:family?keyFor(family):'R';
+ const prefix=/^[BCP]\d+$/.test(a.name)?a.name[0]:'R';
  return {initial,familyKey:prefix as Identity['familyKey'],familyLabel:LABELS[prefix]||(type?type.replaceAll('_',' ').toUpperCase():'RESEARCH'),staff:false,color};
 }
 const ACTIVITIES:Record<string,string>={idle:'idle',assigned:'taking an assignment',researching:'searching the literature',recalling:'recalling shared memory',proposing:'proposing an idea',gated:'checking the novelty gate',training:'running an experiment',reviewing:'reviewing results',talking:'in discussion',sharing:'sharing findings',snapping:'switching approach',writing_diary:'writing notes',thinking:'thinking',working:'working'};
