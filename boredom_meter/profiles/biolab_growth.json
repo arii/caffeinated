@@ -1,0 +1,32 @@
+{
+  "domain": "biolab-culture-growth (Little Sprout synthetic two-basin)",
+  "version": 1,
+  "direction": "max",
+  "objective": "growth",
+  "eps": 0.01,
+  "k": 5,
+  "knn": 3,
+  "patience": 5,
+  "levels": ["hypothesis", "assay"],
+  "level_weights": [1.0, 0.5],
+  "params_weight": 0.5,
+  "vocab": {
+    "nutrient_limitation": ["growth_curve", "dose_response"],
+    "oxygen_limitation": ["growth_curve", "dose_response"],
+    "co_limitation": ["growth_curve", "factorial_screen"],
+    "toxicity": ["growth_curve", "viability_stain"]
+  },
+  "params": {
+    "nutrient": {"min": 0.0, "max": 1.0},
+    "oxygen": {"min": 0.0, "max": 1.0}
+  },
+  "trivial_distance": 0.02,
+  "fail_statuses": ["crash", "invalid", "qc_fail", "contaminated"],
+  "gate": {"snap_min_distance": 0.15, "failed_min_distance": 0.05},
+  "directives": {
+    "EXPLOIT": "Refine conditions near the current best (small nutrient/oxygen step).",
+    "BOREDOM_SNAP": "Stop local refinement: move to an unvisited region or an under-visited hypothesis/assay cell from `suggest`.",
+    "PARADIGM_BREAKOUT": "Abandon the current hypothesis family; test a different limiting factor.",
+    "CONVERGED": "Frontier has stalled and every mechanism has been tried: re-run the current best (confirmation) instead of proposing new ideas."
+  }
+}

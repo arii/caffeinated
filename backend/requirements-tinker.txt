@@ -1,0 +1,3 @@
+-r requirements.txt
+tinker==0.39.0
+tml-renderers==0.4.1
