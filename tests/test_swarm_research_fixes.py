@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -63,6 +63,26 @@ class TaskInputTests(unittest.TestCase):
     def test_playworld_prompt_includes_train_preview(self):
         prompt = llm.render_prompt("WORKER_PROPOSE", task_values("playworld_mini"))
         self.assertIn("--- data/train.jsonl", prompt)
+
+    def test_call_ids_in_lead_records_do_not_change_prompt_sha(self):
+        lead = {
+            "id": "lead-1",
+            "recipe": "adjust one parameter",
+            "source_ids": ["S1"],
+        }
+        with_ids = {
+            **lead,
+            "llm_call_ids": ["SCOUT_LEAD-r2-worker-1-7"],
+            "critic_call_ids": ["CRITIC-r2-critic-8"],
+        }
+        values = task_values("bixbench_mini")
+        values["recalled_leads"] = swarm.render_leads_for_prompt([lead])
+        prompt_without_ids = llm.render_prompt("WORKER_PROPOSE", values)
+        values["recalled_leads"] = swarm.render_leads_for_prompt([with_ids])
+        prompt_with_ids = llm.render_prompt("WORKER_PROPOSE", values)
+        self.assertEqual(llm.prompt_sha(prompt_without_ids), llm.prompt_sha(prompt_with_ids))
+        self.assertNotIn("SCOUT_LEAD-r2-worker-1-7", prompt_with_ids)
+        self.assertNotIn("CRITIC-r2-critic-8", prompt_with_ids)
 
 
 class ProposalGroundingTests(unittest.TestCase):
@@ -248,8 +268,120 @@ class PromptFeedbackAndRuleTests(unittest.TestCase):
         self.assertIn("rejected 1x: ungrounded: missing source", feedback)
         self.assertNotIn("validation idea 1", feedback)
 
+    def test_invalid_proposal_validation_failure_is_in_next_round_feedback(self):
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        valid = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        invalid = {**valid, "source_ids": ["not-a-source-id"]}
+        status = {"swarm_B": 0.0, "regime": "EXPLOIT"}
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = llm.LLMClient(mode="fake", log_path=output / "llm_log.jsonl")
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(client, "call", side_effect=[invalid, valid]),
+                patch.object(
+                    swarm, "local_candidate_precheck", return_value=["pre-check rejection"]
+                ),
+                patch.object(swarm, "assigned_cell_repair", return_value=None),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status=status,
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+            next_round_values = swarm.common_values(
+                "worker-1",
+                5,
+                "exploit",
+                {"swarm_B": 0.0, "regime": "EXPLOIT"},
+                0.0,
+                base_commit,
+                1.0,
+                profile,
+                events=[],
+                out_dir=output,
+            )
+        self.assertEqual(result["status"], "reject")
+        self.assertIn("round 4", next_round_values["own_feedback"])
+        self.assertIn(
+            "source_ids must use the S<number> or D<round>_<number> format",
+            next_round_values["own_feedback"],
+        )
+
 
 class LocalPrecheckTests(unittest.TestCase):
+    def test_snap_grounding_rule_applies_without_profile_source_requirement(self):
+        profile = meter.load_profile(ROOT / "testcases/bixbench_mini/boredom_profile.json")
+        profile["gate"]["require_sources"] = False
+        proposal = {
+            "descriptor": {"mechanism": "normalization", "method": "log_cpm"},
+            "edits": [],
+        }
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(swarm, "TASK", {"deterministic": False}),
+            patch.object(
+                swarm.meter,
+                "gate",
+                return_value={"regime": "BOREDOM_SNAP", "reasons": [], "pass": True},
+            ),
+        ):
+            reasons = swarm.local_candidate_precheck(
+                repo=ROOT,
+                out_dir=tmp,
+                profile=profile,
+                role="divergent",
+                proposal=proposal,
+                cited_sources=[],
+                source_text="",
+            )
+            rules = swarm.hard_rules(
+                profile,
+                [],
+                "worker-1",
+                "divergent",
+                {"regime": "BOREDOM_SNAP"},
+                False,
+            )
+        self.assertEqual(reasons, ["ungrounded: no valid source id in Source trailer"])
+        self.assertIn("Cite at least one source", rules)
+        self.assertTrue(boredom.grounding_required("BOREDOM_SNAP"))
+
     def test_deterministic_blob_already_in_cache_fails_before_commit(self):
         profile = meter.load_profile(ROOT / "testcases/hadamard19/boredom_profile.json")
         source = "VALUE = 1\n"
@@ -284,6 +416,59 @@ class LocalPrecheckTests(unittest.TestCase):
                     source_text=source,
                 )
         self.assertEqual(reasons, ["duplicate: blob already scored as previously-scored"])
+
+    def test_cached_blob_precheck_is_recorded_as_an_attempt_duplicate(self):
+        swarm.configure_task(SimpleNamespace(task="hadamard19"))
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = llm.LLMClient(mode="fake", log_path=output / "llm_log.jsonl")
+            duplicate_reason = ["duplicate: blob already scored as cached-commit"]
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(swarm, "local_candidate_precheck", side_effect=[duplicate_reason] * 2),
+                patch.object(
+                    swarm,
+                    "cached_blob_entry",
+                    return_value={"commit": "cached-commit", "loss": 0.5},
+                ),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=3,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+            event = swarm.add_result_event(
+                profile, output / "ledger.jsonl", result, 3, result["status"], result["score"]
+            )
+            attempts = list(meter.attempt_events(profile, [event]))
+        self.assertEqual(result["status"], "duplicate")
+        self.assertEqual(result["duplicate_of"], "cached-commit")
+        self.assertEqual([item["status"] for item in attempts], ["duplicate"])
 
     def test_repeated_precheck_failure_repairs_once_and_never_commits(self):
         swarm.configure_task(SimpleNamespace(task="hadamard19"))
@@ -343,6 +528,206 @@ class LocalPrecheckTests(unittest.TestCase):
         self.assertEqual([item["role"] for item in outcomes], ["WORKER_PROPOSE", "WORKER_REPAIR"])
         self.assertEqual([item["outcome"] for item in outcomes], ["rejected", "rejected"])
         self.assertEqual(outcomes[0]["reasons"], reasons)
+
+
+class PISteeringTests(unittest.TestCase):
+    def setUp(self):
+        swarm.configure_task(SimpleNamespace(task="bixbench_mini"))
+        self.profile = meter.load_profile(swarm.TASK["profile"])
+        self.events = [
+            {
+                "kind": "candidate",
+                "agent": "worker-1",
+                "round": round_num,
+                "status": status,
+                "idea": f"attempt {round_num}",
+                "descriptor": {"mechanism": "normalization", "method": "log_cpm"},
+                "gate_reasons": [f"failure {round_num}"],
+                "score": None,
+            }
+            for round_num, status in ((1, "reject"), (2, "duplicate"))
+        ]
+
+    def run_pi(self, *, enabled=True, events=None, client=None, out_dir=None):
+        return swarm.run_pi_steering(
+            enabled=enabled,
+            profile=self.profile,
+            events=self.events if events is None else events,
+            status={
+                "swarm_B": 0.4,
+                "regime": "BOREDOM_SNAP",
+                "per_agent_B": {"worker-1": 0.4},
+            },
+            roles={"worker-1": "divergent"},
+            agents=["worker-1"],
+            out_dir=out_dir,
+            llm_client=client,
+            backend="local",
+            mirror=Path(out_dir) / "memory.jsonl",
+            memory_log=Path(out_dir) / "memory_log.jsonl",
+            arm="B",
+            round_num=3,
+            best_commit="abc123",
+            best_val=0.5,
+            leads=[{"id": "lead-1", "source_ids": ["S3"], "recipe": "try a new normalization"}],
+            research_start=0,
+        )
+
+    def test_no_stuck_agent_skips_the_pi_call(self):
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory") as recall,
+        ):
+            steers = self.run_pi(
+                events=[],
+                client=SimpleNamespace(
+                    call=lambda *args, **kwargs: self.fail("unexpected PI call")
+                ),
+                out_dir=tmp,
+            )
+        self.assertEqual(steers, {})
+        recall.assert_not_called()
+
+    def test_stuck_agent_receives_batched_guidance_and_unknown_citation_is_dropped(self):
+        class Client:
+            def __init__(self):
+                self.call_ids = []
+                self.values = None
+
+            def call(self, role, *, agent, round_num, values):
+                self.call_ids.append("PI-r3-pi-1")
+                self.values = values
+                return {
+                    "steers": [
+                        {
+                            "agent": "worker-1",
+                            "steer": "Try a distinct normalization threshold",
+                            "cite": ["D1_1", "unknown"],
+                            "lead_id": "not-a-lead",
+                        }
+                    ]
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "research_log.jsonl").write_text(
+                json.dumps({"type": "source", "id": "D1_1", "title": "Dataset notes"}) + "\n",
+                encoding="utf-8",
+            )
+            client = Client()
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                steers = self.run_pi(client=client, out_dir=tmp)
+            values = client.values
+            records = llm.read_log(Path(tmp) / "pi.jsonl")
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
+        prompt = llm.render_prompt("PI", values)
+        self.assertNotIn("{pi_stuck_agents}", prompt)
+        self.assertNotIn("{pi_available_sources}", prompt)
+        self.assertNotIn("{task_inputs_brief}", prompt)
+        for role in ("SCOUT_QUERY", "SCOUT_PICK", "SCOUT_LEAD", "CRITIC_NOVELTY", "CRITIC"):
+            prompt = llm.render_prompt(role, values)
+            for placeholder in ("{hard_rules}", "{own_feedback}", "{pi_steer}"):
+                self.assertNotIn(placeholder, prompt)
+        self.assertIn("last_attempts", values["pi_stuck_agents"])
+        self.assertIn("Dataset notes", values["pi_available_sources"])
+        self.assertIn("try a new normalization", values["pi_available_leads"])
+        self.assertEqual(
+            steers["worker-1"],
+            "Try a distinct normalization threshold (suggested sources: D1_1)",
+        )
+        self.assertEqual(records[0]["type"], "pi_steer")
+        self.assertEqual(records[0]["cite"], ["D1_1"])
+        self.assertIsNone(records[0]["lead_id"])
+        self.assertEqual(records[0]["llm_call_ids"], ["PI-r3-pi-1"])
+        self.assertEqual(outcomes[0]["outcome"], "steered")
+        self.assertEqual(outcomes[0]["agents"], ["worker-1"])
+
+    def test_worker_propose_and_repair_prompts_receive_pi_guidance(self):
+        task = swarm.TASK
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        valid = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        invalid = {**valid, "source_ids": ["not-a-source-id"]}
+        captured_values = []
+
+        def worker_call(role, *, agent, round_num, values):
+            captured_values.append(values)
+            return invalid
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=self.profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=SimpleNamespace(
+                        call=worker_call,
+                        last_call_id=None,
+                        call_ids=[],
+                    ),
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                    pi_steer="Try a distinct normalization threshold",
+                )
+
+        self.assertEqual(result["status"], "reject")
+        self.assertEqual(len(captured_values), 2)
+        for role, values in zip(("WORKER_PROPOSE", "WORKER_REPAIR"), captured_values):
+            prompt = llm.render_prompt(role, values)
+            self.assertIn(
+                "PI guidance for you this round: Try a distinct normalization threshold",
+                prompt,
+            )
+
+    def test_pi_failure_is_nonfatal_and_pi_off_skips_call(self):
+        class BrokenClient:
+            last_call_id = None
+
+            def call(self, *args, **kwargs):
+                raise RuntimeError("offline failure")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                redirect_stderr(io.StringIO()),
+            ):
+                steers = self.run_pi(client=BrokenClient(), out_dir=tmp)
+            failures = llm.read_log(Path(tmp) / "pi.jsonl")
+            off_client = SimpleNamespace(
+                call=lambda *args, **kwargs: self.fail("unexpected PI call")
+            )
+            self.assertEqual(self.run_pi(enabled=False, client=off_client, out_dir=tmp), {})
+        self.assertEqual(steers, {})
+        self.assertEqual(failures[0]["type"], "pi_error")
+        args = swarm.build_parser().parse_args(["--pi", "off"])
+        self.assertEqual(args.pi, "off")
 
 
 class LiveToolGuardTests(unittest.TestCase):
@@ -486,7 +871,7 @@ class LLMCallLinkTests(unittest.TestCase):
             (
                 "repaired_then_accepted",
                 {"status": "discard", "evaluation_status": "ok", "score": 0.2},
-                "repaired_then_accepted",
+                ["rejected", "repaired_then_accepted"],
                 2,
             ),
             ("duplicate", {"status": "duplicate", "duplicate_of": "known"}, "duplicate", 1),
@@ -509,8 +894,16 @@ class LLMCallLinkTests(unittest.TestCase):
                 call_ids = [f"WORKER_PROPOSE-r1-worker-1-{index}" for index in range(count)]
                 client = SimpleNamespace(
                     call_metadata={
-                        call_id: {"round": 1, "agent": "worker-1", "role": "WORKER_PROPOSE"}
-                        for call_id in call_ids
+                        call_id: {
+                            "round": 1,
+                            "agent": "worker-1",
+                            "role": (
+                                "WORKER_REPAIR"
+                                if name == "repaired_then_accepted" and index == count - 1
+                                else "WORKER_PROPOSE"
+                            ),
+                        }
+                        for index, call_id in enumerate(call_ids)
                     }
                 )
                 candidate = {
@@ -522,7 +915,8 @@ class LLMCallLinkTests(unittest.TestCase):
                 swarm.record_worker_outcomes(tmp, candidate, 1, client)
                 records = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
                 self.assertEqual(len(records), count)
-                self.assertEqual([record["outcome"] for record in records], [expected] * count)
+                expected_outcomes = expected if isinstance(expected, list) else [expected] * count
+                self.assertEqual([record["outcome"] for record in records], expected_outcomes)
 
     def test_assignment_record_links_scout_lead_calls(self):
         with tempfile.TemporaryDirectory() as tmp:

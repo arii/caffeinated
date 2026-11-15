@@ -12,3 +12,4 @@ Hard rules this round (proposals breaking these are rejected without scoring):
 {hard_rules}
 Your recent rejections (do not repeat these mistakes):
 {own_feedback}
+PI guidance for you this round: {pi_steer}

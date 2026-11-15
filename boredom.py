@@ -398,6 +398,13 @@ def is_disabled():
     return os.environ.get("BOREDOM", "").casefold() == "off"
 
 
+def grounding_required(regime):
+    return (
+        regime in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
+        and os.environ.get("GROUNDING", "").casefold() != "off"
+    )
+
+
 def append_log(path, record):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -543,10 +550,7 @@ def run_gate(args):
         except ValueError as error:
             reasons.append(f"invalid-descriptor: {error}")
 
-    grounding_enabled = (
-        regime in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")
-        and os.environ.get("GROUNDING", "").casefold() != "off"
-    )
+    grounding_enabled = grounding_required(regime)
     grounded = bool(valid_sources)
     if grounding_enabled and not grounded:
         if not has_source_trailer:
