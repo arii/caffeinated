@@ -202,6 +202,32 @@ class ProposalGroundingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "^lead_id must reference a known lead$"):
             swarm.validate_lead_reference({"lead_id": "unknown"}, known)
 
+    def test_lead_id_source_and_unknown_values_are_normalized(self):
+        known = [{"id": "lead-B-6-worker-2", "source_ids": ["S1"]}]
+        dataset_source = {"lead_id": "D6_3", "source_ids": ["S1"]}
+        normalized = swarm.normalize_proposal_lead_id(dataset_source, known)
+        self.assertEqual(dataset_source["lead_id"], None)
+        self.assertEqual(dataset_source["source_ids"], ["S1", "D6_3"])
+        self.assertEqual(normalized, ["lead_id D6_3 moved to source_ids"])
+
+        source_id = {"lead_id": "S194", "source_ids": []}
+        normalized = swarm.normalize_proposal_lead_id(source_id, known)
+        self.assertEqual(source_id["lead_id"], None)
+        self.assertEqual(source_id["source_ids"], ["S194"])
+        self.assertEqual(normalized, ["lead_id S194 moved to source_ids"])
+
+        unknown = {"lead_id": "#3", "source_ids": ["D1_1"]}
+        normalized = swarm.normalize_proposal_lead_id(unknown, known)
+        self.assertEqual(unknown["lead_id"], None)
+        self.assertEqual(unknown["source_ids"], ["D1_1"])
+        self.assertEqual(normalized, ["unknown lead_id #3 cleared"])
+
+        valid = {"lead_id": "lead-B-6-worker-2", "source_ids": []}
+        normalized = swarm.normalize_proposal_lead_id(valid, known)
+        self.assertEqual(valid["lead_id"], "lead-B-6-worker-2")
+        self.assertEqual(normalized, [])
+        self.assertEqual(swarm.validate_lead_reference(valid, known), known[0])
+
 
 class PromptFeedbackAndRuleTests(unittest.TestCase):
     def setUp(self):
@@ -405,6 +431,72 @@ class PromptFeedbackAndRuleTests(unittest.TestCase):
             "source_ids must use the S<number> or D<round>_<number> format",
             next_round_values["own_feedback"],
         )
+
+    def test_worker_attempt_records_moved_source_id_normalization(self):
+        task = swarm.TASK
+        profile = meter.load_profile(task["profile"])
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        proposal = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        proposal["lead_id"] = "D6_3"
+        proposal["source_ids"] = []
+
+        def next_proposal(*_args, **_kwargs):
+            return {**proposal, "source_ids": list(proposal["source_ids"])}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            client = SimpleNamespace(
+                call=next_proposal,
+                last_call_id=None,
+                call_ids=[],
+            )
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(
+                    swarm, "local_candidate_precheck", return_value=["pre-check rejection"]
+                ),
+                patch.object(swarm, "assigned_cell_repair", return_value=None),
+                patch.object(swarm, "commit_candidate", side_effect=AssertionError("no commit")),
+            ):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=client,
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                )
+        self.assertEqual(result["status"], "reject")
+        self.assertEqual(result["attempts"][0]["normalized"], ["lead_id D6_3 moved to source_ids"])
+        self.assertEqual(result["attempts"][1]["normalized"], ["lead_id D6_3 moved to source_ids"])
 
 
 class LocalPrecheckTests(unittest.TestCase):
@@ -612,7 +704,7 @@ class PISteeringTests(unittest.TestCase):
             for round_num, status in ((1, "reject"), (2, "duplicate"))
         ]
 
-    def run_pi(self, *, enabled=True, events=None, client=None, out_dir=None):
+    def run_pi(self, *, enabled=True, events=None, client=None, out_dir=None, lead_records=None):
         return swarm.run_pi_steering(
             enabled=enabled,
             profile=self.profile,
@@ -635,6 +727,7 @@ class PISteeringTests(unittest.TestCase):
             best_val=0.5,
             leads=[{"id": "lead-1", "source_ids": ["S3"], "recipe": "try a new normalization"}],
             research_start=0,
+            lead_records=lead_records,
         )
 
     def test_supervised_run_skips_extra_pi_even_when_stuck(self):
@@ -720,6 +813,219 @@ class PISteeringTests(unittest.TestCase):
         self.assertEqual(outcomes[0]["outcome"], "steered")
         self.assertEqual(outcomes[0]["agents"], ["worker-1"])
 
+    def test_zero_valid_pi_steers_are_logged_as_wasted(self):
+        class Client:
+            def __init__(self):
+                self.call_ids = []
+                self.last_call_id = None
+
+            def call(self, role, *, agent, round_num, values):
+                self.last_call_id = "PI-r3-pi-1"
+                self.call_ids.append(self.last_call_id)
+                return {
+                    "steers": [{"agent": "unknown-agent", "steer": "not applicable"}],
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            client = Client()
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                steers = self.run_pi(client=client, out_dir=tmp)
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
+        self.assertEqual(steers, {})
+        self.assertEqual(outcomes[0]["outcome"], "pi_no_steer")
+        self.assertEqual(outcomes[0]["agents"], [])
+
+    def test_pi_recalled_lead_is_passed_to_worker_and_sources_are_offered(self):
+        recalled_lead = {
+            "id": "lead-from-pi-recall",
+            "source_ids": ["S194"],
+            "recipe": "try the recalled method",
+        }
+
+        class PIClient:
+            def __init__(self):
+                self.call_ids = ["PI-r3-pi-1"]
+
+            def call(self, role, *, agent, round_num, values):
+                return {
+                    "steers": [
+                        {
+                            "agent": "worker-1",
+                            "steer": "try the recalled method",
+                            "lead_id": "lead-from-pi-recall",
+                        }
+                    ]
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pi_leads = {}
+            with patch.object(
+                swarm,
+                "recall_memory",
+                return_value={"results": [{"content": json.dumps(recalled_lead)}]},
+            ):
+                pi_steers = self.run_pi(
+                    client=PIClient(),
+                    out_dir=tmp,
+                    lead_records=pi_leads,
+                )
+            base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+            source = swarm.git(ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}").stdout
+            proposal = llm.fake_response(
+                "WORKER_PROPOSE",
+                {
+                    "agent": "worker-1",
+                    "candidate_source": source,
+                    "fake_edits": swarm.TASK.get("fake_edits", []),
+                    "fake_targets": swarm.TASK.get("fake_targets", []),
+                },
+            )
+            proposal["lead_id"] = "lead-from-pi-recall"
+            worker_client = SimpleNamespace(
+                call=lambda *args, **kwargs: json.loads(json.dumps(proposal)),
+                call_ids=["WORKER_PROPOSE-r3-worker-1-1"],
+                last_call_id="WORKER_PROPOSE-r3-worker-1-1",
+            )
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(swarm, "local_candidate_precheck", return_value=[]),
+                patch.object(swarm, "research_call", return_value=[]),
+                patch.object(swarm, "write_memory_item"),
+                patch.object(
+                    swarm,
+                    "commit_candidate",
+                    return_value={
+                        "commit": "candidate-commit",
+                        "branch": "agent/test",
+                        "worktree": ROOT,
+                    },
+                ),
+                patch.object(swarm, "gate_candidate", return_value=(True, {"reasons": []})),
+            ):
+                candidate = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=3,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.4, "regime": "BOREDOM_SNAP"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=self.profile,
+                    profile_path=swarm.TASK["profile"],
+                    events=self.events,
+                    out_dir=tmp,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=worker_client,
+                    backend="local",
+                    mirror=Path(tmp) / "memory.jsonl",
+                    memory_log=Path(tmp) / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                    pi_steer=pi_steers["worker-1"],
+                    pi_lead=pi_leads["worker-1"],
+                )
+        self.assertEqual(pi_leads["worker-1"]["id"], "lead-from-pi-recall")
+        self.assertEqual(candidate["lead"], "lead-from-pi-recall")
+        self.assertEqual(candidate["sources"], ["S194"])
+        self.assertEqual(candidate["offered_sources"], ["S194"])
+
+    def test_rejected_worker_candidates_reach_the_pi_stuck_detector_via_ledger(self):
+        task = swarm.TASK
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        source = swarm.git(ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}").stdout
+        valid = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": source,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        invalid = {**valid, "source_ids": ["not-a-source-id"]}
+
+        class Client:
+            def __init__(self, responses, round_num):
+                self.responses = responses
+                self.round_num = round_num
+                self.call_ids = []
+                self.call_metadata = {}
+                self.last_call_id = None
+
+            def call(self, role, *, agent, round_num, values):
+                call_id = f"{role}-r{round_num}-{agent}-{len(self.call_ids) + 1}"
+                self.call_ids.append(call_id)
+                self.last_call_id = call_id
+                self.call_metadata[call_id] = {
+                    "role": role,
+                    "agent": agent,
+                    "round": round_num,
+                }
+                return json.loads(json.dumps(self.responses.pop(0)))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            ledger = output / "ledger.jsonl"
+            for round_num, responses in ((1, [valid, valid]), (2, [invalid, invalid])):
+                client = Client(responses, round_num)
+                with (
+                    patch.object(swarm, "recall_memory", return_value={"results": []}),
+                    patch.object(
+                        swarm,
+                        "local_candidate_precheck",
+                        return_value=["pre-check rejection"],
+                    ),
+                ):
+                    candidate = swarm.worker_attempts(
+                        agent="worker-1",
+                        round_num=round_num,
+                        arm="B",
+                        role="exploit",
+                        agent_b=0.0,
+                        status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                        best_commit=base_commit,
+                        best_val=1.0,
+                        profile=self.profile,
+                        profile_path=task["profile"],
+                        events=meter.read_ledger(ledger),
+                        out_dir=output,
+                        repo=ROOT,
+                        agents_root=ROOT / ".swarm_worktrees",
+                        base_commit=base_commit,
+                        llm_client=client,
+                        backend="local",
+                        mirror=output / "memory.jsonl",
+                        memory_log=output / "memory_log.jsonl",
+                        lead=None,
+                        all_leads=[],
+                        claims=[],
+                        replay=False,
+                        assigned_cells=[],
+                    )
+                self.assertEqual(candidate["status"], "reject")
+                swarm.record_worker_outcomes(output, candidate, round_num, client)
+                swarm.add_result_event(
+                    self.profile,
+                    ledger,
+                    candidate,
+                    round_num,
+                    candidate["status"],
+                    None,
+                )
+
+            events = meter.read_ledger(ledger)
+        self.assertEqual([event["status"] for event in events], ["reject", "reject"])
+        self.assertIn("invalid proposal after repair", " ".join(events[1]["gate_reasons"]))
+        stuck = swarm.pi_stuck_agents(events, ["worker-1"], 3)
+        self.assertIn("worker-1", stuck)
+        self.assertEqual([event["round"] for event in stuck["worker-1"]], [1, 2])
+
     def test_worker_propose_and_repair_prompts_receive_pi_guidance(self):
         task = swarm.TASK
         base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
@@ -787,26 +1093,46 @@ class PISteeringTests(unittest.TestCase):
 
     def test_pi_failure_is_nonfatal_and_pi_off_skips_call(self):
         class BrokenClient:
-            last_call_id = None
+            def __init__(self):
+                self.call_ids = []
+                self.last_call_id = None
 
             def call(self, *args, **kwargs):
+                self.last_call_id = "PI-r3-pi-1"
                 raise RuntimeError("offline failure")
 
         with tempfile.TemporaryDirectory() as tmp:
+            client = BrokenClient()
             with (
                 patch.object(swarm, "recall_memory", return_value={"results": []}),
                 redirect_stderr(io.StringIO()),
             ):
-                steers = self.run_pi(client=BrokenClient(), out_dir=tmp)
+                steers = self.run_pi(client=client, out_dir=tmp)
             failures = llm.read_log(Path(tmp) / "pi.jsonl")
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
             off_client = SimpleNamespace(
                 call=lambda *args, **kwargs: self.fail("unexpected PI call")
             )
             self.assertEqual(self.run_pi(enabled=False, client=off_client, out_dir=tmp), {})
         self.assertEqual(steers, {})
         self.assertEqual(failures[0]["type"], "pi_error")
+        self.assertEqual(outcomes[0]["outcome"], "pi_no_steer")
         args = swarm.build_parser().parse_args(["--pi", "off"])
         self.assertEqual(args.pi, "off")
+
+    def test_pi_programming_errors_are_not_swallowed(self):
+        class BrokenClient:
+            last_call_id = None
+
+            def call(self, *args, **kwargs):
+                raise TypeError("programming bug")
+
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory", return_value={"results": []}),
+            self.assertRaisesRegex(TypeError, "programming bug"),
+        ):
+            self.run_pi(client=BrokenClient(), out_dir=tmp)
 
 
 class LiveToolGuardTests(unittest.TestCase):
@@ -876,6 +1202,10 @@ class LiveToolGuardTests(unittest.TestCase):
                     for record in (
                         {
                             "round": 4,
+                            "call_id": "WORKER_PROPOSE-r4-worker-1-1",
+                            "attempts": [
+                                {"transport_error": "TimeoutError: read timed out", "usage": None}
+                            ],
                             "usage": {
                                 "prompt_tokens": 10,
                                 "cached_tokens": 2,
@@ -885,6 +1215,7 @@ class LiveToolGuardTests(unittest.TestCase):
                         },
                         {
                             "round": 4,
+                            "call_id": "PI-r4-pi-2",
                             "usage": {
                                 "prompt_tokens": 5,
                                 "prompt_tokens_details": {"cached_tokens": 1},
@@ -898,9 +1229,24 @@ class LiveToolGuardTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (output / "llm_outcomes.jsonl").write_text(
-                json.dumps({"outcome": "rejected"})
+                json.dumps({"call_id": "WORKER_PROPOSE-r4-worker-1-1", "outcome": "rejected"})
                 + "\n"
-                + json.dumps({"outcome": "repaired_then_accepted"})
+                + json.dumps({"call_id": "PI-r4-pi-2", "outcome": "pi_no_steer"})
+                + "\n",
+                encoding="utf-8",
+            )
+            (output / "llm_errors.jsonl").write_text(
+                json.dumps(
+                    {
+                        "round": 4,
+                        "call_id": "WORKER_REPAIR-r4-worker-1-3",
+                        "attempts": [
+                            {"transport_error": "TimeoutError: read timed out", "usage": None},
+                            {"transport_error": "URLError: network unreachable", "usage": None},
+                            {"transport_error": "HTTPError: HTTP 503", "usage": None},
+                        ],
+                    }
+                )
                 + "\n",
                 encoding="utf-8",
             )
@@ -928,7 +1274,9 @@ class LiveToolGuardTests(unittest.TestCase):
                 "cached_tokens": 3,
                 "output_tokens": 7,
                 "reasoning_tokens": 3,
-                "wasted_calls": 1,
+                "wasted_calls": 2,
+                "failed_calls": 1,
+                "transport_retries": 4,
                 "exa_searches": 2,
                 "pastdev_recalls": 2,
                 "pastdev_writes": 1,
@@ -936,6 +1284,38 @@ class LiveToolGuardTests(unittest.TestCase):
         )
         self.assertEqual(stored, spend)
         self.assertIn("round 4 spend: calls=2", console.getvalue())
+        self.assertIn("failed_calls=1 transport_retries=4", console.getvalue())
+
+    def test_round_spend_deduplicates_supervised_failed_call_retries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            attempts = [
+                {"transport_error": "TimeoutError: read timed out", "usage": None} for _ in range(3)
+            ]
+            failed_call = {
+                "round": 2,
+                "call_id": "WORKER_EXECUTE-r2-worker-1-1",
+                "role": "WORKER_EXECUTE",
+                "agent": "worker-1",
+                "response": None,
+                "attempts": attempts,
+            }
+            (output / "llm_log.jsonl").write_text(json.dumps(failed_call) + "\n", encoding="utf-8")
+            (output / "llm_errors.jsonl").write_text(
+                json.dumps({**failed_call, "error": "request timed out"}) + "\n",
+                encoding="utf-8",
+            )
+
+            spend = swarm.record_round_spend(
+                output,
+                2,
+                0,
+                0,
+                {"exa_searches": 0, "pastdev_recalls": 0, "pastdev_writes": 0},
+            )
+
+        self.assertEqual(spend["failed_calls"], 1)
+        self.assertEqual(spend["transport_retries"], 3)
 
 
 class LLMCallLinkTests(unittest.TestCase):
@@ -996,6 +1376,32 @@ class LLMCallLinkTests(unittest.TestCase):
                 self.assertEqual(len(records), count)
                 expected_outcomes = expected if isinstance(expected, list) else [expected] * count
                 self.assertEqual([record["outcome"] for record in records], expected_outcomes)
+
+    def test_round_duplicate_keeps_call_ids_and_records_duplicate_outcome(self):
+        swarm.configure_task(SimpleNamespace(task="bixbench_mini"))
+        call_id = "WORKER_PROPOSE-r1-worker-2-1"
+        duplicate = {
+            "agent": "worker-2",
+            "commit": "HEAD",
+            "status": "pending",
+            "role": "exploit",
+            "llm_call_ids": [call_id],
+            "attempts": [{"attempt": 1, "call_id": call_id, "outcome": "accepted"}],
+        }
+        first = {"agent": "worker-1", "commit": "HEAD", "status": "pending"}
+        client = SimpleNamespace(call_metadata={call_id: {"role": "WORKER_PROPOSE"}})
+
+        with tempfile.TemporaryDirectory() as tmp:
+            unique = swarm.deduplicate_round_candidates(ROOT, [first, duplicate], tmp)
+            swarm.record_worker_outcomes(tmp, duplicate, 1, client)
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
+
+        self.assertEqual(unique, [first])
+        self.assertEqual(duplicate["llm_call_ids"], [call_id])
+        self.assertEqual(duplicate["attempts"][-1]["call_id"], call_id)
+        self.assertEqual(duplicate["attempts"][-1]["outcome"], "duplicate")
+        self.assertEqual([record["call_id"] for record in outcomes], [call_id])
+        self.assertEqual([record["outcome"] for record in outcomes], ["duplicate"])
 
     def test_assignment_record_links_scout_lead_calls(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1263,3 +1669,26 @@ class CriticArmParityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AdversarialReviewRegressionTests(unittest.TestCase):
+    def test_open_ended_acceptance_keeps_best_metric_and_commit_paired(self):
+        best = swarm.improved_best(1.0, "baseline", 0.3, "first")
+        self.assertEqual(best, (0.3, "first"))
+        self.assertEqual(swarm.improved_best(*best, 0.6, "worse"), (0.3, "first"))
+        self.assertEqual(swarm.improved_best(*best, 0.3, "tie"), (0.3, "first"))
+
+    def test_worker_call_budget_is_a_rejection_not_an_llm_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            client = llm.LLMClient(
+                mode="fake",
+                log_path=Path(directory) / "llm_log.jsonl",
+                role_models={"SUPERVISOR": "supervisor-model"},
+            )
+            client.worker_calls[("worker-1", 1)] = 2
+            with self.assertRaises(llm.WorkerCallBudgetError) as caught:
+                client.call("WORKER_REPAIR", agent="worker-1", round_num=1, values={})
+        candidate = swarm.worker_budget_candidate("worker-1", "divergent", caught.exception)
+        self.assertEqual(candidate["status"], "reject")
+        self.assertFalse(candidate["llm_error"])
+        self.assertTrue(candidate["reasons"][0].startswith("worker_call_budget:"))

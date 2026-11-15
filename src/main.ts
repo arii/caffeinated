@@ -11,6 +11,7 @@ import {STATIC_SITE,staticPath} from './engine/staticSite';
 import {aboutHtml,researchTrail,researchResults,researchCommitteeScores,preCommitteeResultsHtml,type IntroConfig} from './engine/intro';
 import introConfig from '../data/pages/intro.json';
 import judgingCopy from '../data/pages/judging.json';
+import followQr from './assets/follow-qr.png';
 import {nextCoach} from './engine/introProgress';
 import {initialRecordingId,sortedRecordings,recordingCopy,playbackContinues,recordingChanged,frameAt,advanceTick,eventsThrough,loadRecording,anonymizeExcerpt,type Recording,type RecordingManifest,type ReplayEvent} from './engine/replay';
 import {boredomColor,boredomPercent,boredomComponents,regimeLabel,latestBoredom} from './engine/boredom';
@@ -552,6 +553,7 @@ $('results-content').addEventListener('click',e=>{
  if((e.target as Element).closest('[data-open-evidence]')){resultsDialog.close();$('open-console').click();}
 });
 $('close-conversation').onclick=()=>{conversation.close();renderer.domElement.focus();};$('close-console').onclick=()=>evidence.close();$('close-guide').onclick=()=>guide.close();
+const qrDialog=$<HTMLDialogElement>('qr-dialog');($('qr-image') as HTMLImageElement).src=followQr;$('close-qr').onclick=()=>qrDialog.close();$('open-qr').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();qrDialog.showModal();updateDockAutoCollapse();};
 $('open-console').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();renderEvidence();evidence.showModal();updateDockAutoCollapse();};$('open-guide').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();guide.showModal();updateDockAutoCollapse();};
 $('play').onclick=()=>{if(!recording)return;if(!playing){conversation.close();if(!recording.manifest.live&&tick>=recording.manifest.totalTicks){const startTick=STATIC_SITE&&playbackMode==='highlights'?firstScientistTick(recording):0;highlightElapsed=0;seek(startTick);}if(walking)setWalking(false);}playing=!playing;renderControls();};
 $('camera-mode').onclick=()=>setWalking(!walking);

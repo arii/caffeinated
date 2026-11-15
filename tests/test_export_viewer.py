@@ -216,7 +216,7 @@ class TaskTitleTests(unittest.TestCase):
                 "question: Does sleep loss slow reactions?\n"
                 'registered test: higher "Days" goes with higher "Reaction"\n'
                 "rho: 0.5228 (p=5.1e-14, n=180); predicted 0.400\n"
-                "replicated: true\nrejected: no\nloss: 0.000000\n"
+                "split-half consistency: true\nrejected: no\nloss: 0.000000\n"
             )
             study = export_viewer.study_from_log(log)
             self.assertEqual((study["rho"], study["n"], study["replicated"]), (0.5228, 180, True))

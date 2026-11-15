@@ -178,7 +178,7 @@ Exa searches plus past.dev recalls and writes; `--json` emits the machine report
 Tinker’s [OpenAI-compatible endpoint docs](https://tinker-docs.thinkingmachines.ai/inference/openai/chat-completions/)
 do not enumerate Kimi effort values; Kimi’s [reasoning-effort guide](https://platform.kimi.ai/docs/guide/use-reasoning-effort)
 documents `low`, `high` and `max`, so the default remains `low`. PI calls can
-override it with `TINKER_PI_REASONING_EFFORT` (default `medium`).
+override it with `TINKER_PI_REASONING_EFFORT` (default `high`).
 
 ## Domains
 

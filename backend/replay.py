@@ -764,8 +764,12 @@ class RecordingCatalog:
                 if not line.strip():
                     continue
                 try:
-                    events.append(json.loads(line))
+                    event = json.loads(line)
                 except ValueError:
+                    event = None
+                if isinstance(event, dict):
+                    events.append(event)
+                else:
                     logging.warning("Skipping partial event in %s", path)
             entities = {}
             for name in COLLECTIONS:
