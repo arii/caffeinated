@@ -79,6 +79,20 @@ Trigger: writing code, editing docs, or opening a pull request.
   `npm run build`; state what was run in the PR description.
 - Never merge to `main` without explicit human approval.
 
+## Definition of done
+
+Trigger: before reporting a task as finished or opening a pull request.
+
+Paste proof of each item that applies, not a summary:
+
+1. `make check` exits 0, and for frontend work `npm test` and `npm run build` exit 0.
+2. Generated artifacts exist and are non-empty: `ledger.jsonl` parses line by line, and an
+   exported run has a `swarm-viewer/v1` `manifest.json` plus `timeline.json`.
+3. `git status --short` and `git diff --stat` list only intended files, with no `results/`,
+   `.env` or `.jsonl` blobs.
+4. For UI or server work: `curl -f` against `/api/v1/runs` succeeds, and there are desktop
+   (1440x900) and mobile (390x844) screenshots with no console errors.
+
 ## Lessons from earlier runs
 
 Measured results these rules come from:
