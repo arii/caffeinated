@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT / "experiments"))
 import ab  # noqa: E402
 
 ERROR = re.compile(r"^error: ([a-z_]+):", re.M)
+RESUMED_AT = re.compile(r"resuming run \S+ at round (\d+)")
 LLM_FAILED = re.compile(r"^round (\d+): \S+ LLM call failed", re.M)
 
 
@@ -74,12 +75,18 @@ def crash_reasons(run_dir):
 
 def llm_failed_slots(run_dir, completed):
     """Worker slots lost to provider errors (e.g. Tinker 402) inside completed rounds."""
+    location = Path(run_dir).parent
+    resumed = location / "stderr.resume.log"
+    resume_text = resumed.read_text(encoding="utf-8", errors="replace") if resumed.exists() else ""
+    restart = RESUMED_AT.findall(resume_text)
+    # A resume drops the unfinished round, so only failures in rounds before it count.
+    first_limit = int(restart[0]) - 1 if restart else completed
     lost = Counter()
-    for name in ("stderr.log", "stderr.resume.log"):
-        path = Path(run_dir).parent / name
-        if path.exists():
-            text = path.read_text(encoding="utf-8", errors="replace")
-            lost.update(int(r) for r in LLM_FAILED.findall(text) if int(r) <= completed)
+    for text, limit in (
+        ((location / "stderr.log").read_text(encoding="utf-8", errors="replace"), first_limit),
+        (resume_text, completed),
+    ):
+        lost.update(int(r) for r in LLM_FAILED.findall(text) if int(r) <= limit)
     return dict(sorted(lost.items()))
 
 
