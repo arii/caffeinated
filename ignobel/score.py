@@ -12,7 +12,7 @@ import committee
 import events
 import lab
 
-SAME_FINDING = 0.9  # two reported arrays are the same measurements if they share this much of their values
+SAME_FINDING = 0.9  # two reported arrays are the same measurements if this share of their values is common to both
 
 
 def same_finding(a: list[dict], b: list[dict]) -> bool:
@@ -22,8 +22,8 @@ def same_finding(a: list[dict], b: list[dict]) -> bool:
         return False
 
     def same(x, y):
-        return (x["dataset"] and y["dataset"] == x["dataset"] and y["column"] == x["column"]
-                and lab.common(x["sketch"], y["sketch"]) >= SAME_FINDING)
+        j = lab.common(x["sketch"], y["sketch"])  # of the union; 2j / (1 + j) is the share of the arrays' mean size
+        return x["dataset"] and y["dataset"] == x["dataset"] and y["column"] == x["column"] and 2 * j / (1 + j) >= SAME_FINDING
     return any(all(same(x, y) for x, y in zip(a, order)) for order in itertools.permutations(b))  # at most 4 arrays
 
 

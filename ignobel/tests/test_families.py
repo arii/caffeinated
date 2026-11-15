@@ -525,6 +525,7 @@ def test_the_first_study_of_a_finding_keeps_it(tmp_path, monkeypatch):
 
 
 def test_the_same_finding_is_the_same_values_from_the_same_file():
+    import lab
     import score
     f = [{"dataset": "abc", "column": "x", "sketch": ["1", "2"]}, {"dataset": "abc", "column": "y", "sketch": ["3"]}]
     assert score.same_finding(f, f[::-1])
@@ -536,9 +537,14 @@ def test_the_same_finding_is_the_same_values_from_the_same_file():
     def group(lo):
         return {"dataset": "abc", "column": "x", "sketch": [str(i) for i in range(lo, lo + 50)]}
     # the first array resembles both of the other study's, the second only one: the pairing must not be greedy
-    assert score.same_finding([group(11), group(8)], [group(10), group(13)])
-    assert score.same_finding([group(10), group(13)], [group(11), group(8)])
-    assert not score.same_finding([group(11), group(8)], [group(13), group(13)])
+    assert score.same_finding([group(11), group(6)], [group(10), group(15)])
+    assert score.same_finding([group(10), group(15)], [group(11), group(6)])
+    assert not score.same_finding([group(11), group(6)], [group(15), group(15)])
+
+    def cells(lo):
+        return [{"dataset": "abc", "column": "x", "sketch": lab.sketch(list(range(lo, lo + 60)))}]
+    assert score.same_finding(cells(0), cells(5))  # 55 of each study's 60 values are the other's: 92%
+    assert not score.same_finding(cells(0), cells(9))  # 51 of 60: 85%
 
 
 def test_a_meeting_tells_two_labs_what_they_have_in_common(tmp_path, monkeypatch):
@@ -608,3 +614,18 @@ def test_a_mother_sees_every_departments_labs_when_she_founds_one(tmp_path, monk
         others = [x for x in w.mothers if x is not m]
         assert all(f"- {x.name}: {w.by_name[x.daughters[0]].name} (" in u for x in others)
         assert f"- {m.name}: " not in u  # her own labs are listed with their ideas, not here
+
+
+def test_trace_embeds_only_plots_inside_the_run_and_links_only_web_sources(tmp_path):
+    import trace
+    run = tmp_path / "run"
+    (run / "plots").mkdir(parents=True)
+    (run / "plots" / "a.svg").write_text("<svg>inside</svg>", encoding="utf-8")
+    (tmp_path / "secret.svg").write_text("<svg>outside</svg>", encoding="utf-8")
+    assert "inside" in trace.body({"type": "study_result", "payload": {"plot_path": "plots/a.svg"}}, run, {})
+    assert "outside" not in trace.body({"type": "study_result", "payload": {"plot_path": "../secret.svg"}}, run, {})
+    bad = {"url": "javascript:alert(1)", "title": "t"}
+    for e in ({"type": "seed", "payload": {"query": "q", "sources": [bad]}},
+              {"type": "snap", "payload": {"partner": "p", "source": bad}}):
+        assert "href" not in trace.body(e, run, {})
+
