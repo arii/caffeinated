@@ -598,7 +598,9 @@ class LLMClient:
                     continue
                 if isinstance(error, TimeoutError):
                     raise RuntimeError("Tinker request timed out") from error
-                raise RuntimeError(f"Tinker request failed: {getattr(error, 'reason', error)}") from error
+                raise RuntimeError(
+                    f"Tinker request failed: {getattr(error, 'reason', error)}"
+                ) from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("Tinker returned invalid JSON") from error
         try:
@@ -706,7 +708,9 @@ class LLMClient:
                     continue
                 if isinstance(error, TimeoutError):
                     raise RuntimeError("OpenAI request timed out") from error
-                raise RuntimeError(f"OpenAI request failed: {getattr(error, 'reason', error)}") from error
+                raise RuntimeError(
+                    f"OpenAI request failed: {getattr(error, 'reason', error)}"
+                ) from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("OpenAI returned invalid JSON") from error
         try:
