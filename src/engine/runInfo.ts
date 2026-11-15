@@ -20,7 +20,7 @@ export function runStatus(m:RecordingManifest,now=Date.now(),staleMs=90_000):{st
  if(m.sample!==false)return {status:'sample',label:'RECORDED SAMPLE',detail:'Bundled recording'};
  const beat=Date.parse(m.heartbeat_ts||m.updated_at||'');
  const quiet=Number.isFinite(beat)?now-beat:NaN;
- if(m.live||m.status==='stale'){
+ if(m.live||m.stale||m.status==='stale'){
   if(m.stale||m.status==='stale'||quiet>staleMs)return {status:'stale',label:'LIVE · NO RECENT UPDATES',detail:Number.isFinite(quiet)?`Last update ${ago(quiet)} ago`:'The swarm stopped publishing'};
   return {status:'live',label:'● LIVE',detail:Number.isFinite(quiet)?`Updated ${ago(quiet)} ago`:'Following the running swarm'};
  }
