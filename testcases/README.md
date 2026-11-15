@@ -11,7 +11,7 @@ on the host.
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
 | `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
-| `ignobel_mini` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | gamblers smoke more (steak-risk survey): loss ≈ 0.913 with the committee (laugh 1), 0.628 offline | none: open-ended |
+| `ignobel_mini` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | gamblers smoke more (steak-risk survey): loss 0 (replicated); committee laugh 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
@@ -52,25 +52,21 @@ entries in `sources.json`), a real public CSV/TSV URL with the two column
 headers and levels, the direction, and the predicted |ρ|. `external.py`
 downloads the dataset once (https, open-data hosts or URLs the run's Exa
 research cites, ≤ 5 MB, frozen in `.cache/raw` with its sha256), and
-`evaluate.py` runs the registered Spearman test once on all rows (p < 0.005,
-matching sign). Each dataset gets one registered test per run, so the swarm
-cannot fish through a dataset's columns. Trivial pairs score 0. Loss =
-1 − confirmed × min(1, |ρ|/0.2) × (0.5 + 0.5 × calibration) ×
-Ig-Nobel-likeness, where calibration rewards predicting the effect size.
-Ig-Nobel-likeness comes from the same two-judge committee as `ignobel/`
-(`committee.py` reads the judge prompts from `ignobel/committee.py`): two
-models on Tinker (`IGNOBEL_JUDGE_A_MODEL`, `IGNOBEL_JUDGE_B_MODEL`; defaults
-Kimi K3.1 Pro and Qwen3.5-397B) rate a host-written abstract of the confirmed
-registration for laugh and think (1–10). Each judge counts min(laugh, think),
-the lower judge wins, a joke at a group's expense scores 0, and verdicts are
-cached per abstract. The committee runs in real Tinker swarm runs
-(`--llm tinker` with `TINKER_API_KEY`) or with `IGNOBEL_JUDGE=committee`;
-otherwise (manual scoring, tests, `--llm fake`, `IGNOBEL_JUDGE=frozen`) the
-offline fallback is the frozen classifier in `judge.json` (logistic
-regression on real Ig Nobel rationales and winning-paper titles from Wikipedia
-revision 1385733309 vs OpenAlex titles; rebuild with
-`python3 testcases/_reference/build_ignobel_judge.py`), which scores the
-dataset's column wording. Either judge is a proxy for the committee. `task.json`'s `scout`
+`evaluate.py` runs the registered Spearman test: significant = p < 0.005 on
+all rows with the registered sign; replicated = the same sign with p < 0.05 in
+each of the two fixed hash halves. Each dataset gets one registered test per
+run, so the swarm cannot fish through a dataset's columns, and a test's
+predicted effect size is frozen at its first registration. Trivial pairs fail.
+Loss = 1 − (replicated and significant). Every graded study (registration,
+citations, dataset sha256, rho/p/n overall and per half) is appended to
+`<run>/ignobel_studies.jsonl`; after the run,
+`python3 testcases/ignobel_mini/score_run.py --run <out>` sends the replicated
+studies to the same two-judge committee as `ignobel/` (`committee.py` reads the
+prompts from `ignobel/committee.py`; Tinker models `IGNOBEL_JUDGE_A_MODEL`,
+`IGNOBEL_JUDGE_B_MODEL`, defaults Kimi K3.1 Pro and Qwen3.5-397B) and writes
+`scores.jsonl`: laugh and think 1–10 on a grader-written abstract, each judge
+counts min(laugh, think), the lower judge wins, and a joke at a group's expense
+scores 0. `task.json`'s `scout`
 block points the swarm's Exa scouts at odd everyday phenomena and downloadable
 datasets instead of small-GPT training.
 

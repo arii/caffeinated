@@ -10,17 +10,15 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
 3. downloads the dataset once (external.py: open-data hosts or URLs the run's
    Exa research cites), freezes it, and allows ONE registered test per dataset
    per run (later registrations on the same dataset score 0);
-4. runs the registered test once on all rows (Spearman rho, two-sided
-   p < ALPHA, sign must match), rejecting trivial pairs;
-5. scores Ig Nobel-likeness of confirmed findings with the two-judge committee
-   from ignobel/committee.py (committee.py: laugh and think, 1-10, lower judge
-   wins, 0 if the joke targets a group) on a host-written abstract; offline
-   (IGNOBEL_JUDGE=frozen or no TINKER_API_KEY) a frozen classifier trained on
-   real Ig Nobel rationales vs. OpenAlex titles scores the column wording.
+4. runs the registered Spearman test once: significant = p < ALPHA on all rows
+   with the registered sign; replicated = the same sign with p <
+   REPLICATION_ALPHA in each of the two fixed hash halves; trivial pairs fail.
 
-calibration = min(|rho|, predicted) / max(|rho|, predicted)
-score = confirmed * min(1, |rho| / RHO_FULL) * (0.5 + 0.5 * calibration) * ignobel_likeness
-loss  = 1 - score
+loss = 1 - (replicated and significant)
+
+Every graded study is appended to <run>/ignobel_studies.jsonl; the Ig Nobel
+committee (committee.py, from ignobel/committee.py) scores the replicated
+ones after the run with score_run.py.
 """
 
 import csv
@@ -38,13 +36,12 @@ for path in (ROOT, HERE):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-import committee
 import external
-from judge_text import likeness, tokens
+from judge_text import tokens
 from stats import spearman
 
 ALPHA = 0.005
-RHO_FULL = 0.2
+REPLICATION_ALPHA = 0.05
 MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
@@ -52,10 +49,6 @@ MIN_CITATIONS = 2
 MAX_CITATIONS = 8
 MAX_TEXT = 600
 TEXT_FIELDS = ("question", "hypothesis", "mechanism")
-
-
-def load_judge(task_dir=HERE):
-    return json.loads((Path(task_dir) / "judge.json").read_text(encoding="utf-8"))
 
 
 def load_fields(task_dir=HERE):
@@ -74,12 +67,6 @@ def encode(variable, level, value):
     if variable["kind"] == "numeric":
         return float(value)
     return 1.0 if value == level else 0.0
-
-
-def side_text(variable, level):
-    if level is None or level in variable["label"]:
-        return variable["label"]
-    return f"{variable['label']} {level}"
 
 
 def headline(dataset, x, x_level, y, y_level, direction):
@@ -286,9 +273,8 @@ def claim_registry(research_log, name, digest, predicted):
     return None, predicted
 
 
-def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
+def grade_prereg(prereg, task_dir=HERE, research_log=None):
     task_dir = Path(task_dir)
-    judge = judge or load_judge(task_dir)
     url = prereg["dataset"]["url"].strip()
     citations, problems = check_citations(prereg["citations"], url, task_dir, research_log)
     result = {"citations": citations, "dataset_id": external.dataset_id(url), "rejected": None}
@@ -322,9 +308,15 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
             research_log, entry.get("sha256") or name, test_hash(prereg), predicted
         )
     sign = 1 if prereg["direction"] == "positive" else -1
-    confirmed = rejected is None and p < ALPHA and rho * sign > 0
-    calibration = min(abs(rho), predicted) / max(abs(rho), predicted) if rho else 0.0
-    strength = min(1.0, abs(rho) / RHO_FULL)
+    significant = rejected is None and p < ALPHA and rho * sign > 0
+    halves = []
+    for part in (entry["file"], f".cache/replication/{name}.csv"):
+        h_n, h_rho, h_p, h_problem = association(read_rows(task_dir / part), claim, sides)
+        halves.append({"n": h_n, "rho": h_rho, "p": h_p, "problem": h_problem})
+    replicated = all(
+        h["problem"] is None and h["p"] < REPLICATION_ALPHA and h["rho"] * sign > 0 for h in halves
+    )
+    confirmed = significant and replicated
     graded = {
         **result,
         "headline": headline(entry, x, x_level, y, y_level, prereg["direction"]),
@@ -332,28 +324,29 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
         "n": n,
         "rho": rho,
         "p": p,
-        "predicted_rho": predicted,
-        "calibration": calibration,
+        "halves": halves,
+        "significant": significant,
+        "replicated": replicated,
         "confirmed": confirmed,
-        "strength": strength,
+        "predicted_rho": predicted,
         "sha256": entry.get("sha256", ""),
-        "judge": committee.mode(),
+        "score": 1.0 if confirmed else 0.0,
     }
-    if graded["judge"] == "committee":
-        verdict = (
-            committee.score_study(committee.abstract(prereg, graded), graded["headline"], task_dir)
-            if confirmed
-            else None
-        )
-        funny = verdict["score"] if verdict else 0.0
-        graded["committee"] = verdict
-        if verdict and verdict["rejected"]:
-            graded["rejected"] = "committee: the joke targets a group of people"
-    else:
-        funny = likeness(f"{side_text(x, x_level)} {side_text(y, y_level)}", judge)
-    graded["ignobel_likeness"] = funny
-    graded["score"] = strength * (0.5 + 0.5 * calibration) * funny if confirmed else 0.0
+    record_study(research_log, prereg, graded)
     return graded
+
+
+def record_study(research_log, prereg, graded):
+    """Append the full study record for post-run analysis (score_run.py runs the committee)."""
+    if not research_log:
+        return
+    line = (
+        json.dumps({"ts": time.time(), "prereg": prereg, "result": graded}, sort_keys=True) + "\n"
+    )
+    with (Path(research_log).parent / "ignobel_studies.jsonl").open(
+        "a", encoding="utf-8"
+    ) as stream:
+        stream.write(line)
 
 
 def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
@@ -383,16 +376,15 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
             f"dataset: {prereg['dataset']['url']} -> {graded['dataset_id']}",
         ]
         if "headline" in graded:
+            first, second = graded["halves"]
             out += [
                 f"registered test: {graded['headline']}",
-                f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}, calibration {graded['calibration']:.3f}",
+                f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}",
+                f"halves: rho {first['rho']:.4f} (p={first['p']:.2g}), rho {second['rho']:.4f} (p={second['p']:.2g})",
+                f"significant: {str(graded['significant']).lower()}",
+                f"replicated: {str(graded['replicated']).lower()}",
                 f"confirmed: {str(graded['confirmed']).lower()}",
-                f"ignobel_likeness: {graded['ignobel_likeness']:.4f} (judge: {graded['judge']})",
             ]
-            for which, verdict in ((graded.get("committee") or {}).get("verdicts") or {}).items():
-                out.append(
-                    f"judge_{which}: laugh {verdict['laugh']}, think {verdict['think']} ({verdict['model']}): {verdict['reason'][:160]}"
-                )
         out.append(f"rejected: {graded['rejected'] or 'no'}")
     out += [
         f"score: {score:.6f}",

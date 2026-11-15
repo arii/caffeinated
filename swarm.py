@@ -2175,7 +2175,6 @@ def _orchestrate(args, publish_state, cleanup):
         },
     )
     os.environ["TASK_RESEARCH_LOG"] = str(out_dir / "research_log.jsonl")
-    os.environ["AUTORESEARCH_LLM"] = args.llm
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
     critic_path = out_dir / "critic.tsv"

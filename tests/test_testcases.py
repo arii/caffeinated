@@ -16,6 +16,7 @@ from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.ignobel_mini import evaluate as ignobel
+from testcases.ignobel_mini import score_run as ignobel_score_run
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -413,7 +414,7 @@ class IgnobelPreregTests(unittest.TestCase):
         prepare = self.prepare
         self.tmp = tempfile.TemporaryDirectory()
         self.task_dir = Path(self.tmp.name)
-        for name in ("judge.json", "boredom_profile.json", "sources.json"):
+        for name in ("boredom_profile.json", "sources.json"):
             shutil.copy(TESTCASES / "ignobel_mini" / name, self.task_dir / name)
         rows = ["rownames,Socks lost per month,Dryer age (years),Favourite colour"]
         for i in range(200):
@@ -469,7 +470,9 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertEqual(result["status"], "ok", result["stderr"])
         graded = result["graded"]
         self.assertTrue(graded["confirmed"], graded)
-        self.assertGreater(graded["score"], 0)
+        self.assertTrue(graded["replicated"] and graded["significant"])
+        self.assertEqual(result["loss"], 0.0)
+        self.assertEqual(len(graded["halves"]), 2)
         self.assertEqual(
             graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"]
         )
@@ -478,15 +481,10 @@ class IgnobelPreregTests(unittest.TestCase):
         )
         self.assertIn("candidate_executed: false", result["stdout"])
 
-    def test_wrong_direction_and_poor_calibration(self):
-        registry = self.log.parent / "ignobel_registry.json"
-        self.assertFalse(self.run_prereg(direction="negative")["graded"]["confirmed"])
-        registry.unlink()
-        sharp = self.run_prereg()["graded"]
-        registry.unlink()
-        vague = self.run_prereg(predicted_rho=0.05)["graded"]
-        self.assertLess(vague["calibration"], sharp["calibration"])
-        self.assertLess(vague["score"], sharp["score"])
+    def test_wrong_direction_fails(self):
+        graded = self.run_prereg(direction="negative")["graded"]
+        self.assertFalse(graded["significant"])
+        self.assertEqual(graded["score"], 0.0)
 
     def test_citations_must_come_from_research_or_vetted_sources(self):
         for citations in (
@@ -622,13 +620,16 @@ class IgnobelPreregTests(unittest.TestCase):
             {"Socks lost per month", "Dryer age (years)", "Favourite colour"},
         )
 
-    def test_committee_judges_confirmed_findings(self):
-        committee = ignobel.committee
-
+    def test_score_run_sends_only_replicated_studies_to_the_committee(self):
+        committee = ignobel_score_run.committee
+        self.run_prereg()
+        self.run_prereg(
+            dataset={"url": self.URL + "?other", "x": "Favourite colour", "x_level": "red"}
+        )
         seen = []
 
         def ask(model, system, user, task_dir):
-            seen.append((model, system, user))
+            seen.append(user)
             laugh = 8 if "Ig Nobel" in system else 6
             return {
                 "laugh": laugh,
@@ -638,28 +639,16 @@ class IgnobelPreregTests(unittest.TestCase):
                 "model": model,
             }
 
-        with (
-            patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}),
-            patch.object(committee, "_ask", ask),
-        ):
-            result = self.run_prereg()
-            unconfirmed = self.run_prereg(direction="negative")
-        graded = result["graded"]
-        self.assertEqual(graded["judge"], "committee")
-        self.assertAlmostEqual(graded["ignobel_likeness"], 0.6)
-        self.assertEqual({m for m, _, _ in seen}, set(committee.models().values()))
-        self.assertIn(
-            'higher "Dryer age (years)" goes with higher "Socks lost per month"', seen[0][2]
-        )
-        self.assertNotIn("Do older dryers eat more socks?", seen[0][2])
-        self.assertNotIn("Worn drum seals", seen[0][2])
-        self.assertIn("judge_a: laugh 8, think 7", result["stdout"])
-        self.assertEqual(len(seen), 2, "unconfirmed registrations are not sent to the committee")
-        self.assertEqual(unconfirmed["graded"]["score"], 0.0)
+        rows = ignobel_score_run.score_run(self.log.parent, self.task_dir, ask)
+        self.assertEqual(len(rows), 1)
+        self.assertAlmostEqual(rows[0]["committee"], 0.6)
+        self.assertEqual(len(seen), 2)
+        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', seen[0])
+        self.assertNotIn("Worn drum seals", seen[0])
+        self.assertTrue((self.log.parent / "scores.jsonl").is_file())
+        self.assertEqual(set(committee.models()), {"a", "b"})
 
     def test_committee_rejects_jokes_about_groups(self):
-        committee = ignobel.committee
-
         def ask(model, system, user, task_dir):
             return {
                 "laugh": 9,
@@ -669,36 +658,14 @@ class IgnobelPreregTests(unittest.TestCase):
                 "model": model,
             }
 
-        with (
-            patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}),
-            patch.object(committee, "_ask", ask),
-        ):
-            graded = self.run_prereg()["graded"]
-        self.assertEqual(graded["score"], 0.0)
-        self.assertIn("group of people", graded["rejected"])
-
-
-class IgnobelJudgeModeTests(unittest.TestCase):
-    def test_committee_only_for_real_tinker_runs(self):
-        cases = (
-            ({"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "tinker"}, "committee"),
-            ({"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "fake"}, "frozen"),
-            ({"TINKER_API_KEY": "k"}, "frozen"),
-            ({"AUTORESEARCH_LLM": "tinker"}, "frozen"),
-            ({"IGNOBEL_JUDGE": "committee"}, "committee"),
-            (
-                {"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "tinker", "IGNOBEL_JUDGE": "frozen"},
-                "frozen",
-            ),
-        )
-        for env, expected in cases:
-            with self.subTest(env=env), patch.dict(os.environ, env, clear=True):
-                self.assertEqual(ignobel.committee.mode(), expected)
+        verdict = ignobel_score_run.committee.score_study("abstract", "title", self.task_dir, ask)
+        self.assertEqual(verdict["score"], 0.0)
+        self.assertTrue(verdict["rejected"])
 
 
 class IgnobelTaskTests(unittest.TestCase):
     def test_committee_prompts_come_from_ignobel_project(self):
-        committee = ignobel.committee
+        committee = ignobel_score_run.committee
 
         prompts = committee.judge_prompts()
         self.assertIn("LAUGH", prompts["a"])
@@ -710,17 +677,12 @@ class IgnobelTaskTests(unittest.TestCase):
         prereg = json.loads((TESTCASES / "ignobel_mini" / "prereg.json").read_text())
         self.assertIn(prereg["study_type"], fields[prereg["field"]])
 
-    def test_judge_rates_ignobel_rationales_above_ordinary_titles(self):
-        judge = ignobel.load_judge(TESTCASES / "ignobel_mini")
-        funny = ignobel.likeness("why woodpeckers do not get headaches", judge)
-        dull = ignobel.likeness("a multicenter randomized trial of statin therapy outcomes", judge)
-        self.assertGreater(funny, dull)
-
     def test_ignobel_baseline_registration_confirms(self):
         result = evaluate("ignobel_mini")
         values = dict(re.findall(r"^([\w_ ]+): (.+)$", result.stdout, re.M))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertAlmostEqual(float(values["loss"]), 0.6280, places=3)
+        self.assertEqual(float(values["loss"]), 0.0)
+        self.assertEqual(values["replicated"], "true")
         self.assertEqual(values["confirmed"], "true")
         self.assertEqual(values["citations"], "2 verified")
 

@@ -4,7 +4,7 @@
   "direction": "min",
   "objective": "loss",
   "eps": 0.02,
-  "eps_note": "loss is 1 - confirmed * strength * calibration * likeness on [0, 1]; 0.02 is a visibly stronger, better-predicted or funnier confirmed finding",
+  "eps_note": "loss is 1 - (replicated and significant), 0 or 1; any confirmed study beats an unconfirmed one",
   "k": 5,
   "knn": 3,
   "patience": 5,

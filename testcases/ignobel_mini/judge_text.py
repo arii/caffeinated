@@ -1,6 +1,5 @@
-"""Tokenizer and scorer shared by the frozen Ig Nobel-likeness judge and its builder."""
+"""Content-word tokenizer used to spot near-identical column wording."""
 
-import math
 import re
 
 STOPWORDS = frozenset(
@@ -206,13 +205,3 @@ STOPWORDS = frozenset(
 def tokens(text):
     words = re.findall(r"[a-z]+", str(text).lower())
     return [w for w in words if len(w) > 2 and w not in STOPWORDS]
-
-
-def likeness(text, judge):
-    words = set(tokens(text))
-    weights = judge["weights"]
-    known = [w for w in words if w in weights]
-    logit = judge["bias"]
-    if known:
-        logit += sum(weights[w] for w in known) / math.sqrt(len(known))
-    return 1.0 / (1.0 + math.exp(-logit))
