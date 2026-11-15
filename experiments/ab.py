@@ -16,7 +16,20 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
+TASKS = (
+    "hadamard19",
+    "bixbench_mini",
+    "playworld_mini",
+    "ignobel",
+    "hadamard21",
+    "hadamard22",
+    "hadamard29",
+    "bixbench_numeric",
+    "playworld_hard",
+)
+DEFAULT_TASKS = TASKS[:3]
+MAX_ROUNDS = 30
+MAX_SINGLE_ROUNDS = 50
 FIELDS = (
     "task",
     "seed",
@@ -311,8 +324,12 @@ def run_experiment(args):
         raise ValueError("seeds must be distinct integers in [0, 2**31)")
     if len(set(args.tasks)) != len(args.tasks):
         raise ValueError("tasks must be distinct")
-    if not 1 <= args.rounds <= 10:
-        raise ValueError("rounds must be between 1 and 10")
+    if not 1 <= args.rounds <= MAX_ROUNDS:
+        raise ValueError(f"rounds must be between 1 and {MAX_ROUNDS}")
+    if args.single_rounds is not None and not 1 <= args.single_rounds <= MAX_SINGLE_ROUNDS:
+        raise ValueError(f"single-rounds must be between 1 and {MAX_SINGLE_ROUNDS}")
+    if len(set(args.arms)) != len(args.arms):
+        raise ValueError("arms must be distinct")
     if args.exa_max_calls < 1:
         raise ValueError("exa-max-calls must be positive")
     if args.jobs < 1:
@@ -326,9 +343,10 @@ def run_experiment(args):
     if git(repo, "status", "--porcelain", "--untracked-files=no"):
         raise ValueError("commit tracked changes before running for reproducible clones")
     commit = git(repo, "rev-parse", "HEAD")
-    model = args.model or ("fake" if args.llm == "fake" else os.environ.get("TINKER_MODEL"))
+    model_env = {"tinker": "TINKER_MODEL", "openai": "OPENAI_MODEL"}.get(args.llm)
+    model = args.model or ("fake" if args.llm == "fake" else os.environ.get(model_env))
     if not model:
-        raise ValueError("provide --model or TINKER_MODEL")
+        raise ValueError(f"provide --model or {model_env}")
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=False)
     settings = {
@@ -339,12 +357,15 @@ def run_experiment(args):
         "workers": 4,
         "exa": args.exa,
         "exa_max_calls": args.exa_max_calls,
+        "literature": args.literature,
         "memory_backend": "local",
         "rates": rates if rates[0] is not None else None,
     }
     manifest = {
         **settings,
         "tasks": args.tasks,
+        "arms": args.arms,
+        "single_rounds": args.single_rounds,
         "seeds": args.seeds,
         "jobs": args.jobs,
         "memory_note": "Local fallback: separate clone, mirror and run ID for every task/seed/arm; past.dev unused.",
@@ -371,7 +392,7 @@ def run_experiment(args):
     order = random.Random(args.order_seed)
     for task in args.tasks:
         for seed in args.seeds:
-            arms = ["A", "B"]
+            arms = list(args.arms)
             order.shuffle(arms)
             for arm in arms:
                 location = out / task / f"seed-{seed}" / arm
@@ -386,7 +407,7 @@ def run_experiment(args):
                     "--arm",
                     arm,
                     "--rounds",
-                    str(args.rounds),
+                    str(arm_rounds(args, arm)),
                     "--seed",
                     str(seed),
                     "--llm",
@@ -402,6 +423,8 @@ def run_experiment(args):
                     "--no-push",
                     "--no-viewer",
                 ]
+                if args.literature:
+                    command += ["--literature", args.literature]
                 manifest["runs"].append(
                     {
                         "task": task,
@@ -423,7 +446,12 @@ def run_experiment(args):
                 run = manifest["runs"][cursor]
                 run["status"] = "running"
                 print(f"{run['task']} seed={run['seed']} arm={run['arm']}", flush=True)
-                futures[executor.submit(run_arm, run, repo, commit, settings, env)] = cursor
+                arm_settings = {
+                    **settings,
+                    "rounds": arm_rounds(args, run["arm"]),
+                    "workers": 1 if run["arm"] == "S" else settings["workers"],
+                }
+                futures[executor.submit(run_arm, run, repo, commit, arm_settings, env)] = cursor
                 cursor += 1
             write_manifest(manifest_path, manifest)
             done, _ = wait(futures, return_when=FIRST_COMPLETED)
@@ -434,7 +462,11 @@ def run_experiment(args):
                     rows[index] = future.result()
                 except Exception as error:
                     run.update(status="failed", error=str(error))
-                    errors.append(f"{run['task']} seed={run['seed']} arm={run['arm']}: {error}")
+                    message = f"{run['task']} seed={run['seed']} arm={run['arm']}: {error}"
+                    if args.keep_going:
+                        print(f"ab.py: {message}; continuing", file=sys.stderr, flush=True)
+                    else:
+                        errors.append(message)
                 else:
                     run["status"] = "finished"
                     write_csv(out / "results.csv", [rows[i] for i in sorted(rows)])
@@ -442,7 +474,8 @@ def run_experiment(args):
     for run in manifest["runs"]:
         if run["status"] == "pending":
             run["status"] = "not_started"
-    manifest["status"] = "failed" if errors else "finished"
+    failed = errors or any(run["status"] == "failed" for run in manifest["runs"])
+    manifest["status"] = "failed" if failed else "finished"
     write_manifest(manifest_path, manifest)
     if errors:
         raise RuntimeError(
@@ -451,20 +484,37 @@ def run_experiment(args):
     return out / "results.csv"
 
 
+def arm_rounds(args, arm):
+    """Arm S has one worker, so --single-rounds can give it a matched candidate budget."""
+    return args.single_rounds if arm == "S" and args.single_rounds else args.rounds
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=str(ROOT))
     parser.add_argument("--out", required=True, help="new output directory; never reuse a run")
-    parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
+    parser.add_argument("--tasks", nargs="+", choices=TASKS, default=list(DEFAULT_TASKS))
     parser.add_argument("--seeds", nargs="+", type=int, required=True)
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument(
         "--jobs", type=int, default=1, help="maximum independent arms running concurrently"
     )
-    parser.add_argument("--llm", choices=("fake", "tinker"), default="fake")
+    parser.add_argument("--llm", choices=("fake", "tinker", "openai"), default="fake")
     parser.add_argument("--model")
     parser.add_argument("--exa", choices=("off", "on"), default="off")
     parser.add_argument("--exa-max-calls", type=int, default=200)
+    parser.add_argument(
+        "--arms",
+        nargs="+",
+        choices=("A", "B", "S"),
+        default=["A", "B"],
+        help="S is the single-agent baseline: one worker, no meter, scouts or critic",
+    )
+    parser.add_argument("--single-rounds", type=int, help="rounds for arm S (default --rounds)")
+    parser.add_argument("--literature", choices=("auto", "keyless", "off"))
+    parser.add_argument(
+        "--keep-going", action="store_true", help="keep scheduling arms after one fails"
+    )
     parser.add_argument(
         "--memory-backend",
         choices=("local",),

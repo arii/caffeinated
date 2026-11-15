@@ -1,0 +1,48 @@
+{
+ "editable": "construct.py",
+ "deterministic": true,
+ "search_topic": "maximal determinant of 29x29 +1/-1 matrices (Hadamard maximal determinant problem)",
+ "brief": "a construction script (`construct.py`) that outputs a 29x29 matrix of +1/-1 entries; the score is log10|det| computed exactly, and the loss is log10(Barba upper bound sqrt(2n-1)(n-1)^((n-1)/2)) minus the score. The bound cannot be attained at n=29, so loss 0 is unreachable; lower is better",
+ "context_files": [],
+ "proxy_note": "no verified maximum shipped; loss is measured against Barba's bound sqrt(57)*28^14, which cannot be attained because 2n-1=57 is not a square, so loss 0 is unreachable",
+ "fake_targets": [
+  [
+   "RESTARTS",
+   "search",
+   "restarts",
+   1
+  ],
+  [
+   "SEED",
+   "search",
+   "seed",
+   1
+  ],
+  [
+   "RESTARTS",
+   "search",
+   "restarts",
+   2
+  ],
+  [
+   "SEED",
+   "search",
+   "seed",
+   3
+  ],
+  [
+   "CONSTRUCTION",
+   "construction",
+   "circulant",
+   1
+  ],
+  [
+   "OBJECTIVE",
+   "objective",
+   "surrogate",
+   1
+  ]
+ ],
+ "order": 29,
+ "bound": "barba"
+}

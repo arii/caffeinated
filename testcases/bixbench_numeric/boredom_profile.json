@@ -1,0 +1,76 @@
+{
+  "domain": "testcase-bixbench-numeric",
+  "version": 3,
+  "direction": "min",
+  "objective": "loss",
+  "eps": 0.03,
+  "eps_note": "one question is 1/17 = 0.0588 of the score; eps is half of that",
+  "k": 5,
+  "knn": 3,
+  "patience": 3,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "params_weight": 0.25,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "data": [
+      "filter",
+      "dtype",
+      "missing"
+    ],
+    "statistics": [
+      "descriptive",
+      "test_choice",
+      "effect_size",
+      "power",
+      "regression",
+      "anova"
+    ],
+    "interpretation": [
+      "question_parse",
+      "units",
+      "rounding"
+    ]
+  },
+  "params": {
+    "value": {
+      "scale": "ratio",
+      "ratio": 4
+    }
+  },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "fail_statuses": [
+    "crash"
+  ],
+  "directives": {
+    "EXPLOIT": "Answer or fix one more question with the current approach.",
+    "BOREDOM_SNAP": "Change method for the unanswered questions; look up the exact statistical procedure (Exa) and check past.dev for what failed.",
+    "PARADIGM_BREAKOUT": "Re-read the questions and data dictionary from scratch; switch analysis library or model family.",
+    "CONVERGED": "Re-run the analysis to confirm answers are stable."
+  }
+}
