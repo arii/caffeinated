@@ -12,8 +12,11 @@ import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from runtime_env import load_local_env
+
 
 ROOT = Path(__file__).resolve().parent
+load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
 FAKE_TARGETS = (
     ("MATRIX_LR", "optimizer", "matrix_lr", 0.001),

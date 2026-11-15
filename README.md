@@ -77,12 +77,6 @@ Detailed design and integration lifecycle: [Lab backend and research agents](doc
 
 ## Local credentials
 
-Copy `.env.example` to `.env` and supply your own Tinker key. `.env` is ignored by Git. The Python runner reads environment variables; it does not automatically load dotenv files. From the repository root, load the local file before invoking the runner:
-
-```sh
-set -a
-source .env
-set +a
-```
+Copy `.env.example` to `.env` and supply your own Tinker key. The Python LLM client automatically loads the repository-root `.env` when imported by the swarm runner, including when launched from another directory. Existing environment variables take precedence. No shell sourcing or extra dependency is required. The file supports literal `KEY=value` assignments, quoted values, comments, and optional `export`; shell expansion and multiline values are not supported. `.env` remains ignored by Git.
 
 Use the separate Tinker environment described in `program_swarm.md`. Keep server credentials unprefixed: never rename them with `VITE_`, which is reserved for values exposed to the frontend. Loading credentials alone does not start a research run.
