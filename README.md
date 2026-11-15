@@ -63,3 +63,5 @@ The frontend connects through `ResearchAdapter`: HTTP commands start or stop sup
 First milestone: bring existing trace replay into the selected Lab Environment. Next: durable run/event APIs and reconnect. Then: a bounded live CPU benchmark, followed by the Ig Nobel adapter. Pause applies to replay initially; live stop/pause capabilities must reflect runner support.
 
 Planned API surface: `GET /experiments`, `POST /runs`, `GET /runs/{id}`, `GET /runs/{id}/events`, `GET /runs/{id}/artifacts`, `POST /runs/{id}/stop`. Keep API keys server-side. Verify existing gate/meter review findings and sandbox execution before enabling expensive or generated-code runs.
+
+Detailed design and integration lifecycle: [Lab backend and research agents](docs/lab-backend-design.md).
