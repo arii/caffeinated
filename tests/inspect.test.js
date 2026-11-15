@@ -55,7 +55,7 @@ test('experiment detail degrades for event-only recordings',()=>{
  const d=experimentDetail({events:[{tick:0,type:'experiment.started',agentId:'a',message:'Try X',refs:{experiment_id:'e'}}]},'e',5);
  assert.equal(d.description,'Try X');assert.equal(d.idea,null);assert.deepEqual(d.artifacts,{});
  const html=experimentHtml(d,ctx);
- assert.match(html,/No gate check recorded/);assert.match(html,/Still running/);assert.match(html,/No diff or log exported/);
+ assert.match(html,/No gate check by this moment/);assert.match(html,/Still running/);assert.match(html,/No diff or log exported/);
 });
 
 test('experiment drawer renders idea, gate, score, critic and artifacts',()=>{

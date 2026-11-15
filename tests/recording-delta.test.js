@@ -57,8 +57,8 @@ test('stalled runs and publish errors are labelled',()=>{
  assert.match(recordingCopy(stale).callout,/stopped publishing/);
  assert.equal(swarmConnectionLabel({...stale,stale:false,live:true}),'FOLLOWING LIVE SWARM');
  assert.equal(recordingPrefix({...stale,stale:false,live:true}),'● LIVE · ');
- assert.equal(swarmConnectionLabel({...stale,stale:false}),'SWARM REPLAY');
- assert.equal(swarmConnectionLabel({...stale,stale:undefined,lastUpdateTs:undefined}),'SWARM REPLAY');
+ assert.equal(swarmConnectionLabel({...stale,stale:false}),'SWARM RUN · FINISHED');
+ assert.equal(swarmConnectionLabel({...stale,stale:undefined,lastUpdateTs:undefined}),'SWARM RUN · FINISHED');
  const errors=[{kind:'RuntimeError',message:'x'},{kind:'recovered',message:'y'},{kind:'OSError',message:'z'}];
  assert.equal(publishErrorCount({publish_errors:errors}),2);assert.equal(publishErrorCount({}),0);
  assert.equal(swarmConnectionLabel({...stale,stale:false,live:true,publish_errors:errors.slice(0,2)}),'FOLLOWING LIVE SWARM · 1 PUBLISH ERROR');

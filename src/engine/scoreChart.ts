@@ -22,7 +22,7 @@ const COLORS:Record<Outcome,string>={baseline:'#5ebcc2',kept:'#92bc98',discarded
 const short=(v:number)=>String(Number(v.toPrecision(4)));
 export function scoreChartSvg(series:ScoreSeries,metric:{name:string;direction:string},tick:number,esc:(v:unknown)=>string){
  const values=[...series.points.map(p=>p.value),...series.best.map(b=>b[1])].filter((v):v is number=>v!=null);
- if(!series.points.length&&!series.best.length)return '<p>No measurements recorded yet.</p>';
+ if(!series.points.length&&!series.best.length)return '<p>No measurements yet.</p>';
  const min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1,range=max-min||Math.abs(max)||1;
  const left=52,right=560,top=16,bottom=132,strip=150,end=Math.max(1,tick);
  const lo=max===min?min-range/2:min,span=max===min?range:max-min;
