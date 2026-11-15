@@ -60,11 +60,11 @@ def _mock_results(query: str, n: int) -> list[Source]:
 
 def search(query: str, n: int = 5) -> list[Source]:
     """Return up to n sources for `query`, from cache when possible."""
+    if llm.MOCK:
+        return _mock_results(query, n)  # deterministic already; keep mock data out of the real cache
     f = _cache_file(query, n)
     if f.exists():
         return [Source(**d) for d in json.loads(f.read_text(encoding="utf-8"))]
-    if llm.MOCK:
-        return _mock_results(query, n)  # deterministic already; keep mock data out of the real cache
     else:
         if MAX_CALLS and _state["calls"] >= MAX_CALLS:
             raise SearchBudgetExceeded(f"EXA_MAX_CALLS={MAX_CALLS} reached")
