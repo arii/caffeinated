@@ -96,6 +96,8 @@ test('activity and event labels are humanized and placeholder messages are not q
  assert.equal(eventCaption({type:'experiment.finished',message:'experiment · finished'},'B1'),'Experiment finished · B1');
  assert.equal(eventCaption({type:'discovery.made',message:'Found a better matrix'}),'New best — Found a better matrix');
  assert.ok(eventCaption({type:'x.y',message:'a'.repeat(300)}).length<130);
+ assert.equal(eventCaption({type:'discovery.made',message:'[EXPLOIT] Lengthen tabu runs'}),'New best — [EXPLOIT] Lengthen tabu runs');
+ assert.equal(eventCaption({type:'x.y',message:'[1, 2]'}),'X y');
  assert.equal(eventCaption({type:'memory.written',message:'{"ledger_sha256":"abc"}'},'B1'),'Memory saved · B1');
 });
 test('team roster adds the critic and conductor on standby until they act',()=>{
@@ -140,4 +142,14 @@ test('latest boredom reading for an agent stops at the playhead',async()=>{
  assert.equal(latestBoredom(events,'a',3).regime,'EXPLOIT');
  assert.deepEqual(latestBoredom(events,'a',9).components,{novelty:0.2});
  assert.equal(latestBoredom(events,'c',9),null);
+});
+test('Ig Nobel candidates measured on another scale stay off the replication-count axis',()=>{
+ const results=[{tick:2,value:0.03,status:'replicated',agent:'a',description:'Sticky toast'},{tick:3,value:0.4,status:'not_replicated',agent:'b',description:'Loud cats'}];
+ const frames=[{tick:0,snapshot:{value:0}},{tick:2,snapshot:{value:1}}];
+ const s=scoreSeries(results,frames,4,false);
+ assert.deepEqual(s.points.map(p=>[p.value,p.raw,p.outcome]),[[null,0.03,'kept'],[null,0.4,'discarded']]);
+ const svg=scoreChartSvg(s,{name:'replicated_findings',direction:'maximize'},4,esc);
+ assert.match(svg,/other measure/);
+ assert.match(svg,/replicated · 0\.03/);
+ assert.doesNotMatch(svg,/>0\.4</);
 });
