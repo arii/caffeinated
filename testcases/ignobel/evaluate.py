@@ -371,7 +371,6 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "sha256": entry.get("sha256", ""),
         "score": 1.0 if confirmed else 0.0,
     }
-    record_study(research_log, prereg, graded)
     return graded
 
 
@@ -396,6 +395,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     try:
         prereg = parse_prereg(source, load_fields(task_dir))
         graded = grade_prereg(prereg, task_dir, research_log)
+        record_study(research_log, prereg, graded)
         status = "ok"
     except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
         reason, diagnostics = "invalid_output", f"{type(error).__name__}: {error}"

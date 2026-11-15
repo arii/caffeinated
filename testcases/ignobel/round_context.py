@@ -51,17 +51,26 @@ def field_query(cell):
     return field if field and field not in ("baseline", "other") else ""
 
 
-def found_datasets(cells, skip):
+def log_source(out_dir, source_id, hit):
+    record = {"type": "source", "id": source_id, "url": hit["page"], "file_url": hit["url"], "title": hit["title"], "purpose": "dataset_finder"}
+    with (Path(out_dir) / "research_log.jsonl").open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def found_datasets(cells, skip, out_dir=None, round_num=0):
     if os.environ.get("EXA") == "off" or os.environ.get("IGNOBEL_DATASET_SEARCH") == "off":
         return []
     lines, seen = [], set(skip)
     for query in dict.fromkeys(q for q in map(field_query, cells) if q):
         for hit in datasets.find(query, n=2, skip=seen):
             seen.add(hit["url"])
+            source_id = f"D{round_num}_{len(seen) - len(skip)}"
+            if out_dir:
+                log_source(out_dir, source_id, hit)
             if not lines:
                 lines.append("Real public datasets found this round (use the file url as dataset.url and exact column names):")
             lines.append(
-                f"- [{query}] {hit['title']} ({hit['license'] or 'license: see page'}) {hit['page']}\n"
+                f"- {source_id} [{query}] {hit['title']} ({hit['license'] or 'license: see page'}) {hit['page']}\n"
                 f"  file url: {hit['url']}\n  columns: {', '.join(hit['columns'])}\n  about: {hit['about']}"
             )
     return lines
@@ -74,7 +83,7 @@ def main(argv=None):
     parser.add_argument("--cells", default="[]", help="JSON list of boredom-meter cell suggestions")
     args = parser.parse_args(argv)
     lines, used = notebook(args.out_dir)
-    print("\n".join(lines + found_datasets(json.loads(args.cells), used)))
+    print("\n".join(lines + found_datasets(json.loads(args.cells), used, args.out_dir, args.round)))
     return 0
 
 
