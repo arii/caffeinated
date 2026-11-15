@@ -35,8 +35,19 @@ test('rank only scored, non-rejected studies; awards are tick bounded',()=>{
   {tick:3,type:'award.issued',refs:{study_id:'s2'},payload:{score:.95}}
  ];
  const before=podium(studies,awards,2),after=podium(studies,awards,3);
- assert.equal(before.status,'ranked');assert.deepEqual(before.entries.map(e=>e.studyId),['s1']);
+ assert.equal(before.status,'ranked');assert.deepEqual(before.entries.map(e=>e.studyId),['s2','s1']);assert.equal(before.entries[0].score,.9);
  assert.deepEqual(after.entries.map(e=>e.studyId),['s2','s1']);
  assert.equal(after.entries[0].score,.95);
  assert.equal(committeeOf({id:'s',result:{}},[{tick:3,type:'award.issued',refs:{study_id:'s'},payload:{score:.75}}])?.score,.75);
+});
+
+test('reached result committee scores are ranked before a later award event',()=>{
+ const studies=[{id:'s1',tick:1,confirmed:true,p:.01}];
+ const events=[
+  {tick:10,type:'study.result',refs:{study_id:'s1'},payload:{confirmed:true,committee:{score:.8}}},
+  {tick:50,type:'award.issued',refs:{study_id:'s1'},payload:{score:.9}}
+ ];
+ const result=podium(studies,events,20);
+ assert.equal(result.status,'ranked');
+ assert.equal(result.entries[0].score,.8);
 });
