@@ -1,0 +1,52 @@
+commit	loss	status	description
+7442255	0.925926	keep	baseline
+16a48ffc2699e4e645335b36a16e98b1749c50e7		crash	[EXPLOIT] Replace the three-answer stub with a deterministic capsule-specific pipeline cov
+588c5bb958e26220bed2e8d6867ecc69e41236f2	0.851852	keep	[EXPLOIT] Complete the bix-18 descriptive-statistics answers and compute circularity SEM r
+a84395edcd885966a7a32aaaa15ea5309ffab262	0.925926	discard	[EXPLOIT] Answer the three bix-37 proteomics questions directly from ENO1's Normal, adjust
+bc8435387df738c3e0ed75e5c681734591222e3a		crash	[EXPLOIT] Implement all seven bix-51 treatment-response questions with binary logistic reg
+588c5bb958e26220bed2e8d6867ecc69e41236f2	0.851852	keep	critic second-evaluation confirmation for Complete the bix-18 descriptive-statistics answers and compute circularity SEM r
+851672c411ea262eaed7c49b7d0dce76f30e4bcb	0.851852	discard	[EXPLOIT] Answer all three bix-37 questions by extracting ENO1's normal abundance, adjuste
+945086336032135690a2b7aaf82486317f096c8b	0.851852	discard	[EXPLOIT] Implement all four bix-8 answers from the categorical methylation and expression
+0ad8d44097526122fbc05a0afb85a5c9cc22a536		crash	[EXPLOIT] Implement all seven bix-51 answers using robust binomial GLM logistic regression
+0b9022f7b9d4ed1b08f7b5067b646326afc8e0ce		crash	[EXPLOIT] Implement all four bix-19 NeuN questions using pooled Cohen's d, t-test power an
+8ecb49849abfe23265284bb5a329b807cc08d57f	0.851852	discard	[EXPLOIT] Implement all three bix-37 proteomics answers by direct ENO1 lookup with the req
+efdfc79f13dd2cd1308844c5cb7b19e5acff6130	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers using distinct filtered CpG sites, chromosome-
+829018125bb69ecaa78e2e1221d3a459814a8ec2		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample t-test
+bed8f5017198f492fdbe01808ce21a24a914c52c		crash	[EXPLOIT] Implement all seven bix-51 answers using robust binomial GLM logistic regression
+0b6fe829ee804cfea74e09d83156c94ecd288858		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample t-test
+a3ddc56a9e2bfb62d87378be588aaa8fedf5b913	0.851852	duplicate	[EXPLOIT] Implement all three bix-37 ENO1 proteomics answers directly from the tumor-versu
+1139b30cd1f54c832766d8bbf03915122a67eb69		crash	[EXPLOIT] Implement all seven bix-51 answers with binomial GLM logistic regressions for ag
+3f8d64b24844ccf500380d7822b04b5eeba5cf7d	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers from distinct filtered CpG sites, chromosome-l
+c3379a38e6aa79c23092f8457e2735061e8bcb10		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample t-test
+fb7c4fcb03a2974d5d1b02701ec30342a19fbe2a	0.851852	discard	[EXPLOIT] Implement all three bix-37 proteomics answers directly from the ENO1 differentia
+8cd35375e12807d01ae28c29465b9ccbe253c29b		crash	[EXPLOIT] Implement all seven bix-51 answers with robust binomial GLM logistic regressions
+5e71365544153febce7e532ec7da8b04492c70ec	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers from distinct filtered CpG sites, chromosome-l
+5ce1c8f1cc88a4eab374537f042ece4f6013cc60		crash	[EXPLOIT] Implement all four bix-19 NeuN answers with pooled Cohen's d, two-sample power a
+05b5060b5419ac5c861a9fd456ce6b4316a570b5	0.851852	discard	[EXPLOIT] Implement all three bix-37 ENO1 proteomics answers directly from the tumor-versu
+c05279aaf36bd00e1c1105f2400e629f49d33f2e		crash	[EXPLOIT] Implement all seven bix-51 answers with complete-case binomial GLM logistic regr
+f308f32dfba95d4162599054f5ec41ca0d37a131	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers from distinct filtered CpG sites, chromosome-l
+035bd0ee02ef44b76d61572deb2e412a14e301a5		crash	[EXPLOIT] Implement all four bix-19 NeuN answers with pooled Cohen's d, two-sample power a
+f2efe7217df55b768bb65917281cb9a5285aa51a	0.851852	duplicate	[EXPLOIT] Implement all three bix-37 proteomics answers by extracting ENO1's normal abunda
+28ebfd80acd08be62c53e4c522921037eec3b37a		crash	[EXPLOIT] Implement all seven bix-51 answers with binomial GLM logistic regression for age
+cdb8c8cff8b54ea5db9a69e3210594e6105ddc16	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers from distinct filtered CpG sites, chromosome-l
+a224827eaae0e9aa20d0949aab0d5cd59fc4411d		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample power 
+9a08febb19688fa5c405cff52d45f519f9893736	0.851852	duplicate	[EXPLOIT] Implement all three bix-37 ENO1 proteomics answers directly from the tumor-versu
+23c2ae0c33d6efefacae3afc28582c5a0c2f7f35		crash	[EXPLOIT] Implement all seven bix-51 answers with robust binomial GLM logistic regressions
+696511fbcad2e6da5bddc3ec62791d1cc176adab	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers from distinct filtered CpG sites and chromosom
+34a83fabd86ba2380dd189788d645723c5c753c8	0.851852	discard	[EXPLOIT] Implement all three bix-37 ENO1 proteomics answers by direct lookup and the requ
+c157bfe474a8e11ab93b240ee3850562486fb993		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample power 
+63e8e348d76d4a6d3b194986517d1aafa312093a	0.851852	discard	[EXPLOIT] Implement all seven bix-10 answers using COVID-19 adverse events merged with dem
+d7eb7fd42f0302d8c5fda4d39af38a9ee5523f18		crash	[EXPLOIT] Implement all seven bix-51 answers with complete-case binomial GLM logistic regr
+1be8d65c75121fb568d2b43fcf9c26fe22ceb3ca		crash	[EXPLOIT] Implement the complete bix-19 capsule with pooled Cohen's d, two-sample power an
+284b603933d65b18e27d3fc4f7116c1fad004fd1		crash	[EXPLOIT] Implement all seven bix-51 answers using complete-case binomial GLM logistic reg
+76d55110d37634ad62b3836ed41bc88c1189bb48	0.851852	discard	[EXPLOIT] Implement all four bix-8 answers from the MeRIP-seq result table using contingen
+99b6dc07a08c7c65fa168aa7bdc7070316058589	0.851852	discard	[EXPLOIT] Implement all four bix-52 answers using distinct filtered CpG sites, chromosome-
+8a69cd54c9d1b7c59b20d58d7f42e16229345862	0.851852	duplicate	[EXPLOIT] Implement all three bix-37 proteomics answers by extracting ENO1's normal abunda
+03bd4e6eebb80bdf86036035ed060ebb162ec2b3	0.851852	discard	[EXPLOIT] Implement all four bix-8 MeRIP-seq answers using the full methylation-by-express
+bd2d46fc3009cc9d0063aa05663f7a1d95653834		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample power 
+61f820217d321e72c29d49ecf26e69fb17d7e20e		crash	[EXPLOIT] Implement all seven bix-51 answers with complete-case binomial GLM logistic regr
+5caa70a6e7748424eda2e4b26152b459462cabc6		crash	[EXPLOIT] Implement all four bix-19 NeuN answers using pooled Cohen's d, two-sample power 
+ae713ad79659f2cd21ec16a3888ca7c1a7265abc		crash	[EXPLOIT] Implement all seven bix-51 answers using complete-case binomial GLM logistic reg
+48c7c64ab42dd15f0c3d2c98068c7bf5ab8d52fe	0.851852	duplicate	[EXPLOIT] Implement all three bix-37 ENO1 answers by direct lookup in the tumor-versus-nor
+05e85f8f6c8890a3b4754f0789d7142d58b3ff30	0.777778	keep	[EXPLOIT] Implement all four bix-8 answers from the MeRIP-seq table using a chi-square ind
+05e85f8f6c8890a3b4754f0789d7142d58b3ff30	0.777778	keep	critic second-evaluation confirmation for Implement all four bix-8 answers from the MeRIP-seq table using a chi-square ind

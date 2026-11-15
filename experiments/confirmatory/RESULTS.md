@@ -1,9 +1,19 @@
-# Confirmatory results (Kimi K3.1 via Tinker, research off for BixBench)
+# Confirmatory results (Kimi K3.1 via Tinker, research off for BixBench): exploratory after deviations
+
+**Label: the whole confirmatory set is exploratory after deviations.** The primary set, the guard and
+the held-out grader all changed after the preregistration (see "Deviations from preregistration and
+their direction"). Nothing below is a confirmatory test.
 
 ## Summary (n = 3 seeds per comparison; descriptive only, not significance-tested)
 - **S > B on held-out accuracy in the completed strict-guard bixbench_numeric set:** S 0.296 vs B 0.056
   (S better on 3/3 seeds). S also beats A (0.093) on 3/3 seeds. These are 3 paired seeds; the smallest
   attainable sign-flip p is 0.25, so no claim here is statistically significant.
+- **The S lead depends on the 01:34 grader fix (a0d4fcd).** Under the grader before that fix
+  (c31ab55), the same nine winners score A 0.093, B 0.056, S 0.074. S still beats B on the mean,
+  but only on 1 of 3 seeds, and S is below A. See `results/heldout_by_grader.tsv`.
+- **Confounds:** S has no critic or confirmation step, so S > B is confounded with acceptance rules.
+  B's best is 1/18 held-out on every seed. Agents see the held-out question text and the full public
+  data; held-out grading hides only the grade (see "Leakage and confound limits").
 - **Guarded vs unguarded held-out accuracy (mean over 3 seeds):**
 
   | set | A guarded / unguarded | B guarded / unguarded | S guarded / unguarded |
@@ -36,8 +46,69 @@ gate and critic. **S** = single agent: 1 worker, no meter, no scouts, no critic,
 48 candidates match the 4 x 12 of A and B. All arms use the same model and the v2 sandbox, with Exa
 and literature off.
 
+## Deviations from preregistration and their direction
+The preregistration is `PREREGISTRATION.md` (committed 00:46 PST, 2f7d634). Times below are commit
+times in PST. The 01:50 and 02:05 times in the PREREGISTRATION.md deviation headings are wrong; the
+commits are 01:21 (c31ab55) and 01:34 (a0d4fcd).
+
+| # | Deviation | When | Direction of effect |
+|---|---|---|---|
+| 1 | Scope cut after the main key's 402 (~00:53): bixbench seeds 3001-3006 down to 3001-3003; hadamard29 seeds 2001-2008 down to 2001-2003; playworld_hard not run | 01:03 (f0fdd10) | Fewer pairs. The smallest attainable p rises from 0.031 (6 pairs) or 0.0078 (8 pairs) to 0.25, so no test can be significant. |
+| 2 | Guard changed after inspecting rejection reasons: conventional stats constants exempted | 01:21 (c31ab55) | Accepts candidates the original guard rejected. The rejection rate had been about 45% in every arm, so it affects every arm's search. |
+| 3 | Primary set switched. The preregistration addendum (40cd36c) declared the guard2 rerun primary. Guard2 was truncated at the 01:45 cutoff, so this file headlines the complete strict-guard set instead. | after 01:45 | Headline chosen after seeing which set finished. The strict set was searched under the original, over-strict guard. |
+| 4 | Held-out grader fix: powers of ten (1e-4 to 1e-12) exempted, after seeing that a tolerance zeroed two S winners | 01:34 (a0d4fcd) | Raised S on seeds 3001 and 3003 from 0.000 to 0.333. A and B unchanged. This fix creates the S > A ordering and the 3/3 S > B ordering. |
+| 5 | Third false-positive class (integer loop bounds, `range(50)`) found but not fixed; unguarded score reported alongside | after 01:45 | Lowers guard2 A and S on seed 3001; unguarded columns show the size. |
+| 6 | Seed 3001 A and B each lost one worker slot (402) in round 5; 3002 A restarted fresh; 3002 S resumed after round 6 | 01:00-01:20 | Symmetric slot loss within the 3001 pair. Restarts reran from scratch or from clean checkpoints. |
+
+Strict-guard held-out means of the same nine winners under each grader (per seed in
+`results/heldout_by_grader.tsv`):
+
+| grader | A | B | S | S vs B per seed | S vs A per seed |
+|---|---|---|---|---|---|
+| 7442255 (original guard, used during search) | 0.074 | 0.019 | 0.074 | 1 better, 1 worse, 1 tie | 1 better, 1 worse, 1 tie |
+| c31ab55 (before the 01:34 fix) | 0.093 | 0.056 | 0.074 | 1 better, 2 worse | 1 better, 2 worse |
+| a0d4fcd (final, headlined) | 0.093 | 0.056 | 0.296 | 3 better | 3 better |
+
+## Arms as actually run
+All live arms use Kimi K3.1 via Tinker and the local memory backend. Arms C and D exist in `swarm.py`
+but were **not run** on any task.
+
+| task | arm | Exa / literature | memory backend | rounds | seeds | status |
+|---|---|---|---|---|---|---|
+| bixbench_numeric (pre-guard launch, a6b2a67) | A, B, S | off / off | local | 12 / 12 / 48 | 3001-3002 | stopped about 15 min in when the guard landed; not scored |
+| bixbench_numeric, strict guard (7442255) | A, B, S | off / off | local | 12 / 12 / 48 | 3001-3003 | completed (3001 A/B each lost 1 slot in round 5) |
+| bixbench_numeric, strict guard | A, B, S | off / off | local | 12 / 12 / 48 | 3004-3006 | stopped at the 01:00 scope cut; not scored |
+| bixbench_numeric, guard2 (c31ab55) | A, B, S | off / off | local | 12 / 12 / 48 | 3001 | truncated at round 6 / 8 / 24 |
+| bixbench_numeric, guard2 | A, B, S | off / off | local | 12 / 12 / 48 | 3002 | truncated at round 9 / 5 / 26 |
+| bixbench_numeric, guard2 | A, B, S | off / off | local | 12 / 12 / 48 | 3003 | truncated at round 10 / 7 / 46 |
+| hadamard29 (a6b2a67) | A, B | on / default | local | 16 | 2001 | truncated at round 15 / 9 |
+| hadamard29 | A, B | on / default | local | 16 | 2002 | truncated at round 13 / 10 |
+| hadamard29 | A, B | on / default | local | 16 | 2003 (fresh restart) | truncated at round 8 / 6 |
+| hadamard29 | A, B | on / default | local | 16 | 2004-2008 | stopped at the 01:00 scope cut; not scored |
+| hadamard29 | S | - | - | - | - | not run |
+| any task | C, D | - | - | - | - | not run |
+| playworld_hard | A, B | - | - | - | - | not run |
+| pilot: hadamard19, bixbench_mini, playworld_mini, ignobel (old rule) | A, B | on / default | local | 8 | 1001-1003 | completed (some arms reran after the first key ran out; section 4) |
+| fake-LLM smoke tests (all tasks) | A, B | off | local | 3-5 | 101, 202 | completed; plumbing only, not evidence |
+
+## Leakage and confound limits
+- **Held-out leakage:** the agents see the held-out question text and the full public capsule data.
+  Held-out grading hides only the grade. A candidate can still answer held-out questions directly from
+  the data; the held-out split measures generalisation of the code without grade feedback, not
+  unseen questions.
+- **Gold-literal guard:** it checks source literals, not outputs. It has three known false-positive
+  classes, and it would not catch an answer computed indirectly from a hard-coded value.
+- **S vs B is confounded with acceptance rules:** S has no critic or confirmation step, so every
+  improving candidate is kept at once. B needs critic confirmation and passes a gate. S > B may
+  reflect these acceptance rules rather than single-agent versus swarm search.
+- **B's ceiling:** B's best kept candidate scores 1/18 (0.056) held-out on every seed of the strict
+  set under the final grader and c31ab55. Under 7442255 it is 0/18 on seeds 3002 and 3003.
+- **Search under a broken guard:** all strict-set trajectories were shaped by the over-strict guard, so
+  their absolute accuracies are not representative.
+
 ## 1. bixbench_numeric, strict guard (pre-fix set, complete)
-Held-out accuracy on 18 questions the agents never saw. The best kept candidate is graded once with
+Held-out accuracy on 18 questions whose grades the agents never saw (they did see the question
+text and data). The best kept candidate is graded once with
 `final_eval.py` at a0d4fcd. The baseline `analysis.py` scores 0.074 dev / 0.000 held-out.
 
 | seed | A held-out | B held-out | S held-out | A dev | B dev | S dev |
@@ -119,6 +190,18 @@ no verified best determinant for n=29 is shipped with the task.
   integer loop bounds) confound BixBench searches. A guard that checks the values the candidate
   actually outputs, rather than source literals, would remove this class of error.
 
-Artifacts: `results/` holds per-arm `results.tsv`, `run.json`, `heldout.json` and
-`best_commit.txt`, plus `report_strict_guard.json` (from `report.py`) and
-`truncated_partial_runs.json` (from `truncated.py`).
+## Artifacts
+`results/` (committed, about 2 MB) holds, per set, seed and arm (`bixbench_strict/`,
+`bixbench_guard2/`, `hadamard29/`): `results.tsv`, `run.json`, `ledger.jsonl`,
+`resume_checkpoint.json`, `heldout.json` (completed bixbench arms), `best_commit.txt`, and the best
+candidate's source (`best_final_analysis.py` / `best_final_construct.py`; for truncated runs also
+`best_matched_budget_*` or `best_common_round_*`, the candidate scored in the tables). At the top
+level: `report_strict_guard.json` (from `report.py`), `truncated_partial_runs.json` (from
+`truncated.py`) and `heldout_by_grader.tsv`. Worktrees, caches and logs are not included.
+
+## Commit references
+Every SHA cited here is reachable from `agent/devin/eval-swarm` and `agent/devin/overnight`
+(`git merge-base --is-ancestor <sha> origin/agent/devin/overnight` succeeds for a6b2a67, 7442255,
+2f7d634, c31ab55, a0d4fcd, 09e0416 and 18dea09). Full SHAs: a6b2a67e9e9e1fed4fb84f6b364a90e615d8e753,
+744225543f79f0fba97f34194a7b0b4e075ccbbb, c31ab553ebc1916550cbaf20bf63979f379b64b8,
+a0d4fcdb14d1f1a368c6071e65fd323e0a09c65d.

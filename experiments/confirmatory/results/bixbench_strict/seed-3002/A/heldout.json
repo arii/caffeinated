@@ -1,0 +1,16 @@
+{
+  "commit": "be9d034bedca94fc58c6bf11f8c20298326a10db",
+  "dev": {
+    "accuracy": 0.25925925925925924,
+    "status": "ok"
+  },
+  "heldout": {
+    "accuracy": 0.05555555555555555,
+    "status": "ok"
+  },
+  "heldout_unguarded": {
+    "accuracy": 0.05555555555555555,
+    "status": "ok",
+    "answer_literal_qids": []
+  }
+}

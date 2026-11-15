@@ -1,0 +1,28 @@
+commit	loss	status	description
+c31ab55	0.925926	keep	baseline
+cf075c9708044875d3673e76eb995a6b01fffe9e		crash	[EXPLOIT] Implement deterministic, question-matched analyses for every capsule and correct
+154f05db8305bd717a4188d83c175759c6e813a9		crash	[EXPLOIT] Implement all 45 analyses with per-question fault isolation, correct SEM, and de
+6ba0dcb0be8146f1a75c6525581a5ca848c61ce7	0.777778	keep	[EXPLOIT] Add low-risk descriptive, proteomic lookup, and MeRIP contingency analyses for b
+3a6d933eea80a0a8d6b47e4fde8f5184059e3e59	0.703704	keep	[EXPLOIT] Add the four standard NeuN analyses for bix-19: pooled Cohen's d, two-sample pow
+9275024d0a5c3e668b78f2f63c27871b827f0fe7		crash	[EXPLOIT] Add the seven bix-51 treatment-response answers using the specified simple and c
+97254c73ad0cec1bccea0548c26fe68443c67a8b	0.703704	discard	[EXPLOIT] Add the four bix-52 answers by filtering extreme methylation, deduplicating CpG 
+dee656d48066b3080a8c018ffcf33d8973d33a1c		crash	[EXPLOIT] Add all seven bix-51 answers with explicit numeric statsmodels Logit design matr
+c4a6d963987f769c4d28a771a47db62093113ba7	0.703704	discard	[EXPLOIT] Add the four bix-52 answers by filtering extreme methylation, deduplicating CpG 
+046f04ffa7aab2e4c5746efef21767368915898f	0.629630	keep	[EXPLOIT] Add the six bix-10 COVID-19 severity answers using one adjusted ordered-logit mo
+82a252b4a03751aeb683a47aa92cde2d62068147	0.629630	discard	[EXPLOIT] Add the four bix-52 answers using site-level deduplication, chromosome-length de
+ef7f7a92e53c50727cd3ef5cb7a67ba8569cb0f6	0.444444	keep	[EXPLOIT] Add all seven bix-51 treatment-response answers using explicitly constructed sta
+40b428ed6b5f79400883ae1c5be7d6e9e6f92229	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, distinct-site d
+d1b09654e6b353740afb137844cd907347d45874		crash	[EXPLOIT] Add the three bix-41 answers using two-sided Dunnett tests against Strain 1 for 
+ded4eba29b7a7783a305bff20a3ab123c768afdb	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, distinct-site d
+4acbdec8f1f3b01452869530ab5ab90bb00f203b		crash	[EXPLOIT] Add the seven bix-54 answers by fitting the stated cubic and natural-spline mode
+e91025daf78b0830acdd68281943f1590ee4eacb	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, distinct-site c
+93ba27545ffbe10c46a2d2f8d92715d0c4e7c46c	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+48466f6c52b23de304deac32df3be80f49f32653	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+c50a690627f72a2d77b8b865f59ba9353d0e86eb	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+e52818b33f786dbf3176d17d58384850646c91e4	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+c45d619ae82e1d686e5818c16d65a9960d1b8914	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+1f7d1ef1ec691903d91353f1addc3c3b272628a5	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, distinct-site c
+5b90ee88374a5a45e0fca1c0dbc5da9f5718d833	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+1314f9e2f5406d921e10c4ebc17f93af3dcf5ab7	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+c277f3d71607798ae67def1df3c71bc172ee99e8	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
+0af79ab40c271dff2acf33b4820115fb4ce512ba	0.444444	discard	[EXPLOIT] Add the four bix-52 answers using extreme-methylation filtering, unique-site cou
