@@ -1,0 +1,3 @@
+{"agent": "worker-4", "cell": "other/beam_search", "idea": "Replace greedy context disambiguation with a globally scored beam over blocked-m", "round": 8, "ts": "2026-11-15T08:32:18.630694Z"}
+{"agent": "worker-3", "cell": "other/map_atlas_retrieval", "idea": "Retrieve aligned training maps and use only zero-conflict consensus for unknown ", "round": 9, "ts": "2026-11-15T08:39:25.655968Z"}
+{"agent": "worker-4", "cell": "other/episodic_replay", "idea": "Add an ambiguity-safe episodic transition memory that replays observed next fram", "round": 9, "ts": "2026-11-15T08:42:11.989317Z"}

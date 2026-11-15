@@ -1,0 +1,47 @@
+commit	loss	status	description
+47be227	0.851250	keep	baseline
+da533a12913c0e680a7c35310420d9d3ad2d6eb2	0.854250	discard	[EXPLOIT] Replace static-frame persistence with a cached tabular action-transition model l
+80451665dbad1b2b58def6ba330a221a543e27c6	0.350250	keep	[EXPLOIT] Stitch context frames into a global map, then simulate cardinal movement with wa
+c8e6990e1bd68ecf7a47ba53df0e650c80bc35ab	0.982000	discard	[EXPLOIT] Replace persistence with a local egocentric rollout that repeats frames for wall
+01e836cc99e417227d5cee18d07573a40ad3ef96	0.851250	discard	[EXPLOIT] Keep persistence as the fallback, but toggle all visible lamps when an action st
+80451665dbad1b2b58def6ba330a221a543e27c6	0.350250	keep	critic second-evaluation confirmation for Stitch context frames into a global map, then simulate cardinal movement with wa
+76dc8fc38d59eba4fc7079e4b2490038fbcc0e23	0.359500	discard	[EXPLOIT] Learn unanimous, repeatedly observed full-frame action transitions from public e
+e3a7ac00c0add702c4cfed6883caabc58c09217b	0.350250	discard	[EXPLOIT] Infer rectangular world boundaries from fully observed out-of-bounds rows/column
+7c2fae24ba73099add278cbb8f1efa1f68f00d39	0.343000	discard	[EXPLOIT] Toggle every mapped lamp whenever the agent successfully steps onto a switch, pr
+7b6031900684e18a888fd594f024fce347c69175	0.329500	keep	[EXPLOIT] Use each next context frame to detect blocked moves into previously unknown cell
+7b6031900684e18a888fd594f024fce347c69175	0.329500	keep	critic second-evaluation confirmation for Use each next context frame to detect blocked moves into previously unknown cell
+9d6eda87a2c5c616f5fddf27b2313eb15bc283f7	0.315750	keep	[EXPLOIT] Infer rectangular out-of-bounds boundaries from fully observed rows or columns o
+a0b8da9b526e3361e60269f82eea753388b55d5e	0.329500	discard	[EXPLOIT] Retrieve compatible public-episode maps and use their remembered walls and bound
+874a592c2e2d1d89bc635b83e263ca9fcdf05108	0.322250	discard	[EXPLOIT] Toggle all remembered lamps between off and on whenever the agent successfully s
+c1a583e40496c4247bc51e7ec066a0b2669ff867	0.329500	discard	[EXPLOIT] Use overlap consistency between consecutive raw context frames as additional evi
+9d6eda87a2c5c616f5fddf27b2313eb15bc283f7	0.315750	keep	critic second-evaluation confirmation for Infer rectangular out-of-bounds boundaries from fully observed rows or columns o
+d4d1b92875993ae323d6b68ab2f17a866f3a2f66	0.315750	discard	[EXPLOIT] Break ties in blocked-move inference using action-shifted overlap consistency be
+754ed39d70a34ce8a4ce1b3ebbe9c82d134f21b0	0.295500	keep	[EXPLOIT] Complete the stitched map with the wall perimeter immediately inside each inferr
+432d7196d8bbfcab1750565a5831b88517a6bd65	0.315750	discard	[EXPLOIT] Ignore off/on lamp mismatches when scoring context pose hypotheses so lamp toggl
+202b3bbce68689594c2975d8167b9a21fd072613	0.315750	discard	[EXPLOIT] Treat cells beyond the inferred rectangular out-of-bounds limits as blocked duri
+754ed39d70a34ce8a4ce1b3ebbe9c82d134f21b0	0.295500	keep	critic second-evaluation confirmation for Complete the stitched map with the wall perimeter immediately inside each inferr
+c89facd3a37977061f7d9e80ffe426a75bb0e536	0.288250	keep	[EXPLOIT] Toggle all known lamps whenever the agent successfully moves onto a switch, keep
+e47593b28be5e0a7557a4c736891a5ff34441021	0.295500	discard	[EXPLOIT] Replay the observed context-frame window when its complete action sequence recur
+4fc43b77155e2c2f5f6794a8f4a3111d00783066	0.290000	discard	[EXPLOIT] Extend observed full-width wall rows and full-height wall columns across still-u
+fa06834040cb4cef08f82ea5218c28a189d06d26	0.295500	discard	[EXPLOIT] Ignore lamp off/on-only mismatches when scoring stayed-versus-moved context pose
+c89facd3a37977061f7d9e80ffe426a75bb0e536	0.288250	keep	critic second-evaluation confirmation for Toggle all known lamps whenever the agent successfully moves onto a switch, keep
+7c767364c7565d131d8662efa269612600bd043d	0.288250	discard	[EXPLOIT] Ignore off/on lamp mismatches when scoring context pose hypotheses so lamp toggl
+094fa659edc601d7950bf9dab3102b6aa140677f	0.288250	discard	[EXPLOIT] Infer context movement by direct frame-to-frame camera registration instead of a
+7c48688451b377dbed930617b63cf31d65254113	0.331250	discard	[EXPLOIT] Infer out-of-bounds boundaries from every observed 6 cell rather than only compl
+c08511ab205273c04ed4f8e8ede9e37b22da601a	0.288250	discard	[EXPLOIT] Reuse context frames 1..N for the second rollout cycle when the future actions a
+0fc64f524fe8aac4feb3c18236079611635c64c5	0.288250	discard	[EXPLOIT] Exclude lamp off/on mismatches from context movement scoring so switch toggles a
+7f3be7a37bddb2980f9efb740a1c6f94bccd1fc4	0.288250	discard	[EXPLOIT] Learn support-gated local wall-geometry priors from public frames and use them o
+99d7457632a7635fa745dd480414393257ab8d46	0.291750	discard	[EXPLOIT] Use an identical, feature-bearing consecutive-frame pair as a tie-breaker for bl
+f207f63c2cfc9f2c7230a5fe3bffd433c996a361	0.331250	duplicate	[EXPLOIT] Infer rectangular out-of-bounds boundaries from every observed 6 cell, including
+5facbea10c97a0490ff65666a45172e901f03414	0.288250	discard	[SNAP] Train a compact action-conditioned neural transition model on public episodes an
+		reject	[SNAP] proposal rejected after repair
+		reject	[SNAP] proposal rejected after repair
+aee647bf9f5ec7c98ab2784bb93d7cbee07bec10	0.311250	discard	[SNAP] Replace greedy context disambiguation with a globally scored beam over blocked-m
+36151b535febb61a674320b22a1779df1584301c	0.318500	discard	[BREAKOUT] Add a translation-aligned episodic map atlas that completes unseen static cells 
+b2733983a69249ef97fa4f77026a526431b8ddcd		reject	[BREAKOUT] Train a compact pure-Python neural residual corrector on public rollout errors, 
+bbceefbf8f4774a029d69805c5ee1d38ac8ab030		reject	[BREAKOUT] Learn a deterministic tabular egocentric frame-transition model and use it only 
+5a5938e8627a607cb7040c4006f4f36f23e3ecc4		reject	[BREAKOUT] Add an ambiguity-safe episodic transition memory that replays observed next fram
+		reject	[BREAKOUT] Replace unconditional floor completion with a tabular spatial inpainting prior l
+		reject	[BREAKOUT] proposal rejected after repair
+		reject	[BREAKOUT] proposal rejected after repair
+		crash	[BREAKOUT] LLM call failed

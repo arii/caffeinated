@@ -31,3 +31,6 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
   example, heavier cars have lower city MPG, ρ = −0.89). No committee result is
   present in these records, so committee scoring has not been run on them. The
   committee-scored rerun is blocked: both Tinker keys return HTTP 402.
+
+Run artifacts (ledgers, results, held-out grades, study records, cost) are committed under
+[`experiments/real-runs/`](../experiments/real-runs/README.md).

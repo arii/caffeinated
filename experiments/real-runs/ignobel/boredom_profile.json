@@ -1,0 +1,155 @@
+{
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "direction": "min",
+  "directives": {
+    "BOREDOM_SNAP": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "CONVERGED": "Re-register the best finding's mechanism on an independent real dataset to check that it holds elsewhere.",
+    "EXPLOIT": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "PARADIGM_BREAKOUT": "Pick a study type nobody has used (resolve two conflicting published findings, or test a published effect in a new population) and find a dataset that can answer it."
+  },
+  "domain": "testcase-ignobel-mini",
+  "eps": 0.02,
+  "eps_note": "loss is 1 - (replicated and significant), 0 or 1; any confirmed study beats an unconfirmed one",
+  "fail_statuses": [
+    "crash"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "gate": {
+    "failed_min_distance": 0.25,
+    "snap_min_distance": 0.35
+  },
+  "k": 5,
+  "knn": 3,
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "min_attempts": 3,
+  "objective": "loss",
+  "params": {
+    "value": {
+      "ratio": 4,
+      "scale": "ratio"
+    }
+  },
+  "params_weight": 0.25,
+  "patience": 5,
+  "required_mechanisms": [
+    "baseline",
+    "food_science",
+    "sleep_science",
+    "animal_behavior",
+    "acoustics",
+    "behavioral_economics",
+    "transport",
+    "medicine",
+    "sports_science",
+    "psychology",
+    "everyday_physics",
+    "linguistics",
+    "ecology"
+  ],
+  "thresholds": {
+    "breakout": 0.85,
+    "exit": 0.55,
+    "snap": 0.7
+  },
+  "trivial_distance": 0.05,
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "version": 2,
+  "vocab": {
+    "acoustics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "animal_behavior": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "baseline": [
+      "none"
+    ],
+    "behavioral_economics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "ecology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "everyday_physics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "food_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "linguistics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "medicine": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "psychology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "sleep_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "sports_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "transport": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ]
+  },
+  "weights": [
+    0.45,
+    0.45,
+    0.1
+  ]
+}

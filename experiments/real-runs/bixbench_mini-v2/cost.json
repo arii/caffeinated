@@ -1,0 +1,37 @@
+{
+  "llm": {
+    "calls": 72,
+    "completion_tokens": 49919,
+    "models": {
+      "moonshotai/Kimi-K3.1-Pro:peft:262144": {
+        "calls": 72,
+        "completion_tokens": 49919,
+        "estimated_cost_usd": null,
+        "prompt_tokens": 343684
+      }
+    },
+    "prompt_tokens": 343684
+  },
+  "research_costs": {
+    "exa": {
+      "calls": 0,
+      "cost_usd": 0.0,
+      "latency_ms_p50": null,
+      "records": 0
+    },
+    "past_dev": {
+      "cost_note": "not reported by past.dev API",
+      "cost_usd": null,
+      "recall": {
+        "latency_ms_p50": null,
+        "records": 0
+      },
+      "records": 0,
+      "write": {
+        "latency_ms_p50": null,
+        "records": 0
+      }
+    }
+  },
+  "run_dir": "/home/ubuntu/longruns2/out-bixbench_mini-v2"
+}

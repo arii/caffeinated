@@ -1,0 +1,99 @@
+{
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "direction": "min",
+  "directives": {
+    "BOREDOM_SNAP": "Stop re-tuning restarts/seed/budget; try a different search or construction method, grounded in a source (Exa) and checked against past.dev.",
+    "CONVERGED": "Re-run the best construction to confirm the determinant.",
+    "EXPLOIT": "One focused change to the current best construction.",
+    "PARADIGM_BREAKOUT": "Change the mechanism: structured constructions (circulant/bordered blocks from the max-det literature) instead of local search."
+  },
+  "domain": "testcase-hadamard19",
+  "eps": 0.005,
+  "eps_note": "evaluator is exact and deterministic; 0.005 in log10|det| is a ~1.2% determinant gain",
+  "fail_statuses": [
+    "crash"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "gate": {
+    "failed_min_distance": 0.25,
+    "snap_min_distance": 0.35
+  },
+  "k": 5,
+  "knn": 3,
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "min_attempts": 3,
+  "objective": "loss",
+  "params": {
+    "value": {
+      "ratio": 4,
+      "scale": "ratio"
+    }
+  },
+  "params_weight": 0.25,
+  "patience": 3,
+  "patience_unit": "round",
+  "required_mechanisms": [
+    "baseline",
+    "search",
+    "construction",
+    "objective"
+  ],
+  "stuck": {
+    "depth": 2,
+    "min_fails": 2,
+    "window": 3
+  },
+  "thresholds": {
+    "breakout": 0.85,
+    "exit": 0.55,
+    "snap": 0.7
+  },
+  "trivial_distance": 0.05,
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "version": 3,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "construction": [
+      "circulant",
+      "bordered",
+      "block",
+      "from_literature"
+    ],
+    "objective": [
+      "log_det",
+      "surrogate"
+    ],
+    "search": [
+      "restarts",
+      "seed",
+      "budget",
+      "flip_greedy",
+      "pair_flip",
+      "annealing",
+      "tabu"
+    ]
+  },
+  "weights": [
+    0.45,
+    0.45,
+    0.1
+  ]
+}
