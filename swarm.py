@@ -2349,6 +2349,13 @@ def _orchestrate(args, publish_state):
                 )
             else:
                 print(f"round {round_num}: no candidate confirmed")
+            if known_optimum_reached(best_val):
+                write_converged(
+                    out_dir, profile, events, status, round_num=round_num + 1,
+                    best_commit=best_metric_commit, best_val=best_val,
+                    reason="known_optimum_loss",
+                )
+                break
 
     return {
         "arm": args.arm,
