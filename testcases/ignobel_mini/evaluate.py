@@ -47,6 +47,7 @@ MIN_N = 30
 MIN_CELL = 10
 MAX_WORD_OVERLAP = 0.5
 MIN_CITATIONS = 2
+MAX_CITATIONS = 8
 MAX_TEXT = 600
 RECORD_LOSS = None
 TEXT_FIELDS = ("question", "hypothesis", "mechanism")
@@ -166,6 +167,8 @@ def parse_prereg(source, fields):
     citations = prereg.get("citations")
     if not isinstance(citations, list) or any(not isinstance(c, str) or not c.strip() for c in citations):
         raise ValueError("citations must be a list of Exa source ids (S<k>) or URLs")
+    if len(citations) > MAX_CITATIONS:
+        raise ValueError(f"at most {MAX_CITATIONS} citations")
     dataset = prereg.get("dataset")
     if not isinstance(dataset, dict) or not isinstance(dataset.get("url"), str):
         raise ValueError("dataset must be an object with a url")

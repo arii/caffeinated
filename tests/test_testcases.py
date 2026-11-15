@@ -512,7 +512,13 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertNotIn("rownames", result["stderr"])
 
     def test_invalid_registrations_fail_closed(self):
-        for overrides in ({"field": "astrology"}, {"study_type": "fishing"}, {"predicted_rho": 0}, {"hypothesis": ""}):
+        for overrides in (
+            {"field": "astrology"},
+            {"study_type": "fishing"},
+            {"predicted_rho": 0},
+            {"hypothesis": ""},
+            {"citations": [f"10.1/{k}" for k in range(9)]},
+        ):
             with self.subTest(overrides=overrides):
                 result = self.run_prereg(**overrides)
                 self.assertEqual((result["status"], result["reason"]), ("crash", "invalid_output"))
