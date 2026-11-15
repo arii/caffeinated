@@ -4,6 +4,7 @@
   MOCK=1 python score.py            # reads runs/full-s0/events.jsonl by default
 """
 import argparse
+import itertools
 import json
 from pathlib import Path
 
@@ -19,14 +20,11 @@ def same_finding(a: list[dict], b: list[dict]) -> bool:
     dataset file."""
     if not a or len(a) != len(b):
         return False
-    left = list(b)
-    for x in a:
-        twin = next((y for y in left if x["dataset"] and y["dataset"] == x["dataset"] and y["column"] == x["column"]
-                     and lab.common(x["sketch"], y["sketch"]) >= SAME_FINDING), None)
-        if twin is None:
-            return False
-        left.remove(twin)
-    return True
+
+    def same(x, y):
+        return (x["dataset"] and y["dataset"] == x["dataset"] and y["column"] == x["column"]
+                and lab.common(x["sketch"], y["sketch"]) >= SAME_FINDING)
+    return any(all(same(x, y) for x, y in zip(a, order)) for order in itertools.permutations(b))  # at most 4 arrays
 
 
 def score_events(events_path: str | Path, out_path: str | Path | None = None, seed: int = 0) -> list[dict]:
