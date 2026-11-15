@@ -338,9 +338,10 @@ def run_experiment(args):
     if git(repo, "status", "--porcelain", "--untracked-files=no"):
         raise ValueError("commit tracked changes before running for reproducible clones")
     commit = git(repo, "rev-parse", "HEAD")
-    model = args.model or ("fake" if args.llm == "fake" else os.environ.get("TINKER_MODEL"))
+    model_env = {"tinker": "TINKER_MODEL", "openai": "OPENAI_MODEL"}.get(args.llm)
+    model = args.model or ("fake" if args.llm == "fake" else os.environ.get(model_env))
     if not model:
-        raise ValueError("provide --model or TINKER_MODEL")
+        raise ValueError(f"provide --model or {model_env}")
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=False)
     settings = {
@@ -473,7 +474,7 @@ def build_parser():
     parser.add_argument(
         "--jobs", type=int, default=1, help="maximum independent arms running concurrently"
     )
-    parser.add_argument("--llm", choices=("fake", "tinker"), default="fake")
+    parser.add_argument("--llm", choices=("fake", "tinker", "openai"), default="fake")
     parser.add_argument("--model")
     parser.add_argument("--exa", choices=("off", "on"), default="off")
     parser.add_argument("--exa-max-calls", type=int, default=200)
