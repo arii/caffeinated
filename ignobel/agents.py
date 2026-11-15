@@ -113,6 +113,9 @@ def _steps(data: dict) -> list[dict]:
             v = re.search(key + r'"?\s*:\s*"((?:[^"\\]|\\.)*)"', chunk)
             if v:
                 step[key] = v.group(1)
+        n = re.search(r'\bn"?\s*:\s*"?(\d+)', chunk)
+        if n:
+            step["n"] = int(n.group(1))
         out.append(step)
     return out
 

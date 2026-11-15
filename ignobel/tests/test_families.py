@@ -421,3 +421,11 @@ def test_simulated_measurements_follow_the_prediction_and_sample_sizes():
     dry = [float(r["walk_time"]) for r in cells if r["group"] == "dry"]
     assert len(wet) == len(dry) == 200 and -1.1 < stats.two_group(wet, dry)[0] < -0.5
     assert bench.clean_request({**STEP, "n": "lots", "design": "magic"})["n"] == 60
+
+
+def test_a_salvaged_experiment_step_keeps_its_sample_size():
+    import agents
+    import bench
+    raw = 'experiment{"name":"experiment", question":"Do wet socks slow a walker?", protocol":"Walk 20 m.", "n": 200}}'
+    step = agents._steps({"_raw": raw})[0]
+    assert step["tool"] == "experiment" and bench.clean_request(step)["n"] == 200
