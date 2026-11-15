@@ -101,6 +101,23 @@ def fake_response(role, values):
             "predicted_delta": -0.001,
             "risk": "The small benchmark may not expose the effect.",
         }
+    if role == "CRITIC_NOVELTY":
+        try:
+            candidates = json.loads(str(values.get("candidates") or "[]"))
+        except json.JSONDecodeError:
+            candidates = []
+        return {
+            "scores": [
+                {
+                    "agent": item.get("agent"),
+                    "novelty": 0.5,
+                    "closest": None,
+                    "why": "Offline runs cannot judge prior art.",
+                }
+                for item in candidates
+                if isinstance(item, dict)
+            ]
+        }
     if role == "CRITIC":
         return {
             "verdict": "replicated",

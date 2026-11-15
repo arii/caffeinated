@@ -71,12 +71,24 @@ def read_ledger(path):
     return sorted(events, key=lambda e: e["seq"])
 
 
+def is_other_descriptor(profile, descriptor):
+    """`other/<slug>` extends a two-level vocabulary without editing the profile."""
+    levels = profile["levels"]
+    if len(levels) != 2 or descriptor.get(levels[0]) != "other":
+        return False
+    slug = descriptor.get(levels[1])
+    return (isinstance(slug, str) and slug.isascii() and 2 <= len(slug) <= 40
+            and slug[0].isalpha() and slug == slug.lower() and slug.replace("_", "").isalnum())
+
+
 def validate_descriptor(profile, descriptor):
     levels = profile["levels"]
     vocab = profile.get("vocab")
     for level in levels:
         if level not in descriptor:
             raise ValueError(f"descriptor missing level '{level}'")
+    if vocab and is_other_descriptor(profile, descriptor):
+        vocab = None
     if vocab:
         node = vocab
         for level in levels:

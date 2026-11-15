@@ -12,10 +12,10 @@ choose the scout. Meter scores are logged only in shadow artifacts; B values
 and cell suggestions are excluded from prompts and recalled assignments.
 Ordinary results and research memory remain available in both arms.
 
-A retains the existing numeric acceptance checks and omits the critic LLM;
-B retains the critic LLM and meter-driven allocation/gating. The comparison
-therefore measures these configured arm policies, including their different
-call counts, rather than isolating the numerical meter score alone.
+Both arms run the same numeric acceptance checks and the same critic LLM,
+including the prior-art novelty judgement; critic prompts carry no meter state.
+B adds only meter-driven allocation, gating and cell suggestions, so the
+comparison isolates the meter's effect on what the swarm tries.
 
 ## Offline validation
 

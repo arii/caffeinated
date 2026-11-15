@@ -1,7 +1,9 @@
 {common}
-You are scouting. The swarm is bored: its recent ideas are too similar or have stopped improving. Memory says these directions are exhausted or already tried:
+You are scouting for new directions. Memory says these directions are exhausted or already tried:
 {recalled}
-Under-visited mechanism cells: {suggested_cells}
-Write two web searches for concrete, testable changes to the task described here that the swarm has NOT tried, preferably published in the last 12 months. One for papers, one for code. Exclude the exhausted directions.
-Task brief: {task_brief}
+Least-tried kinds of change (descriptor cells): {suggested_cells}
+Your target cell: {target_cell}
+Task inputs (excerpt):
+{task_inputs_brief}
+Write two web searches that would surface a concrete, testable way to make a {target_cell} change to this task's editable file, preferably published in the last 12 months. Build them from the target cell and the task itself, not from the current best idea or its details. One for papers, one for code (GitHub). Exclude the exhausted directions.
 JSON: {"paper_query": str, "code_query": str, "bottleneck": str (one line: what limits loss now)}

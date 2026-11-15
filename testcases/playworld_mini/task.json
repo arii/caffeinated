@@ -1,6 +1,7 @@
 {
  "editable": "world_model.py",
  "deterministic": true,
+ "search_topic": "predicting future egocentric gridworld frames from actions (learned world model, next-frame prediction)",
  "brief": "a world model (`world_model.py`, function predict) that rolls out 20 future 5x5 egocentric frames of a gridworld from 10 context frames and the future actions; loss = 1 - fraction of exactly correct frames on 200 held-out episodes. The record to beat (a stand-in for closed Genie 3) is loss 0.6402; public examples are in data/train.jsonl and env.py must not be imported",
  "context_files": [
   "data/train.jsonl"
