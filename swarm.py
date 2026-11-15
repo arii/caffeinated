@@ -1559,7 +1559,10 @@ def dig(data, path):
 
 def normalize_url(url):
     """Lowercase the case-insensitive scheme and host of a URL; keep its path case."""
-    parts = urllib.parse.urlsplit(url)
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return url
     return urllib.parse.urlunsplit(
         parts._replace(scheme=parts.scheme.lower(), netloc=parts.netloc.lower())
     )

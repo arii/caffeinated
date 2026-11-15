@@ -1952,6 +1952,9 @@ class AdversarialReviewRegressionTests(unittest.TestCase):
 
 
 class IgnobelIdeaDescriptorTest(unittest.TestCase):
+    def test_malformed_dataset_url_keeps_its_text(self):
+        self.assertEqual(swarm.normalize_url("https://[x.org/d.csv"), "https://[x.org/d.csv")
+
     def setUp(self):
         self.profile = meter.load_profile(ROOT / "testcases/ignobel/boredom_profile.json")
 
