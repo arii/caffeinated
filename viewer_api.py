@@ -168,11 +168,11 @@ def without_bodies(entity):
     return {k: v for k, v in entity.items() if k not in TIMELINE_FIELDS}
 
 
-def cached(request, run, payload):
+def cached(request, run, payload, headers=None):
     """JSON with an ETag; completed runs are immutable so clients may cache forever."""
     body = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
     etag = f'"{run.etag_base}-{hashlib.sha1(body).hexdigest()[:16]}"' if run else None
-    headers = {}
+    headers = dict(headers or {})
     if etag:
         headers["ETag"] = etag
         if run.manifest.get("status") == "completed" and not run.manifest.get("live"):
@@ -223,8 +223,8 @@ def create_router(store):
             selected.append(event)
         if "application/x-ndjson" in request.headers.get("accept", ""):
             body = "".join(json.dumps(e, sort_keys=True, ensure_ascii=False) + "\n" for e in selected)
-            return Response(body, media_type="application/x-ndjson")
-        return cached(request, run, {"events": selected, "next_after": next_after})
+            return Response(body, media_type="application/x-ndjson", headers={"Vary": "Accept"})
+        return cached(request, run, {"events": selected, "next_after": next_after}, {"Vary": "Accept"})
 
     @router.get("/runs/{run_id}/agents/{agent_id}")
     def agent(run_id: str, agent_id: str, request: Request, tick: int | None = None,
