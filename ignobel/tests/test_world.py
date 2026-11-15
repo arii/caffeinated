@@ -12,9 +12,9 @@ from conftest import requires_sandbox
 pytestmark = requires_sandbox
 
 
-def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None):
+def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None, roster="flat"):
     out = Path(out or tmp_path / f"{arm}-{seed}")
-    world = run_arm.build_world(arm, agents, seed, out)
+    world = run_arm.build_world(arm, agents, seed, out, roster=roster)
     if resume:
         assert world.load_state()
     asyncio.run(world.run(rounds))
@@ -24,7 +24,8 @@ def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=Non
 def test_full_arm_emits_every_event_type(tmp_path):
     path = _run(tmp_path, rounds=4)
     types = {e.type for e in events.read(path)}
-    assert types == events.EVENT_TYPES, f"missing {events.EVENT_TYPES - types}"
+    family_only = {"spawn", "research", "experiment_request", "experiment_result"}
+    assert types == events.EVENT_TYPES - family_only, f"missing {events.EVENT_TYPES - types}"
 
 
 def test_same_seed_same_file(tmp_path):
@@ -49,7 +50,7 @@ def test_resume_matches_uninterrupted_run(tmp_path):
 def test_resume_drops_events_from_a_crashed_round(tmp_path):
     full = _run(tmp_path, rounds=3, out=tmp_path / "full")
     part = _run(tmp_path, rounds=1, out=tmp_path / "part")
-    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part", roster="flat")
     assert crashed.load_state()
     crashed.log.append(2, "quill", "boredom", {"B": 0.9})  # round 2 got this far, then died
     _run(tmp_path, rounds=3, resume=True, out=tmp_path / "part")
@@ -58,9 +59,9 @@ def test_resume_drops_events_from_a_crashed_round(tmp_path):
 
 def test_resume_without_checkpoint_replays_round0_cleanly(tmp_path):
     full = _run(tmp_path, rounds=1, out=tmp_path / "full")
-    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    crashed = run_arm.build_world("full", 4, 0, tmp_path / "part", roster="flat")
     crashed.log.append(0, "quill", "seed", {"partial": True})
-    world = run_arm.build_world("full", 4, 0, tmp_path / "part")
+    world = run_arm.build_world("full", 4, 0, tmp_path / "part", roster="flat")
     assert not world.load_state()
     asyncio.run(world.run(1))
     assert filecmp.cmp(full, tmp_path / "part" / "events.jsonl", shallow=False)

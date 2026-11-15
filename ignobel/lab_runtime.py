@@ -1,7 +1,9 @@
 """Copied into every study sandbox. Study code may import only this and the standard library.
 
-Reads spec.json written by lab.py: {dataset, instruments: {name: column}, budget, measurements}.
-Prints '@@CALLS n' after each instrument call and '@@RESULT {...}' once at the end.
+Reads spec.json written by lab.py: {dataset, instruments: {name: column}, budget, measurements,
+datasets: {name: {file, columns}}}. `datasets` are real public datasets the agent loaded itself.
+Prints '@@CALLS n' after each instrument call, '@@READ name' when a loaded dataset is first opened,
+and '@@RESULT {...}' once at the end.
 """
 import csv
 import json
@@ -9,6 +11,7 @@ import json
 with open("spec.json", encoding="utf-8") as _f:
     SPEC = json.load(_f)
 _calls = 0
+_read = set()
 
 
 class BudgetExceeded(RuntimeError):
@@ -44,6 +47,58 @@ def instrument(name: str, where: dict | None = None, offset: int = 0, limit: int
     _calls += 1
     print(f"@@CALLS {_calls}", flush=True)
     return _read_column(SPEC["dataset"], SPEC["instruments"][name], where, offset, limit)
+
+
+def datasets() -> dict:
+    """{dataset name: [column names]} for the real datasets this lab has loaded."""
+    return {name: list(d["columns"]) for name, d in SPEC.get("datasets", {}).items()}
+
+
+def _dataset(name: str) -> dict:
+    if name not in SPEC.get("datasets", {}):
+        raise KeyError(f"unknown dataset {name!r}; have {list(SPEC.get('datasets', {}))}")
+    if name not in _read:
+        _read.add(name)
+        print(f"@@READ {name}", flush=True)
+    return SPEC["datasets"][name]
+
+
+def path(dataset: str) -> str:
+    """CSV file of a loaded dataset, e.g. for pandas.read_csv."""
+    return _dataset(dataset)["file"]
+
+
+def _same(cell, want) -> bool:
+    try:
+        return float(cell) == float(want)
+    except (TypeError, ValueError):
+        return str(cell).strip() == str(want).strip()
+
+
+def rows(dataset: str, columns, where: dict | None = None) -> list[tuple]:
+    """Tuples of floats, one per data row in which every listed column is a number.
+
+    where={'column': value} keeps only rows whose column equals value (a category or a number).
+    """
+    d = _dataset(dataset)
+    columns = [columns] if isinstance(columns, str) else list(columns)
+    if where is not None and not isinstance(where, dict):
+        raise TypeError("where must be a dict like {'column': 'value'}")
+    for c in columns + list(where or {}):
+        if c not in d["columns"]:
+            raise KeyError(f"dataset {dataset!r} has no column {c!r}; have {d['columns']}")
+    out = []
+    with open(d["file"], newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            if where and not all(_same(r.get(k), v) for k, v in where.items()):
+                continue
+            try:
+                vals = tuple(float(r[c]) for c in columns)
+            except (TypeError, ValueError):
+                continue
+            if all(v == v and abs(v) != float("inf") for v in vals):  # NaN and inf cells are not measurements
+                out.append(vals)
+    return out
 
 
 def measurements() -> list[list[float]]:
