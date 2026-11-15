@@ -21,7 +21,10 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
 - **Confirmatory A/B/S:** in the completed strict-guard `bixbench_numeric` set,
   single-agent arm S has mean held-out accuracy 0.296 versus 0.056 for boredom
   swarm B, and S is higher on all 3 paired seeds. The comparison is not
-  statistically significant (smallest attainable sign-flip p = 0.25). See
+  statistically significant (smallest attainable sign-flip p = 0.25), and the
+  ordering depends on a held-out grader tolerance fix made after the winners were
+  known: under the earlier grader the means are A 0.093, B 0.056, S 0.074 (S above
+  B on 1 of 3 seeds). The whole set is exploratory after deviations. See
   [`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md)
   for the full per-seed results and limitations.
 - **Ig Nobel (pre-committee):** the stopped `out-ignobel` artifact has 22 study
