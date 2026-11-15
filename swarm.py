@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 from types import SimpleNamespace
 
 import boredom
@@ -43,6 +44,8 @@ RESULT_COLUMNS = (
     "description",
     "agent",
     "round",
+    "descriptor",
+    "kind",
 )
 
 
@@ -270,6 +273,8 @@ def write_results(ledger_path, results_path):
                     event.get("description", ""),
                     event.get("agent", ""),
                     event.get("round", 0),
+                    json.dumps(event.get("descriptor"), sort_keys=True),
+                    event.get("kind", ""),
                 ]
             )
     return events
@@ -738,10 +743,13 @@ def gate_candidate(
     out_dir,
     profile_path,
     commit,
+    role=None,
 ):
     args = SimpleNamespace(
         command="gate",
         results=str(Path(out_dir) / "results.tsv"),
+        ledger=str(Path(out_dir) / "ledger.jsonl"),
+        role=role,
         log=str(Path(out_dir) / "boredom_log.jsonl"),
         repo=str(repo),
         profile=str(profile_path),
@@ -794,6 +802,7 @@ def worker_attempts(
     all_leads,
     claims,
     replay,
+    assigned_cells=None,
 ):
     memory_queries = [
         f"what has been tried involving {profile.get('objective', 'val_bpb')} and what happened",
@@ -823,6 +832,12 @@ def worker_attempts(
     common = common_values(
         agent, round_num, role, status, agent_b, best_commit, best_val, profile
     )
+    common.update({
+        "suggested_cells": format_cells(status.get("suggested_cells", [])),
+        "reasons": "none",
+        "assigned_cell": "none",
+        "train_py": train_py,
+    })
     proposal = llm_client.call(
         "WORKER_PROPOSE",
         agent=agent,
@@ -840,9 +855,13 @@ def worker_attempts(
     )
     attempts = []
     current_proposal = proposal
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         try:
             current_proposal = validate_proposal(profile, current_proposal)
+            if common["assigned_cell"] != "none" and meter.cell_key(
+                profile, current_proposal["descriptor"], 2
+            ) != common["assigned_cell"]:
+                raise ValueError("proposal must implement the assigned cell")
             valid_leads = {
                 item.get("id") for item in all_leads if item.get("id")
             }
@@ -995,6 +1014,7 @@ def worker_attempts(
             out_dir=out_dir,
             profile_path=profile_path,
             commit=committed["commit"],
+            role=role,
         )
         attempts.append(
             {
@@ -1024,6 +1044,38 @@ def worker_attempts(
         }
         if gate_pass:
             return candidate
+        common["reasons"] = "; ".join(gate_record.get("reasons", []))
+        if attempt == 2:
+            events = meter.read_ledger(Path(out_dir) / "ledger.jsonl")
+            reserved = assigned_cells if assigned_cells is not None else []
+            cells = meter.suggest(profile, events, n=len(meter.all_cells(profile, 2)))
+            eligible = []
+            for cell in cells:
+                descriptor = dict(zip(profile["levels"], cell["cell"].split("/")))
+                values = [event["descriptor"].get("params", {}).get("value")
+                          for event in events
+                          if meter.cell_key(profile, event["descriptor"], 2) == cell["cell"]]
+                values = [abs(value) for value in values if isinstance(value, (int, float))]
+                spec = profile.get("params", {}).get("value", {})
+                if values and spec.get("scale") == "ratio":
+                    descriptor["params"] = {"value": max(max(values), 1e-12) * spec["ratio"]}
+                if cell["cell"] != "baseline/none" and cell["cell"] not in reserved and meter.gate(
+                    profile, events, descriptor, role=role, sources=["assigned"]
+                )["pass"]:
+                    eligible.append((cell["cell"], descriptor))
+            if not eligible:
+                eligible = [(cell["cell"], dict(zip(profile["levels"], cell["cell"].split("/")))) for cell in cells
+                            if cell["cell"] != "baseline/none" and cell["cell"] not in reserved]
+            if eligible:
+                common["assigned_cell"], common["assigned_descriptor"] = eligible[0]
+                reserved.append(common["assigned_cell"])
+                current_proposal = llm_client.call(
+                    "WORKER_REPAIR", agent=agent, round_num=round_num,
+                    values={**common, "problem": "Implement exactly the conductor-assigned cell. Required descriptor: "
+                            + json.dumps(common["assigned_descriptor"], sort_keys=True),
+                            "proposal": json.dumps(current_proposal, sort_keys=True)},
+                )
+                continue
         if attempt == 1:
             current_proposal = llm_client.call(
                 "WORKER_REPAIR",
@@ -1056,8 +1108,11 @@ def worker_attempts(
     }
 
 
-def fake_gpu_result(commit):
-    digest = int(hashlib.sha256(commit.encode("utf-8")).hexdigest(), 16)
+def fake_gpu_result(repo, commit):
+    entries = git(repo, "ls-tree", "-z", f"{commit}^{{tree}}").stdout.split("\0")
+    # Audit artifacts contain timestamps and commit IDs, not training inputs.
+    tree = "\0".join(entry for entry in entries if entry and entry.split("\t", 1)[1] != "experiments")
+    digest = int(hashlib.sha256(tree.encode("utf-8")).hexdigest(), 16)
     score = 0.975 + 0.025 * digest / ((1 << 256) - 1)
     memory_gb = 44.0
     return {
@@ -1273,7 +1328,7 @@ def run_gpu_burst(repo, commits, seed, out_dir, gpu_mode):
             )
         return results, ""
     if gpu_mode == "fake":
-        results = {commit: fake_gpu_result(commit) for commit in commits}
+        results = {commit: fake_gpu_result(repo, commit) for commit in commits}
         for commit, result in results.items():
             result_path = Path(out_dir) / f"{commit}.log"
             result_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1302,6 +1357,7 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score, 
         "agent": candidate["agent"],
         "status": status,
         "score": score,
+        "replicate_score": candidate.get("replicate_score"),
         "descriptor": candidate["descriptor"],
         "sources": candidate.get("sources", []),
         "commit": candidate.get("commit") or None,
@@ -1482,9 +1538,10 @@ def critic_lesson_memory(
 
 
 @contextmanager
-def arm_environment(arm, exa_enabled, memory_backend=None):
+def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
     names = (
         "AUTORESEARCH_ARM",
+        "AUTORESEARCH_RUN_ID",
         "EXA",
         "BOREDOM",
         "PRIOR_ART",
@@ -1493,6 +1550,8 @@ def arm_environment(arm, exa_enabled, memory_backend=None):
     )
     saved = {name: os.environ.get(name) for name in names}
     os.environ["AUTORESEARCH_ARM"] = arm
+    if run_id is not None:
+        os.environ["AUTORESEARCH_RUN_ID"] = run_id
     os.environ["EXA"] = "on" if exa_enabled else "off"
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
@@ -1595,7 +1654,13 @@ def orchestrate(args):
         baseline_commit, baseline_val = start_commit[:7], baseline["val_bpb"]
         TASK["prompt_values"]["baseline_val"] = f"{baseline_val:.6f}"
 
-    with arm_environment(args.arm, exa_enabled, memory_backend):
+    run_id_path = out_dir / "run_id"
+    if not run_id_path.exists():
+        run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
+    run_id = run_id_path.read_text(encoding="utf-8").strip()
+    if not run_id:
+        raise ValueError("swarm run_id must not be empty")
+    with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,
@@ -1633,6 +1698,7 @@ def orchestrate(args):
             events_for_scouts = list(events)
             cell_suggestions = suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
+            status["suggested_cells"] = cell_suggestions
             append_assignment(
                 allocation,
                 out_dir=out_dir,
@@ -1662,11 +1728,13 @@ def orchestrate(args):
             all_leads = list(leads.values())
             candidate_records = []
             claims = []
+            assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
             for agent in AGENTS:
                 role = allocation["roles"][agent]
                 lead = lead_for_agent(agent, leads, all_leads)
                 candidate = worker_attempts(
+                    assigned_cells=assigned_cells,
                     agent=agent,
                     round_num=round_num,
                     arm=args.arm,
@@ -1745,6 +1813,7 @@ def orchestrate(args):
                 )
                 critic_result = critic_results[provisional_best["commit"]]
                 provisional_best["critic_score"] = critic_result.get("val_bpb")
+                provisional_best["replicate_score"] = critic_result.get("val_bpb")
                 provisional_best["critic_memory_gb"] = critic_result.get("memory_gb")
                 first_score = float(provisional_best["score"])
                 second_score = critic_result.get("val_bpb")
@@ -1971,7 +2040,7 @@ def build_parser():
     parser.add_argument("--out")
     parser.add_argument("--profile", default=str(DEFAULT_PROFILE))
     parser.add_argument(
-        "--llm", choices=("openai", "fake", "queue"), default="openai"
+        "--llm", choices=("openai", "tinker", "fake", "queue"), default="openai"
     )
     parser.add_argument("--gpu", choices=("modal", "fake", "local"), default="modal")
     parser.add_argument(

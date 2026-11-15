@@ -148,6 +148,16 @@ def selected_log(log=None):
     return Path(log or os.environ.get("MEMORY_LOG", "memory_log.jsonl"))
 
 
+def arm_run_scope(arm=None, run_id=None):
+    arm = arm or os.environ.get("AUTORESEARCH_ARM")
+    if not arm:
+        return None
+    run_id = run_id or os.environ.get("AUTORESEARCH_RUN_ID")
+    if not run_id:
+        raise ValueError("arm-scoped pastdev memory requires --run-id or AUTORESEARCH_RUN_ID")
+    return {"arm": str(arm).upper(), "run_id": run_id}
+
+
 def append_jsonl(path, record):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -373,7 +383,7 @@ def wait_for_ingestion(response, wait, api_key=None, started_at=None):
 
 
 def write(type, id, content, author, metadata, timestamp=None, wait=False,
-          *, backend=None, mirror=None, log=None, arm=None):
+          *, backend=None, mirror=None, log=None, arm=None, run_id=None):
     mem_type = type
     memory_id = id
     backend = selected_backend(backend, arm)
@@ -383,6 +393,9 @@ def write(type, id, content, author, metadata, timestamp=None, wait=False,
     payload = memory_payload(
         mem_type, memory_id, content, author, metadata, when
     )
+    if backend == "pastdev":
+        scope = arm_run_scope(arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id"))
+        payload["metadata"].update(scope or {})
     ingestion_id = None
     completed_ms = None
     audience = None
@@ -453,6 +466,7 @@ def remember(args):
         mirror=args.mirror,
         log=args.log,
         arm=arm,
+        run_id=args.run_id,
     )
     print(f"remembered {item['id']} ({args.status})")
     return 0
@@ -510,6 +524,9 @@ def sync(args):
         print(f"synced {len(items)} runs for {args.arm} (ingestion {backend})")
         return 0
 
+    scope = arm_run_scope(args.arm, args.run_id)
+    for item in typed_items:
+        item["metadata"].update(scope or {})
     api_key = api_key_for_arm(args.arm)
     if not api_key:
         raise RuntimeError("PAST_API_KEY is required for pastdev backend")
@@ -749,8 +766,33 @@ def normalize_pastdev_results(response, mirror):
     return results
 
 
+def scoped_pastdev_response(response, mirror, scope):
+    mirror_index = mirror_source_index(mirror)
+
+    def matches(metadata):
+        metadata = metadata if isinstance(metadata, dict) else {}
+        return (
+            ("arm" not in metadata or str(metadata["arm"]).upper() == scope["arm"])
+            and ("run_id" not in metadata or metadata["run_id"] == scope["run_id"])
+        )
+
+    results = []
+    raw_results = response.get("results")
+    if not isinstance(raw_results, list):
+        raise RuntimeError("unexpected past.dev recall response: results must be a list")
+    for result in raw_results:
+        sources = []
+        for source in result.get("sources") or []:
+            record = mirror_index.get(str(source.get("sourceId") or ""))
+            if record is not None and all(matches(item.get("metadata")) for item in (record, source, result)):
+                sources.append(source)
+        if sources:
+            results.append({**result, "sources": sources})
+    return {**response, "results": results}, len(raw_results) - len(results)
+
+
 def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-            mirror=None, log=None, arm=None):
+            mirror=None, log=None, arm=None, run_id=None):
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
@@ -760,6 +802,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     raw_response = None
     audience = None
     recall_identity = agent
+    dropped_count = 0
     if backend == "none":
         results = []
         used_tokens = 0
@@ -768,6 +811,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             query, limit, cutoff, mirror_path
         )
     else:
+        scope = arm_run_scope(arm, run_id)
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
@@ -780,6 +824,8 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             {"query": query, "identity": recall_identity, "limit": limit},
             api_key=api_key,
         )
+        if scope:
+            response, dropped_count = scoped_pastdev_response(response, mirror_path, scope)
         raw_response = response
         results = normalize_pastdev_results(response, mirror_path)
         if cutoff is not None:
@@ -814,6 +860,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         "source_ids": source_ids,
         "authors": authors,
         "pending": pending,
+        "dropped_count": dropped_count,
     }
     if audience:
         log_record["audience"] = audience
@@ -830,7 +877,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
 
 
 def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-           mirror=None, log=None, arm=None):
+           mirror=None, log=None, arm=None, run_id=None):
     result = _recall(
         query,
         agent,
@@ -840,6 +887,7 @@ def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         mirror=mirror,
         log=log,
         arm=arm,
+        run_id=run_id,
     )
     result.pop("_raw_response", None)
     return result
@@ -855,6 +903,7 @@ def recall_command(args):
         mirror=args.mirror,
         log=args.log,
         arm=args.arm,
+        run_id=args.run_id,
     )
     raw_response = result.pop("_raw_response", None)
     if result["pending"]:
@@ -903,6 +952,7 @@ def write_command(args):
         mirror=args.mirror,
         log=args.log,
         arm=args.arm,
+        run_id=args.run_id,
     )
     print(f"wrote {args.id} ({args.type})")
     return 0
@@ -912,6 +962,7 @@ def add_backend_options(parser):
     parser.add_argument("--backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--mirror")
     parser.add_argument("--log")
+    parser.add_argument("--run-id")
 
 
 def build_parser():

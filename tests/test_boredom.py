@@ -155,6 +155,42 @@ class DescriptorTests(unittest.TestCase):
 
 
 class CliIntegrationTests(unittest.TestCase):
+    def test_invalid_proposal_reject_is_safe_in_ledger_and_results_modes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "--allow-empty", "-qm", "candidate\n\nDescriptor: optimizer/matrix_lr"],
+                cwd=root, check=True,
+            )
+            ledger = root / "ledger.jsonl"
+            results = root / "results.tsv"
+            event = {
+                "seq": 1, "commit": "", "status": "reject", "score": None,
+                "description": "[EXPLOIT] proposal rejected after repair",
+                "descriptor": {"mechanism": "baseline", "method": "none"},
+            }
+            ledger.write_text(json.dumps(event) + "\n")
+            with results.open("w", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=["commit", "val_bpb", "memory_gb", "status", "description", "descriptor"], delimiter="\t")
+                writer.writeheader()
+                writer.writerow({"commit": "", "status": "reject", "description": event["description"], "descriptor": json.dumps(event["descriptor"])})
+            for extra in ((), ("--ledger", str(ledger))):
+                status = self.run_cli(root, results, root / "log", "status", "--json", *extra)
+                self.assertEqual(status.returncode, 0, status.stderr)
+                gate = self.run_cli(root, results, root / "log", "gate", *extra)
+                self.assertEqual(gate.returncode, 0, gate.stderr + gate.stdout)
+                self.assertNotIn("Traceback", gate.stderr)
+                gate_record = json.loads((root / "log").read_text().splitlines()[-1])
+                self.assertEqual(gate_record["ledger_sha256"], json.loads(status.stdout)["ledger_sha256"])
+            results.write_text("commit\tval_bpb\tmemory_gb\tstatus\tdescription\n\t\t\treject\t[EXPLOIT] proposal rejected after repair\n")
+            status = self.run_cli(root, results, root / "log", "status", "--json")
+            self.assertEqual(status.returncode, 0, status.stderr)
+            gate = self.run_cli(root, results, root / "log", "gate")
+            self.assertEqual(gate.returncode, 1, gate.stderr)
+            self.assertIn("history row 1: missing descriptor", gate.stdout)
+
     def run_cli(
         self, repo, results, log, command, *extra, env=None, prior_art_off=True
     ):
@@ -264,7 +300,10 @@ class CliIntegrationTests(unittest.TestCase):
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
             self.assertEqual(record["n_rows"], 5)
-            self.assertEqual(record["profile_version"], 3)
+            profile_version = descriptor_meter.load_profile(
+                SCRIPT.parent / "boredom_meter/profiles/autoresearch_llm.json"
+            )["version"]
+            self.assertEqual(record["profile_version"], profile_version)
             self.assertEqual(record["descriptor"]["mechanism"], "optimizer")
             self.assertEqual(len(record["ledger_sha256"]), 64)
             self.assertEqual(len(record["profile_sha256"]), 64)
@@ -294,7 +333,7 @@ class CliIntegrationTests(unittest.TestCase):
             ]
             self.assertEqual([entry["pass"] for entry in logged_gates], [False, True])
             self.assertEqual(logged_gates[0]["descriptor"]["mechanism"], "optimizer")
-            self.assertEqual(logged_gates[0]["profile_version"], 3)
+            self.assertEqual(logged_gates[0]["profile_version"], profile_version)
             self.assertEqual(len(logged_gates[0]["ledger_sha256"]), 64)
             self.assertEqual(len(logged_gates[0]["profile_sha256"]), 64)
 

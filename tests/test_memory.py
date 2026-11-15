@@ -111,9 +111,11 @@ class MemoryCliTests(unittest.TestCase):
             "MEMORY_MIRROR",
             "MEMORY_LOG",
             "AUTORESEARCH_ARM",
+            "AUTORESEARCH_RUN_ID",
         ):
             environment.pop(name, None)
         environment["PAST_API_KEY"] = TEST_API_KEY
+        environment["AUTORESEARCH_RUN_ID"] = "test-run"
         environment["PAST_BASE_URL"] = f"http://127.0.0.1:{server.server_port}"
         if env:
             environment.update(env)
@@ -227,6 +229,7 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(body["metadata"]["sources"], ["S1"])
             self.assertEqual(body["metadata"]["type"], "result")
             self.assertEqual(body["metadata"]["author"], "autoresearch-agent")
+            self.assertEqual(body["metadata"]["run_id"], "test-run")
             self.assertIn("Outcome: keep (val_bpb 0.98", body["content"])
             self.assertIn(
                 "Sources: S1 A useful paper https://example.test/paper",
@@ -278,6 +281,10 @@ class MemoryCliTests(unittest.TestCase):
                 for request in server.requests
                 if request["path"] == "/api/v1/ingest/batch"
             ]
+            for request in batch_requests:
+                for item in request["body"]["items"]:
+                    self.assertEqual(item["metadata"]["arm"], "Z")
+                    self.assertEqual(item["metadata"]["run_id"], "test-run")
             self.assertEqual(len(batch_requests), 2)
             first_body = batch_requests[0]["body"]
             second_body = batch_requests[1]["body"]
@@ -505,6 +512,8 @@ class MemoryCliTests(unittest.TestCase):
                         "project": "autoresearch",
                         "type": "lesson",
                         "author": "worker-1",
+                        "arm": "BOREDOM",
+                        "run_id": "test-run",
                     },
                     "identity": "worker-1",
                 },
@@ -524,6 +533,7 @@ class MemoryCliTests(unittest.TestCase):
             mirror = Path(directory) / "memory.jsonl"
             env = {
                 "AUTORESEARCH_ARM": "Z",
+                "AUTORESEARCH_RUN_ID": "audience-run",
                 "MEMORY_BACKEND": "pastdev",
                 "PAST_API_KEY": TEST_API_KEY,
                 "PAST_API_KEY_Z": "",
@@ -578,6 +588,8 @@ class MemoryCliTests(unittest.TestCase):
             )
             self.assertEqual(requests[1]["body"]["audience"], "arm-z")
             self.assertEqual(requests[1]["body"]["identity"], "autoresearch-agent")
+            self.assertEqual(requests[1]["body"]["metadata"]["arm"], "Z")
+            self.assertEqual(requests[1]["body"]["metadata"]["run_id"], "audience-run")
             self.assertEqual(requests[2]["body"]["identity"], "swarm-arm-z")
             self.assertEqual(requests[3]["body"]["identities"], ["swarm-arm-y"])
             self.assertEqual(requests[4]["body"]["identity"], "swarm-arm-y")
@@ -591,6 +603,82 @@ class MemoryCliTests(unittest.TestCase):
                 [record["audience"] for record in records],
                 ["arm-z", "arm-z", "arm-y"],
             )
+
+    def test_pastdev_recall_drops_foreign_and_livecheck_sources_outside_arm_run(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            env = {
+                "PAST_API_KEY": TEST_API_KEY,
+                "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+                "AUTORESEARCH_ARM": "B",
+                "AUTORESEARCH_RUN_ID": "current-run",
+            }
+            with patch.dict(os.environ, env), patch.object(memory, "_ENSURED_AUDIENCES", set()):
+                memory.write(
+                    "result", "own-source", "validation loss experiment", "worker-1",
+                    {"arm": "A", "run_id": "stale-run"},
+                    backend="pastdev", mirror=mirror, log=log,
+                )
+                own_source = server.ingest_response["sourceId"]
+                for source_id, metadata in (
+                    ("livecheck", {"arm": "B", "run_id": "livecheck-run"}),
+                    ("other-arm", {"arm": "A", "run_id": "current-run"}),
+                ):
+                    memory.append_jsonl(mirror, {"sourceId": source_id, "metadata": metadata})
+
+                def item(content, source_id=None, metadata=None):
+                    return {
+                        "content": content, "artifact": {"kind": "memory"},
+                        "sources": [] if source_id is None else [{"sourceId": source_id, "metadata": metadata or {}}],
+                    }
+
+                server.recall_response = {"results": [
+                    item("hadamard19 determinant", "foreign-source", {"arm": "B", "run_id": "current-run"}),
+                    item("old livecheck exhausted directions", "livecheck"),
+                    item("other arm", "other-arm"),
+                    item("no source"),
+                    item("stale metadata", own_source, {"arm": "B", "run_id": "old-run"}),
+                    item("validation loss experiment", own_source),
+                ]}
+                result = memory.recall("exhausted directions", "scout", backend="pastdev", mirror=mirror, log=log)
+                self.assertEqual([item["content"] for item in result["results"]], ["validation loss experiment"])
+                records = [json.loads(line) for line in log.read_text().splitlines()]
+                self.assertEqual(records[-1]["dropped_count"], 5)
+                self.assertEqual(records[-1]["source_ids"], [own_source])
+                payload = next(request["body"] for request in server.requests if request["path"].endswith("/ingest"))
+                self.assertEqual(payload["metadata"]["arm"], "B")
+                self.assertEqual(payload["metadata"]["run_id"], "current-run")
+
+                recalled = self.run_cli(
+                    server, "recall", "exhausted directions", "--json", "--arm", "B",
+                    "--run-id", "current-run", "--mirror", str(mirror), "--log", str(log),
+                )
+                self.assertEqual(recalled.returncode, 0, recalled.stderr)
+                self.assertEqual([item["content"] for item in json.loads(recalled.stdout)["results"]], ["validation loss experiment"])
+                self.assertNotIn("hadamard19", recalled.stdout)
+                self.assertTrue(all(request["method"] in ("POST", "PUT") for request in server.requests))
+
+    def test_pastdev_arm_recall_with_empty_mirror_drops_all_results(self):
+        server = self.start_server()
+        server.recall_response = {"results": [{"content": "foreign", "sources": [{"sourceId": "foreign"}]}]}
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "log"
+            result = self.run_cli(
+                server, "recall", "anything", "--arm", "B", "--run-id", "new-run",
+                "--mirror", str(Path(directory) / "missing.jsonl"), "--log", str(log),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "No memories found.")
+            self.assertEqual(json.loads(log.read_text())["dropped_count"], 1)
+
+    def test_pastdev_arm_memory_requires_run_id_before_network_access(self):
+        with patch.dict(os.environ, {"AUTORESEARCH_ARM": "B"}, clear=True):
+            with self.assertRaisesRegex(ValueError, "requires --run-id"):
+                memory.recall("anything", "scout", backend="pastdev")
+            with self.assertRaisesRegex(ValueError, "requires --run-id"):
+                memory.write("result", "id", "content", "worker", {}, backend="pastdev")
 
     def test_local_backend_ranks_by_idf_and_none_backend_stays_empty(self):
         with tempfile.TemporaryDirectory() as directory:

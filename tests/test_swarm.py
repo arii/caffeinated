@@ -166,6 +166,38 @@ class LLMClientTests(unittest.TestCase):
         edited_lines = {proposal["edits"][0]["old"] for proposal in proposals}
         self.assertEqual(len(edited_lines), len(swarm.AGENTS))
 
+    def test_fake_worker_implements_each_assigned_cell(self):
+        profile = meter.load_profile(PROFILE_PATH)
+        source = (REPO_ROOT / "train.py").read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "train.py"
+            for cell in meter.all_cells(profile, 2):
+                if cell == "baseline/none":
+                    continue
+                with self.subTest(cell=cell):
+                    proposal = llm.fake_response("WORKER_REPAIR", {"assigned_cell": cell, "train_py": source})
+                    swarm.validate_proposal(profile, proposal)
+                    self.assertEqual(meter.cell_key(profile, proposal["descriptor"], 2), cell)
+                    path.write_text(source)
+                    swarm.apply_edits(path, proposal["edits"])
+                    compile(path.read_text(), "train.py", "exec")
+
+    def test_fake_assigned_cell_rejects_unsupported_or_missing_training_code(self):
+        with self.assertRaisesRegex(ValueError, "does not support"):
+            llm.fake_assigned_proposal("unknown/method", "")
+        for cell in ("architecture/depth", "architecture/mlp", "batch/total_batch", "attention/family"):
+            with self.subTest(cell=cell), self.assertRaises(ValueError):
+                llm.fake_assigned_proposal(cell, "")
+
+    def test_fake_assigned_cell_honors_required_numeric_descriptor(self):
+        proposal = llm.fake_response("WORKER_REPAIR", {
+            "assigned_cell": "architecture/depth",
+            "assigned_descriptor": {"mechanism": "architecture", "method": "depth", "params": {"value": 36}},
+            "train_py": (REPO_ROOT / "train.py").read_text(),
+        })
+        self.assertEqual(proposal["descriptor"]["params"]["value"], 36)
+        self.assertEqual(proposal["edits"][0]["new"], "DEPTH = 36")
+
     def test_queue_client_waits_for_answer_and_logs_queue_model(self):
         with tempfile.TemporaryDirectory() as directory:
             queue_dir = Path(directory) / "llm_queue"
@@ -257,7 +289,7 @@ class CriticAcceptanceTests(unittest.TestCase):
         profile = meter.load_profile(PROFILE_PATH)
         best = 0.995814
 
-        self.assertEqual(profile["version"], 3)
+        self.assertEqual(profile["version"], json.loads(PROFILE_PATH.read_text())["version"])
         self.assertEqual(profile["accept_margin"], 0.0018)
         self.assertTrue(swarm.candidate_is_provisional(profile, 0.993814, best))
         self.assertTrue(
@@ -310,7 +342,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
             if line.strip()
         ]
 
-    def test_two_round_fake_swarm_writes_round_artifacts_and_memory(self):
+    def test_ten_round_fake_swarm_is_reproducible_and_makes_gated_progress(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = self.create_repo(directory)
             out_dir = Path(directory) / "swarm-out"
@@ -326,7 +358,8 @@ class SwarmOrchestratorTests(unittest.TestCase):
                     "--arm",
                     "B",
                     "--rounds",
-                    "2",
+                    "10",
+                    "--no-push",
                     "--llm",
                     "fake",
                     "--gpu",
@@ -343,6 +376,31 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+            second_parent = Path(directory) / "second"
+            second_parent.mkdir()
+            second_repo = self.create_repo(second_parent)
+            second_out = second_parent / "swarm-out"
+            command = list(result.args)
+            command[command.index("--out") + 1] = str(second_out)
+            command[command.index("--repo") + 1] = str(second_repo)
+            repeated = subprocess.run(command, cwd=REPO_ROOT, env=env, capture_output=True, text=True)
+            self.assertEqual(repeated.returncode, 0, repeated.stderr + repeated.stdout)
+            run_id = (out_dir / "run_id").read_text().strip()
+            self.assertTrue(run_id)
+            self.assertNotEqual(run_id, (second_out / "run_id").read_text().strip())
+
+            def without_commits(value):
+                if isinstance(value, dict):
+                    return {key: without_commits(item) for key, item in value.items() if key != "commit"}
+                if isinstance(value, list):
+                    return [without_commits(item) for item in value]
+                return value
+
+            self.assertEqual(
+                without_commits(self.jsonl(out_dir / "ledger.jsonl")),
+                without_commits(self.jsonl(second_out / "ledger.jsonl")),
+            )
 
             expected = (
                 "ledger.jsonl",
@@ -362,13 +420,43 @@ class SwarmOrchestratorTests(unittest.TestCase):
 
             ledger = self.jsonl(out_dir / "ledger.jsonl")
             self.assertEqual(
-                sum(item.get("kind") == "candidate" for item in ledger), 8
+                sum(item.get("kind") == "candidate" for item in ledger), 40
             )
             self.assertGreaterEqual(
                 sum(item.get("kind") == "critic" for item in ledger), 1
             )
+            for critic in (item for item in ledger if item.get("kind") == "critic"):
+                candidate = next(
+                    item for item in ledger
+                    if item.get("kind") == "candidate"
+                    and item["commit"] == critic["commit"]
+                    and item["round"] == critic["round"]
+                )
+                self.assertEqual(candidate["replicate_score"], critic["score"])
             assignments = self.jsonl(out_dir / "assignments.jsonl")
-            self.assertEqual(len(assignments), 2)
+            self.assertEqual(len(assignments), 10)
+            attempts = [item for item in ledger if item.get("kind") == "candidate" and item["status"] != "reject"]
+            self.assertGreater(len({meter.cell_key(meter.load_profile(PROFILE_PATH), item["descriptor"], 2) for item in attempts}), 4)
+            bored_rounds = [item["round"] for item in assignments if item["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")]
+            self.assertTrue(bored_rounds)
+            for round_num in bored_rounds:
+                ran = [item for item in attempts if item["round"] == round_num]
+                self.assertTrue(ran, f"no GPU candidate in bored round {round_num}")
+                self.assertTrue(all(item["gate_attempts"][-1]["pass"] for item in ran))
+            profile = meter.load_profile(PROFILE_PATH)
+            logs = self.jsonl(out_dir / "boredom_log.jsonl")
+            gates = [item for item in logs if item.get("type") == "gate"]
+            self.assertTrue(gates)
+            for assignment in assignments:
+                matching = [g for g in gates if g["ledger_sha256"] == assignment["ledger_sha256"]]
+                self.assertTrue(matching)
+                for gate in matching:
+                    self.assertEqual(gate["regime"], assignment["regime"])
+            for gate in gates:
+                prefix = ledger[:gate["n_rows"]]
+                conductor = swarm.meter.status(profile, prefix)
+                self.assertEqual(gate["ledger_sha256"], conductor["ledger_sha256"])
+                self.assertEqual(gate["regime"], conductor["regime"])
             for assignment in assignments:
                 self.assertEqual(len(assignment["ledger_sha256"]), 64)
                 self.assertEqual(len(assignment["profile_sha256"]), 64)
@@ -443,6 +531,12 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
             with swarm.arm_environment("D", True):
                 self.assertEqual(os.environ["MEMORY_BACKEND"], "local")
+
+    def test_arm_environment_propagates_and_restores_swarm_run_id(self):
+        with patch.dict(os.environ, {"AUTORESEARCH_RUN_ID": "previous-run"}):
+            with swarm.arm_environment("B", False, "pastdev", run_id="current-run"):
+                self.assertEqual(swarm.memory.arm_run_scope(), {"arm": "B", "run_id": "current-run"})
+            self.assertEqual(os.environ["AUTORESEARCH_RUN_ID"], "previous-run")
 
     def test_converged_round_keeps_confirmation_roles_and_scouts(self):
         profile = meter.load_profile(PROFILE_PATH)
@@ -548,7 +642,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
             self.assertTrue(list(queue_dir.glob("*.prompt.json")))
             self.assertTrue(list(queue_dir.glob("*.response.json")))
 
-    def test_gate_rejection_gets_one_repair_and_is_recorded_as_reject(self):
+    def test_second_gate_rejection_assigns_cell_through_queue_and_gates_it(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = self.create_repo(directory)
             out_dir = Path(directory) / "out"
@@ -561,7 +655,9 @@ class SwarmOrchestratorTests(unittest.TestCase):
             memory_log = out_dir / "memory_log.jsonl"
             mirror = out_dir / "memory.jsonl"
             client = llm.LLMClient(
-                mode="fake",
+                mode="queue",
+                queue_dir=out_dir / "queue",
+                queue_timeout=10,
                 log_path=out_dir / "llm_log.jsonl",
                 prompt_dir=REPO_ROOT / "prompts",
             )
@@ -569,7 +665,33 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 "swarm_B": 0.75,
                 "regime": "BOREDOM_SNAP",
                 "per_agent_B": {agent: 0.0 for agent in swarm.AGENTS},
+                "suggested_cells": [{"cell": "architecture/depth", "visits": 0}],
             }
+            stop = threading.Event()
+            errors = []
+
+            def answer_calls():
+                while not stop.is_set():
+                    for path in client.queue_dir.glob("*.prompt.json"):
+                        document = json.loads(path.read_text())
+                        if swarm_queue.response_path(client.queue_dir, document["call_id"]).exists():
+                            continue
+                        try:
+                            assigned = document["prompt"].split("Assigned cell (if not none, implement exactly this cell): ")[1].splitlines()[0]
+                            response = llm.fake_response(document["role"], {
+                                "agent": document["agent"],
+                                "assigned_cell": assigned,
+                                "train_py": (repo / "train.py").read_text(),
+                            })
+                            swarm_queue.answer(client.queue_dir, document["call_id"], response)
+                        except Exception as error:
+                            errors.append(error)
+                    stop.wait(0.01)
+
+            thread = threading.Thread(target=answer_calls)
+            thread.start()
+            self.addCleanup(thread.join, 5)
+            self.addCleanup(stop.set)
             with patch.dict(
                 os.environ,
                 {"EXA": "off", "MEMORY_BACKEND": "local"},
@@ -580,6 +702,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 side_effect=[
                     (False, {"reasons": ["near-duplicate"]}),
                     (False, {"reasons": ["near-duplicate after repair"]}),
+                    (False, {"reasons": ["assigned candidate rejected normally"]}),
                 ],
             ) as gate:
                 candidate = swarm.worker_attempts(
@@ -607,13 +730,21 @@ class SwarmOrchestratorTests(unittest.TestCase):
                     replay=False,
                 )
 
-            self.assertEqual(gate.call_count, 2)
+            stop.set()
+            thread.join(5)
+            self.assertFalse(errors, errors)
+            self.assertEqual(gate.call_count, 3)
             calls = self.jsonl(out_dir / "llm_log.jsonl")
             self.assertEqual(
-                sum(record["role"] == "WORKER_REPAIR" for record in calls), 1
+                sum(record["role"] == "WORKER_REPAIR" for record in calls), 2
             )
+            self.assertTrue(all("Suggested cells: architecture/depth (visits=0)" in call["prompt"] for call in calls))
+            self.assertIn("Gate reasons: near-duplicate after repair", calls[-1]["prompt"])
+            self.assertIn("Assigned cell (if not none, implement exactly this cell): architecture/depth", calls[-1]["prompt"])
+            self.assertEqual(candidate["descriptor"]["mechanism"], "architecture")
+            self.assertEqual(candidate["descriptor"]["method"], "depth")
             self.assertEqual(candidate["status"], "reject")
-            self.assertEqual(len(candidate["attempts"]), 2)
+            self.assertEqual(len(candidate["attempts"]), 3)
             event = swarm.add_result_event(
                 profile,
                 out_dir / "ledger.jsonl",

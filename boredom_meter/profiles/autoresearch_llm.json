@@ -1,6 +1,8 @@
 {
   "domain": "autoresearch-llm-training",
-  "version": 3,
+  "version": 4,
+  "attempt_statuses": ["keep", "discard", "crash"],
+  "required_mechanisms": ["batch", "lr_schedule", "optimizer", "architecture", "attention", "data"],
   "direction": "min",
   "objective": "val_bpb",
   "eps": 0.0036,

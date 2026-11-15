@@ -261,13 +261,22 @@ def descriptor_from_message(message, description, profile):
     return descriptor
 
 
-def ledger_events(rows, repo, profile):
+def ledger_events(rows, repo, profile, errors=None):
     events = []
     for seq, row in enumerate(rows, 1):
         message = commit_message(row["commit"], repo) if repo is not None else ""
-        descriptor = descriptor_from_message(
-            message, row.get("description", ""), profile
-        )
+        try:
+            if row.get("descriptor"):
+                descriptor = json.loads(row["descriptor"])
+                descriptor_meter.validate_descriptor(profile, descriptor)
+            elif message_trailer(message, "Descriptor") is not None:
+                descriptor = descriptor_from_message(message, "", profile)
+            else:
+                raise ValueError("missing descriptor column or Descriptor trailer")
+        except (ValueError, TypeError) as error:
+            if errors is not None:
+                errors.append(f"history row {seq}: {error}")
+            continue
         score = None
         if row.get("status") != "crash":
             try:
@@ -278,6 +287,8 @@ def ledger_events(rows, repo, profile):
         events.append(
             {
                 "seq": seq,
+                "commit": row.get("commit"),
+                "kind": row.get("kind"),
                 "agent": row.get("agent")
                 or message_trailer(message, "Agent")
                 or "agent",
@@ -389,7 +400,7 @@ def read_results(path):
         required = {"commit", "val_bpb", "memory_gb", "status", "description"}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("results.tsv is missing required columns")
-        return [row for row in reader if row.get("commit")]
+        return list(reader)
 
 
 def load_history(rows, repo):
@@ -427,7 +438,8 @@ def timestamp():
 
 def status_record(rows, events, metrics, profile, disabled):
     best_seq = metrics["best_seq"]
-    best_commit = rows[best_seq - 1]["commit"] if best_seq else None
+    best_commit = next((event.get("commit") for event in events
+                        if event["seq"] == best_seq), None)
     regime = "EXPLOIT" if disabled else metrics["regime"]
     return {
         "ts": timestamp(),
@@ -459,9 +471,8 @@ def print_directive(regime, directive):
 
 
 def run_status(args):
-    rows = read_results(args.results)
     profile = effective_profile(args)
-    events = ledger_events(rows, args.repo, profile)
+    rows, events = scoring_history(args, profile)
     metrics = descriptor_meter.status(profile, events)
     disabled = is_disabled()
     record = status_record(rows, events, metrics, profile, disabled)
@@ -499,16 +510,23 @@ def run_status(args):
     return 0
 
 
-def run_gate(args):
+def scoring_history(args, profile, errors=None):
+    if getattr(args, "ledger", None):
+        events = descriptor_meter.read_ledger(args.ledger)
+        return events, events
     rows = read_results(args.results)
+    return rows, ledger_events(rows, args.repo, profile, errors)
+
+
+def run_gate(args):
     profile = effective_profile(args)
-    events = ledger_events(rows, args.repo, profile)
+    history_errors = []
+    rows, events = scoring_history(args, profile, history_errors)
     candidate_description = commit_subject(args.commit, args.repo)
     candidate_message = commit_message(args.commit, args.repo)
     cited_sources, has_source_trailer = source_trailers(candidate_message)
-    candidate_agent = message_trailer(candidate_message, "Agent") or "agent"
     disabled = is_disabled()
-    metrics = descriptor_meter.status(profile, events, candidate_agent)
+    metrics = descriptor_meter.status(profile, events)
     regime = "EXPLOIT" if disabled else metrics["regime"]
     known_sources = read_research_sources(args.research_log)
     prior_art, has_prior_art, invalid_prior_art, none_found_queries = (
@@ -527,7 +545,7 @@ def run_gate(args):
     unknown_sources = [
         source_id for source_id in cited_sources if source_id not in known_sources
     ]
-    reasons = []
+    reasons = list(history_errors)
     candidate_descriptor = None
     descriptor_trailer = message_trailer(candidate_message, "Descriptor")
     meter_gate = {}
@@ -550,8 +568,9 @@ def run_gate(args):
                 profile,
                 events,
                 candidate_descriptor,
-                agent=candidate_agent,
+                agent=None,
                 sources=valid_sources,
+                role=getattr(args, "role", None),
             )
             regime = meter_gate["regime"]
             reasons.extend(meter_gate["reasons"])
@@ -662,6 +681,7 @@ def parse_weights(value):
 def add_common_options(parser, suppress_defaults=False):
     default = argparse.SUPPRESS if suppress_defaults else None
     parser.add_argument("--results", default=default if suppress_defaults else "results.tsv")
+    parser.add_argument("--ledger", default=default if suppress_defaults else None)
     parser.add_argument("--log", default=default if suppress_defaults else "boredom_log.jsonl")
     parser.add_argument("--repo", default=default if suppress_defaults else ".")
     parser.add_argument(
@@ -690,6 +710,7 @@ def build_parser():
     gate_parser = subparsers.add_parser("gate")
     add_common_options(gate_parser, suppress_defaults=True)
     gate_parser.add_argument("--commit", default="HEAD")
+    gate_parser.add_argument("--role")
     gate_parser.add_argument("--min-lines", type=int, default=4)
     gate_parser.add_argument("--delta-min", type=float)
     gate_parser.add_argument("--failed-delta", type=float)
