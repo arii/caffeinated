@@ -35,6 +35,8 @@ def main():
     t0 = time.time()
     try:
         out = subprocess.run([sys.executable, "analysis.py"], cwd=HERE, capture_output=True, text=True, timeout=TIMEOUT_S)
+        if out.returncode != 0:
+            raise RuntimeError(f"analysis.py exited {out.returncode}: {out.stderr.strip()[-500:]}")
         answers = json.loads(out.stdout.strip().splitlines()[-1])
     except Exception as e:  # crash, timeout or bad JSON scores zero
         print(f"error: {type(e).__name__}: {e}", file=sys.stderr)

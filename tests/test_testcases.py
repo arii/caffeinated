@@ -7,8 +7,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from boredom import descriptor_meter as meter
+import swarm
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
@@ -52,6 +54,18 @@ class EvaluatorTests(unittest.TestCase):
             self.assertIn("error:", result.stderr)
             self.assertEqual(float(values["score"]), 0.0)
 
+    def test_hadamard_rejects_valid_output_followed_by_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory) / "hadamard19"
+            shutil.copytree(TESTCASES / "hadamard19", work)
+            source = (work / "construct.py").read_text(encoding="utf-8")
+            (work / "construct.py").write_text(
+                source + "\nraise SystemExit(3)\n", encoding="utf-8"
+            )
+            result, values = evaluate("hadamard19", cwd=work)
+            self.assertIn("exited 3", result.stderr)
+            self.assertEqual(float(values["score"]), 0.0)
+
     def test_playworld_baseline_and_import_guard(self):
         result, values = evaluate("playworld_mini")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -69,6 +83,62 @@ class EvaluatorTests(unittest.TestCase):
 
 
 class SwarmTaskModeTests(unittest.TestCase):
+    def tearDown(self):
+        swarm.TASK, swarm.TARGET_FILE = None, "train.py"
+
+    def make_task(self, directory, evaluate_source):
+        task_dir = Path(directory) / "task" / "slow"
+        task_dir.mkdir(parents=True)
+        (task_dir / "evaluate.py").write_text(evaluate_source, encoding="utf-8")
+        repo = Path(directory) / "repo"
+        (repo / "testcases" / "slow").mkdir(parents=True)
+        (repo / "testcases" / "slow" / "solve.py").write_text("X = 1\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+        subprocess.run(
+            ["git", "-c", "user.name=t", "-c", "user.email=t@example.test",
+             "commit", "-q", "-m", "baseline"],
+            cwd=repo,
+            check=True,
+        )
+        swarm.TASK = {"name": "slow", "dir": task_dir, "editable": "solve.py"}
+        swarm.TARGET_FILE = "testcases/slow/solve.py"
+        return repo
+
+    def test_local_evaluation_timeout_is_a_crash_and_hides_secrets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = self.make_task(
+                directory,
+                "import os, time\nprint('key_seen:', 'EXA_API_KEY' in os.environ)\n"
+                "time.sleep(float(os.environ.get('SLEEP', '0')))\nprint('loss: 0.5')\n",
+            )
+            with patch.dict(os.environ, {"EXA_API_KEY": "x", "SLEEP": "0"}):
+                ok = swarm.local_task_result(repo, "HEAD", Path(directory) / "runs")
+            self.assertEqual((ok["status"], ok["val_bpb"]), ("ok", 0.5))
+            log = (Path(directory) / "runs" / "HEAD.log").read_text(encoding="utf-8")
+            self.assertIn("key_seen: False", log)
+            with patch.dict(os.environ, {"SLEEP": "5"}), patch.object(
+                swarm, "LOCAL_EVAL_TIMEOUT", 1
+            ):
+                slow = swarm.local_task_result(repo, "HEAD", Path(directory) / "runs")
+            self.assertEqual((slow["status"], slow["val_bpb"]), ("crash", None))
+
+    def test_task_context_previews_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            task_dir = Path(directory)
+            (task_dir / "data").mkdir()
+            (task_dir / "questions.json").write_text('{"q1": "mean of a?"}', encoding="utf-8")
+            (task_dir / "data" / "t.csv").write_text(
+                "a,b\n" + "1,2\n" * 50, encoding="utf-8"
+            )
+            context = swarm.build_task_context(
+                task_dir, ["questions.json", "data/t.csv", "missing.csv"]
+            )
+            self.assertIn("mean of a?", context)
+            self.assertIn("a,b", context)
+            self.assertLess(context.count("1,2"), 10)
+            self.assertNotIn("missing.csv", context)
+
     def test_fake_llm_swarm_scores_candidates_with_task_evaluator(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory) / "repo"

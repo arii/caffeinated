@@ -10,6 +10,8 @@ Current {target_file} (best commit {best_commit}):
 ```python
 {train_py}
 ```
+Task inputs (read-only; paths are relative to the task directory):
+{task_context}
 Propose exactly one change. Do not repeat an idea memory shows already failed unless you state why your variant differs. If you use a lead, set lead_id and copy its source ids.
 Mechanism vocabulary (descriptor must use it; params.value = the new numeric value if you change one knob, else omit params): {vocab}
 JSON: {"descriptor": {"mechanism": str, "method": str, "params": {"value": float}}, "idea": str (one line, <=80 chars), "rationale": str, "lead_id": str|null, "source_ids": [str], "predicted_delta": float, "edits": [{"old": str (exact unique substring of {target_file}), "new": str}]}

@@ -33,6 +33,8 @@ AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
 TESTCASES = ROOT / "testcases"
 TARGET_FILE = "train.py"
 TASK = None
+LOCAL_EVAL_TIMEOUT = 300
+SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 RESULT_COLUMNS = (
     "commit",
     "val_bpb",
@@ -1147,10 +1149,63 @@ def modal_gpu_burst(repo, commits, seed, out_dir):
     return parsed, result.stdout, result.stderr
 
 
+def prepare_task(task_dir, context_files):
+    prepare = task_dir / "prepare.py"
+    if prepare.exists() and not all((task_dir / name).exists() for name in context_files):
+        subprocess.run(
+            [sys.executable, "prepare.py"],
+            cwd=task_dir,
+            env=evaluator_env(),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+
+def preview_file(path, max_chars=6000):
+    if path.suffix in (".xlsx", ".xls"):
+        try:
+            import pandas
+        except ImportError:
+            return "(spreadsheet; pandas unavailable for preview)"
+        sheets = pandas.read_excel(path, sheet_name=None)
+        text = "\n".join(
+            f"[sheet {sheet}] {frame.shape[0]} rows x {frame.shape[1]} cols\n"
+            f"{frame.head(5).to_csv(index=False)}"
+            for sheet, frame in sheets.items()
+        )
+    elif path.suffix in (".csv", ".tsv"):
+        with path.open(encoding="utf-8", errors="replace") as stream:
+            lines = [next(stream, "") for _ in range(6)]
+        text = "".join(lines) + "..."
+    else:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    return text if len(text) <= max_chars else text[:max_chars] + "\n...(truncated)"
+
+
+def build_task_context(task_dir, context_files):
+    parts = [
+        f"--- {name}\n{preview_file(task_dir / name)}"
+        for name in context_files
+        if (task_dir / name).exists()
+    ]
+    return "\n".join(parts) or "(none)"
+
+
+def evaluator_env():
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if not any(marker in key.upper() for marker in SECRET_ENV_MARKERS)
+    }
+
+
 def load_task(name):
     task_dir = TESTCASES / name
     config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
     target = f"testcases/{name}/{config['editable']}"
+    context_files = config.get("context_files", [])
+    prepare_task(task_dir, context_files)
     return {
         **config,
         "name": name,
@@ -1160,6 +1215,7 @@ def load_task(name):
         "prompt_values": {
             "task_brief": config["brief"],
             "target_file": target,
+            "task_context": build_task_context(task_dir, context_files),
         },
     }
 
@@ -1177,18 +1233,23 @@ def local_task_result(repo, commit, out_dir):
                 TASK["dir"], work, ignore=shutil.ignore_patterns("__pycache__")
             )
             (work / TASK["editable"]).write_text(source.stdout, encoding="utf-8")
-            result = subprocess.run(
-                [sys.executable, "evaluate.py"],
-                cwd=work,
-                capture_output=True,
-                text=True,
-                timeout=300,
-                check=False,
-            )
-            log = result.stdout + result.stderr
-            match = re.search(r"^loss: ([0-9.eE+-]+)$", result.stdout, re.M)
-            if match and "error:" not in result.stderr:
-                loss = float(match.group(1))
+            try:
+                result = subprocess.run(
+                    [sys.executable, "evaluate.py"],
+                    cwd=work,
+                    env=evaluator_env(),
+                    capture_output=True,
+                    text=True,
+                    timeout=LOCAL_EVAL_TIMEOUT,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as error:
+                log = f"{error.stdout or ''}{error.stderr or ''}\nerror: evaluation timed out"
+            else:
+                log = result.stdout + result.stderr
+                match = re.search(r"^loss: ([0-9.eE+-]+)$", result.stdout, re.M)
+                if match and "error:" not in result.stderr:
+                    loss = float(match.group(1))
     log_path.write_text(log, encoding="utf-8")
     return {
         "commit": commit,

@@ -44,6 +44,8 @@ def main():
     det = 0
     try:
         out = subprocess.run([sys.executable, "construct.py"], cwd=HERE, capture_output=True, text=True, timeout=TIMEOUT_S)
+        if out.returncode != 0:
+            raise RuntimeError(f"construct.py exited {out.returncode}: {out.stderr.strip()[-500:]}")
         matrix = json.loads(out.stdout)["matrix"]
         validate(matrix)
         det = abs(bareiss_det(matrix))
