@@ -24,6 +24,10 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
   statistically significant (smallest attainable sign-flip p = 0.25). See
   [`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md)
   for the full per-seed results and limitations.
-- **Ig Nobel:** the stopped `out-ignobel` artifact has 22 study records, of
-  which 12 have `result.confirmed == true`. No committee result is present in
-  those records, so committee scoring has not yet been run on these studies.
+- **Ig Nobel (pre-committee):** the stopped `out-ignobel` artifact has 22 study
+  registrations. 13 were evaluated (9 crashed or were rejected before a result),
+  and 12 have `result.confirmed == true`. One confirmed study is a duplicate, so
+  11 are unique. The confirmed findings are mostly true but unsurprising (for
+  example, heavier cars have lower city MPG, ρ = −0.89). No committee result is
+  present in these records, so committee scoring has not been run on them. The
+  committee-scored rerun is blocked: both Tinker keys return HTTP 402.
