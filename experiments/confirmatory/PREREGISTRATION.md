@@ -60,3 +60,11 @@ that fall inside wide gold ranges. bixbench_numeric's guard now ignores conventi
 constants (commit c31ab55); none of the 198 sources are flagged under it, while a planted gold literal
 still is. The primary bixbench result is the rerun in `conf-bixbench-numeric-guard2` (seeds 3001-3003,
 A/B/S, same rounds/model/settings). The strict-guard runs are reported separately as a pre-fix set.
+
+## Held-out grading fix (02:05 PST)
+Two strict-guard S winners were scored 0 on held-out only because a convergence tolerance (`1e-10`)
+falls inside the held-out range of bix-54-q4 (1.13e-12 to 1.13e-10). Powers of ten 1e-4..1e-12 are
+added to the guard's conventional constants (graders and final_eval only; in-flight guard2 searches
+keep the c31ab55 dev guard). `final_eval.py` now also reports `heldout_unguarded` accuracy and any
+held-out literal hits; agents never see held-out answers, so a hit there is a flag, not dev-feedback
+leakage. All held-out scores in the report are recomputed with this final_eval.

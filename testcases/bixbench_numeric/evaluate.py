@@ -18,8 +18,8 @@ ANSWERS = ".cache/answers.json"
 TIMEOUT_S = 120
 
 
-# Conventional significance, power, quantile and confidence levels; they fall inside some gold
-# ranges (e.g. 0.88-1.0) but are not answers, so they must not trip the literal guard.
+# Conventional significance, power, quantile and confidence levels and numerical tolerances; they
+# fall inside some wide gold ranges (e.g. 0.88-1.0, 1.13e-12-1.13e-10) but are not answers.
 STAT_CONSTANTS = frozenset(
     {
         0.001,
@@ -40,6 +40,7 @@ STAT_CONSTANTS = frozenset(
         0.995,
         0.999,
         1.0,
+        *(10.0**-k for k in range(4, 13)),
     }
 )
 
@@ -89,7 +90,9 @@ def grade(key, answers):
     return correct
 
 
-def evaluate_source(source, task_dir=HERE, timeout_s=None, answers_file=ANSWERS):
+def evaluate_source(
+    source, task_dir=HERE, timeout_s=None, answers_file=ANSWERS, literal_guard=True
+):
     task_dir = Path(task_dir).resolve()
     started = time.time()
     config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
@@ -108,7 +111,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, answers_file=ANSWERS)
             required_files=(answers_file,),
         )
         key = json.loads((task_dir / answers_file).read_text())
-        answer_literals = answer_literal_qids(
+        answer_literals = literal_guard and answer_literal_qids(
             source, key, (task_dir / "questions.json").read_text(encoding="utf-8")
         )
         run = None
