@@ -2,7 +2,7 @@
 
 This table gives the sources for the formulas and thresholds described in the
 [backend entry point](../README.md#boredom-meter-exact-cpu-implementation).
-Line numbers refer to source baseline `3b50aaf` unless a remote ref is stated.
+Line numbers refer to source baseline `add9002` unless a remote ref is stated.
 
 | Formula / threshold | Exact source |
 | --- | --- |
@@ -17,7 +17,7 @@ Line numbers refer to source baseline `3b50aaf` unless a remote ref is stated.
 | Gate distance restrictions | `boredom_meter/meter.py:300-340` (`gate`) |
 | CPU eps, k/knn/patience, level/parameter weights, ratio 4 | `testcases/hadamard19/boredom_profile.json:6-20,44-48`; `testcases/bixbench_mini/boredom_profile.json:6-20,43-47`; `testcases/playworld_mini/boredom_profile.json:6-20,44-48` |
 | Allocation cutoff and slot counts | `swarm.py:163-238` (`allocate_roles`) |
-| Accept margin, provisional inequality, confirmation mean | `swarm.py:1120-1135` (`acceptance_margin`, `candidate_is_provisional`, `critic_accepts`) |
+| Accept margin, provisional inequality, confirmation mean | `swarm.py:1122-1137` (`acceptance_margin`, `candidate_is_provisional`, `critic_accepts`) |
 | Main Ig Nobel similarity/gap/unsurprise/failure/B and rounding | `origin/main:ignobel/boredom.py:15-58` |
 | Main snap threshold override / policy default | `origin/main:ignobel/config.yaml:2`; `origin/main:ignobel/run_arm.py:37-40`; `origin/main:ignobel/policy.py:18-24` |
 | #7 baseline, self_repeat, familiarity, gap, unsurprise, frustration | `origin/pr7:ignobel/boredom.py:27-97` |

@@ -3,7 +3,7 @@
 Artificial Scientist Swarms uses a **boredom meter to redirect autonomous research
 when local refinement stops paying off**. Agents propose code changes, evaluate
 them on CPU benchmarks, and keep measured improvements. This entry point
-describes the runnable autoresearch backend at source baseline `3b50aaf` and
+describes the runnable autoresearch backend at source baseline `add9002` and
 distinguishes it from the separate Ig Nobel research community on `main`.
 The meter controls search rather than claiming that agents feel bored, and
 features that are not yet merged are labeled throughout.
@@ -49,7 +49,9 @@ flowchart LR
   T --> K[Numeric confirmation + critic explanation]
   K --> C
   C --> A[Ledger + logs + Git artifacts]
-  A --> V[export_viewer.py: static replay]
+  A --> V[export_viewer.py: round-end publish + static export]
+  V --> API[viewer.app: read-only HTTP + SSE]
+  API --> UI[Viewer clients]
 ```
 
 ## Types of agents
@@ -60,7 +62,7 @@ are deterministic Python control components, not LLM personas.
 
 | Type / role | Reads | Writes / action | LLM prompt |
 | --- | --- | --- | --- |
-| Conductor | Task/profile, ledger, all status and evaluation results | Assignments, suggested/reserved cells, worktrees, outcomes, Git history, memory | None; `swarm.py` calls role prompts below |
+| Conductor | Task/profile, ledger, all status and evaluation results | Assignments, suggested/reserved cells, worktrees, outcomes, Git history, memory, run metadata and round-end/final viewer publishes | None; `swarm.py` calls role prompts below |
 | Scout | Brief, regime, memory, research query results/extracts | Queries, source selection, grounded implementation leads and lead memory | `prompts/scout_query.md`, `scout_pick.md`, `scout_lead.md` |
 | Worker: exploit | Current best source, protocol, task inputs, status, recalled results/leads/claims | Focused local patch, descriptor, claim, predicted delta and research trailers | `prompts/worker_propose.md`; `worker_repair.md` on rejection |
 | Worker: divergent | Same inputs plus suggested/assigned under-visited cells | Alternative mechanism/method patch, source-backed claim; conductor-cell repair if needed | Same worker prompts, role/regime-dependent instructions |
@@ -73,15 +75,18 @@ are deterministic Python control components, not LLM personas.
 
 Root LLM role templates share `prompts/common.md`, including the human protocol.
 
+The viewer API is a separate read-only process, not an agent or a controller.
+It reads published artifacts and serves HTTP and SSE without using an LLM prompt.
+
 ## Orchestration loop
 
 The conductor owns a Git worktree and four slots (`worker-1` … `worker-4`).
 Each worker gets its own worktree at the same round base commit.
 Proposal calls and CPU evaluations are iterated **sequentially** at this revision
-in `swarm.py:orchestrate` and `run_evaluations`; the worker slots do not imply
+in `swarm.py:_orchestrate` and `run_evaluations`; the worker slots do not imply
 parallel execution.
 
-The conductor implements the following loop in `swarm.py:orchestrate`:
+The conductor implements the following loop in `swarm.py:_orchestrate`:
 
 1. Load the task and profile, then evaluate the starting HEAD as the round-0 baseline.
 2. Fold the shared ledger to compute swarm and per-agent B, then assign four
@@ -97,7 +102,9 @@ The conductor implements the following loop in `swarm.py:orchestrate`:
    Outside arm A, obtain the critic LLM explanation. Keep only a confirmed improvement.
 8. Record every final outcome and memory, regenerate the TSV and status, and
    fast-forward to a kept commit. Commit artifacts, tag attempts and optionally
-   push before starting the next round.
+   push. Publish the viewer state at the end of the round before starting the
+   next one, unless `--no-viewer` is set. On exit, publish a final `finished` or
+   `stopped` state.
 
 ```mermaid
 sequenceDiagram
@@ -107,6 +114,7 @@ sequenceDiagram
   participant G as Gate
   participant E as Docker + host grader
   participant K as Confirmation / critic
+  participant V as Viewer publisher / HTTP API
   C->>E: Evaluate baseline (round 0)
   loop Each round (1 to 10)
     C->>M: Read ledger; swarm and per-agent status
@@ -123,8 +131,10 @@ sequenceDiagram
     end
     C->>M: Append outcomes and result memories
     C->>C: Keep/discard; TSV, status, artifact commit, tags
+    C->>V: Publish running state unless --no-viewer
   end
-  Note over C: Static export is a separate command, not a round step
+  C->>V: Publish final finished/stopped state unless --no-viewer
+  Note over V: HTTP/SSE reads published files; it does not control the run
 ```
 
 `worker_attempts` allows up to three attempts: initial proposal, repair, and
@@ -147,7 +157,10 @@ Hadamard is deterministic, and Playworld reuses its held-out seeds. The conducto
 fast-forwards to a kept commit. Each round writes memory, copies artifacts into
 `experiments/swarm_<arm>`, commits them and tags attempts. `--no-push` disables
 remote pushes, not local Git writes; fake mode also forces no-push.
-There is **no per-round viewer publish hook** here.
+The conductor calls `publish_viewer_state` at each round end and again on exit.
+By default it writes under `<out>/viewer`; `--viewer-dest PATH` selects another
+export root, and `--no-viewer` disables publishing. Publish failures are logged
+without failing the research run.
 
 ## Swarm types and fair comparisons
 
@@ -178,7 +191,7 @@ override arm D's local-memory default. Arm A always has three exploit slots and
 one divergent slot, regardless of its shadow regime.
 
 These rules are implemented in `swarm.py:allocate_roles`, `arm_environment` and
-`orchestrate`. For a comparison, use the same task, starting HEAD, four slots,
+`_orchestrate`. For a comparison, use the same task, starting HEAD, four slots,
 round budget, LLM and service settings, with separate output directories. **This is not exact call/token-budget
 matching:** scouts, repairs and the critic change call counts. Arm A also removes
 the critic LLM; differences cannot all be attributed to boredom timing.
@@ -427,17 +440,20 @@ conductor's `experiments/swarm_<arm>` directory when no output path is supplied:
 
 | File | Key fields / purpose | Writer |
 | --- | --- | --- |
-| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score (loss), descriptor, sources, commit, round; candidate replicate_score, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/orchestrate |
+| ledger.jsonl | seq, ts, kind baseline/candidate/critic, agent, status, score (loss), descriptor, sources, commit, round; candidate replicate_score, role, gate_reasons, gate_attempts | meter.submit; swarm.add_result_event/_orchestrate |
 | results.tsv | commit, loss, memory_gb, status, description, agent, round, descriptor, kind; CPU memory_gb=0.0 | swarm.write_results |
-| assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, ledger/profile hashes | swarm.append_assignment |
+| assignments.jsonl | ts, round, swarm_B, regime, per_agent_B, per_agent_boredom, roles, scouts, rationale, ledger/profile hashes, command/commit provenance | swarm.append_assignment |
 | boredom_log.jsonl | type=gate: candidate_commit, pass/reasons, descriptor, sources/prior_art; type=status: B, regime, best_loss/best_seq, frontier_stall, hashes; timestamps. Full per-agent components are in assignments. | boredom.run_gate; swarm.append_status |
 | research_log.jsonl | query id/purpose/agent/regime/endpoint/query/n_results/cost/latency_ms, optional disabled; source id/query_id/url/title/published/highlights; extract records when used | research.append_query_record/write_query_results/run_extract |
 | memory.jsonl | id, sourceId, label, content, author, metadata, timestamp; memory type is metadata.type, alongside arm/round/commit/status as appropriate | memory.write/append_mirror |
 | memory_log.jsonl | writes/recalls: backend, agent, query or ID, latency, evidence/source IDs, counts, pending/dropped counts where applicable | memory.write/recall |
 | llm_log.jsonl | ts, role, agent, round, model, prompt_sha, full prompt, parsed response, latency_ms, usage, optional attempts | llm.LLMClient.call |
 | critic.tsv | round, commit, run1_loss, run2_loss, accepted, verdict, why | swarm.update_critic_tsv |
-| run_id | Persisted UUID hex for memory run scope | swarm.orchestrate |
-| run.json | **Not written here.** Export manifest.json is separate; no run.json writer exists in swarm.py. | — |
+| run_id | Persisted UUID hex for memory run scope | swarm._orchestrate |
+| run.json | run_id, task, arm, status running/finished/stopped, profile_path/profile_sha256, starting swarm_commit, redacted command arguments | swarm._write_run_artifact |
+| boredom_profile.json | Effective profile without private `_` fields; used to reproduce meter values and verify profile hashes | swarm._orchestrate |
+| viewer_publish_log.jsonl | ts, status, final, exception class and message; written only on publish failure | swarm.publish_viewer_state |
+| viewer/ | Default published index and run directories, including events, entities, keyframes, manifests and copied experiment artifacts | export_viewer.publish |
 
 Other outputs include `runs/<commit>.log`, critic confirmation logs and the Exa
 cache. Review full prompts, responses and retrieved content before sharing them.
@@ -456,13 +472,17 @@ flowchart TD
   E --> X
   F --> X
   G --> X
+  R[run.json + boredom_profile.json] --> X
   X --> I[index.json + manifest]
   X --> J[events.ndjson: ticks + entity refs]
   X --> K[Entities + WorldSnapshot keyframes]
+  I --> API[Read-only HTTP + SSE]
+  J --> API
+  K --> API
 ```
 
-`export_viewer.py` implements static **swarm-viewer/v1** for CPU and Ig Nobel
-artifacts. UUIDv5 run/agent/event IDs are deterministic for the same inputs;
+`export_viewer.py` implements **swarm-viewer/v1** exports for CPU and Ig Nobel
+artifacts, plus incremental publishing for the CPU conductor. UUIDv5 run/agent/event IDs are deterministic for the same inputs;
 ticks start at 0 and are gap-free. Events include round starts, assignments,
 boredom measurements, questions, observations, hypotheses, gates, experiments,
 verdicts and discoveries, plus Ig Nobel talk/share/diary events. Entity references
@@ -471,9 +491,11 @@ round-end and periodic keyframes let viewers seek through the run.
 
 The exporter writes index.json, <run_id>/manifest.json, timeline.json,
 events.ndjson, keyframes/<tick>.json and entities/<kind>.json. Manifest provenance
-records the LLM, CPU evaluation and Exa/memory settings. The manifest's command
-and swarm_commit fields are empty strings, and provenance.artifacts is an empty
-object rather than a set of populated hashes. Missing timestamps stay null.
+records the LLM, CPU evaluation and Exa/memory settings. For new CPU runs,
+command and swarm_commit come from run.json: the command is a list of redacted
+arguments, and swarm_commit is the starting commit. The provenance.artifacts
+field remains an empty object rather than a set of populated hashes. Missing
+timestamps stay null.
 Prompt, response and reasoning text stays in entities/llm_calls.json rather than
 timeline events. Run identity also depends on the input directory name and first
 timestamp, so renaming inputs is not guaranteed to preserve it.
@@ -484,16 +506,69 @@ its opening “nothing implemented” and old GPU/timestamp/log-gap notes predat
 CPU exporter. Current writer/exporter code is authoritative for implementation
 status; the design document alone does not establish running endpoints.
 
-### Read-only /api/v1 and live mode: not yet merged
+### Read-only /api/v1 and live mode
 
-The proposed GET-only surface lists runs, timeline, world at a tick, events,
-agents/collections, ledger, discoveries, entities and artifacts, with optional
-SSE. It cannot start/stop runs or influence agents; see the contract for shapes.
+The read-only FastAPI server and round-end publisher are merged into
+`autoresearch` in `add9002` and `91e6e26`. Start the server with
+`python -m viewer --data <export-root> --port 8000` using the viewer environment
+shown in the quickstart. The export root must contain index.json and the UUID
+run directories, not the raw ledger directory. The CLI binds to 127.0.0.1;
+`--data` defaults to VIEWER_DATA or lab/data/runs.
 
-Implementation work is tracked on `agent/devin/swarm-viewer-impl` and
-`agent/devin/viewer-live-publish`. These branches are **not yet merged** into
-`autoresearch`. This README therefore provides no server or live-mode command;
-the supported path is a finished run followed by an explicit static export.
+All paths below use the `/api/v1` prefix. These routes are implemented in
+`viewer/app.py:create_app`, rather than merely proposed by the design contract.
+
+| GET path | Implemented response and selectors |
+| --- | --- |
+| /runs | Run summaries from index.json |
+| /runs/{run_id} | Manifest |
+| /runs/{run_id}/timeline | Timeline and keyframe ticks |
+| /runs/{run_id}/world | WorldSnapshot; `at=tick=T`, `at=round=R`, `at=ts=ISO`, or a bare integer; defaults to the last tick |
+| /runs/{run_id}/events | Events and next_after; filters after (exclusive), until (inclusive), agent_id and type; limit defaults to 500 and caps at 5000. Accept: application/x-ndjson returns the page as NDJSON |
+| /runs/{run_id}/agents/{agent_id} | Identity, state, current/recent entities and history; accepts UUID or native ID and the same at selectors |
+| /runs/{run_id}/agents/{agent_id}/{collection} | Newest-first questions, observations, hypotheses, experiments, rewards, diary, memory or llm_calls; until, before and limit (default 100, capped at 1000) |
+| /runs/{run_id}/ledger | Experiment entities filtered by until, agent_id or status |
+| /runs/{run_id}/discoveries | Discoveries, optionally filtered by until |
+| /runs/{run_id}/entities/{kind}/{entity_id} | Full entity; native is null if no raw record was attached |
+| /runs/{run_id}/artifacts/{path} | Files within the run's exported artifacts directory |
+| /runs/{run_id}/stream | SSE with after or Last-Event-ID resume, swarm-event IDs equal to ticks, and run.status events |
+
+Incremental publishing appends only an event suffix and preserves existing
+keyframes. It refuses an export whose old events are not a prefix or whose
+published keyframes changed. New keyframes, entities, copied artifacts,
+manifest, timeline and index are replaced atomically per file; the publication
+is not one atomic directory transaction. Per-agent boredom is recomputed from
+the assignment's ledger prefix and checked against logged values and profile
+hashes. While running, the manifest has status=running and live=true; final
+publishing adds run.finished and sets finished/stopped with live=false.
+A publish failure writes viewer_publish_log.jsonl and leaves the run going.
+
+The SSE handler polls published events every 0.1 seconds, ignores a partial
+last line, emits running heartbeats every 15 seconds, and closes after emitting
+the terminal status. This is **round-level live visibility**, not a tailer of
+every raw worker log line. The server can also serve a finished static export.
+
+The API handlers read artifacts only: they do not launch or stop runs, call
+LLMs, write memory, or mutate research files. Non-GET mutation requests have no
+API handlers. Run and artifact path resolution rejects traversal outside their
+roots. Artifact serving confines paths to artifacts/ but does not enforce a
+file-extension allowlist; only trusted exports should be served. There is no
+authentication or automatic content/credential scrubbing. CORS permits GET
+from HTTP localhost and 127.0.0.1 origins; CORS is not access control for
+non-browser clients. Do not give the server process swarm credentials or expose
+it publicly. Running responses use weak ETags and no-cache; finished/stopped
+responses use content-hash ETags and immutable caching, except the run index,
+which always uses no-cache. Conditional GET returns 304 for a matching ETag.
+
+The design contract is broader than exact response compatibility. Run summaries
+currently include time, agents and discoveries but not its compare_group/best
+fields or top-level ticks/rounds. Entity native records are not guaranteed.
+The exported accept_margin threshold defaults to 0 when absent from the profile,
+whereas the conductor's numeric acceptance predicate falls back to eps.
+The artifact route has the directory restriction described above rather than
+the contract's allowlist, and NDJSON is a bounded event page rather than a
+continuous live feed (use SSE for that). The contract's GPU-era examples and
+per-log-line tailer description do not describe this CPU implementation.
 
 ## Quickstart and tests
 
@@ -504,8 +579,8 @@ experiments. The build downloads packages, but candidate containers have no netw
 
 ```sh
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push --out /tmp/readme_check
-python3 export_viewer.py /tmp/readme_check --dest /tmp/readme_viewer
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push --out /tmp/readme_check2
+python3 export_viewer.py /tmp/readme_check2 --dest /tmp/readme_viewer2
 ```
 
 Use fresh output directories; keep valuable outputs outside /tmp. Fake mode is
@@ -513,6 +588,23 @@ an offline plumbing check, not evidence of autonomous discoveries; it still need
 Docker. The runner creates local branches/worktrees/tags and artifact commits:
 use your own checkout and preserve others' work. The exporter prints the path
 it generated.
+
+To serve the automatically published output, create a local viewer venv and
+install the server dependencies (FastAPI, Uvicorn and HTTPX):
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r viewer/requirements.txt
+.venv/bin/python -m viewer --data /tmp/readme_check2/viewer --port 8000
+```
+
+In another terminal, list runs with
+`curl -sS http://127.0.0.1:8000/api/v1/runs`, then use the returned run_id in
+`curl -sS http://127.0.0.1:8000/api/v1/runs/<run_id>/world?at=round=1`.
+To serve the explicit static export instead, pass
+`--data /tmp/readme_viewer2`. To watch a longer running experiment, start the
+server against its viewer directory; it serves newly published rounds without
+a restart. The API does not start the experiment.
 
 To use Tinker, install its optional packages and supply the environment variables
 shown below. These instructions have not been verified against the live service:
@@ -529,9 +621,14 @@ requirement); extras alone do not guarantee every renderer/model combination.
 Compare arm A in a separate output directory at the same HEAD and settings.
 
 ```sh
-EXA=off MEMORY_BACKEND=local python3 -m unittest discover -s tests -v
-python3 -m unittest discover -s boredom_meter/tests -v
+.venv/bin/python -m pip install pandas==2.2.3
+EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s boredom_meter/tests -v
 ```
+
+The root suite's spreadsheet-preview test imports pandas on the host, so a fresh
+viewer venv also needs the pandas install above. The fake Hadamard run and API
+server do not require host pandas.
 
 Docker test cases need the image above, and BixBench integration tests may prepare
 public data. Inspect the test summary: a skipped sandbox test is not security
@@ -555,9 +652,12 @@ Do not use PR #7/#8 flags against main before they land.
 ### Verified offline
 
 The fake one-round command and static export above completed successfully.
-The root unittest command ran 67 tests with one skip (66 passed); the meter
-unittest command passed all 23 tests. Ig Nobel's `MOCK=1` pytest command passed
-all 56 tests in a separate main worktree using the existing environment venv.
+The automatic publish finished with 75 gap-free ticks and three keyframes.
+The API served the run list, an event page and round-1 world state; its SSE
+stream returned the terminal finished status. A POST to /api/v1/runs returned
+405. The root unittest command ran 74 tests with one skip (73 passed), including
+API streaming, caching and error cases. The unchanged meter and separate
+Ig Nobel suites previously passed 23 and 56 tests respectively.
 No live Tinker, Exa, past.dev or Modal calls were made.
 
 ## Honest limitations
@@ -568,7 +668,7 @@ No live Tinker, Exa, past.dev or Modal calls were made.
   performance. No aggregate win-rate or causal boredom benefit is claimed here.
 - Confirmation repeats evaluation rather than independently changing seeds.
   Equal slots/rounds are not equal tokens or identical histories.
-- Static export works independently of the proposed read-only HTTP/live layer.
+- Static export also works without running the merged read-only HTTP/SSE server.
   Frontend rendering/visual replay was not verified.
 - Fake mode does not validate Tinker, Exa, past.dev or Modal reliability.
   Main's Ig Nobel Modal/past.dev paths still have verification TODOs; #6 does
