@@ -133,6 +133,10 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(replayed["agents"], keyframes[tick]["agents"])
             seeked = export_viewer.world_at(events, manifest, entities, tick, keyframes)
             self.assertEqual(seeked["agents"], keyframes[tick]["agents"])
+            worker = next(a["agent_id"] for a in manifest["agents"] if a["native_id"] == "worker-1")
+            roles = [next(a["role"] for a in frame["agents"] if a["agent_id"] == worker)
+                     for frame in keyframes.values()]
+            self.assertIn("exploit", roles)  # earlier keyframes keep historical state
 
     def test_ignobel_events_convert(self):
         with tempfile.TemporaryDirectory() as tmp:

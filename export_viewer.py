@@ -755,7 +755,7 @@ def apply(world, event, entities):
 
 
 def snapshot(world):
-    return {**json.loads(json.dumps(world)), "agents": list(world["agents"].values())}
+    return json.loads(json.dumps({**world, "agents": list(world["agents"].values())}))
 
 
 # ---------------------------------------------------------------- output
