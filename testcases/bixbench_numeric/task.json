@@ -1,0 +1,66 @@
+{
+ "editable": "analysis.py",
+ "deterministic": true,
+ "search_topic": "answering bioinformatics data analysis questions (BixBench) with pandas, scipy and statsmodels",
+ "brief": "an analysis script (`analysis.py`) that answers 45 BixBench questions (question text and dataset previews are under Task inputs) from 10 capsules of raw data in data/<capsule>/ and prints {question_id: number}. Only a fixed dev subset of the questions is graded during the search (loss = 1 - dev accuracy); the rest are held out and graded once after the run, so answer every question with a general, correct procedure rather than tuning to the dev score",
+ "fake_edits": [
+  {
+   "old": "answers = {}",
+   "new": "answers = dict()",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "test_choice"
+   }
+  },
+  {
+   "old": "answers[\"bix-18-q2\"] = round(area[\"Wildtype\"], -3)",
+   "new": "answers[\"bix-18-q2\"] = round(area[\"Wildtype\"], -2)",
+   "descriptor": {
+    "mechanism": "data",
+    "method": "filter"
+   }
+  },
+  {
+   "old": "answers[\"bix-18-q3\"] = (1 - area[\"ΔlasR\"] / area[\"Wildtype\"]) * 100",
+   "new": "answers[\"bix-18-q3\"] = (1 - area[\"ΔlasR\"] / area[\"Wildtype\"]) * 99",
+   "descriptor": {
+    "mechanism": "interpretation",
+    "method": "rounding",
+    "params": {
+     "value": 0.02
+    }
+   }
+  },
+  {
+   "old": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.std()",
+   "new": "answers[\"bix-18-q4\"] = sw[sw.Genotype == \"rhlR-\"].Circularity.mean()",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "test_choice"
+   }
+  }
+ ],
+ "proxy_note": "45 numeric questions from 10 public BixBench capsules (27 dev / 18 held-out), not full BixBench; R-only procedures excluded",
+ "context_files": [
+  "questions.json",
+  "data/bix-8/MeRIP_RNA_result.xlsx",
+  "data/bix-8/Proteomic_data.xlsx",
+  "data/bix-10/TASK008_BCG-CORONA_DM.csv",
+  "data/bix-10/TASK008_BCG-CORONA_EX.csv",
+  "data/bix-10/TASK008_BCG-CORONA_AE.csv",
+  "data/bix-18/Swarm_1.csv",
+  "data/bix-19/NeuN_quantification.csv",
+  "data/bix-27/ROSMAP_genexp_ad.csv",
+  "data/bix-27/ROSMAP_meta_ad.csv",
+  "data/bix-37/MeRIP_RNA_result.xlsx",
+  "data/bix-37/Proteomic_data.xlsx",
+  "data/bix-41/Swarm_2.csv",
+  "data/bix-51/data.xlsx",
+  "data/bix-52/JD_AgeRelated_CpG_noMT_Final.csv",
+  "data/bix-52/ZF_AgeRelated_CpG_noMT_Final.csv",
+  "data/bix-52/JD_Chromosome_Length.csv",
+  "data/bix-52/ZF_Chromosome_Length.csv",
+  "data/bix-54/Swarm_2.csv"
+ ],
+ "context_max_chars": 9000
+}
