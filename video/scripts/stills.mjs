@@ -19,7 +19,9 @@ const stills = [
   ['scene-07-results.png', 89],
   ['track3-results.png', 88],
   ['scene-08-ignobel.png', 107],
-  ['scene-09-close.png', 117]
+  ['ignobel-known-relationships.png', 110],
+  ['scene-09-close.png', 117],
+  ['close-frame.png', 119.5]
 ];
 
 if (!existsSync(video)) throw new Error(`Rendered video not found: ${video}`);
