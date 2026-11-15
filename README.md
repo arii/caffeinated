@@ -1,8 +1,8 @@
-# Lab Environment + Autoresearch
+# Lab Environment — research replay
 
-The selected first-person Lab Environment is the only frontend. It connects to Ari’s autoresearch swarm through a local FastAPI service. The comparison rooms and scripted demonstration are removed.
+A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
 
-## Run locally
+## Run
 
 Requires Node 22.18+, Python 3.12, Git, and uv.
 
@@ -12,62 +12,48 @@ npm run setup
 npm run dev
 ```
 
-Open http://localhost:5175. This starts the API on 127.0.0.1:8765 and Vite on 127.0.0.1:5175. For separate terminals use `npm run dev:backend` and `npm run dev:frontend`. Refreshing automatically restores the selected or latest run; starting the server does not launch research.
+Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so no credentials or separate archive import are needed. Vite runs on 5175 and the local recording API on 8765. Separate terminals can use `npm run dev:frontend` and `npm run dev:backend`.
 
-Panels start hidden. Use the left sidebar to open Overview, Team, Runs, the observatory, or the guide. Under **Runs**, choose **New research run**, select an execution profile, and start. Actual agent identities and assignments create characters in the room. The observatory and stations show the native ledger, findings, shared memory, provenance, and downloadable logs. Completed runs stay available in the run selector.
+## Explore a recording
 
-The room starts with no experiment selected. Fake model/evaluator profiles and the three sample benchmark problems have been removed from the application. Their saved histories are retired from the API and run selector; local audit files are preserved.
+- Use **Archive** in the sidebar to choose any of the four supplied recordings. These are temporary replay inputs, not the selected future research problems.
+- Press **Play**, drag the timeline, or change the playback pace. Research unfolds from an elevated camera inside the room.
+- Pause and choose **Walk inside**. Use WASD, Shift, mouse/drag or arrow keys to explore the paused world. Approach a researcher and press E, or select them from **Team**.
+- Agent conversations appear as speech popups above the selected character and quote recorded statements and results available at the current tick. Boredom appears only when interacting with that agent.
+- Activity symbols show thinking/ideas (💡), experiment work (🫧), and evaluation (📈). **Evidence** shows the recorded metric and results through the playhead.
+- **Lab view** returns to the elevated indoor camera. Panels stay hidden until selected from the sidebar.
 
-The remaining live execution path uses real Tinker calls and Modal GPU training, with no fake fallback. It stays unavailable until Modal and prepared training data are configured. We have not selected a replacement experiment domain.
+Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.
 
-The room and central table are visualizations, not a biological solver. The frontend does not calculate research scores or schedule the swarm.
+The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample includes mock prior-art URLs and is labeled accordingly; its supplied provenance is not proof of live scientific validation.
 
-## Tinker and training
+## Data and future integration
 
-```sh
-npm run setup:tinker
-```
+The source bundle is `data/replays/swarm-viewer-sample-runs.zip`. It contains three autoresearch histories and one Ig Nobel sample, with manifests, ordered events, entities, and sparse keyframes. No candidate executables or plot images are included.
 
-Copy `.env.example` to `.env` and set `TINKER_API_KEY` and `TINKER_MODEL`. Python automatically loads the repository-root `.env`; existing process variables take precedence. Credentials stay on the server and must never use a `VITE_` prefix. Local `.env`, virtual environments, and research artifacts are ignored by Git.
+`backend/replay.py` folds native events into deterministic per-tick snapshots. It does not trust the supplied tick-zero keyframes, because they already contain later state. It preserves metric direction, unknown values, per-agent boredom, source provenance, and IDs. Confirmed best values change on critic acceptance; the Ig Nobel aggregate counts replicated findings. Agent details use the event prefix, rather than reading later fields from final entities.
 
-The orchestration environment uses PyTorch 2.10 for the Kimi renderer. The training environment has separate pinned dependencies; follow [Ari’s swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md) for Modal authentication, prepared data, and training requirements. An installed Modal CLI is a prerequisite, not proof that GPU training is configured.
+| Read-only endpoint | Response |
+| --- | --- |
+| `GET /api/recordings` | Available recording manifests and playback metadata |
+| `GET /api/recordings/{id}` | Manifest, ordered events, per-tick frames, and original entity collections |
 
-Runs allow 1–3 rounds, one active job, a default limit of 32 high-level LLM calls (each may retry once), and a 20-minute local deadline. `LAB_MAX_LLM_CALLS` and `LAB_RUN_TIMEOUT` can adjust these server limits. Stop terminates local orchestration; remote work already dispatched can still finish and consume credits. Exa is explicitly off, memory is local, and research workers never push Git changes.
+Responses support gzip and ETags. The browser loads a recording once and handles play, pause, seek, camera mode, and pace locally. No server call is needed for each playback tick. Default run creation is disabled on this replay branch.
 
-## Integration
+The normalized source contract is documented in [the swarm viewer API proposal](docs/swarm-viewer-api.md). Our two recording endpoints are a small replay adapter over that format; they do not claim to implement every proposed `/api/v1` endpoint. See [the current integration design](docs/lab-backend-design.md) for the handoff boundary.
 
-- Three.js + TypeScript + Vite render the sole room in `src/variants/lab.ts`.
-- `backend/app.py` exposes `/api/health`, `/api/experiments`, run creation/snapshots/stop, SSE snapshots, ordered audit events, history exports, and registered artifacts.
-- `backend/worker.py` invokes the upstream runner in a separate process and per-run Git clone, pinned to the branch’s committed HEAD. Commit source changes before testing them as research input.
-- `backend/ingest.py` normalizes native JSONL artifacts and uses Ari’s own meter for per-agent boredom. `backend/store.py` persists snapshots and idempotent ordered events in SQLite.
-- `src/engine/contract.ts` validates incoming snapshots; `api.ts` handles snapshot loading and SSE reconnect. The world consumes roster and assignment state.
+The timeline interaction follows the user’s [History in 3D](https://github.com/mashathepotato/history-in-3D) project: continuous scrubbing, play/pause, and a scene tied to a selected historical moment. Here, the timeline is research-event ticks rather than historical years.
 
-Data lives in ignored `.lab_data/` (or `LAB_DATA_DIR`). A server restart marks unfinished jobs interrupted rather than silently rerunning them. The service binds to loopback for local use. Git clones separate research changes from the working branch. The merged upstream CPU runner retains its Docker sandbox for future adapters, but its three sample tasks are not exposed in the application.
+## Implementation and checks
 
-Each agent’s API/export JSON includes `boredom` on a 0–100 scale and `boredomSpectrum: {position, color, regime}`. Position is 0–1, color is a continuous teal-to-rose mapping, and regime comes from the upstream meter. Individual spectra stay in JSON; the screen shows one swarm spectrum. Color does not replace the scheduler’s threshold, hysteresis, and convergence rules.
-
-The API is the integration boundary for future domain adapters, including diffusion or cell simulations. Preserve their metric units, source records, and simulation timestamps. The CPU task branch is integrated. Ig Nobel and biological solvers remain separate integrations. See [backend design](docs/lab-backend-design.md).
-
-## Controls and checks
-
-Step inside, use WASD to walk, Shift to sprint, mouse/drag/arrows to look, E to open a nearby station, and Escape to release the pointer. Keys 1–4 face stations. Agent list buttons face an agent’s assigned station.
+Three.js + TypeScript + Vite render the selected Lab Environment. Zod validates the snapshot boundary. FastAPI reads the bundled archive; SQLite and the older execution integration remain available in the source for future work but are not the replay clock or a live model connection.
 
 ```sh
 npm test
 npm run test:backend
 npm run build
-.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
-.venv/bin/python -m unittest discover -s boredom_meter/tests
 ```
 
-Frontend checks cover snapshot validation/ordering and station access; backend checks cover durable ingestion, API validation, interruption recovery, and an actual Docker-scored benchmark baseline. Upstream tests include mocked Tinker behavior. A live Tinker/CPU verification was stopped when the sample tasks were removed. Modal training remains separately configured.
+Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The retained upstream runner tests have separate training/test dependencies; see `program_swarm.md` and `testcases/README.md` when working on those components.
 
-## Ari’s archive
-
-The supplied `swarm-viewer-sample-runs.zip` was extracted outside the repository. Its three autoresearch recordings were inspected and imported into private `.lab_data/`, then removed from the application at the user’s request. The Ig Nobel recording was left out. Import an extracted bundle with:
-
-```sh
-.venv/bin/python -m backend.import_recording /path/to/extracted/runs
-```
-
-The adapter folds native events in tick order, preserves original entity files and audit events, and labels the result recorded. It does not treat the bundle’s keyframe zero as an initial state because that keyframe contains later-run data. Missing seeds/source commits and missing boredom remain unknown. The ZIP contains records, not candidate executables; they cannot be resumed from this bundle alone. Recorded model calls and measurements are supplied provenance, not measurements independently rerun on this computer.
+The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.

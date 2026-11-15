@@ -28,7 +28,7 @@ class ServiceTests(unittest.TestCase):
 
     def test_api_validation_single_run_stop_and_recovery(self):
         with tempfile.TemporaryDirectory() as d:
-            with TestClient(create_app(d,runner=False)) as c:
+            with TestClient(create_app(d,runner=False,execution_enabled=True)) as c:
                 self.assertEqual(c.post('/api/runs',json={'mode':'tinker_modal','rounds':99}).status_code,422)
                 self.assertEqual(c.post('/api/runs',json={'mode':'tinker_modal'},headers={'Origin':'https://external.example'}).status_code,403)
                 r=c.post('/api/runs',json={'mode':'tinker_modal'});self.assertEqual(r.status_code,201);rid=r.json()['runId']
@@ -36,7 +36,7 @@ class ServiceTests(unittest.TestCase):
                 self.assertEqual(c.get(f'/api/runs/{rid}/artifacts/not-allowed').status_code,404)
                 self.assertEqual(c.get('/api/runs/missing').status_code,404)
                 self.assertEqual(c.post(f'/api/runs/{rid}/stop').json()['status'],'stopping')
-            with TestClient(create_app(d,runner=False)) as c:
+            with TestClient(create_app(d,runner=False,execution_enabled=True)) as c:
                 s=c.get(f'/api/runs/{rid}').json();self.assertEqual(s['status'],'interrupted')
                 events=c.get(f'/api/runs/{rid}/events.json').json()
                 self.assertEqual([e['sequence'] for e in events],list(range(1,len(events)+1)))
@@ -51,7 +51,7 @@ class ServiceTests(unittest.TestCase):
             m.close()
 
     def test_fake_modes_are_rejected(self):
-        with tempfile.TemporaryDirectory() as d, TestClient(create_app(d,runner=False)) as c:
+        with tempfile.TemporaryDirectory() as d, TestClient(create_app(d,runner=False,execution_enabled=True)) as c:
             for mode in ['offline','tinker_protocol','tinker_cpu']:
                 self.assertEqual(c.post('/api/runs',json={'mode':mode}).status_code,422)
             store=Store(Path(d)/'runs.sqlite3')

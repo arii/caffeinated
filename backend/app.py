@@ -1,5 +1,7 @@
 """Loopback-only run service for the Lab Environment."""
 import asyncio
+import gzip
+import hashlib
 from contextlib import asynccontextmanager
 import importlib.util
 import json
@@ -24,6 +26,7 @@ from typing import Literal
 from runtime_env import load_local_env
 from backend.store import Store, ACTIVE
 from backend.ingest import ingest
+from backend.replay import RecordingCatalog
 
 ROOT = Path(__file__).resolve().parents[1]
 load_local_env(ROOT/'.env')
@@ -138,10 +141,11 @@ class Manager:
         return [{'id':str(p.relative_to(out)),'name':p.name,'bytes':p.stat().st_size} for p in sorted(paths)][:200]
 
 
-def create_app(data_dir=None,runner=True):
+def create_app(data_dir=None,runner=True,execution_enabled=False):
     holder={}
     @asynccontextmanager
     async def lifespan(app):
+        holder['recordings']=RecordingCatalog(ROOT/'data'/'replays'/'swarm-viewer-sample-runs.zip')
         holder['manager']=Manager(data_dir or os.environ.get('LAB_DATA_DIR',str(ROOT/'.lab_data')),runner)
         yield
         holder['manager'].close()
@@ -159,13 +163,28 @@ def create_app(data_dir=None,runner=True):
         if s['config']['mode']!='tinker_modal':raise HTTPException(410,'This experiment has been removed from the Lab Environment.')
         return s
     @app.get('/api/health')
-    def health():return manager().capabilities()
+    def health():return {**manager().capabilities(),'viewerMode':'recorded','executionEnabled':execution_enabled,'modes':manager().capabilities()['modes'] if execution_enabled else []}
+    @app.get('/api/recordings')
+    def recordings():return holder['recordings'].list()
+    @app.get('/api/recordings/{run_id}')
+    def recording(run_id:str,request:Request):
+        try:bundle=holder['recordings'].get(run_id)
+        except KeyError:raise HTTPException(404,'Recording not found')
+        raw=json.dumps(bundle,separators=(',',':')).encode()
+        etag='"'+hashlib.sha256(raw).hexdigest()+'"'
+        headers={'ETag':etag,'Cache-Control':'no-cache','Vary':'Accept-Encoding'}
+        if request.headers.get('if-none-match')==etag:return Response(status_code=304,headers=headers)
+        if 'gzip' in request.headers.get('accept-encoding',''):
+            headers['Content-Encoding']='gzip';raw=gzip.compress(raw,compresslevel=5,mtime=0)
+        return Response(raw,media_type='application/json',headers=headers)
     @app.get('/api/experiments')
     def experiments():return [{'id':'autoresearch','title':'Autoresearch swarm','description':'Conductor, four workers, and a critic. Ari’s boredom-controlled search over train.py.'}]
     @app.get('/api/runs')
     def runs():return [s for s in manager().store.list() if s['config']['mode']=='tinker_modal']
     @app.post('/api/runs',status_code=201)
-    def start(config:RunConfig):return manager().start(config)
+    def start(config:RunConfig):
+        if not execution_enabled:raise HTTPException(409,'This branch is a read-only recording viewer. Live research is supplied by the backend team.')
+        return manager().start(config)
     @app.get('/api/runs/{run_id}')
     def snapshot(run_id:str):return get(run_id)
     @app.post('/api/runs/{run_id}/stop')

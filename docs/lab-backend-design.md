@@ -1,79 +1,61 @@
-# Lab Environment: backend and research agents
+# Lab Environment: replay and backend handoff
 
-Implemented on `agent/masha/lab-style-options`: one selected Lab Environment, a local FastAPI service, SQLite run/event storage, filesystem artifacts, SSE snapshots, and a separate autoresearch worker process.
+This branch is a read-only research replay. The research backend team owns future experiment execution and Tinker submission. The chosen lab, timeline, cameras, and archived agent interactions consume recorded state and do not select or execute future research objectives.
 
-## Connections and ownership
+## Source and reference
+
+- Supplied `data/replays/swarm-viewer-sample-runs.zip`, schema `swarm-viewer/v1`: four recordings, including the Ig Nobel sample.
+- Canonical proposal: [swarm-viewer-api.md](swarm-viewer-api.md), obtained from the team’s `agent/devin/swarm-viewer-api` branch. The ZIP itself contains no Markdown file.
+- Timeline interaction reference: [History in 3D](https://github.com/mashathepotato/history-in-3D), especially `src/engine/timeline.js` and `ui.js`.
+
+The earlier removal of sample problems is superseded by their explicit use as temporary replay inputs. They are not live experiment choices. The source ZIP stays immutable in the repository so a clean checkout can reproduce the same playback.
+
+## Playback data flow
 
 ```text
-Browser (Three.js / TypeScript)
-  HTTP: configure, start, select, stop, export
-  SSE: validated snapshots with monotonic run sequence
-         ↕
-FastAPI → SQLite snapshots + ordered audit events
-         ↕ normalized native JSONL
-Per-run worker + pinned Git clone
-         ↕
-Ari’s swarm.py → boredom meter / local memory / critic gates
-         ├─ llm.py → Tinker sampling (or explicit fake mode)
-         └─ evaluator → Modal training (or explicit fake GPU mode)
+swarm-viewer/v1 ZIP
+  manifest + ordered events + entities
+          ↓
+backend/replay.py — pure event-prefix fold
+          ↓
+GET /api/recordings → available manifests
+GET /api/recordings/{id} → frames + events + original entities
+          ↓
+frontend timeline — playhead, pace, play/pause, seeking
+          ↓
+selected snapshot → room, NPC activity, evidence, archived conversation
 ```
 
-Ari owns scheduling, novelty, hypotheses, and result acceptance. The integration wraps that implementation; it does not replace its research decisions. Tinker provides model sampling. It does not host the API, frontend, or GPU experiment runtime. API keys stay server-side; run IDs identify jobs and are not credentials.
+These endpoints bridge the proposed data model to the existing lab snapshot boundary. They are not an implementation of every proposed `/api/v1` endpoint. Future producers can supply the same manifest/event/entity format, or an adapter can consume the proposed endpoints without changing room or timeline semantics.
 
-## Lifecycle
+## Time and knowledge
 
-1. The frontend can load without a backend and shows disconnection honestly.
-2. Backend startup connects the frontend without launching paid work or fabricating agents.
-3. The user opens run setup; only configured real execution profiles are enabled. No sample benchmark is selected.
-4. Starting a bounded run creates a persisted ID and pins its input to the branch’s committed HEAD. A separate process invokes the runner in a per-run clone, using local memory, Exa off, and no pushes.
-5. The actual six-agent roster appears in the room. Native assignments update roles/stations; native proposals, ledger records, critic results, and memory update the observatory.
-6. Refresh or reconnect loads a persisted snapshot, then subscribes to SSE. Stable source identifiers prevent duplicate ingestion; stale snapshots cannot roll back the same run.
-7. Stop terminates the local process group. Remote requests already dispatched may still finish. On server restart, unfinished runs become interrupted and are not relaunched.
+A native event’s integer tick is the source clock. Render time interpolates cosmetic movement, and playback pace changes only how fast the browser traverses ticks. Pausing freezes replay poses while allowing first-person camera movement.
 
-## Data contract
+A snapshot at tick T includes only events through T. Source timestamps are preserved where present; missing timestamps, seeds, boredom, and source commits are not invented. Agent identities are stable and independent of avatar appearance. Baseline and World are pseudo-agents in the data and are not rendered as human researchers.
 
-Snapshots include run identity, source commit, config, status, last sequence, roster, assignments, progress, boredom/regime, metric name/unit/direction, results, findings, sources, error, and provider provenance. Audit events preserve stable native source references; original artifacts remain downloadable. Animation time does not represent scientific time.
+The supplied keyframe zero contains later-run state. The adapter therefore reconstructs every frame from the event prefix instead of loading those keyframes. Native final entity records remain available for audit, but the visual state and interaction text use time-gated event data. Candidate results do not become the confirmed swarm best before acceptance. Metric direction remains domain-specific; the Ig Nobel replicated-findings metric counts replicated studies rather than treating a p-value or effect size as that aggregate.
 
-Each agent’s JSON contains `boredom` (0–100) and `boredomSpectrum` with normalized `position`, hex `color`, and the meter’s `regime`. Native per-agent meter state is recomputed from complete ledger records using the pinned profile. Individual spectra are data, not repeated screen widgets. The UI shows one swarm spectrum; color has no effect on scheduling.
+## Interaction and cameras
 
-Fake profiles are retired. CPU mode reports measured task loss using the upstream Docker sandbox; Modal mode uses validation bits per byte. Imported archives are labeled recorded and do not dispatch model calls. The central table visualizes team activity and is not a biological simulation.
+The default replay camera is elevated inside the laboratory. Playback shows recorded agent activity through lightbulbs, bubbles, and evaluation symbols. Pause permits first-person exploration. Interacting with a researcher opens a speech popup above that character with source-based conversation topics and that agent’s recorded boredom; no global boredom widget is displayed.
 
-## API
+Conversation is an archival inspection, not a new model response or a continuation of the experiment. Only logged proposals, rationale, observations, results, and notes are used. Nothing in this branch attempts to generate or expose unlogged reasoning.
 
-All endpoints are prefixed `/api`.
+Movement between stations is illustrative and deterministic under seeking. Camera position and avatar animation never change scientific data. The central table is a visual team display, not a biological solver.
 
-| Method/path | Purpose |
-| --- | --- |
-| GET /health | Provider capabilities, configured public model, limits |
-| GET /experiments | Supported autoresearch experiment |
-| POST /runs | Validate config and start one bounded job |
-| GET /runs | Persisted recent run history |
-| GET /runs/{id} | Current snapshot |
-| GET /runs/{id}/events | SSE snapshots; supports reconnect cursor |
-| GET /runs/{id}/events.json | Ordered audit history |
-| GET /runs/{id}/export | Full persisted snapshot and audit events |
-| GET /runs/{id}/artifacts | Registered artifact list |
-| GET /runs/{id}/artifacts/{path} | Allowlisted, redacted artifact download |
-| POST /runs/{id}/stop | Stop local orchestration |
+## Scope and provenance
 
-Vite proxies `/api` in development. A production build can be served by FastAPI on the same origin. Storage is `.lab_data/` or `LAB_DATA_DIR`. The local service uses loopback and origin/host checks; public multi-user deployment needs authentication and stronger isolation. Research clones protect the checkout but are not security sandboxes.
+The default service rejects live run creation. Playback and interaction require no API key and make no paid calls. The existing execution code remains in source for later integration but is not connected to the replay UI.
 
-## Integration baseline and remaining adapters
+All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample references mock prior-art sources and is labeled recorded sample. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
 
-Integrated `origin/autoresearch-cpu-tasks` at `c823634`, which includes the current autoresearch/Tinker implementation and Docker-sandboxed CPU mini tasks. Experimental result branches do not replace the integrated runner.
-
-CPU tasks and the swarm-viewer/v1 recording importer are integrated. Ig Nobel and domain solvers remain separate adapters. Future integrations should normalize their native records through this API and preserve metric semantics, source identifiers, scientific time, and artifacts. Follow `program_swarm.md` for provider/training setup; renderer and training dependencies remain separate.
+Future Ig Nobel objectives should supply their own manifests, metric units/direction, identities, events, scientific artifacts, and provenance. The backend team can change experiment content while keeping replay controls and world interactions stable.
 
 ## Verification
 
-Production frontend build, frontend contract/navigation checks, backend persistence/API/recovery tests, and an end-to-end offline swarm run passed. Upstream checks passed 70 tests plus 23 standalone meter tests. A bounded one-round live Tinker run completed with proposals, four candidate evaluations, critic confirmation, and shared memory. Its evaluator was explicitly fake; this does not establish real GPU training readiness.
+Backend checks exercise all four archive folds, absence of later results at earlier ticks, recorded per-agent boredom, critic acceptance, maximize metrics, source-sample labels, cache behavior, and rejection of execution. Frontend checks cover time lookup and advance, backward seeking, snapshot compatibility, navigable stations, and unchanged character poses at the same paused tick. Browser verification checks the timeline, archive selection, pace, indoor/first-person views, evidence, and character interaction.
 
-## Recording import and real execution
+## Character display identity
 
-`backend/import_recording.py` imports the three autoresearch runs from Ari’s supplied archive. It retains the manifest and native entities/events as private artifacts, folds events in tick order, preserves per-agent boredom, and distinguishes recorded provenance from execution on this computer. Supplied keyframes are retained for audit but not used as initial state: keyframe zero in this bundle already includes later state. The archive includes no executable candidates and cannot resume the original runs by itself.
-
-`POST /runs` initially accepted `tinker_cpu` or `tinker_modal`; see the current experiment selection below for the subsequent removal of CPU choices. CPU configuration selects an allowlisted task, uses `--llm tinker --task <task>`, and scores real candidate code through the imported Docker sandbox. Upstream fake test fixtures remain for automated tests but no application run mode invokes them. Historical protocol runs return 410 and are excluded from the run list without deleting their audit data.
-
-## Current experiment selection
-
-The user rejected Hadamard, BixBench mini, and Playworld mini as the lab’s problems. Their recordings and the CPU test run are retired from the API and selector; direct access returns 410. The CPU test was stopped. No fake model or evaluation profile is accepted. `POST /runs` currently accepts only the real Tinker/Modal configuration, which requires separate training setup. No replacement problem is selected. Upstream CPU code and local archive data are retained for audit rather than removed from shared history.
+NPCs have neutral B/C/P number labels, corresponding to Bio, Chem, and Physics. The normalized manifest retains `agent_id`, `native_id`, and `original_display_name` for source joins, and supplies `display_name`, `family`, and `familySource` for presentation. Existing recordings have no explicit family, so their groups are deterministic display assignments. Future producer-supplied families take precedence. UI excerpts replace personal-name mentions with aliases; original JSON stays intact. Pseudo-agents remain Reference/Environment records and are not rendered as people.

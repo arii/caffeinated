@@ -1,7 +1,8 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {Box3,Vector3} from 'three';
 import {createWorld} from '../src/variants/lab.ts';
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
-globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},strokeRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){}})})};
+globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},strokeRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},ellipse(){},closePath(){},fill(){}})})};
 test('Lab Environment: all stations are reachable and backend roster can change',()=>{
   const create=createWorld;
   const w=create(),r=.34,spacing=.4;
@@ -23,4 +24,31 @@ test('Lab Environment: all stations are reachable and backend roster can change'
   w.update(16,empty);
   w.scene.traverse(o=>{assert.ok(Number.isFinite(o.position.x)&&Number.isFinite(o.position.y)&&Number.isFinite(o.position.z));});
   w.dispose?.();
+});
+
+test('paused replay freezes avatar and field poses at the same replay time',()=>{
+ const world=createWorld();
+ const state={progress:.5,boredom:0,running:true,replay:true,agents:[{id:'archived',name:'Archived researcher',role:'researcher',state:'working',stationId:'analyzer',boredom:null,position:{x:4,z:-1.4}}]};
+ world.update(7,state);
+ const transforms=()=>{const values=[];world.scene.traverse(o=>values.push([...o.position.toArray(),...o.quaternion.toArray(),...o.scale.toArray()]));return values;};
+ const playing=transforms();world.update(7,{...state,running:false});
+ assert.deepEqual(transforms(),playing);
+});
+
+
+test('animated status lights remain tiny and stationary robots face the entrance',()=>{
+ const world=createWorld();
+ world.update(7,{progress:.5,boredom:0,running:true,replay:true,agents:[{id:'robot-b1',name:'B1',role:'researcher',state:'working',stationId:'analyzer',boredom:null,position:{x:4,z:-1.4}}]});
+ const light=world.scene.getObjectByName('agent-status-led');assert.ok(light);
+ const size=new Box3().setFromObject(light).getSize(new Vector3());
+ assert.ok(Math.max(size.x,size.y,size.z)<.06,'a pulsing indicator must never grow into an opaque body-sized box');
+ assert.equal(light.parent.rotation.y,0,'stationary happy faces should face the entry camera');
+});
+
+
+test('first replay frame starts at supplied pose facing the camera, never a spawn-to-pose turn',()=>{
+ const world=createWorld();
+ world.update(0,{progress:0,boredom:0,running:false,replay:true,agents:[{id:'initial-robot',name:'C1',role:'researcher',state:'thinking',stationId:'explorer',boredom:null,position:{x:-1.5,z:4.8,heading:Math.PI,moving:true}}]});
+ const robot=world.scene.getObjectByName('agent-status-led').parent;
+ assert.equal(robot.position.x,-1.5);assert.equal(robot.position.z,4.8);assert.equal(robot.rotation.y,0);
 });
