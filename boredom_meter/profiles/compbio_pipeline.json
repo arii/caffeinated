@@ -1,0 +1,36 @@
+{
+  "domain": "compbio-reproduction (BixBench3-style analysis pipelines)",
+  "version": 1,
+  "direction": "max",
+  "objective": "validator_score (deterministic in-loop check, e.g. replicate concordance or artifact-contract F1)",
+  "eps": 0.01,
+  "k": 6,
+  "knn": 3,
+  "patience": 6,
+  "levels": ["stage", "method"],
+  "level_weights": [1.0, 0.5],
+  "params_weight": 0.25,
+  "vocab": {
+    "qc_filtering": ["mito_threshold", "doublet_removal", "adaptive_mad"],
+    "normalization": ["log_cpm", "sctransform", "deseq2_vst", "tmm"],
+    "batch_correction": ["none", "combat", "harmony", "scvi"],
+    "feature_selection": ["hvg_seurat", "hvg_pearson", "all_genes"],
+    "clustering": ["leiden", "louvain", "kmeans"],
+    "differential_expression": ["wilcoxon", "deseq2", "edger", "limma_voom", "pseudobulk"],
+    "enrichment": ["gsea", "ora_hypergeom"]
+  },
+  "params": {
+    "resolution": {"min": 0.1, "max": 3.0},
+    "fdr": {"min": 0.0001, "max": 0.2, "scale": "log"},
+    "n_hvg": {"min": 500, "max": 10000, "scale": "log"},
+    "mito_pct": {"min": 1, "max": 50}
+  },
+  "fail_statuses": ["crash", "invalid", "qc_fail", "contract_violation"],
+  "gate": {"snap_min_distance": 0.35, "failed_min_distance": 0.25, "require_sources": true},
+  "directives": {
+    "EXPLOIT": "Tune parameters of the current best stage/method.",
+    "BOREDOM_SNAP": "Switch method within an under-visited stage (see `suggest`); cite a source; check shared memory for prior failures.",
+    "PARADIGM_BREAKOUT": "Re-open an upstream stage (QC / normalization / batch model) instead of tuning downstream.",
+    "CONVERGED": "Frontier has stalled and every mechanism has been tried: re-run the current best (confirmation) instead of proposing new ideas."
+  }
+}

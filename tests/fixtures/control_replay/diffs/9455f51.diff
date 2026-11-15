@@ -1,0 +1,7 @@
+diff --git a/train.py b/train.py
+index 5dbe467..19d5718 100644
+--- a/train.py
++++ b/train.py
+@@ -444 +444 @@ WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
+-ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
++ADAM_BETAS = (0.9, 0.95) # Adam beta1, beta2

@@ -41,6 +41,8 @@ def load_profile(path):
     profile.setdefault("min_attempts", 3)
     profile.setdefault("trivial_distance", 0.05)
     profile.setdefault("fail_statuses", ["crash", "invalid", "qc_fail"])
+    profile.setdefault("attempt_statuses", ["keep", "discard", "crash"])
+    profile.setdefault("required_mechanisms", list(profile.get("vocab") or {}))
     profile.setdefault("gate", {"snap_min_distance": 0.35, "failed_min_distance": 0.25})
     profile["_hash"] = sha({k: v for k, v in profile.items() if not k.startswith("_")})
     return profile
@@ -150,6 +152,11 @@ def simpson(cells):
     return 1.0 - sum(v * v for v in counts.values()) / (n * n)
 
 
+def attempt_events(profile, events):
+    return (e for e in events
+            if e.get("status") in profile["attempt_statuses"] and e.get("kind") != "critic")
+
+
 def fold(profile, events, agent=None):
     """Replay the ledger once, returning per-event metrics and final state."""
     k, patience = profile["k"], profile["patience"]
@@ -165,8 +172,8 @@ def fold(profile, events, agent=None):
     novelty_hist, trivial_hist, fail_hist, cell_hist = [], [], [], []
     regime = "EXPLOIT"
     trace = []
-    required_cells = set(profile.get("vocab") or {}) - {"baseline"}
-    for e in events:
+    required_cells = set(profile["required_mechanisms"])
+    for e in attempt_events(profile, events):
         d = e["descriptor"]
         nov = sparseness(profile, d, archive)
         nearest = min((distance(profile, d, o) for o in archive), default=1.0)
@@ -245,7 +252,7 @@ def status(profile, events, agent=None, at=None):
     }
     out = {k: v for k, v in last.items() if k != "agent"}
     out.update({
-        "scope": agent or "swarm", "n_attempts": len(events),
+        "scope": agent or "swarm", "n_attempts": len(trace),
         "ledger_sha256": sha(events), "profile_sha256": profile["_hash"],
         "directive": profile.get("directives", {}).get(out["regime"], ""),
     })
@@ -272,7 +279,7 @@ def suggest(profile, events, n=5, depth=None):
     """Least-visited descriptor cells, failures counted against a cell; deterministic order."""
     depth = depth or min(2, len(profile["levels"]))
     visits, fails, best = {}, {}, {}
-    for e in events:
+    for e in attempt_events(profile, events):
         c = cell_key(profile, e["descriptor"], depth)
         visits[c] = visits.get(c, 0) + 1
         if e.get("status") in profile["fail_statuses"]:
@@ -284,11 +291,12 @@ def suggest(profile, events, n=5, depth=None):
     return [{"cell": c, "visits": visits.get(c, 0), "fails": fails.get(c, 0), "best": best.get(c)} for c in ranked[:n]]
 
 
-def gate(profile, events, descriptor, agent=None, sources=None):
+def gate(profile, events, descriptor, agent=None, sources=None, role=None):
     validate_descriptor(profile, descriptor)
     st = status(profile, events, agent)
-    archive = [e["descriptor"] for e in events]
-    failed = [e["descriptor"] for e in events if e.get("status") in profile["fail_statuses"]
+    attempts = list(attempt_events(profile, events))
+    archive = [e["descriptor"] for e in attempts]
+    failed = [e["descriptor"] for e in attempts if e.get("status") in profile["fail_statuses"]
               or e.get("status") == "discard"]
     recent = archive[-profile["k"]:]
     min_recent = min((distance(profile, descriptor, o) for o in recent), default=None)
@@ -297,7 +305,7 @@ def gate(profile, events, descriptor, agent=None, sources=None):
     reasons = []
     if st["regime"] == "CONVERGED":
         best_event = next(
-            (event for event in events if event.get("seq") == st["best_seq"]),
+            (event for event in attempts if event.get("seq") == st["best_seq"]),
             None,
         )
         if best_event is None or distance(
@@ -307,7 +315,7 @@ def gate(profile, events, descriptor, agent=None, sources=None):
         if g.get("require_sources") and not sources:
             reasons.append("ungrounded: cite at least one research source id")
     elif st["regime"] != "EXPLOIT":
-        if min_recent is not None and min_recent < g["snap_min_distance"]:
+        if role != "exploit" and min_recent is not None and min_recent < g["snap_min_distance"]:
             reasons.append(f"near-duplicate of a recent attempt ({min_recent:.3f} < {g['snap_min_distance']})")
         if min_failed is not None and min_failed < g["failed_min_distance"]:
             reasons.append(f"too close to a failed/discarded attempt ({min_failed:.3f} < {g['failed_min_distance']})")

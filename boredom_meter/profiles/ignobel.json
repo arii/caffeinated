@@ -19,6 +19,7 @@
     "meta-science":       ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"]
   },
   "fail_statuses": ["crash", "not_replicated"],
+  "attempt_statuses": ["keep", "not_replicated", "crash"],
   "agent_meter": {
     "note": "Private per-agent meter used by ignobel/boredom.py and ignobel/policy.py during a run. The top-level keys are for the shared boredom_meter/meter.py fold/status/gate over meter_adapter.py ledgers.",
     "window": 5,
