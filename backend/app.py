@@ -349,7 +349,7 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
         holder["recordings"] = RecordingCatalog(
             os.environ.get(
                 "LAB_RECORDINGS_ZIP",
-                str(ROOT / "data" / "replays" / "swarm-viewer-sample-runs.zip"),
+                str(ROOT / "data" / "replays" / "ignobel-real-runs.zip"),
             ),
             filter(None, os.environ.get("LAB_RECORDINGS_DIRS", "").split(os.pathsep)),
             repo_root=ROOT if discover else None,
