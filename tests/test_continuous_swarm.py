@@ -50,6 +50,18 @@ class ContinuousQueueTests(unittest.TestCase):
             self.assertEqual(len(queue.agents), 20)
             queue.active.clear()
 
+    def test_bored_workers_grow_queue_by_at_most_two_up_to_maximum(self):
+        with tempfile.TemporaryDirectory() as tmp, Queue(Path(tmp), initial=4, maximum=5) as queue:
+            planned = queue.plan_agents(bored=["worker-2"])
+            self.assertEqual(len(queue.agents), 5)
+            self.assertEqual(len(queue.agents) - 4, 1)
+            self.assertIn("worker-5", planned)
+            spawn = json.loads((Path(tmp) / "pi.jsonl").read_text().splitlines()[0])
+            self.assertEqual(spawn["type"], "pi_spawn")
+            self.assertEqual(spawn["agent"], "worker-5")
+            self.assertEqual(spawn["trigger"], ["worker-2"])
+            self.assertIsNone(spawn["focus"])
+
     def test_worker_call_ceiling_is_rejection_not_provider_crash(self):
         import llm
 

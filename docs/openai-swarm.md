@@ -4,7 +4,11 @@ This branch replaces the local Ollama mode with OpenAI. One `gpt-6.1-sol`
 supervisor plans each round at low reasoning effort. Eight `gpt-6-luna`
 workers execute short assignments with reasoning effort `none`; critic roles
 also use Luna. Worker calls are queued, with at most one execution and one
-repair per worker per round. This is a fixed-size team, not autonomous spawning.
+repair per worker per round. In Ig Nobel runs the PI can spawn up to two
+workers per round when the team is bored or stuck, up to the configured worker
+cap (8 by default in round mode, or `--max-workers` when specified). Round-mode
+spawning defaults on for Ig Nobel and off for other tasks; `--spawn off`
+disables it. Each spawned worker starts with private memory.
 Existing recordings and their result citations are unchanged.
 
 ## Run

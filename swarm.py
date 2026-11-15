@@ -720,6 +720,7 @@ def write_memory_item(
     mirror,
     log,
     arm,
+    agent=None,
 ):
     return memory.write(
         mem_type,
@@ -731,6 +732,7 @@ def write_memory_item(
         mirror=mirror,
         log=log,
         arm=arm,
+        agent=agent or (author if memory.spawned_worker(author) else None),
     )
 
 
@@ -768,7 +770,7 @@ def write_hypothesis(idea, status, author, round_num, detail="", *, backend, mir
     )
 
 
-def recall_memory(query, author, *, backend, mirror, log, arm, limit=5):
+def recall_memory(query, author, *, backend, mirror, log, arm, limit=5, agent=None):
     return memory.recall(
         query,
         memory.RECALL_IDENTITY,
@@ -778,6 +780,7 @@ def recall_memory(query, author, *, backend, mirror, log, arm, limit=5):
         mirror=mirror,
         log=log,
         arm=arm,
+        caller_agent=agent if memory.spawned_worker(agent) else None,
     )
 
 
@@ -1202,6 +1205,7 @@ def run_scouts(
             mirror=mirror,
             log=memory_log,
             arm=arm,
+            agent=agent,
         )
         common = common_values(
             agent,
@@ -1763,6 +1767,59 @@ def pi_stuck_agents(events, agents, round_num):
     return stuck
 
 
+def spawn_candidates(allocation, stuck, agents, round_num, last_spawn_round, max_workers, arm="B"):
+    if arm in METER_OFF_ARMS or (last_spawn_round is not None and round_num - last_spawn_round < 1):
+        return []
+    per_agent = allocation.get("per_agent_B", {})
+    triggers = [
+        agent
+        for agent in agents
+        if agent in stuck
+        or (isinstance(per_agent.get(agent), (int, float)) and per_agent[agent] >= 0.5)
+    ]
+    free_slots = max(0, max_workers - len(agents))
+    count = min(2, free_slots) if triggers else 0
+    return [
+        {
+            "agent": f"worker-{len(agents) + index + 1}",
+            "trigger": triggers,
+        }
+        for index in range(count)
+    ]
+
+
+def restore_spawned_agents(agents, out_dir):
+    spawned_agents = [
+        event.get("agent")
+        for event in read_jsonl(Path(out_dir) / "pi.jsonl")
+        if event.get("type") == "pi_spawn" and event.get("agent")
+    ]
+    return tuple(dict.fromkeys([*agents, *spawned_agents]))
+
+
+def apply_pi_spawns(agents, pi_steers, spawn_records, out_dir):
+    for spawn in spawn_records:
+        append_jsonl(
+            Path(out_dir) / "pi.jsonl",
+            {
+                "type": "pi_spawn",
+                "agent": spawn["agent"],
+                "round": spawn["round"],
+                "trigger": spawn["trigger"],
+                "focus": spawn["focus"],
+            },
+        )
+        if spawn["focus"]:
+            pi_steers[spawn["agent"]] = format_pi_steer(
+                {
+                    "steer": spawn["focus"],
+                    "cite": spawn["cite"],
+                    "lead_id": spawn["lead_id"],
+                }
+            )
+    return tuple(dict.fromkeys([*agents, *(spawn["agent"] for spawn in spawn_records)]))
+
+
 def pi_attempt_summary(event):
     descriptor = event.get("descriptor") or {}
     reasons = event.get("gate_reasons") or event.get("reasons") or []
@@ -1828,6 +1885,36 @@ def validate_pi_steers(response, stuck_agents, known_sources, known_leads):
     return steers
 
 
+def validate_pi_spawns(response, free_slots, known_sources, known_leads):
+    if not isinstance(response, dict) or not isinstance(response.get("spawn"), list):
+        return []
+    known_lead_ids = {lead.get("id") for lead in known_leads}
+    spawns = []
+    for item in response["spawn"]:
+        if len(spawns) >= free_slots or not isinstance(item, dict):
+            continue
+        focus = item.get("focus")
+        if not isinstance(focus, str):
+            continue
+        focus = " ".join(focus.split())[:200]
+        if not focus:
+            continue
+        cite = item.get("cite")
+        cite = cite if isinstance(cite, list) else []
+        cite = list(
+            dict.fromkeys(
+                source_id
+                for source_id in cite
+                if isinstance(source_id, str) and source_id in known_sources
+            )
+        )
+        lead_id = item.get("lead_id")
+        if not isinstance(lead_id, str) or lead_id not in known_lead_ids:
+            lead_id = None
+        spawns.append({"focus": focus, "cite": cite, "lead_id": lead_id})
+    return spawns
+
+
 def run_pi_steering(
     *,
     enabled,
@@ -1848,12 +1935,19 @@ def run_pi_steering(
     leads,
     research_start,
     lead_records=None,
+    spawn_plans=(),
+    spawn_records=None,
 ):
     # A supervised round already buys one Sol plan; never add a second PI call.
     if not enabled or getattr(llm_client, "supervised", False):
         return {}
     stuck_agents = pi_stuck_agents(events, agents, round_num)
-    if not stuck_agents:
+    steer_agents = dict(stuck_agents)
+    for agent in agents:
+        value = (status.get("per_agent_B") or {}).get(agent)
+        if isinstance(value, (int, float)) and value >= 0.5:
+            steer_agents.setdefault(agent, [])
+    if not steer_agents and not spawn_plans:
         return {}
 
     recalled = recall_memory(
@@ -1894,7 +1988,7 @@ def run_pi_steering(
                 status,
                 bool((TASK or {}).get("deterministic")),
             )
-            for agent in stuck_agents
+            for agent in steer_agents
         )
     )
     values = common_values(
@@ -1920,12 +2014,13 @@ def run_pi_steering(
                         "role": roles[agent],
                         "last_attempts": [pi_attempt_summary(event) for event in history],
                     }
-                    for agent, history in stuck_agents.items()
+                    for agent, history in steer_agents.items()
                 ],
                 sort_keys=True,
             ),
             "pi_available_leads": json.dumps(lead_summaries, sort_keys=True),
             "pi_available_sources": json.dumps(available_sources, sort_keys=True),
+            "pi_spawn_slots": len(spawn_plans),
             "task_inputs_brief": (TASK or {})
             .get("prompt_values", {})
             .get(
@@ -1942,7 +2037,8 @@ def run_pi_steering(
         response = llm_client.call("PI", agent="pi", round_num=round_num, values=values)
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
-        steers = validate_pi_steers(response, stuck_agents, known_sources, known_leads)
+        steers = validate_pi_steers(response, steer_agents, known_sources, known_leads)
+        valid_spawns = validate_pi_spawns(response, len(spawn_plans), known_sources, known_leads)
     except (llm.LLMError, ValueError, RuntimeError) as error:
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
@@ -1965,6 +2061,7 @@ def run_pi_steering(
             },
         )
         steers = {}
+        valid_spawns = []
 
     if lead_records is not None:
         for agent, steer in steers.items():
@@ -1981,11 +2078,12 @@ def run_pi_steering(
                 "round": round_num,
                 "agent": "pi",
                 "role": "PI",
-                "outcome": "steered" if steers else "pi_no_steer",
+                "outcome": "steered" if steers or valid_spawns else "pi_no_steer",
                 "agents": sorted(steers),
+                "spawned": len(valid_spawns),
             },
         )
-    for agent in stuck_agents:
+    for agent in steer_agents:
         steer = steers.get(agent, {})
         append_jsonl(
             Path(out_dir) / "pi.jsonl",
@@ -2000,6 +2098,21 @@ def run_pi_steering(
                 "llm_call_ids": [call_id] if call_id else [],
             },
         )
+    if spawn_records is not None:
+        for plan, spawn in zip(spawn_plans, valid_spawns):
+            record = {
+                "agent": plan["agent"],
+                "round": round_num,
+                "trigger": list(plan["trigger"]),
+                "focus": spawn["focus"],
+                "cite": spawn["cite"],
+                "lead_id": spawn["lead_id"],
+            }
+            spawn_records.append(record)
+            lead_id = spawn.get("lead_id")
+            lead = next((item for item in known_leads if item.get("id") == lead_id), None)
+            if lead is not None and lead_records is not None:
+                lead_records[plan["agent"]] = lead
     return {agent: format_pi_steer(steer) for agent, steer in steers.items()}
 
 
@@ -2177,6 +2290,7 @@ def worker_attempts(
             mirror=mirror,
             log=memory_log,
             arm=arm,
+            agent=agent,
         )
         for query in (memory_queries if not getattr(llm_client, "supervised", False) else [])
     ]
@@ -3680,7 +3794,13 @@ def critic_lesson_memory(
 
 @contextmanager
 def arm_environment(
-    arm, exa_enabled, memory_backend=None, run_id=None, rollbacks=None, keyless=False
+    arm,
+    exa_enabled,
+    memory_backend=None,
+    run_id=None,
+    rollbacks=None,
+    keyless=False,
+    initial_workers=20,
 ):
     names = (
         "AUTORESEARCH_ARM",
@@ -3692,9 +3812,11 @@ def arm_environment(
         "PRIOR_ART",
         "GROUNDING",
         "MEMORY_BACKEND",
+        "AUTORESEARCH_INITIAL_WORKERS",
     )
     saved = {name: os.environ.get(name) for name in names}
     os.environ["AUTORESEARCH_ARM"] = arm
+    os.environ["AUTORESEARCH_INITIAL_WORKERS"] = str(initial_workers)
     if run_id is not None:
         os.environ["AUTORESEARCH_RUN_ID"] = run_id
     if rollbacks:
@@ -3821,6 +3943,7 @@ RESUMED_SETTINGS = (
     "literature",
     "memory_backend",
     "pi",
+    "spawn",
 )
 RUN_DEFAULTS = {
     "arm": "B",
@@ -3841,9 +3964,13 @@ RUN_DEFAULTS = {
 def resolve_run_args(args):
     """Fill unset options from defaults, or from run.json when resuming; None when fresh."""
     if not getattr(args, "resume", None):
+        max_workers_explicit = getattr(args, "max_workers", None) is not None
+        if getattr(args, "spawn", None) is None:
+            args.spawn = "on" if args.task == "ignobel" else "off"
         for key, value in RUN_DEFAULTS.items():
             if getattr(args, key, None) is None:
                 setattr(args, key, value)
+        args.max_workers_explicit = max_workers_explicit
         if not args.task:
             raise ValueError("--task is required unless --resume is given")
         if task_research_off(args.task):
@@ -3856,6 +3983,7 @@ def resolve_run_args(args):
             )
         return None
     out_dir = Path(args.resume).resolve()
+    max_workers_explicit = getattr(args, "max_workers", None) is not None
     if args.out and Path(args.out).resolve() != out_dir:
         raise ValueError("--out must match --resume (or be omitted)")
     try:
@@ -3887,6 +4015,11 @@ def resolve_run_args(args):
             setattr(args, key, stored)
     if "literature" not in run_artifact and args.literature is None:
         args.literature = "off"  # runs from before --literature never researched keylessly
+    if args.spawn is None:
+        args.spawn = run_artifact.get("spawn", "off")
+    args.max_workers_explicit = max_workers_explicit or run_artifact.get(
+        "max_workers_explicit", False
+    )
     if args.pi is None:
         args.pi = run_artifact.get("pi", "on")
     if args.rounds is None:
@@ -4038,6 +4171,15 @@ def _orchestrate(args, publish_state, cleanup):
     worker_count = getattr(args, "workers", None) or 4
     if not 1 <= worker_count <= 20:
         raise ValueError("--workers must be between 1 and 20")
+    if not worker_count <= args.max_workers <= 20:
+        raise ValueError("--max-workers must be between --workers and 20")
+    args.spawn_max_workers = (
+        resume["run"].get("spawn_max_workers")
+        if resume is not None and resume["run"].get("spawn_max_workers") is not None
+        else args.max_workers
+        if args.max_workers_explicit
+        else min(args.max_workers, 8)
+    )
     continuous = bool(getattr(args, "continuous", False))
     if continuous:
         if resume is not None:
@@ -4126,6 +4268,7 @@ def _orchestrate(args, publish_state, cleanup):
     if resume is not None:
         pre_resume_mirror = memory.read_mirror(out_dir / "memory.jsonl", strict=False)
         restore_checkpoint(out_dir, resume["checkpoint"])
+        agents = restore_spawned_agents(agents, out_dir)
         if viewer_run_dir is not None:
             restore_viewer(viewer_run_dir, resume["checkpoint"]["viewer"])
         viewer_frontier(out_dir, resume["checkpoint"]["round"], "finish")
@@ -4236,7 +4379,10 @@ def _orchestrate(args, publish_state, cleanup):
             "max_cost_usd": args.max_cost_usd,
             "continuous": continuous,
             "max_workers": args.max_workers,
+            "max_workers_explicit": args.max_workers_explicit,
+            "spawn_max_workers": args.spawn_max_workers,
             "max_minutes": args.max_minutes,
+            "spawn": args.spawn,
         }
     )
     _write_run_artifact(out_dir, run_artifact)
@@ -4271,6 +4417,7 @@ def _orchestrate(args, publish_state, cleanup):
         run_id=run_id,
         rollbacks=memory_rollbacks,
         keyless=research_source == "keyless",
+        initial_workers=worker_count,
     ):
         if memory_rollbacks and memory.selected_backend(memory_backend, args.arm) == "pastdev":
             memory.rollback_memories(
@@ -4350,7 +4497,25 @@ def _orchestrate(args, publish_state, cleanup):
             llm_start = len(read_jsonl(out_dir / "llm_log.jsonl"))
             outcome_start = len(read_jsonl(out_dir / "llm_outcomes.jsonl"))
             error_start = len(read_jsonl(out_dir / "llm_errors.jsonl"))
-            planning_agents = queue.plan_agents() if queue else list(agents)
+            if queue:
+                current_events = meter.read_ledger(ledger_path)
+                current_allocation = allocate_roles(
+                    profile,
+                    current_events,
+                    queue.agents,
+                    args.arm,
+                    research_source != "off",
+                )
+                current_stuck = pi_stuck_agents(current_events, queue.agents, round_num)
+                bored = [
+                    agent
+                    for agent in queue.agents
+                    if agent in current_stuck
+                    or current_allocation["per_agent_B"].get(agent, 0) >= 0.5
+                ]
+                planning_agents = queue.plan_agents(bored=bored)
+            else:
+                planning_agents = list(agents)
             if planning_agents:
                 agents = tuple(planning_agents)
                 events = meter.read_ledger(ledger_path)
@@ -4384,23 +4549,43 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 allocation["suggested_cells"] = cell_suggestions
                 status["suggested_cells"] = cell_suggestions
-                append_assignment(
-                    allocation,
-                    out_dir=out_dir,
-                    backend=memory_backend,
-                    mirror=memory_mirror,
-                    memory_log=memory_log,
-                    arm=args.arm,
-                    round_num=round_num,
-                    provenance=provenance,
-                )
-                # After the assignment so sources it logs fall in this round of the viewer timeline.
-                refresh_round_context(out_dir, round_num, cell_suggestions)
                 status["per_agent_B"] = allocation["per_agent_B"]
-                viewer_frontier(out_dir, round_num, "assign")
-                if viewer_dest:
-                    live_publish.watch(out_dir, publisher.request)
-                    publisher.request()
+                pi_events = read_jsonl(out_dir / "pi.jsonl")
+                previous_spawns = [
+                    event.get("round")
+                    for event in pi_events
+                    if event.get("type") == "pi_spawn" and isinstance(event.get("round"), int)
+                ]
+                last_spawn_round = max(previous_spawns) if previous_spawns else None
+                spawn_plans = (
+                    spawn_candidates(
+                        allocation,
+                        pi_stuck_agents(events_for_scouts, agents, round_num),
+                        agents,
+                        round_num,
+                        last_spawn_round,
+                        args.spawn_max_workers,
+                        args.arm,
+                    )
+                    if not continuous and args.spawn == "on"
+                    else []
+                )
+                if not spawn_plans:
+                    append_assignment(
+                        allocation,
+                        out_dir=out_dir,
+                        backend=memory_backend,
+                        mirror=memory_mirror,
+                        memory_log=memory_log,
+                        arm=args.arm,
+                        round_num=round_num,
+                        provenance=provenance,
+                    )
+                    refresh_round_context(out_dir, round_num, cell_suggestions)
+                    viewer_frontier(out_dir, round_num, "assign")
+                    if viewer_dest:
+                        live_publish.watch(out_dir, publisher.request)
+                        publisher.request()
                 leads = run_scouts(
                     allocation["scouts"] if not llm_client.supervised or TASK.get("scout") else [],
                     profile=profile,
@@ -4417,9 +4602,9 @@ def _orchestrate(args, publish_state, cleanup):
                     best_val=best_val,
                     replay=args.replay,
                 )
-                attach_assignment_call_ids(out_dir, round_num, leads)
                 all_leads = list(leads.values())
                 pi_lead_records = {}
+                spawn_records = []
                 pi_steers = run_pi_steering(
                     enabled=args.pi == "on",
                     profile=profile,
@@ -4439,7 +4624,50 @@ def _orchestrate(args, publish_state, cleanup):
                     leads=all_leads,
                     research_start=research_start,
                     lead_records=pi_lead_records,
+                    spawn_plans=spawn_plans,
+                    spawn_records=spawn_records,
                 )
+                if spawn_plans and (args.pi != "on" or llm_client.supervised):
+                    spawn_records = [
+                        {
+                            "agent": plan["agent"],
+                            "round": round_num,
+                            "trigger": list(plan["trigger"]),
+                            "focus": None,
+                            "cite": [],
+                            "lead_id": None,
+                        }
+                        for plan in spawn_plans
+                    ]
+                agents = apply_pi_spawns(agents, pi_steers, spawn_records, out_dir)
+                if spawn_records:
+                    allocation = allocate_roles(
+                        profile, events, agents, args.arm, research_source != "off"
+                    )
+                    allocation["suggested_cells"] = cell_suggestions
+                    status = {
+                        **allocation,
+                        "ledger_sha256": allocation["ledger_sha256"],
+                        "profile_sha256": profile["_hash"],
+                        "suggested_cells": cell_suggestions,
+                    }
+                if spawn_plans:
+                    append_assignment(
+                        allocation,
+                        out_dir=out_dir,
+                        backend=memory_backend,
+                        mirror=memory_mirror,
+                        memory_log=memory_log,
+                        arm=args.arm,
+                        round_num=round_num,
+                        provenance=provenance,
+                    )
+                    refresh_round_context(out_dir, round_num, cell_suggestions)
+                    viewer_frontier(out_dir, round_num, "assign")
+                    if viewer_dest:
+                        live_publish.watch(out_dir, publisher.request)
+                        publisher.request()
+                attach_assignment_call_ids(out_dir, round_num, leads)
                 claims = []
                 assigned_cells = []
                 base_commit = git_text(conductor, "rev-parse", "HEAD")
@@ -5023,7 +5251,14 @@ def build_parser():
         default=None,
         help="continuous supervised Ig Nobel queue instead of synchronized rounds",
     )
-    parser.add_argument("--max-workers", type=int, help="continuous worker cap (default 20)")
+    parser.add_argument(
+        "--max-workers", type=int, help="worker cap (default 20; round spawning defaults to 8)"
+    )
+    parser.add_argument(
+        "--spawn",
+        choices=("on", "off"),
+        help="enable Ig Nobel round-mode spawning (default on for ignobel)",
+    )
     parser.add_argument("--max-minutes", type=int, help="continuous admission window (default 30)")
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")

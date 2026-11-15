@@ -89,16 +89,41 @@ class Queue:
             self.pending.clear()
         return bool(self.reason)
 
-    def plan_agents(self):
+    def plan_agents(self, bored=()):
         if self.stopped() or self.pending:
             return []
         busy = {item["agent"] for item in self.active.values()}
+        spawned = []
         # Only expand after the initial queue has been used and there is ongoing work.
         if self.serial and busy and len(self.agents) < self.maximum:
             for _ in range(min(2, self.maximum - len(self.agents))):
                 agent = f"worker-{len(self.agents) + 1}"
                 self.agents.append(agent)
                 self.last_assigned[agent] = 0
+                spawned.append((agent, []))
+        if bored and len(self.agents) < self.maximum:
+            for _ in range(min(2, self.maximum - len(self.agents))):
+                agent = f"worker-{len(self.agents) + 1}"
+                self.agents.append(agent)
+                self.last_assigned[agent] = 0
+                spawned.append((agent, list(bored)))
+        if spawned:
+            path = self.out_dir / "pi.jsonl"
+            with path.open("a", encoding="utf-8") as stream:
+                for agent, trigger in spawned:
+                    stream.write(
+                        json.dumps(
+                            {
+                                "type": "pi_spawn",
+                                "agent": agent,
+                                "round": self.serial + 1,
+                                "trigger": trigger,
+                                "focus": None,
+                            },
+                            sort_keys=True,
+                        )
+                        + "\n"
+                    )
         idle = [agent for agent in self.agents if agent not in busy]
         return sorted(idle, key=lambda agent: self.last_assigned[agent])[:8]
 

@@ -151,6 +151,7 @@ identity, and past.dev's audiences decide what that read returns.
 | --- | --- | --- | --- | --- |
 | conductor | `assignment` (who tests what) | — | author `conductor` | `run-<arm>-<run>` |
 | worker-1…4 | `lead`, `claim`, `result`, one stable `hypothesis` per idea | other workers' claims, results and hypothesis statuses before proposing | reader `reader-<arm>-<run>` (traits `arm`, `run`, `task`) | `run-<arm>-<run>` for this run's notes; `lab-<arm>-<task>` for hypotheses, lessons, verdicts and failed results that later runs reuse |
+| spawned workers | `lead`, `claim`, `result`, one stable `hypothesis` per idea | only notes written by that worker | identity `solo-<arm>-<run>-<agent>` (traits `arm`, `run: <run>.<agent>`) | audience `solo-<arm>-<run>-<agent>`; the team reader can also read these notes |
 | critic | `verdict`, `lesson` | — | author `critic` | `lab-<arm>-<task>` |
 
 Both audiences are rule audiences over identity traits, so an arm's reader never sees

@@ -612,6 +612,173 @@ class MemoryCliTests(unittest.TestCase):
                 ["run-z-audience-run", "run-z-audience-run", "run-y-audience-run"],
             )
 
+    def test_spawned_worker_native_identity_and_audience(self):
+        server = self.start_server()
+        scope = {
+            "arm": "B",
+            "run_id": "fresh-run",
+            "task": "ignobel",
+            "agent": "worker-5",
+        }
+        names = memory.native_scope_names(scope)
+        self.assertEqual(names["reader"], "solo-b-fresh-run-worker-5")
+        self.assertEqual(names["solo_audience"], "solo-b-fresh-run-worker-5")
+        self.assertIsNone(names["lab_audience"])
+        self.assertEqual(
+            names["traits"],
+            {"arm": "b", "run": "fresh-run.worker-5"},
+        )
+        self.assertEqual(
+            memory.audience_for_record("lesson", {}, names),
+            "solo-b-fresh-run-worker-5",
+        )
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+                    "AUTORESEARCH_INITIAL_WORKERS": "4",
+                },
+            ),
+            patch.object(memory, "_ENSURED_SCOPES", {}),
+        ):
+            memory.ensure_native_scope(scope, TEST_API_KEY)
+        requests = server.requests
+        self.assertEqual(
+            requests[0]["path"],
+            "/api/v1/identities/solo-b-fresh-run-worker-5",
+        )
+        self.assertEqual(requests[0]["body"], {"traits": names["traits"]})
+        self.assertEqual(
+            requests[1]["body"]["rule"]["conditions"],
+            [
+                {"trait": "arm", "operator": "is", "values": ["b"]},
+                {"trait": "run", "operator": "is", "values": ["fresh-run"]},
+            ],
+        )
+        self.assertEqual(
+            requests[2]["body"]["rule"],
+            {
+                "match": "any",
+                "conditions": [
+                    {"trait": "run", "operator": "is", "values": ["fresh-run.worker-5"]},
+                    {"trait": "run", "operator": "is", "values": ["fresh-run"]},
+                ],
+            },
+        )
+
+    def test_local_spawned_worker_recall_is_private_but_team_recall_is_shared(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"AUTORESEARCH_INITIAL_WORKERS": "4"}),
+        ):
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            memory.write(
+                "lesson",
+                "team-note",
+                "zebra team-only memory",
+                "worker-1",
+                {},
+                backend="local",
+                mirror=mirror,
+                log=log,
+                arm="B",
+            )
+            memory.write(
+                "lesson",
+                "spawned-note",
+                "zebra spawned private memory",
+                "worker-5",
+                {},
+                backend="local",
+                mirror=mirror,
+                log=log,
+                arm="B",
+                agent="worker-5",
+            )
+            spawned = memory.recall(
+                "zebra memory",
+                "autoresearch",
+                backend="local",
+                mirror=mirror,
+                log=log,
+                arm="B",
+                caller_agent="worker-5",
+            )
+            team = memory.recall(
+                "zebra memory",
+                "autoresearch",
+                backend="local",
+                mirror=mirror,
+                log=log,
+                arm="B",
+            )
+        spawned_ids = {
+            source["sourceId"] for result in spawned["results"] for source in result["sources"]
+        }
+        team_ids = {
+            source["sourceId"] for result in team["results"] for source in result["sources"]
+        }
+        self.assertEqual(spawned_ids, {"spawned-note"})
+        self.assertEqual(team_ids, {"team-note", "spawned-note"})
+
+    def test_spawned_pastdev_mirror_fallback_excludes_team_records(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            mirror = Path(directory) / "memory.jsonl"
+            log = Path(directory) / "memory_log.jsonl"
+            names = memory.native_scope_names(
+                {"arm": "B", "run_id": "fresh-run", "agent": "worker-5"}
+            )
+            for memory_id, author, audience, content in (
+                ("team-note", "worker-1", names["run_audience"], "zebra team memory"),
+                (
+                    "spawned-note",
+                    "worker-5",
+                    names["solo_audience"],
+                    "zebra spawned memory",
+                ),
+            ):
+                payload = memory.memory_payload(
+                    "lesson",
+                    memory_id,
+                    content,
+                    author,
+                    {"arm": "B", "run_id": "fresh-run"},
+                    memory.utc_now(),
+                )
+                payload["audience"] = audience
+                memory.append_mirror(mirror, payload, memory_id)
+            env = {
+                "AUTORESEARCH_ARM": "B",
+                "AUTORESEARCH_RUN_ID": "fresh-run",
+                "AUTORESEARCH_INITIAL_WORKERS": "4",
+                "PAST_API_KEY": TEST_API_KEY,
+                "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            }
+            with (
+                patch.dict(os.environ, env),
+                patch.object(memory, "_ENSURED_SCOPES", {}),
+            ):
+                recalled = memory.recall(
+                    "zebra memory",
+                    "autoresearch",
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    arm="B",
+                    caller_agent="worker-5",
+                )
+        source_ids = {
+            source["sourceId"] for result in recalled["results"] for source in result["sources"]
+        }
+        self.assertEqual(source_ids, {"spawned-note"})
+        recall_request = next(
+            request for request in server.requests if request["path"] == "/api/v1/recall"
+        )
+        self.assertEqual(recall_request["body"]["identity"], names["reader"])
+
     def test_pastdev_scope_reuses_same_task_history_and_isolates_arms(self):
         server = self.start_server()
         with tempfile.TemporaryDirectory() as directory:

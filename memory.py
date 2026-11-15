@@ -157,12 +157,32 @@ def native_scope_names(scope):
         "reader": f"reader-{arm}-{run}",
         "run_audience": f"run-{arm}-{run}",
         "lab_audience": None,
+        "solo_audience": None,
         "traits": {"arm": arm, "run": run},
     }
-    if scope.get("task"):
+    if scope.get("agent"):
+        solo = f"solo-{arm}-{run}-{scope_slug(scope['agent'])}"
+        names["reader"] = solo
+        names["solo_audience"] = solo
+        names["traits"] = {
+            "arm": arm,
+            "run": f"{run}.{scope_slug(scope['agent'])}",
+        }
+    elif scope.get("task"):
         names["traits"]["task"] = scope_slug(scope["task"])
         names["lab_audience"] = f"lab-{arm}-{scope_slug(scope['task'])}"
     return names
+
+
+def spawned_worker(agent):
+    match = re.fullmatch(r"worker-(\d+)", str(agent or ""))
+    if not match:
+        return False
+    try:
+        initial_workers = int(os.environ.get("AUTORESEARCH_INITIAL_WORKERS", "20"))
+    except ValueError:
+        initial_workers = 20
+    return int(match.group(1)) > initial_workers
 
 
 def _trait_rule(traits):
@@ -196,10 +216,37 @@ def ensure_native_scope(scope, api_key):
         {
             "kind": "rule",
             "name": names["run_audience"],
-            "rule": _trait_rule({"arm": traits["arm"], "run": traits["run"]}),
+            "rule": _trait_rule(
+                {
+                    "arm": traits["arm"],
+                    "run": scope_slug(scope["run_id"])[:12],
+                }
+            ),
         },
         api_key=api_key,
     )
+    if names["solo_audience"]:
+        solo_run = traits["run"]
+        api_request(
+            "PUT",
+            f"/audiences/{quote(names['solo_audience'], safe='')}",
+            {
+                "kind": "rule",
+                "name": names["solo_audience"],
+                "rule": {
+                    "match": "any",
+                    "conditions": [
+                        {"trait": "run", "operator": "is", "values": [solo_run]},
+                        {
+                            "trait": "run",
+                            "operator": "is",
+                            "values": [solo_run.rsplit(".", 1)[0]],
+                        },
+                    ],
+                },
+            },
+            api_key=api_key,
+        )
     if names["lab_audience"]:
         api_request(
             "PUT",
@@ -216,6 +263,8 @@ def ensure_native_scope(scope, api_key):
 
 
 def audience_for_record(mem_type, metadata, names):
+    if names.get("solo_audience"):
+        return names["solo_audience"]
     reusable = mem_type in CROSS_RUN_TYPES or (
         mem_type == "result" and metadata.get("status") in CROSS_RUN_FAILED_STATUSES
     )
@@ -250,6 +299,9 @@ def arm_run_scope(arm=None, run_id=None):
     if not run_id:
         raise ValueError("arm-scoped pastdev memory requires --run-id or AUTORESEARCH_RUN_ID")
     scope = {"arm": str(arm).upper(), "run_id": run_id}
+    agent = os.environ.get("AUTORESEARCH_AGENT")
+    if spawned_worker(agent):
+        scope["agent"] = agent
     task = os.environ.get("AUTORESEARCH_TASK")
     if task:
         scope["task"] = task
@@ -512,6 +564,7 @@ def write(
     log=None,
     arm=None,
     run_id=None,
+    agent=None,
 ):
     mem_type = type
     memory_id = id
@@ -524,6 +577,8 @@ def write(
         scope = arm_run_scope(
             arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
         )
+        if spawned_worker(agent or author):
+            scope = {**(scope or {}), "agent": agent or author}
         if scope:
             rollbacks = scope.pop("rollbacks", [])
             payload["metadata"].update(scope, run_epoch=len(rollbacks), written_at=utc_now())
@@ -877,10 +932,16 @@ def is_before_query_timestamp(value, query_timestamp):
     return occurred_at is None or occurred_at <= query_timestamp
 
 
-def local_recall_results(query, limit, query_timestamp, mirror):
+def local_recall_results(
+    query, limit, query_timestamp, mirror, *, solo_author=None, solo_audience=None
+):
     query_words = word_tokens(query)
     latest = {}
     for record in read_mirror(mirror):
+        if solo_audience and record.get("audience") != solo_audience:
+            continue
+        if solo_author and not solo_audience and record.get("author") != solo_author:
+            continue
         if is_before_query_timestamp(
             record.get("timestamp") or record.get("occurred_at"), query_timestamp
         ):
@@ -1056,6 +1117,7 @@ def _recall(
     log=None,
     arm=None,
     run_id=None,
+    caller_agent=None,
     log_agent=None,
     occurred_from=None,
     occurred_to=None,
@@ -1065,6 +1127,7 @@ def _recall(
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
     cutoff = timestamp_value(query_timestamp)
+    caller_agent = caller_agent or (agent if spawned_worker(agent) else None)
     started_at = time.monotonic()
     pending = 0
     raw_response = None
@@ -1079,15 +1142,24 @@ def _recall(
         results = []
         used_tokens = 0
     elif backend == "local":
-        results, used_tokens = local_recall_results(query, limit, cutoff, mirror_path)
+        results, used_tokens = local_recall_results(
+            query,
+            limit,
+            cutoff,
+            mirror_path,
+            solo_author=caller_agent if spawned_worker(caller_agent) else None,
+        )
     else:
         scope = arm_run_scope(arm, run_id)
+        if spawned_worker(caller_agent):
+            scope = {**(scope or {}), "agent": caller_agent}
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
         if scope and audience_for_arm(scope["arm"]):
             names = ensure_native_scope(scope, api_key)
-            audience, recall_identity = names["run_audience"], names["reader"]
+            audience = names.get("solo_audience") or names["run_audience"]
+            recall_identity = names["reader"]
         else:
             audience_scope = ensure_arm_audience(arm, api_key)
             if audience_scope:
@@ -1138,7 +1210,13 @@ def _recall(
         pending = pending_count(response.get("pending"))
         if scope:
             local_results, _ = local_recall_results(
-                query, len(read_mirror(mirror_path)) or limit, cutoff, mirror_path
+                query,
+                len(read_mirror(mirror_path)) or limit,
+                cutoff,
+                mirror_path,
+                solo_audience=(
+                    names.get("solo_audience") if scope and spawned_worker(caller_agent) else None
+                ),
             )
             local_index = mirror_source_index(mirror_path)
             local_results = [
@@ -1186,7 +1264,7 @@ def _recall(
     log_record = {
         "type": "recall",
         "ts": utc_now(),
-        "agent": log_agent or agent,
+        "agent": log_agent or caller_agent or agent,
         "backend": backend,
         "query": query,
         "latency_ms": latency_ms,
@@ -1233,6 +1311,7 @@ def recall(
     log=None,
     arm=None,
     run_id=None,
+    caller_agent=None,
     log_agent=None,
     occurred_from=None,
     occurred_to=None,
@@ -1248,6 +1327,7 @@ def recall(
         log=log,
         arm=arm,
         run_id=run_id,
+        caller_agent=caller_agent,
         log_agent=log_agent,
         occurred_from=occurred_from,
         occurred_to=occurred_to,
