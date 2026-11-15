@@ -2,54 +2,41 @@
 
 The backend team owns experiment execution, Tinker calls, tools, scheduling, evaluation, and acceptance decisions. The lab is a read-only consumer of recorded research. It turns ordered events into replayable robot activity, idea captions, conversations, and evidence graphs.
 
-The quickest integration is to export a `swarm-viewer/v1` ZIP and point the lab at it. No frontend change or Tinker key is required. There is currently no experiment-upload endpoint, live event subscription in the replay UI, or interactive LLM chat endpoint.
+The quickest integration is to point the lab at a swarm's live `swarm-viewer/v1` directory. No ZIP, restart, frontend change, or Tinker key is required. The replay UI polls live recordings; there is no experiment-upload endpoint or interactive LLM chat endpoint.
 
-## 1. Export the bundle
+## 1. Publish a live directory (recommended)
 
-Use this layout inside the ZIP, without an extra enclosing directory:
-
-```text
-runs/<run-uuid>/manifest.json
-runs/<run-uuid>/events.ndjson
-runs/<run-uuid>/entities/experiments.json
-runs/<run-uuid>/entities/diary.json
-runs/<run-uuid>/entities/llm_calls.json       # optional
-runs/<run-uuid>/entities/memory.json          # optional
-runs/<run-uuid>/entities/sources.json         # optional
-runs/<run-uuid>/entities/questions.json      # optional
-runs/<run-uuid>/entities/observations.json   # optional
-runs/<run-uuid>/entities/hypotheses.json     # optional
-runs/<run-uuid>/entities/rewards.json        # optional
-runs/<run-uuid>/entities/discoveries.json    # optional
-```
-
-A ZIP may contain multiple `runs/<uuid>/` directories. The loader discovers manifests; `runs/index.json` is not required. Collections are **JSON arrays**, with an `id` on each entity, not ID-to-object maps. Omit unused collections or provide `[]`. The current loader caps the archive's total expanded size at 50 MB. Use alphanumeric/hyphen run IDs, preferably UUIDs.
-
-Source events, not final snapshots, are authoritative. Keyframes and timeline files may be retained in the export but are not consumed by this adapter. Do not copy later outcomes into earlier event payloads.
-
-From an export directory containing `runs/`, package it with:
+Run the swarm in its own clone: it creates branches and worktrees. For example:
 
 ```sh
-python3 -m zipfile -c ../backend-export.zip runs
+git clone /path/to/caffeinated /tmp/swarm-research
+cd /tmp/swarm-research
+python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
 ```
 
-## 2. Connect it without replacing the sample ZIP
+The CPU evaluator needs the image built with `docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases`. Fake mode makes no model calls. Omit `--llm fake` and configure your provider for real research.
 
-From the repository root:
+## 2. Connect the lab without a ZIP or restart
+
+From the lab repository root:
+
+```sh
+LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev
+# Or start only the API:
+LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev:backend
+```
+
+Both commands inherit the environment; `LAB_PYTHON` can select another Python executable. On Unix separate multiple roots with `:` (the platform's `os.pathsep`). The real publisher layout is `<viewer-dest>/<run-id>/manifest.json`, not `<viewer-dest>/runs/<run-id>`. Both layouts work. You can also point at an out directory or a folder of outs: discovery descends at most five directory levels. Symlink descendants are not followed, run IDs must be alphanumeric/hyphen, and each run is capped at 50 MB.
+
+The API rescans file metadata on every list/get, fingerprints relative paths, sizes and nanosecond mtimes, and reuses unchanged recordings. Partial NDJSON lines and malformed entity files are skipped with warnings; incomplete/invalid runs are omitted until readable. Source manifests with running/live status (or live=true) stay live, without a fabricated completed final frame. While the selected recording is live, the browser refreshes the picker every four seconds and reloads changed recordings at the current tick. Refresh manually when viewing a finished recording to discover new runs.
+
+ZIP imports still work exactly as before:
 
 ```sh
 LAB_RECORDINGS_ZIP=/absolute/path/to/backend-export.zip npm run dev
 ```
 
-Or, if the frontend already runs:
-
-```sh
-LAB_RECORDINGS_ZIP=/absolute/path/to/backend-export.zip npm run dev:backend
-```
-
-Open http://localhost:5175 and choose the run in **Archive**. Restart the recording API after publishing a new ZIP; bundles are cached in memory. Reload/refresh the archive list so the browser receives the new `contentVersion`. Publish the ZIP atomically rather than writing into a file being served.
-
-Without `LAB_RECORDINGS_ZIP`, the lab uses `data/replays/swarm-viewer-sample-runs.zip`. A missing configured ZIP produces an empty archive list. A malformed bundle needs to be fixed at the exporter; it does not trigger a fake evaluator or a model call.
+ZIPs contain `runs/<id>/manifest.json`, `events.ndjson` and optional `entities/*.json`. The default sample ZIP remains enabled alongside directories. Directory runs win ID collisions (later configured directories win each other); if a directory run is invalid, a ZIP copy remains available. ZIPs are cached at startup, so replacing a ZIP still requires an API restart. Directory changes do not.
 
 Inspect these endpoints during integration:
 
@@ -140,10 +127,10 @@ The current Ig Nobel special case is `swarm: "ignobel"` with metric `replicated_
 
 ## 5. Identity, clocks, and evidence
 
-- Keep run IDs, agent IDs, entity IDs, and event IDs stable across re-exports. Event IDs deduplicate; distinct events must not share a tick. Use increasing integer ticks starting at 0. This small replay adapter loads complete recordings; publishing partial live runs needs a separate live integration.
+- Keep run IDs, agent IDs, entity IDs, and event IDs stable across re-exports. Event IDs deduplicate; distinct events must not share a tick. Use increasing integer ticks starting at 0. Live directories tolerate partial writes and become visible as soon as their manifest and event prefix can be folded.
 - Every event's `run_id` must match its manifest. All references must join to the corresponding entity `id`. Preserve actor attribution so the correct robot receives an idea, measurement, or note.
 - Set agent `family` to `bio`/`biology`, `chem`/`chemistry`, or `physics` (B/C/P also accepted). The viewer assigns B1/C1/P1 display aliases; original IDs remain unchanged. If family is missing, the current fallback is a display assignment. Agent types `baseline` and `world` remain data-only pseudo-agents.
-- The current frontend snapshot contract accepts arm IDs `A`, `B`, and `full`. Extend `src/engine/contract.ts` deliberately if producers need another arm ID.
+- The frontend snapshot contract accepts native swarm arm IDs `A`, `B`, `C`, `D`, and Ig Nobel's `full`.
 - Preserve real source timestamps where available and use null when missing. Ticks index replay knowledge; playback pace and robot movement are visual, not scientific simulation time.
 - Record observations, hypotheses, and notes when they become available. Avoid resolving early UI state from later-mutated final entity fields. Unknown boredom stays null until measured; original per-agent B is normalized to 0–100 for display.
 - `llm_calls` may contain the logged final response and concise rationale. Prompts are optional. Omit credentials and unlogged/private reasoning. The viewer never calls a model to fill gaps in recordings.
@@ -169,7 +156,7 @@ from backend.replay import RecordingCatalog
 catalog = RecordingCatalog('/absolute/path/to/backend-export.zip')
 for manifest in catalog.list():
     recording = catalog.get(manifest['id'])
-    assert recording['frames'][-1]['snapshot']['status'] == 'completed'
+    assert recording['manifest']['live'] or recording['frames'][-1]['snapshot']['status'] in {'completed', 'stopped'}
     print(manifest['title'], len(recording['events']), manifest['totalTicks'])
 ```
 
@@ -181,7 +168,7 @@ In the browser, check Archive selection, a first proposal/lightbulb, an experime
 | --- | --- |
 | Backend team | Run experiments and Tinker jobs, produce truthful ordered events/entities, define scientific metrics and acceptance |
 | `backend/replay.py` | Normalize source records, compute time-indexed snapshots, map identities and activities |
-| `backend/app.py` | Serve selected ZIP through read-only recording endpoints |
+| `backend/app.py` | Serve merged directory and ZIP recordings through read-only endpoints |
 | `src/engine/replay.ts`, `replayMotion.ts` | Playback clock, seeking, illustrative paths |
 | `src/variants/lab.ts` | Robot/world rendering; consumes state, never schedules experiments |
 | `src/main.ts` | Archive selection, cameras, interactions, evidence presentation |

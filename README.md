@@ -2,7 +2,7 @@
 
 A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
 
-Backend team: start with the [integration guide](docs/backend-integration.md) for the bundle format, runnable payload example, event mapping, and `LAB_RECORDINGS_ZIP` setup.
+Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
 ## Project components
 
@@ -23,6 +23,19 @@ npm run dev
 ```
 
 Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so no credentials or separate archive import are needed. Vite runs on 5175 and the local recording API on 8765. Separate terminals can use `npm run dev:frontend` and `npm run dev:backend`.
+
+### Watch a swarm run
+
+Run research in a separate clone because `swarm.py` creates Git branches/worktrees:
+
+```sh
+git clone /path/to/caffeinated /tmp/swarm-research
+cd /tmp/swarm-research
+docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
+```
+
+Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. While the selected recording is live, the picker and recording refresh every four seconds, preserving the playhead. Otherwise use **Refresh** to discover new runs. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
 
