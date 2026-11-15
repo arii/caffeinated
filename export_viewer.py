@@ -458,6 +458,9 @@ def export_autoresearch(out_dir, arm=None, title=None):
             run.emit("verdict.issued", **common, refs={"experiment_id": eid}, payload=verdict)
             experiment = run.entities["experiments"].get(eid)
             metric = experiment and experiment["metric_value"]
+            second = number(row.get("score"))
+            if metric is not None and second is not None:
+                metric = (metric + second) / 2  # swarm.py confirms best on the two-seed mean
             if accepted and metric is not None and (confirmed is None or metric < confirmed["metric_value"]):
                 previous = confirmed["metric_value"] if confirmed else None
                 xid = f"discovery:{commit}"
