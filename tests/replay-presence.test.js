@@ -67,3 +67,20 @@ test('all twelve discussion seats and discipline work slots are clear and reacha
  }
  world.dispose?.();
 });
+
+test('recorded experiments interrupt patrols and hold at the discipline bench before resuming',()=>{
+ const a=agent('P2',{family:'Physics',state:'thinking'});
+ const data=recording(Array.from({length:101},(_,tick)=>({tick,snapshot:{agents:[a]}})),[
+  {tick:5,type:'experiment.started',agentId:'P2'},
+  {tick:6,type:'experiment.finished',agentId:'P2'}]);
+ data.manifest.totalTicks=100;
+ const poses=buildReplayPoses(data,bounds,[]),held=poses.filter(f=>f.positions.get(a.id)?.atLab);
+ assert.ok(held.length>=4/.175,'even a one-tick recorded experiment gets a visible bench stop');
+ const goal=stationGoal('analyzer',0),p=held[0].positions.get(a.id);
+ assert.ok(Math.hypot(p.x-goal.x,p.z-goal.z)<.48,'physics experiment stops at the physics bench');
+ assert.ok(held.every(f=>f.positions.get(a.id).x===p.x&&f.positions.get(a.id).z===p.z));
+ assert.ok(held.every(f=>f.tick>=5&&!f.positions.get(a.id).atTable));
+ assert.ok(poses.some(f=>f.tick>held.at(-1).tick&&!f.positions.get(a.id).atLab&&Math.hypot(f.positions.get(a.id).x-p.x,f.positions.get(a.id).z-p.z)>1));
+ const ongoing=buildReplayPoses({...data,events:data.events.slice(0,1)},bounds,[]);
+ assert.equal(ongoing.at(-1).positions.get(a.id).atLab,true,'unfinished experiments remain at the bench');
+});
