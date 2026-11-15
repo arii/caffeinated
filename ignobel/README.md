@@ -35,7 +35,8 @@ mock runs and tests that run studies; if no sandbox is available the run stops w
 | `agents.yaml`, `agents.py` | agent definitions and the six one-call LLM methods |
 | `memory.py` | private stores, shared store (control arm), past.dev backend, `share()` |
 | `search.py`, `seed.py` | Exa search with cache and key rotation; library seeding |
-| `boredom.py`, `policy.py` | the private meter and the three action policies |
+| `boredom.py`, `policy.py` | the private per-agent meter (B and frustration) and the regime policy |
+| `meter_profile.py`, `meter_adapter.py` | the `boredom_meter/profiles/ignobel.json` profile, idea descriptors, and the shared `boredom_meter` (fold/status/gate) over events.jsonl |
 | `lab.py`, `lab_runtime.py`, `stats.py` | sandboxed studies, instrument budget, replication check |
 | `world.py`, `run_arm.py` | the round loop, state save/resume, arms |
 | `committee.py`, `score.py`, `validate.py` | post-run judging, never called during a run |
@@ -46,15 +47,23 @@ mock runs and tests that run studies; if no sandbox is available the run stops w
 | arm | policy | memory | share step |
 |---|---|---|---|
 | full | boredom | private | yes |
-| random_snap | random (fixed probability) | private | yes |
+| yoked_random | snaps exactly as many agents per round as the paired `full` run (`--yoke-from`, default `<out>/../full-s<seed>/events.jsonl`), random agents | private | yes |
 | single | never | private, one agent | no |
 | shared_memory | boredom | one store for all | no |
 | no_exchange | boredom | private | no |
 
 ## Notes for whoever wires in real services
 
-- `boredom_threshold` is 0.5 in `config.yaml`: an agent whose newest idea repeats its last ones
-  and whose studies are not failing is bored. Tune it after a small real run.
+- Every meter weight and threshold lives in `../boredom_meter/profiles/ignobel.json` under
+  `agent_meter` (none in code or `config.yaml`). B = weighted self-repetition (vs. the round-0
+  library baseline), external familiarity (1 - Exa novelty of the idea), unsurprise and stall.
+  Frustration (failed studies) is reported separately and never lowers B. Regimes: EXPLOIT,
+  BOREDOM_SNAP (B above the seeded-jittered threshold for `snap_rounds` rounds, then a cooldown),
+  PARADIGM_BREAKOUT (still stalled after the cooldown: cross-field study using another lab),
+  FRUSTRATED (review with the statistician, then rerun), CONVERGED (replicate once, then hold).
+  The meter is private: never in any prompt, never shared, and the committee is not consulted.
+  Tune the profile after a small real run.
+- `python meter_adapter.py runs/full-s0/events.jsonl status|gate` runs the shared meter on a run.
 - When an odd number of agents snap, the one left over talks to the farthest non-snapping agent.
 - `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call is marked TODO
   until checked against the Modal docs. `memory.PastDevMemory` follows the request shapes in the

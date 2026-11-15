@@ -1,0 +1,70 @@
+{
+  "domain": "ignobel",
+  "version": 1,
+  "direction": "max",
+  "objective": "surprise",
+  "objective_note": "score of a ledger attempt = prediction-vs-result gap of a replicated study (meter_adapter.py); crashes and failed replications carry no score",
+  "eps": 0.1,
+  "k": 5,
+  "knn": 3,
+  "patience": 3,
+  "levels": ["mechanism", "method"],
+  "level_weights": [1.0, 0.5],
+  "params_weight": 0.25,
+  "vocab": {
+    "observational":      ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"],
+    "experimental":       ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"],
+    "quasi-experimental": ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"],
+    "theoretical":        ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"],
+    "meta-science":       ["cups_per_hour", "task_minutes", "mood_rating", "noise_level", "song_rate", "traffic_count", "drop_outcome", "crumb_density", "rotation_angle", "cross-field", "none"]
+  },
+  "fail_statuses": ["crash", "not_replicated"],
+  "agent_meter": {
+    "note": "Private per-agent meter used by ignobel/boredom.py and ignobel/policy.py during a run. The top-level keys are for the shared boredom_meter/meter.py fold/status/gate over meter_adapter.py ledgers.",
+    "window": 5,
+    "patience": 3,
+    "progress_gap": 0.5,
+    "self_repeat_z_full": 3.0,
+    "weights": {"self_repeat": 0.3, "ext_familiar": 0.25, "unsurprise": 0.2, "stall": 0.25},
+    "thresholds": {
+      "snap": 0.5,
+      "snap_rounds": 2,
+      "jitter": 0.05,
+      "cooldown_rounds": 2,
+      "breakout_stall": 0.8,
+      "frustrated": 0.6,
+      "converged_gap": 0.2,
+      "converged_ext_familiar": 0.5
+    },
+    "method_family": {
+      "difference-in-differences": "quasi-experimental",
+      "OLS regression": "observational",
+      "pre-registration": "meta-science",
+      "placebo tests": "experimental",
+      "transect survey": "observational",
+      "mixed-effects models": "observational",
+      "spectrogram analysis": "observational",
+      "controlled drop trials": "experimental",
+      "high-speed video": "experimental",
+      "dimensional analysis": "theoretical",
+      "bootstrap": "meta-science",
+      "split-half replication": "meta-science",
+      "equivalence testing": "meta-science"
+    },
+    "family_keywords": {
+      "meta-science": ["replicat", "meta-analys", "pre-regist", "reanalys", "audit"],
+      "quasi-experimental": ["natural experiment", "regression discontinuity", "instrumental variable", "difference-in-diff"],
+      "experimental": ["randomi", "trial", "experiment", "manipulat", "placebo"],
+      "theoretical": ["model", "simulat", "dimensional", "theory"],
+      "observational": ["survey", "observ", "regression", "correlat", "field study"]
+    },
+    "default_family": "observational"
+  },
+  "directives": {
+    "EXPLOIT": "Run or refine your current study.",
+    "BOREDOM_SNAP": "Talk to the farthest colleague, read one obscure source (Exa), check their recorded failures, propose something new.",
+    "PARADIGM_BREAKOUT": "Design a cross-field study that uses another lab's instrument and a method outside your field's standard methods.",
+    "FRUSTRATED": "Get a design review from the statistician before running again; keep the same topic.",
+    "CONVERGED": "Replicate once more, then stop and let the abstract stand."
+  }
+}

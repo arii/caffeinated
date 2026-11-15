@@ -12,9 +12,9 @@ from conftest import requires_sandbox
 pytestmark = requires_sandbox
 
 
-def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None):
+def _run(tmp_path, arm="full", rounds=4, seed=0, agents=4, resume=False, out=None, yoke_from=None):
     out = Path(out or tmp_path / f"{arm}-{seed}")
-    world = run_arm.build_world(arm, agents, seed, out)
+    world = run_arm.build_world(arm, agents, seed, out, yoke_from=yoke_from)
     if resume:
         assert world.load_state()
     asyncio.run(world.run(rounds))
@@ -34,8 +34,8 @@ def test_same_seed_same_file(tmp_path):
 
 
 def test_different_seed_different_file(tmp_path):
-    a = _run(tmp_path, arm="random_snap", seed=0, out=tmp_path / "a")
-    b = _run(tmp_path, arm="random_snap", seed=1, out=tmp_path / "b")
+    a = _run(tmp_path, arm="full", seed=0, out=tmp_path / "a")
+    b = _run(tmp_path, arm="full", seed=1, out=tmp_path / "b")
     assert not filecmp.cmp(a, b, shallow=False)
 
 
@@ -66,9 +66,10 @@ def test_resume_without_checkpoint_replays_round0_cleanly(tmp_path):
     assert filecmp.cmp(full, tmp_path / "part" / "events.jsonl", shallow=False)
 
 
-@pytest.mark.parametrize("arm", ["random_snap", "single", "shared_memory", "no_exchange"])
+@pytest.mark.parametrize("arm", ["yoked_random", "single", "shared_memory", "no_exchange"])
 def test_other_arms_run(tmp_path, arm):
-    path = _run(tmp_path, arm=arm, rounds=2)
+    paired = _run(tmp_path, rounds=2, out=tmp_path / "full-s0") if arm == "yoked_random" else None
+    path = _run(tmp_path, arm=arm, rounds=2, yoke_from=paired)
     evs = list(events.read(path))
     assert evs and all(e.arm == arm for e in evs)
     if arm == "single":
@@ -88,3 +89,15 @@ def test_every_event_has_fixed_keys_and_search_events_have_urls(tmp_path):
             assert d["payload"]["source"]["url"]
         if d["type"] == "study_result":
             assert d["payload"]["novelty"]["sources"] and d["payload"]["novelty"]["sources"][0]["url"]
+
+
+def test_resume_drops_events_from_a_half_finished_round(tmp_path):
+    """A crash after some round-2 events were logged must not leave duplicates after --resume."""
+    full = _run(tmp_path, rounds=3, out=tmp_path / "full")
+    part = _run(tmp_path, rounds=1, out=tmp_path / "part")
+    with open(part, "a") as f:  # pretend round 2 got this far and then died
+        f.write(json.dumps({"round": 2, "arm": "full", "seed": 0, "agent": "quill", "type": "boredom",
+                            "payload": {"B": 0.0}, "tokens": 0, "latency_ms": 0}) + "\n")
+    _run(tmp_path, rounds=3, resume=True, out=tmp_path / "part")
+    assert filecmp.cmp(full, part, shallow=False)
+    assert not (tmp_path / "part" / "state.json.tmp").exists()

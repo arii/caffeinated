@@ -1,7 +1,5 @@
 # Run-time knobs. Everything here is read once by config.load().
-boredom_threshold: 0.50      # B at or above this means SNAP under boredom_policy.
-                             # 0.5 = the newest idea just repeats the last ones and nothing is failing.
-random_snap_prob: 0.30       # random_policy snaps with this probability, ignoring B
+# Boredom-meter weights and thresholds live in ../boredom_meter/profiles/ignobel.json (agent_meter).
 tell_prize: true             # whether the agent prompt mentions that a prize exists
 teams_enabled: false         # teams.py is a stub; leave false
 alpha: 0.05                  # base significance threshold before dividing by study count

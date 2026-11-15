@@ -157,3 +157,16 @@ def test_check_noise_fails_and_alpha_divides():
 def test_check_too_small():
     v = stats.check({"kind": "corr", "x": [1, 2, 3], "y": [1, 2, 3]}, 1)
     assert not v["replicated"] and "too few" in v["reason"]
+
+
+def test_timeout_with_partial_output_is_a_failed_study(monkeypatch):
+    """TimeoutExpired hands back bytes even in text mode; the study must fail cleanly, not crash the run."""
+    monkeypatch.setattr(lab, "TIMEOUT_S", 1)
+    a = _agent("quill")
+    code = ("import sys, time\nfrom lab_runtime import instruments, instrument\n"
+            "instrument(instruments()[0])\nsys.stderr.write('still going\\n'); sys.stderr.flush()\n"
+            "time.sleep(30)\n")
+    out = lab.run_study(code, a)
+    assert not out["ok"] and out["stats"] is None
+    assert out["calls"] == 1 and a.budget_left == 5
+    assert "timeout" in out["stderr"] and "still going" in out["stderr"]

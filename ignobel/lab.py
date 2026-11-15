@@ -108,7 +108,7 @@ def _run_modal(workdir: Path) -> tuple[str, str, int]:
     sb = modal.Sandbox.create("python", "-E", "-s", "/work/study.py", image=image, app=app,
                               timeout=TIMEOUT_S, block_network=True, workdir="/work")
     sb.wait()
-    return sb.stdout.read(), sb.stderr.read(), sb.returncode or 0
+    return _text(sb.stdout.read()), _text(sb.stderr.read()), sb.returncode or 0
 
 
 def _svg_plot(result: dict, path: Path) -> None:

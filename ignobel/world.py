@@ -24,13 +24,14 @@ from policy import Action
 
 class World:
     def __init__(self, arm: str, run_seed: int, specs: list, policy_fn, memory_backend: str,
-                 exchange: bool, out_dir: str | Path, cfg: dict):
+                 exchange: bool, out_dir: str | Path, cfg: dict, yoke: dict[int, int] | None = None):
         self.arm, self.seed, self.cfg = arm, run_seed, cfg
         self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
         self.log = events.EventLog(self.out / "events.jsonl", arm, run_seed)
         self.rng = random.Random(run_seed)
         self.policy = policy_fn
+        self.yoke = yoke  # yoked control: {round: number of agents that snapped in the paired full run}
         self.exchange = exchange
         self.memory_backend = memory_backend
         self.shared = memory.SharedMemory() if memory_backend == "shared" else None
@@ -53,6 +54,7 @@ class World:
         os.replace(tmp, self.out / "state.json")
 
     def load_state(self) -> bool:
+        """Restore the last checkpoint and drop any events a half-finished round wrote after it."""
         f = self.out / "state.json"
         if not f.exists():
             self.log.truncate(0)  # round 0 never finished; it will be replayed from scratch
@@ -85,9 +87,12 @@ class World:
         a.memory.write(Item(id=f"{a.name}-{idea.idea_id}-pred", kind="prediction", source_agent=a.name,
                             text=f"Prediction for {idea.title}: {idea.prediction.direction} {idea.prediction.effect_size}",
                             meta={"idea_id": idea.idea_id}))
+        idea.novelty = search.novelty_check(idea.text)["score"]
         self.log.append(round, a.name, "idea", {"idea_id": idea.idea_id, "kind": idea.kind, "title": idea.title,
                                                 "text": idea.text, "hypothesis": idea.hypothesis,
-                                                "method": idea.method, "source_urls": idea.source_urls},
+                                                "method": idea.method, "source_urls": idea.source_urls,
+                                                "descriptor": idea.descriptor, "novelty": idea.novelty,
+                                                "cross_field": idea.cross_field, "partner": idea.partner},
                         tokens=res.tokens, latency_ms=res.latency_ms)
         self.log.append(round, a.name, "prediction", {"idea_id": idea.idea_id, **idea.prediction.model_dump()})
 
@@ -111,8 +116,8 @@ class World:
                 pairs.append((pool[0], partner))
         return pairs
 
-    def _converse(self, a, b) -> list[tuple]:
-        topic = f"{self._topic(a)} / {self._topic(b)}"
+    def _converse(self, a, b, topic: str | None = None) -> list[tuple]:
+        topic = topic or f"{self._topic(a)} / {self._topic(b)}"
         history: list[str] = []
         turns = []
         for i in range(int(self.cfg.get("talk_turns", 3))):
@@ -176,24 +181,51 @@ class World:
             (lambda a=a: a.propose(0, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in self.agents])
         for a, (idea, res) in zip(self.agents, results):
             self._record_idea(a, idea, res, 0)
+            boredom.set_baseline(a)
+            a.meter["jitter"] = policy_mod.jitter(self.seed, a.name)
 
-    async def round(self, r: int) -> None:
-        threshold = float(self.cfg.get("boredom_threshold", 0.5))
-        actions: dict[str, Action] = {}
+    def _decide(self, r: int) -> tuple[dict, dict]:
+        """Private meter -> (regime, action) per agent; the yoked control ignores the meter."""
+        chosen = (policy_mod.yoked_snappers([a.name for a in self.agents], self.yoke.get(r, 0), self.rng)
+                  if self.yoke is not None else set())
+        regimes, actions = {}, {}
         for a in self.agents:
             a.reset_budget()
-            comp = boredom.components(a)
-            act = self.policy(a, comp["B"], self.rng)
-            actions[a.name] = act
-            self.log.append(r, a.name, "boredom", {**comp, "regime": policy_mod.regime(comp["B"], threshold),
-                                                   "action": act.value})
-        snappers = [a for a in self.agents if actions[a.name] == Action.SNAP]
+            comp = boredom.components(a, r)
+            if self.yoke is None:
+                regime, act = self.policy(a, comp, r, self.rng)
+            elif a.name in chosen:
+                policy_mod.on_explore(a, r)
+                regime, act = "YOKED_SNAP", Action.SNAP
+            else:
+                regime, act = "EXPLOIT", policy_mod._work(a)
+            regimes[a.name], actions[a.name] = regime, act
+            self.log.append(r, a.name, "boredom", {**comp, "regime": regime, "action": act.value})
+        return regimes, actions
+
+    def _statistician(self, a):
+        return next((o for o in self.agents if o.spec.is_statistician and o is not a), None)
+
+    def _breakout_brief(self, a, partner) -> dict:
+        """Other labs' instruments (partner first) and methods outside a's field, for a cross-field idea."""
+        others = sorted((o for o in self.agents if o is not a), key=lambda o: (o is not partner, o.name))
+        return {"instruments": [{"agent": o.name, "instruments": [i.name for i in o.spec.instruments]}
+                                for o in others if o.spec.instruments],
+                "methods": [m for o in others for m in o.spec.methods if m not in a.spec.methods]}
+
+    async def round(self, r: int) -> None:
+        regimes, actions = self._decide(r)
+        snappers = [a for a in self.agents if actions[a.name] in policy_mod.EXPLORE]
         pairs = self._pair(snappers)
         partner_of = {}
         for x, y in pairs:
             partner_of[x.name], partner_of[y.name] = y.name, x.name
+        reviewers = [(a, self._statistician(a)) for a in self.agents if actions[a.name] == Action.REVIEW]
+        reviews = [(a, s) for a, s in reviewers if s is not None]
 
-        convs = await self._gather([(lambda p=p: self._converse(*p)) for p in pairs])
+        convs = await self._gather([(lambda p=p: self._converse(*p)) for p in pairs]
+                                   + [(lambda a=a, s=s: self._converse(a, s, f"design review: {self._topic(a)}"))
+                                      for a, s in reviews])
         for turns in convs:
             for speaker, other, i, text, res in turns:
                 self.log.append(r, speaker.name, "talk", {"partner": other.name, "turn": i, "text": text},
@@ -203,22 +235,36 @@ class World:
                 self._share(x, y, r)
                 self._share(y, x, r)
 
-        sources = {}
+        sources, briefs = {}, {}
         for a in snappers:
-            sources[a.name] = search.obscure_source(self._topic(a))
-            self.log.append(r, a.name, "snap", {"partner": partner_of.get(a.name), "source": sources[a.name].model_dump()},
+            partner = self.by_name.get(partner_of.get(a.name))
+            if actions[a.name] == Action.BREAKOUT:
+                briefs[a.name] = self._breakout_brief(a, partner)
+                field = partner.spec.field if partner else a.spec.field
+                sources[a.name] = search.obscure_source(field)
+            else:
+                sources[a.name] = search.obscure_source(self._topic(a))
+            self.log.append(r, a.name, "snap", {"partner": partner_of.get(a.name), "source": sources[a.name].model_dump(),
+                                                "kind": "breakout" if a.name in briefs else "snap",
+                                                "regime": regimes[a.name]},
                             latency_ms=search.last_latency_ms())
         proposals = await self._gather([
-            (lambda a=a: a.propose(r, a.memory.search(self._topic(a), 5), extra_source=sources[a.name])) for a in snappers])
+            (lambda a=a: a.propose(r, a.memory.search(self._topic(a), 5), extra_source=sources[a.name],
+                                   partner=partner_of.get(a.name), breakout=briefs.get(a.name)))
+            for a in snappers])
         for a, (idea, res) in zip(snappers, proposals):
             self._record_idea(a, idea, res, r)
 
-        refiners = [a for a in self.agents if actions[a.name] == Action.REFINE]
+        refiners = [a for a in self.agents if actions[a.name] in (Action.REFINE, Action.REVIEW)]
         refined = await self._gather([(lambda a=a: a.refine(r)) for a in refiners])
         for a, (idea, res) in zip(refiners, refined):
             self._record_idea(a, idea, res, r)
 
-        runners = [a for a in self.agents if actions[a.name] == Action.RUN_STUDY]
+        for a in self.agents:
+            if actions[a.name] == Action.REPLICATE and a.current_idea() is not None:
+                a.current_idea().run = False
+        runners = [a for a in self.agents if actions[a.name] in (Action.RUN_STUDY, Action.REPLICATE)
+                   and a.unrun_idea() is not None]
         peers = [{"agent": a.name, "instruments": [i.name for i in a.spec.instruments]} for a in self.agents]
         codes = await self._gather([(lambda a=a: a.write_study_code([p for p in peers if p["agent"] != a.name]))
                                     for a in runners])
