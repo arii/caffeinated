@@ -1,0 +1,20 @@
+# Local state that must not leak into the reproduction image.
+node_modules/
+.venv*/
+.env
+.env.*
+!.env.example
+.swarm_worktrees/
+worktrees/
+experiments/swarm_*/
+experiments/openai-*/
+.lab_data/
+.cache/
+**/.cache/
+**/__pycache__/
+results/
+runs/
+dist/
+testcases/bixbench_numeric/data/
+testcases/bixbench_numeric/questions.json
+video/node_modules/
