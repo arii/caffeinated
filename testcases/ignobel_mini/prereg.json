@@ -1,17 +1,17 @@
 {
  "field": "behavioral_economics",
- "study_type": "replicate_published",
- "question": "Do people who take one everyday risk take others?",
- "hypothesis": "Respondents who gamble are more likely to also smoke cigarettes.",
- "mechanism": "Risk taking is partly a general trait that carries across domains (Weber et al. 2002), and smoking and gambling co-occur clinically (Petry & Oncken 2002).",
+ "study_type": "untested_prediction",
+ "question": "Do people who like their steak rare take more everyday risks?",
+ "hypothesis": "Respondents who order their steak rare are more likely to also smoke cigarettes.",
+ "mechanism": "If risk taking is a general trait that carries across domains (Weber et al. 2002), tolerance for undercooked meat should travel with other risky habits such as smoking, which clusters with other risk behaviours (Petry & Oncken 2002).",
  "citations": [
   "https://doi.org/10.1002/bdm.414",
   "https://doi.org/10.1046/j.1360-0443.2002.00163.x"
  ],
  "dataset": {
   "url": "https://raw.githubusercontent.com/fivethirtyeight/data/4c1ff5e3aef1816ae04af63218015066e186c147/steak-survey/steak-risk-survey.csv",
-  "x": "Do you ever gamble?",
-  "x_level": "Yes",
+  "x": "How do you like your steak prepared?",
+  "x_level": "Rare",
   "y": "Do you ever smoke cigarettes?",
   "y_level": "Yes"
  },

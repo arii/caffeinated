@@ -677,13 +677,13 @@ class IgnobelTaskTests(unittest.TestCase):
         prereg = json.loads((TESTCASES / "ignobel_mini" / "prereg.json").read_text())
         self.assertIn(prereg["study_type"], fields[prereg["field"]])
 
-    def test_ignobel_baseline_registration_confirms(self):
+    def test_ignobel_baseline_registration_is_a_real_null(self):
         result = evaluate("ignobel_mini")
         values = dict(re.findall(r"^([\w_ ]+): (.+)$", result.stdout, re.M))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(float(values["loss"]), 0.0)
-        self.assertEqual(values["replicated"], "true")
-        self.assertEqual(values["confirmed"], "true")
+        self.assertEqual(float(values["loss"]), 1.0)
+        self.assertEqual(values["significant"], "false")
+        self.assertEqual(values["confirmed"], "false")
         self.assertEqual(values["citations"], "2 verified")
 
 
