@@ -17,6 +17,8 @@ from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
+from testcases.ignobel_mini import evaluate as ignobel
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTCASES = REPO_ROOT / "testcases"
 DOCKER_DAEMON_AVAILABLE = sandbox.docker_available()
@@ -387,6 +389,119 @@ class SwarmTaskModeTests(unittest.TestCase):
             for row in rows:
                 self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
+
+
+class IgnobelTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        task_dir = TESTCASES / "ignobel_mini"
+        sandbox.prepare_task(
+            task_dir,
+            json.loads((task_dir / "task.json").read_text())["context_files"],
+            required_files=("codebook.json", ".cache/replication/thanksgiving.csv"),
+        )
+
+    def claim(self, **overrides):
+        base = {
+            "dataset": "thanksgiving",
+            "x": "v06",
+            "x_level": "Yes",
+            "y": "v04",
+            "y_level": "Bread-based",
+            "direction": "positive",
+        }
+        return {**base, **overrides}
+
+    def test_split_is_disjoint_and_deterministic(self):
+        task_dir = TESTCASES / "ignobel_mini"
+        codebook = ignobel.load_codebook(task_dir)
+        for name, dataset in codebook.items():
+            with self.subTest(dataset=name):
+                discovery = (task_dir / dataset["file"]).read_text(encoding="utf-8")
+                replication = (task_dir / ".cache" / "replication" / f"{name}.csv").read_text(
+                    encoding="utf-8"
+                )
+                self.assertEqual(dataset["n_discovery"], discovery.count("\n") - 1)
+                self.assertGreater(replication.count("\n"), 30)
+                self.assertNotEqual(discovery, replication)
+
+    def test_replicated_claim_scores_and_wrong_direction_does_not(self):
+        graded = ignobel.score_claim(self.claim())
+        self.assertTrue(graded["replicated"])
+        self.assertGreater(graded["score"], 0)
+        self.assertIn("gravy", graded["headline"])
+        self.assertEqual(ignobel.score_claim(self.claim(direction="negative"))["score"], 0.0)
+
+    def test_non_replicating_claim_scores_zero(self):
+        graded = ignobel.score_claim(self.claim(y="v05", y_level="Homemade"))
+        self.assertFalse(graded["replicated"])
+        self.assertEqual(graded["score"], 0.0)
+
+    def test_trivial_claims_are_rejected(self):
+        same_question = self.claim(x="v14", x_level="Macaroni and cheese", y="v15", y_level=None)
+        codebook = ignobel.load_codebook(TESTCASES / "ignobel_mini")
+        same_question["y_level"] = codebook["thanksgiving"]["variables"]["v15"]["levels"][-1]
+        graded = ignobel.score_claim(same_question)
+        self.assertIn("same survey question", graded["rejected"])
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("same variable", ignobel.score_claim(self.claim(y="v06", y_level="No"))["rejected"])
+
+    def test_malformed_claims_raise(self):
+        for claim in (
+            self.claim(dataset="nope"),
+            self.claim(x="v999"),
+            self.claim(x_level="Maybe"),
+            self.claim(direction="up"),
+        ):
+            with self.subTest(claim=claim), self.assertRaises(ValueError):
+                ignobel.score_claim(claim)
+
+    def test_judge_rates_ignobel_rationales_above_ordinary_titles(self):
+        judge = ignobel.load_judge(TESTCASES / "ignobel_mini")
+        funny = ignobel.likeness("why woodpeckers do not get headaches", judge)
+        dull = ignobel.likeness("a multicenter randomized trial of statin therapy outcomes", judge)
+        self.assertGreater(funny, dull)
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    def test_ignobel_baseline_score_is_unchanged(self):
+        result = evaluate("ignobel_mini")
+        values = dict(re.findall(r"^([\w_]+): (.+)$", result.stdout, re.M))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertAlmostEqual(float(values["loss"]), 0.5089, places=3)
+        self.assertEqual(values["replicated"], "true")
+        self.assertEqual(values["beats_reference"], "false")
+        self.assertEqual(values["network_isolated"], "true")
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    def test_ignobel_candidate_cannot_read_replication_half_or_network(self):
+        task_dir = TESTCASES / "ignobel_mini"
+        hidden = task_dir / ".cache" / "replication" / "thanksgiving.csv"
+        source = f"""
+import json, os, socket, sys
+paths = [".cache/replication/thanksgiving.csv", {str(hidden)!r}, "evaluate.py", "judge.json"]
+try:
+    socket.create_connection(("1.1.1.1", 80), timeout=1)
+    blocked = False
+except OSError:
+    blocked = True
+probe = {{"existing": [p for p in paths if os.path.exists(p)], "network_blocked": blocked}}
+print("ISOLATION=" + json.dumps(probe), file=sys.stderr)
+print(json.dumps({{"dataset": "thanksgiving", "x": "v06", "x_level": "Yes", "y": "v04",
+                  "y_level": "Bread-based", "direction": "positive"}}))
+"""
+        result = task_evaluation("ignobel_mini", source)
+        probe = json.loads(result["stderr"].split("ISOLATION=", 1)[1])
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(probe["existing"], [])
+        self.assertTrue(probe["network_blocked"])
+        self.assertTrue(hidden.exists())
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, "Docker daemon required")
+    def test_ignobel_rejects_unparseable_claim(self):
+        result = task_evaluation("ignobel_mini", "print('the gravy did it')\n")
+        self.assertEqual(result["status"], "crash")
+        self.assertEqual(result["reason"], "invalid_output")
+        self.assertEqual(result["score"], 0.0)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,64 @@
+{
+  "domain": "testcase-ignobel-mini",
+  "version": 1,
+  "direction": "min",
+  "objective": "loss",
+  "eps": 0.02,
+  "eps_note": "loss is 1 - strength * likeness on [0, 1]; 0.02 is a visibly funnier or stronger claim",
+  "k": 5,
+  "knn": 3,
+  "patience": 5,
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "params_weight": 0.25,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "data": [
+      "dataset",
+      "variable",
+      "level",
+      "missing"
+    ],
+    "statistics": [
+      "screen",
+      "effect_size",
+      "multiple_comparisons",
+      "split_half"
+    ],
+    "framing": [
+      "everyday_object",
+      "absurd_pairing",
+      "body",
+      "food",
+      "etiquette"
+    ],
+    "search": [
+      "hypothesis",
+      "brute_force",
+      "literature"
+    ]
+  },
+  "params": {
+    "value": {
+      "scale": "ratio",
+      "ratio": 4
+    }
+  },
+  "fail_statuses": [
+    "crash"
+  ],
+  "directives": {
+    "EXPLOIT": "Keep the dataset; try a funnier pairing of variables whose discovery-half effect is strong (|rho| >= 0.2, p far below 0.01).",
+    "BOREDOM_SNAP": "Switch dataset or question family; look up real Ig Nobel winners (Exa) for the kind of everyday absurdity that wins, and check past.dev for pairings that failed to replicate.",
+    "PARADIGM_BREAKOUT": "Re-read the codebook from scratch; screen every non-trivial pair on the discovery half and correct for multiple comparisons before choosing.",
+    "CONVERGED": "Re-check the claim on a random split of the discovery half to confirm it is stable."
+  }
+}

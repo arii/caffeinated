@@ -1,0 +1,37 @@
+"""Tokenizer and scorer shared by the frozen Ig Nobel-likeness judge and its builder."""
+
+import math
+import re
+
+STOPWORDS = frozenset(
+    """a about above after again against all also am an and any are as at be because been
+    before being below between both but by can could did do does doing down during each few
+    for from further had has have having he her here hers him his how i if in into is it its
+    itself just me more most my no nor not now of off on once only or other our out over own
+    same she should so some such than that the their them then there these they this those
+    through to too under until up very was we were what when where which while who whom why
+    will with would you your yes
+    study studies studying studied discovering discovered discovery demonstrating demonstrate
+    demonstrated showing shows show shown measuring measure measured investigating investigate
+    investigation determining determine testing test tested analysing analyzing analysis
+    analyses explaining explain report reports reported probing confirming developing
+    inventing using use used whether based new effect effects role two one three toward towards
+    respondents answering likely typically typical often
+    work works careful carefully pioneering entitled conclusion presented university prize
+    nobel report modest achievement achievements contribution contributions their""".split()
+)
+
+
+def tokens(text):
+    words = re.findall(r"[a-z]+", str(text).lower())
+    return [w for w in words if len(w) > 2 and w not in STOPWORDS]
+
+
+def likeness(text, judge):
+    words = set(tokens(text))
+    weights = judge["weights"]
+    known = [w for w in words if w in weights]
+    logit = judge["bias"]
+    if known:
+        logit += sum(weights[w] for w in known) / math.sqrt(len(known))
+    return 1.0 / (1.0 + math.exp(-logit))

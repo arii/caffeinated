@@ -1700,9 +1700,9 @@ def preview_file(path, max_chars=6000):
     return text if len(text) <= max_chars else text[:max_chars] + "\n...(truncated)"
 
 
-def build_task_context(task_dir, context_files):
+def build_task_context(task_dir, context_files, max_chars=6000):
     parts = [
-        f"--- {name}\n{preview_file(task_dir / name)}"
+        f"--- {name}\n{preview_file(task_dir / name, max_chars)}"
         for name in context_files
         if (task_dir / name).exists()
     ]
@@ -1715,7 +1715,9 @@ def load_task(name):
     target = f"testcases/{name}/{config['editable']}"
     context_files = config.get("context_files", [])
     prepare_task(task_dir, context_files)
-    task_context = build_task_context(task_dir, context_files)
+    task_context = build_task_context(
+        task_dir, context_files, config.get("context_max_chars", 6000)
+    )
     return {
         **config,
         "name": name,

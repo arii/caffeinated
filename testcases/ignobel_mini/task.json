@@ -1,0 +1,44 @@
+{
+ "editable": "study.py",
+ "brief": "a study script (`study.py`) that explores the discovery half of 8 real FiveThirtyEight surveys (codebook under Task inputs; data/<dataset>.csv) and prints one JSON claim {dataset, x, x_level, y, y_level, direction}. The host re-tests the claim on a hidden replication half (Spearman, p < 0.01, same sign) and scores the codebook wording of x and y with a frozen judge trained on real Ig Nobel winners vs ordinary paper titles; loss = 1 - min(1, |rho_rep|/0.2) * ignobel_likeness (0 if it fails to replicate or is trivial: same question, near-identical wording, or two demographics). The record to beat is a brute-force discovery-half scan (macaroni and cheese goes with cheesecake), loss 0.3119",
+ "fake_edits": [
+  {
+   "old": "Y, Y_LEVEL = \"v04\", \"Bread-based\"",
+   "new": "Y, Y_LEVEL = \"v04\", \"Rice-based\"",
+   "descriptor": {
+    "mechanism": "data",
+    "method": "level"
+   }
+  },
+  {
+   "old": "X, X_LEVEL = \"v06\", \"Yes\"",
+   "new": "X, X_LEVEL = \"v06\", \"No\"",
+   "descriptor": {
+    "mechanism": "data",
+    "method": "variable"
+   }
+  },
+  {
+   "old": "Y, Y_LEVEL = \"v04\", \"Bread-based\"",
+   "new": "Y, Y_LEVEL = \"v05\", \"Homemade\"",
+   "descriptor": {
+    "mechanism": "framing",
+    "method": "everyday_object"
+   }
+  },
+  {
+   "old": "\"positive\" if rho >= 0 else \"negative\"",
+   "new": "\"positive\" if rho > 0 else \"negative\"",
+   "descriptor": {
+    "mechanism": "statistics",
+    "method": "effect_size"
+   }
+  }
+ ],
+ "proxy_note": "real FiveThirtyEight surveys; frozen text-classifier judge, not the Ig Nobel committee",
+ "context_max_chars": 34000,
+ "context_files": [
+  "codebook.txt",
+  "data/thanksgiving.csv"
+ ]
+}
