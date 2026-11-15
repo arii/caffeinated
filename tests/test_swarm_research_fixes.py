@@ -1669,3 +1669,26 @@ class CriticArmParityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AdversarialReviewRegressionTests(unittest.TestCase):
+    def test_open_ended_acceptance_keeps_best_metric_and_commit_paired(self):
+        best = swarm.improved_best(1.0, "baseline", 0.3, "first")
+        self.assertEqual(best, (0.3, "first"))
+        self.assertEqual(swarm.improved_best(*best, 0.6, "worse"), (0.3, "first"))
+        self.assertEqual(swarm.improved_best(*best, 0.3, "tie"), (0.3, "first"))
+
+    def test_worker_call_budget_is_a_rejection_not_an_llm_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            client = llm.LLMClient(
+                mode="fake",
+                log_path=Path(directory) / "llm_log.jsonl",
+                role_models={"SUPERVISOR": "supervisor-model"},
+            )
+            client.worker_calls[("worker-1", 1)] = 2
+            with self.assertRaises(llm.WorkerCallBudgetError) as caught:
+                client.call("WORKER_REPAIR", agent="worker-1", round_num=1, values={})
+        candidate = swarm.worker_budget_candidate("worker-1", "divergent", caught.exception)
+        self.assertEqual(candidate["status"], "reject")
+        self.assertFalse(candidate["llm_error"])
+        self.assertTrue(candidate["reasons"][0].startswith("worker_call_budget:"))

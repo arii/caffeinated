@@ -354,6 +354,10 @@ class LLMError(RuntimeError):
     """A model request failed; the caller may record it and go on."""
 
 
+class WorkerCallBudgetError(LLMError):
+    """A supervised worker attempt asked for more calls than it is allowed; no request was made."""
+
+
 class LLMClient:
     def __init__(
         self,
@@ -385,7 +389,14 @@ class LLMClient:
         self.seed = seed
         self.sampling_seed = None
         self.records = read_log(self.log_path)
-        self.call_counter = len(self.records)
+        # Failed Tinker calls are only in llm_errors.jsonl; resuming must not reuse their IDs.
+        numbers = [
+            int(match.group(1))
+            for record in self.records + read_log(self.log_path.with_name("llm_errors.jsonl"))
+            if isinstance(record.get("call_id"), str)
+            and (match := re.search(r"-(\d+)$", record["call_id"]))
+        ]
+        self.call_counter = max([len(self.records), *numbers])
         self.call_ids = [
             record["call_id"] for record in self.records if isinstance(record.get("call_id"), str)
         ]
@@ -427,7 +438,9 @@ class LLMClient:
         if self.supervised and role.upper().startswith("WORKER_") and not self.replay:
             key = (agent, round_num)
             if self.worker_calls.get(key, 0) >= 2:
-                raise LLMError(f"{agent}: worker call budget reached (one execution + one repair)")
+                raise WorkerCallBudgetError(
+                    f"{agent}: worker call budget reached (one execution + one repair)"
+                )
             self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"

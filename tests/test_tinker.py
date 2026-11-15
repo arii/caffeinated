@@ -334,6 +334,18 @@ class TinkerTests(unittest.TestCase):
         self.assertEqual(payload["reasoning_effort"], "high")
         self.assertEqual(llm.DEFAULT_TINKER_PI_REASONING_EFFORT, "high")
 
+    def test_resume_does_not_reuse_call_id_of_failed_call(self):
+        llm.append_log(self.log_path, {"call_id": "PI-r1-pi-1", "attempts": []})
+        error = {
+            "call_id": "WORKER_PROPOSE-r2-worker-1-2",
+            "attempts": [{"transport_error": "ReadTimeout"}] * 3,
+        }
+        llm.append_log(self.log_path.with_name("llm_errors.jsonl"), error)
+        client = llm.LLMClient(mode="fake", log_path=self.log_path)
+        self.assertEqual(client.call_counter, 2)
+        logged = [{"call_id": "PI-r1-pi-1"}, {"call_id": "WORKER_PROPOSE-r2-worker-1-3"}]
+        self.assertEqual(swarm._transport_retry_count(logged, [error]), 3)
+
     def test_openai_path_logs_cached_tokens_reasoning_and_call_ids(self):
         body = {
             "choices": [

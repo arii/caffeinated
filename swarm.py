@@ -3896,6 +3896,18 @@ def plan_supervised_workers(
     return assignments
 
 
+def improved_best(best_val, best_commit, value, commit):
+    """Keep best_val and best_commit as one pair; open-ended runs accept findings that are not new bests."""
+    return (value, commit) if value < best_val else (best_val, best_commit)
+
+
+def worker_budget_candidate(agent, role, error):
+    candidate = llm_failure_candidate(agent, role, error)
+    candidate.update(status="reject", idea="worker call budget reached", llm_error=False)
+    candidate["reasons"] = [f"worker_call_budget: {str(error)[:500]}"]
+    return candidate
+
+
 def llm_failure_candidate(agent, role, error):
     return {
         "agent": agent,
@@ -4336,6 +4348,12 @@ def _orchestrate(args, publish_state, cleanup):
                         pi_steer=pi_steers.get(agent, "none"),
                         pi_lead=pi_lead_records.get(agent),
                     )
+                except llm.WorkerCallBudgetError as error:
+                    print(f"round {round_num}: {agent} {error}", file=sys.stderr)
+                    candidate = worker_budget_candidate(agent, role, error)
+                    candidate["llm_call_ids"] = list(
+                        getattr(llm_client, "call_ids", [])[worker_call_start:]
+                    )
                 except llm.LLMError as error:
                     print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
                     candidate = llm_failure_candidate(agent, role, error)
@@ -4402,8 +4420,12 @@ def _orchestrate(args, publish_state, cleanup):
             if provisional_best is not None and args.arm == "S":
                 accepted = True
                 provisional_best["status"] = "keep"
-                best_val = float(provisional_best["score"])
-                best_metric_commit = provisional_best["commit"]
+                best_val, best_metric_commit = improved_best(
+                    best_val,
+                    best_metric_commit,
+                    float(provisional_best["score"]),
+                    provisional_best["commit"],
+                )
                 latest_candidate = provisional_best
             elif provisional_best is not None:
                 previous_best_val = best_val
@@ -4513,8 +4535,12 @@ def _orchestrate(args, publish_state, cleanup):
                 }
                 if accepted:
                     provisional_best["status"] = "keep"
-                    best_val = min(best_val, (first_score + float(second_score)) / 2)
-                    best_metric_commit = provisional_best["commit"]
+                    best_val, best_metric_commit = improved_best(
+                        best_val,
+                        best_metric_commit,
+                        (first_score + float(second_score)) / 2,
+                        provisional_best["commit"],
+                    )
                     latest_candidate = provisional_best
 
             for candidate in candidate_records:
