@@ -20,7 +20,7 @@ import llm
 HERE = Path(__file__).parent
 RUNTIME = HERE / "lab_runtime.py"
 TIMEOUT_S = 120
-SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE", "python:3.11-slim")  # mock mode: stdlib is enough
+SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE") or "python:3.11-slim"  # mock mode: stdlib is enough
 SCI_IMAGE = "caffeinated-testcases:py311-v1"  # real mode: numpy, pandas, scipy (sandbox/Dockerfile,
 SCI_PACKAGES = ("numpy==2.2.6", "pandas==2.2.3", "scipy==1.15.3")  # the autoresearch testcases image)
 _built: set[str] = set()
