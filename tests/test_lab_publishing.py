@@ -138,6 +138,25 @@ class PublishRecoveryTests(unittest.TestCase):
             kinds = [e["kind"] for e in manifest["publish_errors"]]
             self.assertEqual(kinds, ["recovered", "recovered"])
 
+    def test_record_before_first_ts_after_recovery_does_not_reuse_pin(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            dest = root / "dest"
+            export_viewer.publish(out, dest, final=False, status="running")
+            query = {"type": "query", "agent": "worker-1", "query": "early"}
+            append_jsonl(
+                out / "research_log.jsonl", {**query, "id": "Q9", "ts": "2026-11-14T10:00:30Z"}
+            )
+            pinned = export_viewer.publish(out, dest, final=False, status="running")
+            append_jsonl(
+                out / "research_log.jsonl", {**query, "id": "Q0", "ts": "2020-01-01T00:00:00Z"}
+            )
+            run_dir = export_viewer.publish(out, dest, final=True, status="finished")
+            self.assertNotEqual(run_dir.name, pinned.name)
+            events, _, _ = read_bundle(run_dir)
+            self.assertEqual({e["run_id"] for e in events}, {run_dir.name})
+
     def test_scoring_status_is_live(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

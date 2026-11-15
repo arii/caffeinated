@@ -1939,12 +1939,13 @@ def _copy_artifacts(out_dir, run_dir, entities):
 def export(out_dir, dest, arm=None, title=None, final=True, status=None, pinned=None, report=None):
     out_dir = Path(out_dir)
     run, extra = export_autoresearch(out_dir, arm, title, final, status)
-    run.pinned = pinned or []
+    # A pin from another run id (a record now predates the first ts) does not apply.
+    run.pinned = [e for e in pinned or () if e.get("run_id") == run.run_id]
     manifest, timeline, events, keyframes = build(run, extra)
     run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
     _copy_artifacts(out_dir, run_dir, run.entities)
     if report is not None:
-        report["out_of_order"] = run.out_of_order
+        report.update(out_of_order=run.out_of_order, pinned=bool(run.pinned))
     return run_dir
 
 
@@ -2038,6 +2039,8 @@ def publish(out_dir, dest, *, final=False, status=None):
         fresh_dir = export(
             out_dir, fresh_root, final=final, status=export_status, pinned=pinned, report=report
         )
+        if not report["pinned"]:
+            pinned = None
         run_id = fresh_dir.name
         target = dest / run_id
         fresh_events = (fresh_dir / "events.ndjson").read_bytes()
