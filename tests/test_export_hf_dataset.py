@@ -1,7 +1,10 @@
+import gzip
 import hashlib
+import io
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from scripts import export_hf_dataset
@@ -29,6 +32,15 @@ class ExportHfDatasetTest(unittest.TestCase):
     def test_secret_pattern_matches_api_keys(self):
         self.assertTrue(export_hf_dataset.SECRET.search(b"key=past_sk_abcdefgh123"))
         self.assertFalse(export_hf_dataset.SECRET.search(b"sk-short"))
+
+    def test_secret_scan_reads_zip_and_gzip_entries(self):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("log.jsonl.gz", gzip.compress(b"key=past_sk_abcdefgh123" * 50))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "replay.zip"
+            path.write_bytes(buffer.getvalue())
+            self.assertTrue(export_hf_dataset.has_secret(path))
 
 
 if __name__ == "__main__":

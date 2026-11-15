@@ -13,11 +13,13 @@ import argparse
 import csv
 import gzip
 import hashlib
+import io
 import json
 import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,15 +52,25 @@ def tracked_files(path):
     return sorted(ROOT / name for name in listed.decode().split("\0") if name)
 
 
-def read_bytes(path):
-    data = path.read_bytes()
-    return gzip.decompress(data) if path.suffix == ".gz" else data
+def contents(name, data):
+    if name.endswith(".gz"):
+        yield from contents(name[:-3], gzip.decompress(data))
+    elif name.endswith(".zip"):
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            for entry in archive.namelist():
+                yield from contents(entry, archive.read(entry))
+    else:
+        yield data
+
+
+def has_secret(path):
+    return any(SECRET.search(data) for data in contents(path.name, path.read_bytes()))
 
 
 def run_dirs():
-    for run_json in sorted(ROOT.glob("experiments/**/run.json")):
-        if "/." not in run_json.as_posix():
-            yield run_json.parent
+    for path in tracked_files("experiments"):
+        if path.name == "run.json":
+            yield path.parent
 
 
 def run_rows():
@@ -207,7 +219,7 @@ def export(out, license_id):
     if out.exists():
         shutil.rmtree(out)
     files = [f for source in RAW_SOURCES for f in tracked_files(source)]
-    leaked = [str(f.relative_to(ROOT)) for f in files if SECRET.search(read_bytes(f))]
+    leaked = [str(f.relative_to(ROOT)) for f in files if has_secret(f)]
     if leaked:
         raise SystemExit("refusing to export, possible API key in: " + ", ".join(leaked))
     for source in files:
