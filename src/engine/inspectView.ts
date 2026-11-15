@@ -21,7 +21,7 @@ export function experimentHtml(d:ExperimentDetail,c:ViewContext,study?:StudyCard
 
 export function sourceCardsHtml(cards:SourceCard[],c:ViewContext){
  if(!cards.length)return '<p class="muted">No research sources were retrieved by this moment.</p>';
- return `<div class="card-grid">${cards.slice().reverse().map(s=>`<article class="inspect-card source-card"><h4>${link(c,s.url,s.title)}</h4>${s.url?`<p class="muted source-host">${c.esc(hostOf(s.url))}</p>`:''}${s.highlight?`<blockquote>${c.esc(clip(s.highlight,320))}</blockquote>`:''}<p class="muted">Found by ${c.esc(c.name(s.agentId))} · tick ${s.tick}</p><div class="chips">${s.citedBy.length?`<span class="muted">Cited by</span> ${s.citedBy.map(id=>experimentButton(c,id)).join('')}`:'<span class="muted">Not cited by an experiment yet</span>'}</div></article>`).join('')}</div>`;
+ return `<div class="card-grid">${cards.slice().reverse().map(s=>`<article class="inspect-card source-card" data-source-card="${c.esc(s.id)}"><h4>${link(c,s.url,s.title)}</h4>${s.url?`<p class="muted source-host">${c.esc(hostOf(s.url))}</p>`:''}${s.highlight?`<blockquote>${c.esc(clip(s.highlight,320))}</blockquote>`:''}<p class="muted">Found by ${c.esc(c.name(s.agentId))} · tick ${s.tick}</p><div class="chips">${s.citedBy.length?`<span class="muted">Cited by</span> ${s.citedBy.map(id=>experimentButton(c,id)).join('')}`:'<span class="muted">Not cited by an experiment yet</span>'}</div></article>`).join('')}</div>`;
 }
 
 const rho=(v:number|null)=>v==null?'—':v.toFixed(3);
