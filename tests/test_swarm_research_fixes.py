@@ -1246,6 +1246,32 @@ class LLMCallLinkTests(unittest.TestCase):
                 expected_outcomes = expected if isinstance(expected, list) else [expected] * count
                 self.assertEqual([record["outcome"] for record in records], expected_outcomes)
 
+    def test_round_duplicate_keeps_call_ids_and_records_duplicate_outcome(self):
+        swarm.configure_task(SimpleNamespace(task="bixbench_mini"))
+        call_id = "WORKER_PROPOSE-r1-worker-2-1"
+        duplicate = {
+            "agent": "worker-2",
+            "commit": "HEAD",
+            "status": "pending",
+            "role": "exploit",
+            "llm_call_ids": [call_id],
+            "attempts": [{"attempt": 1, "call_id": call_id, "outcome": "accepted"}],
+        }
+        first = {"agent": "worker-1", "commit": "HEAD", "status": "pending"}
+        client = SimpleNamespace(call_metadata={call_id: {"role": "WORKER_PROPOSE"}})
+
+        with tempfile.TemporaryDirectory() as tmp:
+            unique = swarm.deduplicate_round_candidates(ROOT, [first, duplicate], tmp)
+            swarm.record_worker_outcomes(tmp, duplicate, 1, client)
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
+
+        self.assertEqual(unique, [first])
+        self.assertEqual(duplicate["llm_call_ids"], [call_id])
+        self.assertEqual(duplicate["attempts"][-1]["call_id"], call_id)
+        self.assertEqual(duplicate["attempts"][-1]["outcome"], "duplicate")
+        self.assertEqual([record["call_id"] for record in outcomes], [call_id])
+        self.assertEqual([record["outcome"] for record in outcomes], ["duplicate"])
+
     def test_assignment_record_links_scout_lead_calls(self):
         with tempfile.TemporaryDirectory() as tmp:
             swarm.append_jsonl(

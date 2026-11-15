@@ -1559,14 +1559,24 @@ def deduplicate_round_candidates(repo, candidates, out_dir):
         )
         attempts = list(candidate.get("attempts") or [])
         attempt_number = attempts[-1].get("attempt", 1) if attempts else 1
-        attempts.append(
-            {
-                "attempt": attempt_number,
-                "commit": candidate["commit"],
-                "pass": False,
-                "reasons": [reason],
-            }
+        duplicate_attempt = {
+            "attempt": attempt_number,
+            "commit": candidate["commit"],
+            "pass": False,
+            "outcome": "duplicate",
+            "reasons": [reason],
+        }
+        call_ids = candidate.get("llm_call_ids") or []
+        call_id = (
+            call_ids[-1]
+            if call_ids
+            else (
+                attempts[-1].get("call_id") if attempts and isinstance(attempts[-1], dict) else None
+            )
         )
+        if call_id:
+            duplicate_attempt["call_id"] = call_id
+        attempts.append(duplicate_attempt)
         candidate["attempts"] = attempts
         append_jsonl(
             Path(out_dir) / "boredom_log.jsonl",
