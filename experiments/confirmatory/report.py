@@ -18,15 +18,48 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FINAL_EVAL = ROOT / "testcases" / "bixbench_numeric" / "final_eval.py"
+sys.path.insert(0, str(ROOT / "experiments"))
+import ab  # noqa: E402
+
 ERROR = re.compile(r"^error: ([a-z_]+):", re.M)
 
 
 def rows(out):
-    path = Path(out) / "results.csv"
-    if not path.exists():
-        return []
-    with open(path, encoding="utf-8") as stream:
-        return [r for r in csv.DictReader(stream) if r.get("best_loss") not in (None, "")]
+    """results.csv rows, plus finished arms whose coordinator stopped before summarizing them."""
+    out = Path(out)
+    found = []
+    if (out / "results.csv").exists():
+        with open(out / "results.csv", encoding="utf-8") as stream:
+            found = [r for r in csv.DictReader(stream) if r.get("best_loss") not in (None, "")]
+    seen = {(r["task"], str(r["seed"]), r["arm"]) for r in found}
+    manifest = (
+        json.loads((out / "manifest.json").read_text()) if (out / "manifest.json").exists() else {}
+    )
+    settings = {k: v for k, v in manifest.items() if k != "runs"}
+    for run in manifest.get("runs", []):
+        location = Path(run["location"])
+        key = (run["task"], str(run["seed"]), run["arm"])
+        if key in seen or not (location / "run" / "run.json").exists():
+            continue
+        if json.loads((location / "run" / "run.json").read_text()).get("status") != "finished":
+            continue
+        arm_settings = {
+            **settings,
+            "rounds": ab.arm_rounds(argparse.Namespace(**settings), run["arm"]),
+            "workers": 1 if run["arm"] == "S" else settings["workers"],
+            "task": run["task"],
+            "seed": run["seed"],
+            "arm": run["arm"],
+            "task_inputs_sha256": ab.task_inputs_digest(location / "repo", run["task"]),
+        }
+        row = ab.summarize(location / "run", arm_settings)
+        found.append(
+            {
+                k: "" if v is None else str(v) if not isinstance(v, str) else v
+                for k, v in row.items()
+            }
+        )
+    return found
 
 
 def crash_reasons(run_dir):
@@ -133,9 +166,9 @@ def holm(tests):
     return tests
 
 
-def collect(out, task, grade):
+def collect(outs, grade):
     table = {}
-    for r in rows(out):
+    for r in (row for out in outs for row in rows(out)):
         run_dir = Path(r["run_dir"])
         entry = {
             "best_loss": float(r["best_loss"]),
@@ -184,14 +217,14 @@ def arm_summary(table, metrics):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--hadamard", required=True)
-    parser.add_argument("--bixbench", required=True)
+    parser.add_argument("--hadamard", nargs="+", required=True)
+    parser.add_argument("--bixbench", nargs="+", required=True)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    had = collect(args.hadamard, "hadamard29", grade=False)
-    bix = collect(args.bixbench, "bixbench_numeric", grade=True)
+    had = collect(args.hadamard, grade=False)
+    bix = collect(args.bixbench, grade=True)
     tests = holm(
         [
             paired(had, "best_loss", "A", "B"),

@@ -34,3 +34,10 @@ Dev loss, rounds to best, AUC, keeps/rejects/duplicates, crashes by reason (incl
 distinct evaluated cells, regime counts, prompt/completion tokens, Exa calls and cost, wall time,
 loss per million tokens. LLM dollar cost is unknown (tokens only).
 BixBench numbers are a 45-question proxy, not full BixBench; the 0.523 full-BixBench reference is context, not a like-for-like record.
+
+## Scheduling note (00:50 PST, before any result was inspected)
+Runs are LLM-latency bound (load < 1 on 8 CPUs), so to finish by the deadline the coordinators were
+stopped and the not-yet-started arms relaunched with more parallel jobs in sibling output directories
+(`conf-hadamard29-r2-s2003`, `-s2002B`, `conf-bixbench-numeric-guard-s3003`, `-s3002AS`). Arms already
+running kept going and are summarized by `report.py` from their run directories. Arms, seeds, rounds,
+model and source commits (hadamard29 a6b2a67, bixbench_numeric 7442255) are unchanged.
