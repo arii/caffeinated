@@ -16,6 +16,7 @@ import contextlib
 import csv
 import hashlib
 import io
+from itertools import zip_longest
 import json
 import os
 import re
@@ -184,6 +185,7 @@ class Bibliography:
         self.path = Path(out_dir) / "research_log.jsonl"
         self.exa_cache = Path(os.environ.get("EXA_CACHE_DIR", HERE / "data" / "seed_cache")) / "autoresearch"
         self._lock = threading.Lock()
+        self._key_idx = 0
 
     def size(self) -> int:
         return self.path.stat().st_size if self.path.exists() else 0
@@ -214,12 +216,21 @@ class Bibliography:
         with self._lock:
             return self._register(agent, tool, query, hits)
 
-    @staticmethod
-    def _exa_key() -> None:
-        """research.py reads EXA_API_KEY only; search.py also accepts a comma-separated EXA_KEYS."""
+    def _exa(self, call) -> None:
+        """Run one research.py Exa command. research.py reads EXA_API_KEY only, so with a comma-separated
+        EXA_KEYS (as search.py accepts) each call takes the next key, and a failed call tries the others."""
         keys = [k.strip() for k in os.environ.get("EXA_KEYS", "").split(",") if k.strip()]
-        if keys and not os.environ.get("EXA_API_KEY"):
-            os.environ["EXA_API_KEY"] = keys[0]
+        for attempt in range(max(1, len(keys))):
+            if keys:
+                os.environ["EXA_API_KEY"] = keys[self._key_idx % len(keys)]
+                self._key_idx += 1
+            try:
+                return call()
+            except (ValueError, ar.BudgetExceeded) as e:
+                raise ResearchError(f"Exa: {e}") from e
+            except RuntimeError as e:
+                if attempt + 1 >= max(1, len(keys)):
+                    raise ResearchError(f"Exa: {e}") from e
 
     def search(self, agent: str, tool: str, query: str, n: int = 4) -> list[dict]:
         """Literature search with `tool` (exa, openalex, arxiv, pubmed) -> source records with S ids."""
@@ -229,13 +240,9 @@ class Bibliography:
         if llm.MOCK:
             return self.add(agent, tool, query, _mock_papers(tool, query, n))
         if tool == "exa":
-            self._exa_key()
             with self._lock, contextlib.redirect_stdout(io.StringIO()):
                 before = len(ar.read_log(self.path))
-                try:
-                    ar.run_prior_art(self._args(agent, command="prior-art", query=query, n=n))
-                except (RuntimeError, ValueError, ar.BudgetExceeded) as e:
-                    raise ResearchError(f"Exa: {e}") from e
+                self._exa(lambda: ar.run_prior_art(self._args(agent, command="prior-art", query=query, n=n)))
                 return [r for r in ar.read_log(self.path)[before:] if r.get("type") == "source"]
         hits = {"openalex": _openalex, "arxiv": _arxiv, "pubmed": _pubmed}[tool](query, n)
         return self.add(agent, tool, query, hits)
@@ -253,12 +260,8 @@ class Bibliography:
             raise ResearchError(f"unknown source {sid}")
         if llm.MOCK:
             return f"Mock reading of {src['title']}: the reported effect was modest. ({question[:80]})"
-        self._exa_key()
         with self._lock, contextlib.redirect_stdout(io.StringIO()) as out:
-            try:
-                ar.run_extract(self._args(agent, command="extract", source=sid, question=question))
-            except (RuntimeError, ValueError, ar.BudgetExceeded) as e:
-                raise ResearchError(f"Exa: {e}") from e
+            self._exa(lambda: ar.run_extract(self._args(agent, command="extract", source=sid, question=question)))
             return _clean(out.getvalue())[:1500]
 
 
@@ -374,22 +377,24 @@ MOCK_LEAD = {"id": "hf:scikit-learn/iris:Iris.csv", "title": "Iris flower measur
              "file_url": "https://huggingface.co/datasets/scikit-learn/iris/resolve/main/Iris.csv"}
 
 
-def find_datasets(query: str, n: int = 3) -> list[dict]:
-    """Candidate real datasets for `query`, each with a preview of its column names."""
+def find_datasets(query: str, n: int = 3, skip=()) -> list[dict]:
+    """Up to `n` candidate real datasets for `query` that are not in `skip` (ids the lab already has),
+    alternating between providers, each with a preview of its column names."""
     query = _clean(query)[:200]
     if not query:
         raise ResearchError("empty query")
     if llm.MOCK:
         return [{**MOCK_LEAD, "preview": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"]}]
-    found, errors = [], []
-    for fn, k in ((_zenodo, n), (_huggingface, max(1, n - 1))):
+    hits, errors = [], []
+    for fn in (_zenodo, _huggingface):
         try:
-            found += fn(query, k)
+            hits.append(fn(query, n))
         except ResearchError as e:
             errors.append(str(e))
-    if not found and errors:
+    if not any(hits) and errors:
         raise ResearchError("; ".join(errors))
-    found = found[:n]
+    mixed = [c for group in zip_longest(*hits) for c in group if c]
+    found = [c for c in mixed if c["id"] not in set(skip)][:n]
     for c in found:
         try:
             head = _http(c["file_url"], first_bytes=20_000)

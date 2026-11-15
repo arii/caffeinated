@@ -257,7 +257,7 @@ class World:
                 return {"tool": "read", "source": src["id"], "url": src["url"], "question": question, "notes": notes[:800]}
             if tool == "datasets":
                 have = {d["id"] for d in a.datasets} | {l["id"] for l in a.leads}
-                new = [l for l in sources.find_datasets(query, int(self.cfg.get("dataset_leads", 3))) if l["id"] not in have]
+                new = sources.find_datasets(query, int(self.cfg.get("dataset_leads", 3)), skip=have)
                 a.leads = a.leads + new
                 return {"tool": "datasets", "query": query,
                         "results": [{"lead": f"D{a.leads.index(l) + 1}", "title": l["title"], "url": l["url"],

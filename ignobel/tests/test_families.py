@@ -1,3 +1,4 @@
+import os
 import asyncio
 import json
 import filecmp
@@ -259,3 +260,37 @@ def _leads_after_meeting(tmp_path, arm):
 def test_dataset_leads_pass_between_labs_only_when_exchange_is_on(tmp_path):
     assert len(_leads_after_meeting(tmp_path, "full")) == 1
     assert _leads_after_meeting(tmp_path, "no_exchange") == []
+
+
+def test_exa_research_rotates_keys_and_dataset_search_mixes_providers(tmp_path, monkeypatch):
+    import llm
+    import sources
+    bib = sources.Bibliography(tmp_path)
+    monkeypatch.setenv("EXA_KEYS", "k1, k2")
+    monkeypatch.delenv("EXA_API_KEY", raising=False)
+    used = []
+
+    def call():
+        used.append(os.environ["EXA_API_KEY"])
+        if used[-1] == "k1":
+            raise RuntimeError("402 out of credit")
+
+    bib._exa(call)  # k1 fails, k2 answers
+    bib._exa(call)  # rotation continues: k1 fails again, k2 answers
+    assert used == ["k1", "k2", "k1", "k2"]
+    monkeypatch.setenv("EXA_KEYS", "k1")
+    try:
+        bib._exa(call)
+        raise AssertionError("an exhausted only key must fail")
+    except sources.ResearchError:
+        pass
+
+    lead = lambda i: {"id": i, "title": i, "url": "https://zenodo.org/x", "file_url": "https://zenodo.org/f.csv"}
+    monkeypatch.setattr(llm, "MOCK", False)
+    monkeypatch.setattr(sources, "_zenodo", lambda q, n: [lead(f"z{i}") for i in range(n)])
+    monkeypatch.setattr(sources, "_huggingface", lambda q, n: [lead(f"h{i}") for i in range(n)])
+    monkeypatch.setattr(sources, "_http", lambda *a, **k: (_ for _ in ()).throw(sources.ResearchError("offline")))
+    first = [c["id"] for c in sources.find_datasets("coffee", 3)]
+    assert first == ["z0", "h0", "z1"]
+    again = [c["id"] for c in sources.find_datasets("coffee", 3, skip=first)]
+    assert again == ["h1", "z2", "h2"]  # a repeated search still turns up new leads
