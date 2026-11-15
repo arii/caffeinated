@@ -75,3 +75,18 @@ test('real scored replay renders the recorded winners and their actual owners',a
  assert.match(html,/Do heavier cabbages shortchange you on vitamin C/);
  assert.doesNotMatch(html,/Agent not recorded/);
 });
+
+test('default replay uses its ZIP-report ideas and agents, never another run’s winners',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const {gunzipSync}=await import('node:zlib');
+ const {recordingFinalIdeas}=await import('../src/engine/finalPodium.ts');
+ const r=JSON.parse(gunzipSync(readFileSync(new URL('../docs/recordings/f8fa53cc-6afd-5e98-9596-0c7b8711e718.json.gz',import.meta.url))));
+ const top=topIdeas(recordingFinalIdeas(r));
+ assert.deepEqual(top.map(i=>[i.id,i.score,i.agent.name]),[
+  ['hypothesis:bagnold-i2',76.5,'Bagnold'],['hypothesis:bagnold-i1',75.5,'Bagnold'],['hypothesis:davy-i2',68,'Davy']
+ ]);
+ assert.equal(r.igjudge.ideas.length,12);
+ assert.equal(r.igjudge.prior_work_available,false);
+ assert.equal(r.igjudge.winner,top[0].id);
+ assert.match(recordingPodiumHtml(r,r.manifest.totalTicks,esc),/Brazil Nut Canary/);
+});

@@ -267,3 +267,36 @@ class ExportPagesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ZipJudgeResultsTests(unittest.TestCase):
+    def test_report_scores_scope_and_traceability(self):
+        from scripts.export_pages import ROOT, zip_judge_for_run
+
+        data = json.loads((ROOT / "data/igjudge/ignobel-real-runs/results-zip.json").read_text())
+        report = (ROOT / "data/igjudge/ignobel-real-runs/results-zip.md").read_text()
+        counts = {}
+        for idea in data["ideas"]:
+            total = sum(idea["scores"][c["key"]]["final"] * c["weight"] for c in data["criteria"])
+            self.assertEqual(idea["total"], total)
+            self.assertIn(idea["title"], report)
+            rid = idea["study_id"].split("/")[0]
+            counts[rid] = counts.get(rid, 0) + 1
+        self.assertEqual(sorted(counts.values()), [9, 12, 19, 20])
+        for rid, count in counts.items():
+            board = zip_judge_for_run(data, rid)
+            self.assertEqual(board["run_id"], rid)
+            self.assertEqual(len(board["ideas"]), count)
+            self.assertEqual([r["rank"] for r in board["leaderboard"]], list(range(1, count + 1)))
+            self.assertEqual(board["winner"], board["leaderboard"][0]["study_id"])
+            with gzip.open(ROOT / f"docs/recordings/{rid}.json.gz") as stream:
+                recording = json.load(stream)
+            agent_ids = {a["agent_id"] for a in recording["manifest"]["agents"]}
+            entity_ids = {
+                entity.get("id") for rows in recording["entities"].values() for entity in rows
+            }
+            for idea in board["ideas"]:
+                self.assertIn(idea["study_id"], entity_ids)
+                self.assertIn(idea["agent_id"], agent_ids)
+                self.assertEqual(idea["source_study_id"], rid + "/" + idea["study_id"])
+        self.assertIsNone(zip_judge_for_run(data, "unrelated-run"))
