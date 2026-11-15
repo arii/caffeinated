@@ -146,13 +146,13 @@ def ensure(url, task_dir=HERE, research_log=None):
 
 
 def _build(url, name, entry_path):
-    path = urlsplit(url).path.lower()
+    first_line = prepare.fetch(url).split("\n", 1)[0]
     spec = {
         "title": f"{Path(urlsplit(url).path).stem} data ({urlsplit(url).hostname})",
         "files": [url],
         "license": "see source",
         "drop": r"(?i)^(rownames|x|id|index|row|obs|unnamed.*|.*[ _]id)$",
-        "delimiter": "\t" if path.endswith((".tsv", ".tab")) else ",",
+        "delimiter": "\t" if first_line.count("\t") > first_line.count(",") else ",",
     }
     entry = prepare.build(name, spec)
     with (prepare.HERE / ".cache" / "replication" / f"{name}.csv").open(
