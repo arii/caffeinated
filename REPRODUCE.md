@@ -128,7 +128,8 @@ docker run --rm -p 5175:5175 caffeinated-repro lab                              
 ## Dataset
 
 [scripts/export_hf_dataset.py](scripts/export_hf_dataset.py) packages the committed artifacts
-as a Hugging Face dataset: a dataset card, five JSONL tables for the viewer (`runs`,
+as a Hugging Face dataset, published at
+[onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs): a dataset card, five JSONL tables for the viewer (`runs`,
 `candidates`, `ignobel_studies`, `confirmatory_heldout`, `igjudge`), byte copies of the raw
 files and a `checksums.sha256`. The release workflow attaches the result to each release as
 `caffeinated-dataset-<tag>.tar.gz`. To build and upload it yourself:
