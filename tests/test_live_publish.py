@@ -85,7 +85,7 @@ class LiveExportTests(unittest.TestCase):
     @patch("export_viewer.live_publish.watermark")
     @patch.object(export_viewer, "KEYFRAME_EVERY", 4)
     def test_incremental_parallel_records_are_a_final_prefix(self, watermark):
-        watermark.return_value = "2026-11-14T10:00:02Z"
+        watermark.return_value = "2026-11-14T10:00:02.000000Z"
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             out = autoresearch_run(root)
@@ -104,12 +104,12 @@ class LiveExportTests(unittest.TestCase):
             rows = {
                 name: [row for _, row in export_viewer.read_jsonl(out / name)] for name in names
             }
-            rows["research_log.jsonl"][0]["ts"] = "2026-11-14T10:00:03.8Z"
-            rows["research_log.jsonl"][1]["ts"] = "2026-11-14T10:00:04.5Z"
-            rows["llm_log.jsonl"][0]["ts"] = "2026-11-14T10:00:04.8Z"
-            rows["memory.jsonl"][1]["timestamp"] = "2026-11-14T10:00:05.0Z"
-            rows["memory_log.jsonl"][0]["ts"] = "2026-11-14T10:00:05.1Z"
-            rows["memory.jsonl"][0]["timestamp"] = "2026-11-14T10:00:04.9Z"
+            rows["research_log.jsonl"][0]["ts"] = "2026-11-14T10:00:03.800000Z"
+            rows["research_log.jsonl"][1]["ts"] = "2026-11-14T10:00:04.500000Z"
+            rows["llm_log.jsonl"][0]["ts"] = "2026-11-14T10:00:04.800000Z"
+            rows["memory.jsonl"][1]["timestamp"] = "2026-11-14T10:00:05.000000Z"
+            rows["memory_log.jsonl"][0]["ts"] = "2026-11-14T10:00:05.100000Z"
+            rows["memory.jsonl"][0]["timestamp"] = "2026-11-14T10:00:04.900000Z"
             for name in names:
                 (out / name).write_text("")
             previous = b""
@@ -127,30 +127,34 @@ class LiveExportTests(unittest.TestCase):
                 previous = data
                 return len(data)
 
-            def append(name, row):
+            def append(name, row, phase=None):
                 with (out / name).open("a") as stream:
                     stream.write(json.dumps(row) + "\n")
+                if phase:
+                    swarm.viewer_frontier(out, 1, phase)
                 return publish()
 
             (out / "ledger.jsonl").write_text(json.dumps(rows["ledger.jsonl"][0]) + "\n")
-            append("assignments.jsonl", rows["assignments.jsonl"][0])
-            swarm.viewer_frontier(out, 1, "assign")
-            assigned = publish()
+            assigned = append("assignments.jsonl", rows["assignments.jsonl"][0], "assign")
             append("research_log.jsonl", rows["research_log.jsonl"][0])
             # A worker finishes proposing before another finishes its research.
             append("llm_log.jsonl", rows["llm_log.jsonl"][0])
             append("memory.jsonl", rows["memory.jsonl"][1])
             append("boredom_log.jsonl", rows["boredom_log.jsonl"][0])
-            watermark.return_value = "2026-11-14T10:00:03.7Z"
+            watermark.return_value = "2026-11-14T10:00:03.700000Z"
             append("research_log.jsonl", rows["research_log.jsonl"][1])
-            watermark.return_value = "2026-11-14T10:00:04Z"
+            watermark.return_value = "2026-11-14T10:00:04.000000Z"
             append("memory_log.jsonl", rows["memory_log.jsonl"][0])
             append("memory.jsonl", rows["memory.jsonl"][0])
             append(
                 "llm_log.jsonl",
-                {**rows["llm_log.jsonl"][0], "agent": "worker-2", "ts": "2026-11-14T10:00:05.2Z"},
+                {
+                    **rows["llm_log.jsonl"][0],
+                    "agent": "worker-2",
+                    "ts": "2026-11-14T10:00:05.200000Z",
+                },
             )
-            watermark.return_value = "2026-11-14T10:00:06Z"
+            watermark.return_value = "2026-11-14T10:00:06.000000Z"
             researched = publish()
             self.assertGreater(researched, assigned)
             self.assertEqual(
