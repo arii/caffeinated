@@ -20,7 +20,8 @@
     "title": "This year the Ig Nobel research prize was discovered early by a phenomenal breakthrough in artificial scientist swarms.",
     "subline": "The secret: making AI less boring.",
     "button": "Watch the swarm",
-    "qualifier": "tongue-in-cheek headline · see the real results"
+    "qualifier": "tongue-in-cheek headline",
+    "resultsButton": "See the real results"
   },
   "sections": {
     "about": "About this project ▾",
@@ -47,9 +48,15 @@
     "passedCount": "passed",
     "awardCount": "award.issued entries",
     "awardFallback": "Award issued",
-    "proxyNote": "Proxy note",
+    "proxyNote": "Metric / proxy",
     "noStudies": "No Ig Nobel study registrations appear in this recording.",
     "noAwards": "No award.issued entries appear in this recording.",
-    "noProxy": "No proxy note is present in this recording."
+    "noProxy": "No proxy note is present in this recording.",
+    "factualLine": "Real result so far: {K} of {N} preregistered tests held up{committeeSuffix}",
+    "noCommitteeSuffix": "; no committee score yet",
+    "countLine": "{N} registered · {M} confirmed ({K} under current rules)",
+    "track3Line": "Track 3 check: a single agent scored higher on held-out than the boredom swarm, but the ordering depends on a grader fix made after the winners were known; exploratory.",
+    "memoryComparisonLine": "past.dev vs local memory on 419 real memories: hit@1 0.65 vs 0.30, 562 ms vs 15 ms (hand-written probes)",
+    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/main/experiments/memory-comparison/README.md"
   }
 }

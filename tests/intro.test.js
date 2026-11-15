@@ -14,7 +14,10 @@ test('intro follows the requested order and keeps its secondary sections collaps
  assert.match(html,/class="placeholder"/);
  assert.match(html,/This year the Ig Nobel research prize was discovered early by a phenomenal breakthrough in artificial scientist swarms\./);
  assert.match(html,/The secret: making AI less boring\./);
- assert.match(html,/tongue-in-cheek headline · see the real results/);
+ assert.match(html,/tongue-in-cheek headline/);
+ assert.match(html,/id="intro-results-link" class="intro-results-button" href="#intro-real-results">See the real results<\/a>/);
+ assert.match(html,/id="intro-qualifier" class="intro-qualifier" href="#intro-real-results"/);
+ assert.match(html,/<details id="intro-about" class="intro-about"/);
  assert.match(html,/Live Kimi run/);
  assert.match(html,/Kimi runs through Tinker/);
  assert.doesNotMatch(html,/off in this recording|not verified in this recording/);
@@ -53,11 +56,20 @@ test('real results report recorded studies, passed findings, award entries, and 
   {tick:3,type:'award.issued',refs:{study_id:'study:1'},payload:{award:'Ig Nobel',headline:'A playful award'}}
  ]};
  const results=researchResults(r),html=introHtml(config,researchTrail(r),esc,results,r.manifest);
- assert.deepEqual(results,{studies:1,passed:1,awards:['Ig Nobel · A playful award'],proxyNote:'Synthetic benchmark, not a clinical trial.'});
- assert.match(html,/<strong>1<\/strong> Ig Nobel studies · <strong>1<\/strong> passed/);
+ assert.deepEqual(results,{studies:1,registered:1,confirmed:1,underCurrentRules:0,passed:1,awards:['Ig Nobel · A playful award'],proxyNote:'Synthetic benchmark, not a clinical trial.',isIgnobel:true,preCommittee:false});
+ assert.match(html,/Real result so far: 0 of 1 preregistered tests held up/);
+ assert.match(html,/<p>1 registered · 1 confirmed \(0 under current rules\)<\/p>/);
  assert.match(html,/<strong>1<\/strong> award\.issued entries/);
  assert.match(html,/Synthetic benchmark, not a clinical trial\./);
+ assert.match(html,/Track 3 check: a single agent scored higher on held-out than the boredom swarm, but the ordering depends on a grader fix made after the winners were known; exploratory\./);
+ assert.doesNotMatch(html,/beat the boredom swarm|3\/3 seeds/);
+ assert.match(html,/<p class="track3-note"><a href="https:\/\/github\.com\/arii\/caffeinated\/blob\/main\/experiments\/memory-comparison\/README\.md" target="_blank" rel="noopener noreferrer">past\.dev vs local memory on 419 real memories: hit@1 0\.65 vs 0\.30, 562 ms vs 15 ms \(hand-written probes\)<\/a><\/p>/);
  assert.doesNotMatch(html,/<details id="intro-real-results"[^>]* open/);
+});
+test('real results replace a current Ig Nobel proxy note for pre-committee recordings',()=>{
+ const r={manifest:{title:'Ig Nobel Prize hunt · out-ignobel',proxy_note:'Current task caveat.'},entities:{studies:[{id:'study:1',committee:null}]},events:[]};
+ const results=researchResults(r);
+ assert.equal(results.proxyNote,'Pre-committee run: loss 0 = passed preregistered gates, 1 = failed; not committee-judged.');
 });
 test('empty recordings do not invent study, award, or proxy results',()=>{
  const r={manifest:{totalTicks:0},entities:{},events:[]},html=introHtml(config,researchTrail(r),esc,researchResults(r));

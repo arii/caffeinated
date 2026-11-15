@@ -223,3 +223,42 @@ class TaskProxyNoteTest(unittest.TestCase):
         self.assertIn("pre-registered", task_proxy_note({"title": "Ig Nobel Prize hunt · x"}))
         self.assertEqual(task_proxy_note({"provenance": {"command": "swarm.py --task ../etc"}}), "")
         self.assertEqual(task_proxy_note({}), "")
+
+    def test_recording_keeps_its_proxy_note_and_metric(self):
+        manifest = {
+            "schema": "swarm-viewer/v1",
+            "run_id": "recording-1",
+            "title": "Ig Nobel Prize hunt",
+            "status": "stopped",
+            "agents": [],
+            "metric": {
+                "name": "loss",
+                "direction": "minimize",
+                "description": "Recorded metric description",
+            },
+            "proxy_note": "Recording-specific note",
+            "provenance": {"command": ["swarm.py", "--task", "ignobel"]},
+        }
+        recording = build_recording(manifest, [], {}, sample=False)
+        self.assertEqual(recording["manifest"]["proxy_note"], "Recording-specific note")
+        self.assertEqual(
+            recording["manifest"]["metric"]["description"], "Recorded metric description"
+        )
+
+
+class ContentVersionTest(unittest.TestCase):
+    def test_directory_content_version_ignores_mtime_but_tracks_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / "viewer" / "run-1"
+            run.mkdir(parents=True)
+            (run / "manifest.json").write_text('{"run_id":"run-1","status":"stopped","agents":[]}')
+            events = run / "events.ndjson"
+            events.write_text('{"tick":1}\n')
+            catalog = RecordingCatalog(
+                Path(directory) / "missing.zip", [run.parent], repo_root=None
+            )
+            version = catalog._inspect(run)[0]
+            os.utime(events, (1, 1))
+            self.assertEqual(catalog._inspect(run)[0], version)
+            events.write_text('{"tick":2}\n')
+            self.assertNotEqual(catalog._inspect(run)[0], version)

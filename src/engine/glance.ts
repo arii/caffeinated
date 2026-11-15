@@ -45,6 +45,25 @@ export interface GlanceResult extends ResultRow{agentId?:string}
 const finite=(value:unknown):value is number=>typeof value==='number'&&Number.isFinite(value);
 const clamp=(value:number)=>Math.max(0,Math.min(1,value));
 export interface TileMetric{best:number|null;progress:number|null;kept:number;discarded:number;crashed:number;spark:number[]}
+export interface GateCounts{confirmed:number;tested:number}
+export function tileGateCounts(results:readonly GlanceResult[],agentId:string,agentName:string):GateCounts{
+ const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;
+ const rows=results.filter(r=>matching(r)&&outcomeOf(r.status,r.kind)!=='baseline'&&finite(r.value));
+ return {confirmed:rows.filter(r=>r.value===0).length,tested:rows.length};
+}
+export function tileGateLabel(counts:GateCounts){return `${counts.confirmed} gate-confirmed / ${counts.tested} tested`;}
+export function staffStripLabel(type:string,events:readonly ReplayEvent[],tick:number){
+ const reached=events.filter(e=>e.tick<=tick);
+ if(type==='conductor'){
+  const round=reached.filter(e=>e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
+  return typeof regime==='string'?`Conductor · assigning ${regime}`:'Conductor · awaiting assignment';
+ }
+ if(type==='critic'){
+  const reviews=reached.filter(e=>e.type==='verdict.issued').length;
+  return `Critic · ${reviews} review${reviews===1?'':'s'}`;
+ }
+ return '';
+}
 export function tileBestLabel(best:number|null){return best==null?'best —':`best ${formatValue(best)}`;}
 export function tileMetrics(results:readonly GlanceResult[],agentId:string,agentName:string,metric:{name:string;direction:string},runBest:number|null,baseline:number|null):TileMetric{
  const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;

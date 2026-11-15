@@ -1,6 +1,7 @@
 import {signed,pValue,type ExperimentDetail,type SourceCard,type StudyCard,type StudyCheck,type DialogueLine} from './inspect.ts';
+import {currentRules,currentRuleThresholds} from './currentRules.ts';
 
-export interface ViewContext{esc:(v:unknown)=>string;name:(id:string|null)=>string;artifactUrl:(path:string)=>string;experimentLabel?:(id:string)=>string}
+export interface ViewContext{esc:(v:unknown)=>string;name:(id:string|null)=>string;artifactUrl:(path:string)=>string;experimentLabel?:(id:string)=>string;judging?:unknown}
 const url=(v:string|null)=>v&&/^https?:\/\//i.test(v)?v:null;
 const link=(c:ViewContext,href:string|null,label:unknown)=>url(href)?`<a href="${c.esc(href)}" target="_blank" rel="noopener noreferrer">${c.esc(label)}</a>`:c.esc(label);
 const state=(v:boolean|null,yes:string,no:string)=>v==null?'<span class="pill">not logged</span>':`<span class="pill ${v?'ok':'bad'}">${v?yes:no}</span>`;
@@ -37,11 +38,12 @@ export function awardBadge(s:StudyCard,c:ViewContext){
  return s.result.confirmed?'<span class="badge ok">Confirmed</span>':'<span class="badge">Not confirmed</span>';
 }
 export function studyCardHtml(s:StudyCard,c:ViewContext){
- const e=c.esc,d=s.dataset,r=s.result,variable=(v:string|null,l:string|null)=>v?`${e(v)}${l?` = <b>${e(l)}</b>`:''}`:'—';
+ const e=c.esc,d=s.dataset,r=s.result,variable=(v:string|null,l:string|null)=>v?`${e(v)}${l?` = <b>${e(l)}</b>`:''}`:'—',failures=r?.confirmed?currentRules(r,currentRuleThresholds(c.judging)).failures:[];
+ const ruleBadges=failures.map(f=>`<span class="badge current-rule-failure">Fails current ${e(f)} rule</span>`).join('');
  const halves=r?.halves.length?`<div class="halves">${r.halves.map((h,i)=>`<span>Half ${i+1}: rho ${rho(h.rho)}, p ${pValue(h.p)}, n ${h.n??'—'}</span>`).join('')}</div>`:'<p class="muted">Half-sample split not logged.</p>';
  const reps=s.replications.length?`<p class="muted">Critic replications</p><ul>${s.replications.map(x=>`<li>${checkLine(x)} ${state(x.replicated,'replicated','did not replicate')}</li>`).join('')}</ul>`:'';
  const committee=s.committee?`<div class="committee"><b>Committee${s.committee.score!=null?` · score ${s.committee.score.toFixed(2)}`:''}</b>${!s.committee.available?`<p class="muted">Unavailable for this run.</p>`:''}${s.committee.rejected?`<p class="muted">Rejected: targets a group.</p>`:''}${Object.entries(s.committee.judges).length?`<ul>${Object.entries(s.committee.judges).map(([name,j])=>`<li>Judge ${e(name)} · laugh ${j.laugh??'—'} / think ${j.think??'—'}${j.reason?`: ${e(j.reason)}`:''}</li>`).join('')}</ul>`:''}${s.committee.priorWorkAvailable?`<p class="muted">Prior work</p>${s.committee.priorWork.length?`<ul>${s.committee.priorWork.map(item=>`<li>${link(c,item.url,item.title||item.url)}${item.snippet?`<p class="muted">${e(item.snippet)}</p>`:''}</li>`).join('')}</ul>`:'<p class="muted">No results found.</p>'}`:'<p class="muted">Prior-work search unavailable.</p>'}</div>`:s.award?`<div class="committee"><b>Committee</b>${s.award.headline?`<p>${e(s.award.headline)}</p>`:''}${s.award.rejected?`<p class="muted">Rejected: ${e(s.award.rejected)}</p>`:''}${s.award.verdicts.length?`<ul>${s.award.verdicts.map(v=>`<li>${e(v)}</li>`).join('')}</ul>`:''}${!s.award.headline&&!s.award.verdicts.length&&s.award.text?`<p>${e(s.award.text)}</p>`:''}</div>`:'';
- return `<article class="inspect-card study-card"><div class="study-head">${awardBadge(s,c)}<span class="muted">${e((s.field||'study').replace(/_/g,' '))} · ${e(c.name(s.agentId))}</span></div><h4>${e(s.question||s.hypothesis||s.id)}</h4>${s.hypothesis&&s.question?`<p class="muted">${e(s.hypothesis)}</p>`:''}
+ return `<article class="inspect-card study-card"><div class="study-head"><div class="study-badges">${awardBadge(s,c)}${ruleBadges}</div><span class="muted">${e((s.field||'study').replace(/_/g,' '))} · ${e(c.name(s.agentId))}</span></div><h4>${e(s.question||s.hypothesis||s.id)}</h4>${s.hypothesis&&s.question?`<p class="muted">${e(s.hypothesis)}</p>`:''}
 <dl><dt>Dataset</dt><dd>${d.url?link(c,d.url,hostOf(d.url)+' · '+(d.url.split('/').at(-1)||'')):e(d.id||'—')}<br>X: ${variable(d.x,d.xLevel)}<br>Y: ${variable(d.y,d.yLevel)}</dd>
 <dt>Correlation</dt><dd>Predicted ${rho(s.predictedRho)} → observed <b>${rho(r?.rho??null)}</b>${r?` · p ${pValue(r.p)} · n ${r.n??'—'}`:''}${rhoBar(s.predictedRho,r?.rho??null)}</dd>
 <dt>Two halves</dt><dd>${r?halves:'<p class="muted">Awaiting analysis.</p>'}</dd>

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {bubbleContent,bubbleHtml,pickNear,sparklinePath,tileBestLabel,tileMetrics} from '../src/engine/glance.ts';
+import {bubbleContent,bubbleHtml,pickNear,sparklinePath,staffStripLabel,tileBestLabel,tileGateCounts,tileGateLabel,tileMetrics} from '../src/engine/glance.ts';
 
 test('pickNear holds the current candidate through its wider exit band',()=>{
  const candidates=[{id:'a',distance:3.4,facing:.25},{id:'b',distance:2,facing:.8}];
@@ -58,6 +58,32 @@ test('tileMetrics calculates baseline-free progress for either metric direction'
  const maxRows=[{agent:'A',status:'keep',tick:1,value:1},{agent:'B',status:'keep',tick:2,value:.75},{agent:'C',status:'keep',tick:3,value:.5}];
  const maxProgress=agent=>tileMetrics(maxRows,agent,agent,{name:'score',direction:'maximize'},1,null).progress;
  assert.equal(maxProgress('A'),1);assert.equal(maxProgress('B'),.5);assert.equal(maxProgress('C'),0);
+});
+
+test('pre-committee tiles count only scored non-baseline rows with zero loss',()=>{
+ const rows=[
+  {agentId:'a',agent:'Kitchen Physics Lab',kind:'candidate',status:'keep',value:0},
+  {agentId:'a',agent:'Kitchen Physics Lab',kind:'candidate',status:'discard',value:1},
+  {agentId:'a',agent:'Kitchen Physics Lab',kind:'candidate',status:'crash',value:null},
+  {agentId:'a',agent:'Kitchen Physics Lab',kind:'baseline',status:'keep',value:0}
+ ];
+ const counts=tileGateCounts(rows,'a','Kitchen Physics Lab');
+ assert.deepEqual(counts,{confirmed:1,tested:2});
+ assert.equal(tileGateLabel(counts),'1 gate-confirmed / 2 tested');
+});
+
+test('staff strip labels follow reached rounds and critic reviews',()=>{
+ const events=[
+  {tick:8,type:'round.started',payload:{regime:'BOREDOM_SNAP'}},
+  {tick:4,type:'verdict.issued'},
+  {tick:2,type:'round.started',payload:{regime:'EXPLOIT'}},
+  {tick:9,type:'verdict.issued'}
+ ];
+ assert.equal(staffStripLabel('conductor',events,5),'Conductor · assigning EXPLOIT');
+ assert.equal(staffStripLabel('conductor',events,10),'Conductor · assigning BOREDOM_SNAP');
+ assert.equal(staffStripLabel('critic',events,3),'Critic · 0 reviews');
+ assert.equal(staffStripLabel('critic',events,5),'Critic · 1 review');
+ assert.equal(staffStripLabel('critic',events,10),'Critic · 2 reviews');
 });
 
 test('sparklinePath makes a compact SVG path and ignores undersized input',()=>{

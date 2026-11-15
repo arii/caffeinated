@@ -21,6 +21,9 @@ def export(viewer_dir, out_dir):
     for manifest in catalog.list():
         rid = manifest["id"]
         recording = catalog.get(rid)
+        for key in ("proxy_note", "metric"):
+            if key not in manifest and key in recording["manifest"]:
+                manifest[key] = recording["manifest"][key]
         # A published snapshot is never live, even if the run was still going when it was copied.
         for m in (manifest, recording["manifest"]):
             m.update(live=False, stale=False, sample=False)
