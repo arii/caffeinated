@@ -65,22 +65,30 @@ def _run_docker(workdir: Path) -> tuple[str, str, int]:
     if docker is None:
         raise SandboxUnavailable("mock mode runs studies in Docker, but `docker` is not on PATH")
     name = f"ignobel-study-{uuid.uuid4().hex[:12]}"
-    cmd = [docker, "run", "--rm", "--name", name,
-           "--network", "none", "--read-only", "--tmpfs", "/tmp:size=16m",
-           "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-           "--memory", "512m", "--cpus", "1", "--pids-limit", "64",
-           "--user", f"{os.getuid()}:{os.getgid()}",
-           "-e", "PYTHONDONTWRITEBYTECODE=1",
-           "-v", f"{workdir}:/work:ro", "-w", "/work",
-           SANDBOX_IMAGE, "python", "-E", "-s", "study.py"]
-    try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S)
+    create = [docker, "create", "--rm", "--name", name,
+              "--network", "none", "--read-only", "--tmpfs", "/tmp:size=16m",
+              "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+              "--memory", "512m", "--cpus", "1", "--pids-limit", "64",
+              "--user", f"{os.getuid()}:{os.getgid()}",
+              "-e", "PYTHONDONTWRITEBYTECODE=1",
+              "-v", f"{workdir}:/work:ro", "-w", "/work",
+              SANDBOX_IMAGE, "python", "-E", "-s", "study.py"]
+    c = subprocess.run(create, capture_output=True, text=True)
+    if c.returncode != 0:  # docker failed before any study code ran (daemon down, bad image)
+        raise SandboxUnavailable(f"docker could not create the sandbox: {c.stderr.strip()}")
+    try:  # `start -a` exits with the study's own status
+        p = subprocess.run([docker, "start", "-a", name], capture_output=True, text=True, timeout=TIMEOUT_S)
     except subprocess.TimeoutExpired as e:
-        subprocess.run([docker, "rm", "-f", name], capture_output=True)
+        _remove(docker, name)
         return _text(e.stdout), _text(e.stderr) + "\ntimeout", 124
-    if p.returncode == 125:  # docker itself failed (daemon down, bad image), not the study
-        raise SandboxUnavailable(f"docker could not start the sandbox: {p.stderr.strip()}")
+    except BaseException:  # e.g. Ctrl-C: the container outlives the docker client otherwise
+        _remove(docker, name)
+        raise
     return p.stdout, p.stderr, p.returncode
+
+
+def _remove(docker: str, name: str) -> None:
+    subprocess.run([docker, "rm", "-f", name], capture_output=True)
 
 
 def _text(out: str | bytes | None) -> str:

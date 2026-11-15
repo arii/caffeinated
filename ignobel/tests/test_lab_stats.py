@@ -54,7 +54,7 @@ def test_run_study_timeout_with_output_is_a_failed_study(monkeypatch):
     code = "import sys, time\nprint('@@CALLS 1', flush=True)\nprint('err', file=sys.stderr, flush=True)\ntime.sleep(60)"
     out = lab.run_study(code, a)
     assert not out["ok"] and out["calls"] == 1 and "timeout" in out["stderr"] and a.budget_left == 5
-    left = subprocess.run(["docker", "ps", "-q", "--filter", "name=ignobel-study-"], capture_output=True, text=True)
+    left = subprocess.run(["docker", "ps", "-aq", "--filter", "name=ignobel-study-"], capture_output=True, text=True)
     assert left.stdout.strip() == ""
 
 
@@ -72,6 +72,28 @@ def test_sandbox_has_no_network():
             "    socket.create_connection(('1.1.1.1', 53), timeout=3)\nexcept OSError:\n"
             "    report([1,2,3],[4,5,6],'+',1)\nelse:\n    raise SystemExit('reached the network')")
     assert lab.run_study(code, _agent("quill"))["ok"]
+
+
+@requires_sandbox
+def test_study_exit_125_is_a_failed_study():
+    out = lab.run_study("raise SystemExit(125)", _agent("quill"))
+    assert not out["ok"] and out["stats"] is None
+
+
+@requires_sandbox
+def test_interrupted_study_container_is_removed(monkeypatch):
+    real_run = lab.subprocess.run
+
+    def run(cmd, *a, **kw):
+        if cmd[1] == "start":
+            raise KeyboardInterrupt
+        return real_run(cmd, *a, **kw)
+
+    monkeypatch.setattr(lab.subprocess, "run", run)
+    with pytest.raises(KeyboardInterrupt):
+        lab.run_study(GOOD, _agent("quill"))
+    left = real_run(["docker", "ps", "-aq", "--filter", "name=ignobel-study-"], capture_output=True, text=True)
+    assert left.stdout.strip() == ""
 
 
 def test_no_sandbox_means_no_study(monkeypatch):
