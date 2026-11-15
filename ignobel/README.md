@@ -22,8 +22,8 @@ several runs, and `--resume` to continue a crashed run from its last saved round
 
 `MOCK=1` swaps in a fake LLM, seeded embeddings and canned search results. Study code never
 runs on the host: mock mode runs it in a local Docker container (no network, read-only, only the
-study's files and a copy of its dataset), real mode in a Modal sandbox. Docker must be running for
-mock runs and tests that run studies; if no sandbox is available the run stops with
+study's files and a copy of its dataset), real mode in a Modal sandbox (`IGNOBEL_SANDBOX=docker`
+keeps real runs in Docker). Docker must be running for mock runs and tests that run studies; if no sandbox is available the run stops with
 `lab.SandboxUnavailable`. Real runs read keys from the environment; see `.env.example`.
 
 Any OpenAI-compatible chat provider works: set `OPENAI_BASE_URL`, `OPENAI_API_KEY` and the `MODEL_*`
@@ -60,8 +60,8 @@ names. If it has no embeddings model (e.g. Tinker), set `EMBED_BACKEND=local` to
 - `boredom_threshold` is 0.5 in `config.yaml`: an agent whose newest idea repeats its last ones
   and whose studies are not failing is bored. Tune it after a small real run.
 - When an odd number of agents snap, the one left over talks to the farthest non-snapping agent.
-- `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call is marked TODO
-  until checked against the Modal docs. `memory.PastDevMemory` follows the request shapes in the
+- `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call matches the
+  Modal 1.6 SDK but hasn't been run against Modal yet. `memory.PastDevMemory` follows the request shapes in the
   team's existing past.dev client and is also marked TODO pending the docs.
 - `data/winners.csv` and `data/controls.csv` hold placeholders; replace them with real abstracts.
 - Mock mode never writes to `data/seed_cache/`; real Exa results are cached there and committed so

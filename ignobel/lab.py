@@ -20,6 +20,14 @@ TIMEOUT_S = 120
 SANDBOX_IMAGE = os.environ.get("IGNOBEL_SANDBOX_IMAGE", "python:3.11-slim")
 
 
+def _sandbox() -> str:
+    """IGNOBEL_SANDBOX=docker|modal; default Docker in mock mode, Modal in real mode."""
+    choice = os.environ.get("IGNOBEL_SANDBOX") or ("docker" if llm.MOCK else "modal")
+    if choice not in ("docker", "modal"):
+        raise SandboxUnavailable(f"IGNOBEL_SANDBOX must be docker or modal, not {choice!r}")
+    return choice
+
+
 class SandboxUnavailable(RuntimeError):
     """No sandbox to run study code in; studies are never run on the host instead."""
 
@@ -63,7 +71,7 @@ def _parse(stdout: str) -> tuple[dict | None, int]:
 def _run_docker(workdir: Path) -> tuple[str, str, int]:
     docker = shutil.which("docker")
     if docker is None:
-        raise SandboxUnavailable("mock mode runs studies in Docker, but `docker` is not on PATH")
+        raise SandboxUnavailable("studies run in Docker, but `docker` is not on PATH")
     name = f"ignobel-study-{uuid.uuid4().hex[:12]}"
     create = [docker, "create", "--name", name,
               "--network", "none", "--read-only", "--tmpfs", "/tmp:size=16m",
@@ -144,6 +152,7 @@ def _svg_plot(result: dict, path: Path) -> None:
     path.write_text("\n".join(parts), encoding="utf-8")
 
 
+
 def run_study(code: str, agent, measurements: list[list[float]] | None = None,
               plot_path: str | Path | None = None) -> dict:
     """Execute study code for `agent`. Returns {ok, stats, plot_path, stderr, calls}.
@@ -164,7 +173,7 @@ def run_study(code: str, agent, measurements: list[list[float]] | None = None,
             spec["dataset"] = f"/work/{ds.name}"
             (workdir / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
         (workdir / "study.py").write_text(code, encoding="utf-8")
-        stdout, stderr, rc = (_run_docker if llm.MOCK else _run_modal)(workdir)
+        stdout, stderr, rc = (_run_docker if _sandbox() == "docker" else _run_modal)(workdir)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
     result, calls = _parse(stdout)

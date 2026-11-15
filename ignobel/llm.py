@@ -119,7 +119,7 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
 def embed(texts: list[str]) -> np.ndarray:
     """Return unit-norm embeddings, shape (len(texts), dim). Cached per text."""
     if not texts:
-        return np.zeros((0, MOCK_EMBED_DIM))
+        return np.zeros((0, embed_dim()))
     if MOCK:
         return np.vstack([_mock_embed(t) for t in texts])
 
@@ -140,6 +140,18 @@ def embed(texts: list[str]) -> np.ndarray:
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(json.dumps(v.tolist()))
     return np.vstack(out)  # type: ignore[arg-type]
+
+
+_embed_dim = None
+
+
+def embed_dim() -> int:
+    global _embed_dim
+    if MOCK:
+        return MOCK_EMBED_DIM
+    if _embed_dim is None:
+        _embed_dim = len(embed(["dimension probe"])[0])
+    return _embed_dim
 
 
 def _embed_remote(texts: list[str]) -> list:

@@ -215,3 +215,15 @@ def test_modal_timeout_is_a_failed_study(monkeypatch, tmp_path):
     calls = _fake_modal(monkeypatch, timeout=True)
     out, err, rc = lab._run_modal(tmp_path)
     assert rc == 124 and err.endswith("timeout") and calls["terminated"]
+
+
+def test_sandbox_choice(monkeypatch):
+    monkeypatch.delenv("IGNOBEL_SANDBOX", raising=False)
+    assert lab._sandbox() == "docker"  # MOCK=1 in tests
+    monkeypatch.setattr(lab.llm, "MOCK", False)
+    assert lab._sandbox() == "modal"
+    monkeypatch.setenv("IGNOBEL_SANDBOX", "docker")
+    assert lab._sandbox() == "docker"
+    monkeypatch.setenv("IGNOBEL_SANDBOX", "host")
+    with pytest.raises(lab.SandboxUnavailable):
+        lab._sandbox()

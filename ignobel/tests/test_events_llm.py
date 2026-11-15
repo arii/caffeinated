@@ -68,6 +68,8 @@ def test_local_embed_backend_needs_no_key(monkeypatch, tmp_path):
     v = llm.embed(["ab", "abcd"])
     assert v.shape == (2, 2) and abs(float((v[0] ** 2).sum()) - 1) < 1e-9
     assert (llm.embed(["ab"]) == v[:1]).all()  # second call comes from the cache
+    monkeypatch.setattr(llm, "_embed_dim", None)
+    assert llm.embed_dim() == 2  # real-mode dim comes from the backend, not a constant
 
 
 def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):

@@ -53,7 +53,7 @@ class LocalMemory:
 
     def centroid(self) -> np.ndarray:
         if not self.items:
-            return np.zeros(llm.MOCK_EMBED_DIM if llm.MOCK else 1536)
+            return np.zeros(llm.embed_dim())
         return np.mean([it.embedding for it in self.items], axis=0)
 
     def to_state(self) -> dict:
