@@ -20,3 +20,9 @@ test('each Ig Nobel citation links back to the Exa source card it came from',()=
  assert.match(html,/data-source="S1">Exa result: Steak and risk/);
  assert.match(html,/no Exa result in this recording/);
 });
+test('only http(s) citations become links',()=>{
+ const html=introHtml(config,researchTrail({events:[],entities:{studies:[{id:'s',question:'Q',citations:['javascript:alert(1)','https://ok.example/x']}]}}),esc);
+ assert.doesNotMatch(html,/href="javascript:/);
+ assert.match(html,/<code>javascript:alert\(1\)<\/code>/);
+ assert.match(html,/href="https:\/\/ok.example\/x"/);
+});

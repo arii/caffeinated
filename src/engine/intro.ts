@@ -11,7 +11,7 @@ export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
  return {citations,sources:sources.length,exaSearches:ev.filter(e=>e.type==='question.asked'&&/search|exa/.test(str((e.payload as Row|undefined)?.kind))).length,memoryRecalls:memory,pastdev};
 }
 export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,esc:(v:unknown)=>string){
- const cites=trail.citations.slice(0,12).map(x=>`<li><span>${esc(x.study)}</span> ${x.sourceId?`<button class="chip" data-source="${esc(x.sourceId)}">Exa result: ${esc(x.title||x.url)}</button>`:`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.url)}</a> <em>no Exa result in this recording</em>`}</li>`).join('');
+ const cites=trail.citations.slice(0,12).map(x=>`<li><span>${esc(x.study)}</span> ${x.sourceId?`<button class="chip" data-source="${esc(x.sourceId)}">Exa result: ${esc(x.title||x.url)}</button>`:`${/^https?:\/\//i.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.url)}</a>`:`<code>${esc(x.url)}</code>`} <em>no Exa result in this recording</em>`}</li>`).join('');
  return `<div class="intro-card"><p class="eyebrow">${esc(c.event.title)} · ${esc(c.event.dates)} · ${esc(c.event.host)}</p><h1>${esc(c.replay.title)}</h1><p>${esc(c.event.summary)}</p>
 <section><h2>Tools we used</h2><ul class="intro-tools">${c.tools.map(t=>`<li><b>${esc(t.name)}</b> ${esc(t.detail)}</li>`).join('')}</ul></section>
 <section><h2>Authors</h2><p class="${c.authors.placeholder?'placeholder':''}">${esc(c.authors.names.join(', '))}</p></section>
