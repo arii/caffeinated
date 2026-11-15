@@ -1999,7 +1999,10 @@ def _orchestrate(args, publish_state):
 
     baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
     if baseline["loss"] is None:
-        raise RuntimeError(f"task {TASK['name']} baseline failed to score")
+        raise RuntimeError(
+            f"task {TASK['name']} baseline failed to score: "
+            f"{baseline['status']} ({baseline['reason']}); see {out_dir / 'runs'}"
+        )
     baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
     record_score_cache(repo, out_dir, {baseline_commit: baseline})
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
