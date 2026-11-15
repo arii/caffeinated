@@ -1,6 +1,7 @@
 """Launch the budgeted Sol/Luna Ig Nobel run; the recording catalog follows its viewer output."""
 
 import os
+import signal
 import subprocess
 import threading
 import time
@@ -8,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "run_openai_ignobel.sh"
-MAX_COST_USD = 20.0
+MAX_COST_USD = 10.0
 
 
 def enabled():
@@ -33,6 +34,19 @@ class Launcher:
 
     def running(self):
         return self.process is not None and self.process.poll() is None
+
+    def close(self, grace=10):
+        """Stop the detached run's process group so paid calls end with the server."""
+        with self.lock:
+            if not self.running():
+                return
+            try:
+                os.killpg(self.process.pid, signal.SIGTERM)
+                self.process.wait(timeout=grace)
+            except subprocess.TimeoutExpired:
+                os.killpg(self.process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
 
     def status(self):
         return {

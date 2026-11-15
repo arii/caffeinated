@@ -55,7 +55,7 @@ def request(client, prompt, *, model, role):
     ):
         raise RuntimeError("Budgeted live mode requires the official OpenAI endpoint")
     supervisor = role.upper() == "SUPERVISOR"
-    effort = "medium" if supervisor else "none"
+    effort = "low" if supervisor else "none"
     if not supervisor and model != "gpt-6-luna":
         raise RuntimeError("Budgeted execution roles require gpt-6-luna")
     limit = client.supervisor_tokens if supervisor else client.worker_tokens

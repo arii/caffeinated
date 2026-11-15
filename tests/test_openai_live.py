@@ -48,7 +48,7 @@ class OpenAILiveTests(unittest.TestCase):
 
     def test_role_routing(self):
         for role, model, effort, limit in [
-            ("SUPERVISOR", "gpt-6.1-sol", "medium", 4096),
+            ("SUPERVISOR", "gpt-6.1-sol", "low", 4096),
             ("WORKER_IMPLEMENT", "gpt-6-luna", "none", 600),
             ("CRITIC", "gpt-6-luna", "none", 600),
         ]:
@@ -153,6 +153,7 @@ class IgNobelCommitteeOpenAITests(unittest.TestCase):
                 committee._complete("gpt-6.1-sol", "system", "user")
             self.assertTrue(sent)
             payload = sent[0]
+            self.assertEqual(payload["service_tier"], "default")
             self.assertIn("max_completion_tokens", payload)
             self.assertNotIn("max_tokens", payload)
             self.assertNotIn("temperature", payload)

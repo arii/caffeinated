@@ -11,6 +11,6 @@ Leads and sources you may cite (use their lead_id and source ids):
 {recalled_leads}
 Current source:
 {candidate_source}
-Make the smallest exact edit implementing the assignment. Do not modify the evaluator, data, dependencies, or interface. Cite only sources actually provided. Return a single JSON object:
+Make the smallest exact edit implementing the assignment. Copy every old substring verbatim from Current source, never from the assignment or previous proposal; old and new must differ. If repairing, correct the reported error; reject if it requires inventing evidence or changing the scientific assignment. Do not modify the evaluator, data, dependencies, or interface. Cite only sources actually provided. Return a single JSON object:
 {"descriptor":{"mechanism":"...","method":"...","params":{"value":1}},"idea":"one short sentence","rationale":"supervisor assignment","lead_id":null,"source_ids":[],"predicted_delta":0,"edits":[{"old":"exact unique source substring","new":"replacement"}]}
 Omit params unless changing a numeric parameter. Return {"status":"reject","reason":"short reason"} if the assignment cannot be implemented honestly. No markdown.

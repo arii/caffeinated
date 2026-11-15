@@ -315,6 +315,7 @@ def _complete(model, system, user):
             "response_format": {"type": "json_object"},
             "seed": 0,
             "store": False,
+            "service_tier": "default",
         }
     else:
         payload = {
