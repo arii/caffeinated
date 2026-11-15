@@ -402,24 +402,6 @@ def read_results(path):
         return list(reader)
 
 
-def load_history(rows, repo):
-    normalized = []
-    representations = []
-    for row in rows:
-        z, diff_lines, resolvable = commit_representation(
-            row["commit"], row.get("description", ""), repo
-        )
-        normalized.append(
-            {
-                **row,
-                "diff_lines": diff_lines,
-                "resolvable": resolvable,
-            }
-        )
-        representations.append(z)
-    return normalized, representations
-
-
 def is_disabled():
     return os.environ.get("BOREDOM", "").casefold() == "off"
 

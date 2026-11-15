@@ -12,7 +12,7 @@ N, R = 9, 2
 FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)
 MOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}  # up, down, left, right
 INVERSE = {0: 1, 1: 0, 2: 3, 3: 2}
-CONTEXT, HORIZON = 10, 20
+CONTEXT = 10
 BLOCKING = (WALL, LAMP_OFF, LAMP_ON, OOB)
 
 
