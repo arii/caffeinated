@@ -7,6 +7,7 @@ import os
 import re
 import time
 from datetime import datetime, timezone
+from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -590,14 +591,14 @@ class LLMClient:
                         continue
                 detail = error.read().decode("utf-8", "replace")[:300]
                 raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
-            except (URLError, TimeoutError) as error:
+            except (URLError, TimeoutError, HTTPException, ConnectionError) as error:
                 self.request_attempts.append(_transport_attempt(error, attempt_started))
                 if attempt < 2:
                     time.sleep(5 * (attempt + 1))
                     continue
                 if isinstance(error, TimeoutError):
                     raise RuntimeError("Tinker request timed out") from error
-                raise RuntimeError(f"Tinker request failed: {error.reason}") from error
+                raise RuntimeError(f"Tinker request failed: {getattr(error, 'reason', error)}") from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("Tinker returned invalid JSON") from error
         try:
@@ -698,14 +699,14 @@ class LLMClient:
                         time.sleep(5 * (attempt + 1))
                         continue
                 raise RuntimeError(f"OpenAI returned HTTP {error.code}") from error
-            except (URLError, TimeoutError) as error:
+            except (URLError, TimeoutError, HTTPException, ConnectionError) as error:
                 self.request_attempts.append(_transport_attempt(error, attempt_started))
                 if attempt < 2:
                     time.sleep(5 * (attempt + 1))
                     continue
                 if isinstance(error, TimeoutError):
                     raise RuntimeError("OpenAI request timed out") from error
-                raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
+                raise RuntimeError(f"OpenAI request failed: {getattr(error, 'reason', error)}") from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("OpenAI returned invalid JSON") from error
         try:

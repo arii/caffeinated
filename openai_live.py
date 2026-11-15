@@ -4,6 +4,7 @@ import fcntl
 import json
 import math
 import os
+from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -91,7 +92,7 @@ def request(client, prompt, *, model, role):
             data = json.load(response)
     except HTTPError as error:
         raise RuntimeError(f"OpenAI returned HTTP {error.code}; reservation retained") from error
-    except (URLError, TimeoutError, json.JSONDecodeError) as error:
+    except (URLError, TimeoutError, HTTPException, ConnectionError, json.JSONDecodeError) as error:
         raise RuntimeError("OpenAI request failed; reservation retained") from error
     raw = data.get("usage") or {}
     usage.update(raw)

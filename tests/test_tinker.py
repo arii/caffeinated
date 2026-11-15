@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+from http.client import IncompleteRead
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 from urllib.error import HTTPError
@@ -210,6 +211,28 @@ class TinkerTests(unittest.TestCase):
                         for attempt in errors[0]["attempts"]
                     )
                 )
+
+    def test_truncated_response_retries_and_raises_llm_error(self):
+        for mode in ("tinker", "openai"):
+            with (
+                self.subTest(mode=mode),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "stub-openai-key"}),
+            ):
+                log_dir = self.log_path.parent / f"{mode}-truncated"
+                log_dir.mkdir()
+                client = self.client_for_mode(mode, log_dir / "llm_log.jsonl")
+                responses = []
+                for _ in range(3):
+                    response = MagicMock()
+                    response.__enter__.return_value.read.side_effect = IncompleteRead(b"{", 10)
+                    responses.append(response)
+                with (
+                    patch("llm.urlopen", side_effect=responses) as urlopen,
+                    patch("llm.time.sleep"),
+                    self.assertRaisesRegex(llm.LLMError, "request failed"),
+                ):
+                    self.call(client)
+                self.assertEqual(urlopen.call_count, 3)
 
     def test_read_timeout_retries_once_then_succeeds(self):
         body = {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}

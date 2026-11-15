@@ -2,6 +2,7 @@ import io
 import json
 import tempfile
 import unittest
+from http.client import IncompleteRead
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -91,6 +92,16 @@ class OpenAILiveTests(unittest.TestCase):
                 openai_live.request(c, "JSON", model="gpt-6-luna", role="WORKER_IMPLEMENT")
             self.assertEqual(c.request_attempts[0]["usage"]["completion_tokens"], 50)
             self.assertTrue((self.path / "openai_budget.jsonl").exists())
+
+    def test_truncated_response_is_a_request_failure(self):
+        c = self.client()
+        response = io.BytesIO(b"")
+        response.read = lambda *_args: (_ for _ in ()).throw(IncompleteRead(b"{", 10))
+        with (
+            patch("openai_live.urlopen", return_value=response),
+            self.assertRaisesRegex(RuntimeError, "request failed"),
+        ):
+            openai_live.request(c, "JSON", model="gpt-6-luna", role="WORKER_IMPLEMENT")
 
     def test_supervised_failure_is_written_to_replay_and_error_logs(self):
         client = llm.LLMClient(
