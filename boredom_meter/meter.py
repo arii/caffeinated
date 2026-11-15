@@ -248,7 +248,7 @@ def fold(profile, events, agent=None):
         ea = e.get("agent", "")
         if improved_sig:
             streak = 0
-            agent_streak = {a: 0 for a in agent_streak}
+            agent_streak = dict.fromkeys(agent_streak, 0)
             agent_streak[ea] = 0
         else:
             streak += 1
@@ -288,9 +288,9 @@ def fold(profile, events, agent=None):
         coverage_complete = required_cells.issubset(set(cell_hist))
         if improved_sig:
             regime = "EXPLOIT"
-        elif regime == "CONVERGED":
-            regime = "CONVERGED"
-        elif best is not None and stall >= 3 * patience and coverage_complete:
+        elif regime == "CONVERGED" or (
+            best is not None and stall >= 3 * patience and coverage_complete
+        ):
             regime = "CONVERGED"
         elif n < profile["min_attempts"]:
             regime = "EXPLOIT"
@@ -420,7 +420,7 @@ def submit(profile, ledger_path, event):
     with path.open("a+", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         fh.seek(0)
-        seqs = [json.loads(l)["seq"] for l in fh.read().splitlines() if l.strip()]
+        seqs = [json.loads(line)["seq"] for line in fh.read().splitlines() if line.strip()]
         event = {**event, "seq": max(seqs, default=0) + 1}
         fh.seek(0, 2)
         fh.write(canonical(event) + "\n")

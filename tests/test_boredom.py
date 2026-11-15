@@ -14,9 +14,7 @@ from boredom import (
     descriptor_meter,
     is_disabled,
     jaccard_distance,
-    ledger_events,
     parse_candidate_diff,
-    representation_from_diff,
 )
 
 
@@ -35,7 +33,7 @@ def make_row(commit, value, status="keep", diff_lines=8):
 
 class ComputeMeterTests(unittest.TestCase):
     def test_identical_diffs_and_stagnation_reach_breakout(self):
-        rows = [make_row(f"c{i}", 1.0 if i == 0 else 1.0) for i in range(6)]
+        rows = [make_row(f"c{i}", 1.0) for i in range(6)]
         meter = compute_meter(rows, [{"same"}] * len(rows), k=5)
         self.assertGreaterEqual(meter["B"], 0.85)
         self.assertEqual(meter["regime"], "PARADIGM_BREAKOUT")

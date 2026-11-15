@@ -14,6 +14,7 @@ import llm
 import swarm
 import export_viewer
 from boredom import descriptor_meter as meter
+import itertools
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,7 +59,7 @@ class FakeLLMTests(unittest.TestCase):
     def test_hadamard_fake_targets_build_construction_and_objective_edits(self):
         task = swarm.load_task("hadamard19")
         source = (ROOT / "testcases/hadamard19/construct.py").read_text()
-        for name, mechanism, method, _ in task["fake_targets"]:
+        for _name, mechanism, method, _ in task["fake_targets"]:
             if mechanism not in {"construction", "objective"}:
                 continue
             proposal = llm.fake_assigned_proposal(
@@ -308,7 +309,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             snapshots = self.publish_round_snapshots(first_out, Path(tmp))
             second, _ = self.run_three_rounds(Path(tmp), "out-two")
             event_files = [(path / "events.ndjson").read_bytes() for path in snapshots]
-            for previous, current in zip(event_files, event_files[1:]):
+            for previous, current in itertools.pairwise(event_files):
                 self.assertTrue(current.startswith(previous))
             manifests = [json.loads((path / "manifest.json").read_text()) for path in snapshots]
             self.assertEqual([manifest["status"] for manifest in manifests],
@@ -323,7 +324,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             frames = [{path.name: path.read_bytes()
                        for path in (snapshot / "keyframes").glob("*.json")}
                       for snapshot in snapshots]
-            for previous, current in zip(frames, frames[1:]):
+            for previous, current in itertools.pairwise(frames):
                 for name, data in previous.items():
                     self.assertEqual(current[name], data)
         self.assertEqual(self.without_commits(first), self.without_commits(second))

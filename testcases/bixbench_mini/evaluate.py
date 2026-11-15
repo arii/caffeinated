@@ -92,7 +92,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
         diagnostics = f"{type(error).__name__}: {error}"
 
     if status != "ok":
-        correct = {qid: False for qid in key}
+        correct = dict.fromkeys(key, False)
     loss = 1 - score
     lines = [f"{qid}: {'ok' if ok else 'wrong'}" for qid, ok in correct.items()]
     lines.extend(

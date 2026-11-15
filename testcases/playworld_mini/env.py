@@ -4,7 +4,9 @@ A 9x9 walled room with random interior walls, a switch and a lamp. The agent see
 5x5 egocentric window. Stepping onto the switch toggles the lamp, which stays toggled
 when it is out of view, so a good world model needs spatial memory and persistent state.
 """
-import json, random, sys
+import json
+import random
+import sys
 
 N, R = 9, 2
 FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)

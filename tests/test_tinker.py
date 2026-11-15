@@ -85,9 +85,11 @@ class TinkerTests(unittest.TestCase):
 
     def test_retry_is_bounded(self):
         client = self.client()
-        with patch.object(client, "_tinker_completion", return_value=("not JSON", {})) as completion:
-            with self.assertRaisesRegex(RuntimeError, "after one retry"):
-                self.call(client)
+        with (
+            patch.object(client, "_tinker_completion", return_value=("not JSON", {})) as completion,
+            self.assertRaisesRegex(RuntimeError, "after one retry"),
+        ):
+            self.call(client)
         self.assertEqual(completion.call_count, 2)
 
     def test_generic_sdk_chat_rendering_sampling_and_usage(self):

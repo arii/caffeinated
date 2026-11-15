@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
+from types import SimpleNamespace
 
 from boredom_meter import meter
 
@@ -144,7 +145,7 @@ class Run:
             for ref in event["refs"].values():
                 if isinstance(ref, str):
                     tick_of.setdefault(ref, event["tick"])
-        for kind, table in self.entities.items():
+        for table in self.entities.values():
             for entity_id, entity in table.items():
                 if "tick" in entity and entity["tick"] is None:
                     entity["tick"] = tick_of.get(entity_id)
@@ -386,8 +387,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                                       "summary": f"{record.get('n_results', 0)} memories from "
                                                  f"{', '.join(record.get('authors', [])) or 'nobody'}",
                                       "refs": hits, "question_id": qid, "tick": None, "round": round_})
-        common = dict(round_=round_, phase="research", ts=ts, agent=agent,
-                      file="memory_log.jsonl", line=line, native_type="recall")
+        common = {"round_": round_, "phase": "research", "ts": ts, "agent": agent,
+                      "file": "memory_log.jsonl", "line": line, "native_type": "recall"}
         run.emit("question.asked", **common, refs={"question_id": qid},
                  payload={"kind": "recall", "text": record.get("query"), "backend": record.get("backend")})
         run.emit("observation.received", **common, sub=1, refs={"observation_id": oid, "question_id": qid},
@@ -415,8 +416,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                                 "scope": item.get("audience") or "swarm", "tick": None,
                                 "round": round_, "metadata": meta, "recalled_by": []})
         phase = phase_for.get(label, "critic")
-        common = dict(round_=round_, phase=phase, ts=ts, agent=agent,
-                      file="memory.jsonl", line=line, native_type=label)
+        common = {"round_": round_, "phase": phase, "ts": ts, "agent": agent,
+                      "file": "memory.jsonl", "line": line, "native_type": label}
         run.emit("memory.written", **common, refs={"memory_id": mid},
                  payload={"type": label, "excerpt": (item.get("content") or "")[:240]})
         if label == "claim":
@@ -514,8 +515,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             for source in row.get("sources") or []:
                 if f"source:{source}" in run.entities["sources"]:
                     run.entities["sources"][f"source:{source}"]["cited_by"].append(eid)
-            common = dict(round_=round_, phase="evaluate", agent=agent, file="ledger.jsonl", line=line,
-                          native_type=kind)
+            common = {"round_": round_, "phase": "evaluate", "agent": agent, "file": "ledger.jsonl", "line": line,
+                          "native_type": kind}
             run.emit("experiment.started", **common, ts=started,
                      refs={"experiment_id": eid, **({"hypothesis_id": hid} if hid else {})},
                      payload={"description": row.get("description"), "role": row.get("role")})
@@ -534,8 +535,8 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                        "replicate_score": row.get("replicate_score"), "why": info.get("why")}
             if eid in run.entities["experiments"]:
                 run.entities["experiments"][eid]["verdict"] = verdict
-            common = dict(round_=round_, phase="critic", ts=row.get("ts"), agent="critic",
-                          file="ledger.jsonl", line=line, native_type="critic")
+            common = {"round_": round_, "phase": "critic", "ts": row.get("ts"), "agent": "critic",
+                          "file": "ledger.jsonl", "line": line, "native_type": "critic"}
             run.emit("verdict.issued", **common, refs={"experiment_id": eid}, payload=verdict)
             experiment = run.entities["experiments"].get(eid)
             metric = experiment and experiment["metric_value"]
@@ -619,8 +620,8 @@ def export_ignobel(out_dir, title=None):
         kind, agent, round_ = event.get("type"), event.get("agent"), event.get("round", 0)
         agent = agent if agent in run.agents else "world"
         payload = event.get("payload") or {}
-        common = dict(round_=round_, phase=phase_for.get(kind, "diary"), ts=None, agent=agent,
-                      file="events.jsonl", line=line, native_type=kind)
+        common = {"round_": round_, "phase": phase_for.get(kind, "diary"), "ts": None, "agent": agent,
+                      "file": "events.jsonl", "line": line, "native_type": kind}
         if kind in {"seed", "snap"}:
             qid, oid = f"question:{line}", f"observation:{line}"
             urls = payload.get("source_urls") or payload.get("urls") or []
@@ -745,7 +746,7 @@ def study_gap(prediction, effect, direction):
 
 def initial_world(run, manifest):
     agents = {}
-    for native, identity in run.agents.items():
+    for identity in run.agents.values():
         agents[identity["agent_id"]] = {
             "agent_id": identity["agent_id"], "type": identity["type"], "role": None, "scout": False,
             "activity": "idle", "station": "home", "since_tick": 0,
@@ -890,10 +891,9 @@ def build(run, extra):
     series = {"swarm_B": [], "best": [], "agent_B": {a["agent_id"]: [] for a in run.agents.values()}}
     last_keyframe = -KEYFRAME_EVERY
     for index, event in enumerate(events):
-        if event["type"] == "round.started" or (not rounds or rounds[-1]["round"] != event["round"]):
-            if not rounds or rounds[-1]["round"] != event["round"]:
-                rounds.append({"round": event["round"], "tick_start": event["tick"], "tick_end": event["tick"],
-                               "ts_start": event["ts"], "regime": None})
+        if not rounds or rounds[-1]["round"] != event["round"]:
+            rounds.append({"round": event["round"], "tick_start": event["tick"], "tick_end": event["tick"],
+                           "ts_start": event["ts"], "regime": None})
         rounds[-1]["tick_end"] = event["tick"]
         before_regime = world["swarm"]["regime"]
         apply(world, event, run.entities)
@@ -938,10 +938,9 @@ def world_at(events, run_manifest, entities, tick, keyframes=None):
     keyframes = keyframes or {}
     base = max((k for k in keyframes if k <= tick), default=None)
     if base is None:
-        class Shim:
-            run_id = run_manifest["run_id"]
-            agents = {a["native_id"]: a for a in run_manifest["agents"]}
-        world = initial_world(Shim, {"baseline": run_manifest.get("baseline")})
+        run = SimpleNamespace(run_id=run_manifest["run_id"],
+                              agents={a["native_id"]: a for a in run_manifest["agents"]})
+        world = initial_world(run, {"baseline": run_manifest.get("baseline")})
         start = 0
     else:
         frame = json.loads(json.dumps(keyframes[base]))

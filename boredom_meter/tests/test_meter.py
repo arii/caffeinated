@@ -1,4 +1,7 @@
-import json, random, subprocess, sys
+import json
+import random
+import subprocess
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import tempfile

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "playworld_mini"))
-import evaluate  # noqa: E402
+import evaluate
 
 FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)
 MOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}

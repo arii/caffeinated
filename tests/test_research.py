@@ -36,7 +36,7 @@ class ExaStubHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def log_message(self, format_string, *args):
+    def log_message(self, _format_string, *args):
         pass
 
 

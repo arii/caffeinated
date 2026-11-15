@@ -141,9 +141,9 @@ def parse_candidate_diff(diff_text):
     """Extract changed lines, line count, and word-level three-shingles."""
     changed_lines = []
     for line in diff_text.splitlines():
-        if line.startswith("+++") or line.startswith("---"):
+        if line.startswith(("+++", "---")):
             continue
-        if line.startswith("+") or line.startswith("-"):
+        if line.startswith(("+", "-")):
             changed_lines.append(line[1:])
 
     tokens = []

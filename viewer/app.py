@@ -101,7 +101,7 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
         try:
             return json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            raise HTTPException(404, {"error": "unknown_run"})
+            raise HTTPException(404, {"error": "unknown_run"}) from None
 
     def cached_json(request, value, source_paths=(), run_dir=None):
         body = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -213,7 +213,7 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
         try:
             value = json.loads((run_dir / "timeline.json").read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            raise HTTPException(404, {"error": "unknown_entity"})
+            raise HTTPException(404, {"error": "unknown_entity"}) from None
         return cached_json(request, value, response_sources(run_dir, "timeline.json"), run_dir)
 
     @app.get("/api/v1/runs/{run_id}/world")
@@ -232,7 +232,7 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
         run_dir = get_run(run_id)
         if limit < 1:
             raise HTTPException(416, {"error": "tick_out_of_range",
-                                      "ticks": manifest_for(run_dir).get("time", {}).get("ticks", 0)})
+                                      "ticks": manifest_for(run_dir).get("time", {}).get("ticks", 0)}) from None
         values = [event for event in _read_events(run_dir / "events.ndjson")
                   if event["tick"] > after and (until is None or event["tick"] <= until)
                   and (agent_id is None or event.get("agent_id") == agent_id)
@@ -390,7 +390,7 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
             last_tick = int(header_id) if header_id is not None else (after if after is not None else -1)
         except ValueError:
             raise HTTPException(416, {"error": "tick_out_of_range",
-                                      "ticks": manifest_for(run_dir).get("time", {}).get("ticks", 0)})
+                                      "ticks": manifest_for(run_dir).get("time", {}).get("ticks", 0)}) from None
 
         async def generate():
             cursor = last_tick

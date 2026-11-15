@@ -72,7 +72,7 @@ class PastStubHandler(BaseHTTPRequestHandler):
             {"slug": slug, "kind": body["kind"], "identities": body["identities"]},
         )
 
-    def log_message(self, format_string, *args):
+    def log_message(self, _format_string, *args):
         pass
 
 

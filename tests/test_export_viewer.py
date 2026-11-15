@@ -205,7 +205,7 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(first[1], second[1])
             self.assertEqual(first[2], second[2])
             run_dir, events, manifest, timeline, entities = first
-            entities = {kind: table for kind, table in entities.items()}
+            entities = dict(entities)
             keyframes = {tick: json.loads((run_dir / "keyframes" / f"{tick}.json").read_text())
                          for tick in timeline["keyframes"]}
             tick = timeline["keyframes"][-1]
@@ -240,7 +240,7 @@ class ExportViewerTests(unittest.TestCase):
                 {**base, "round": 1, "agent": "quill", "type": "talk",
                  "payload": {"partner": "volkov", "turn": 1, "text": "hi"}},
             ])
-            run_dir, events, manifest, timeline, entities = self.export(out, root / "dest")
+            _run_dir, events, manifest, _timeline, entities = self.export(out, root / "dest")
             types = {a["native_id"]: a["type"] for a in manifest["agents"]}
             self.assertEqual(types, {"quill": "researcher", "volkov": "statistician", "world": "world"})
             self.assertTrue(all(e["ts"] is None for e in events))

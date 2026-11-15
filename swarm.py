@@ -14,7 +14,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import uuid
 from types import SimpleNamespace
 
@@ -175,7 +174,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         )
 
     if arm == "A":
-        roles = {agent: "exploit" for agent in agents}
+        roles = dict.fromkeys(agents, "exploit")
         scout = agents[0]
         roles[scout] = "divergent"
         scouts = [scout] if exa_enabled else []
@@ -193,7 +192,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
                     key=lambda agent: (per_agent[agent], agent),
                 )
                 scouts.extend(remaining[: scout_count - len(scouts)])
-        roles = {agent: "exploit" for agent in agents}
+        roles = dict.fromkeys(agents, "exploit")
         for agent in scouts:
             roles[agent] = "divergent"
         non_scouts = [agent for agent in agents if agent not in scouts]
@@ -215,12 +214,12 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
                     key=lambda agent: (per_agent[agent], agent),
                 )
                 scouts.extend(remaining[: 2 - len(scouts)])
-        roles = {agent: "divergent" for agent in agents}
+        roles = dict.fromkeys(agents, "divergent")
         rationale = (
             f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
         )
     else:
-        roles = {agent: "exploit" for agent in agents}
+        roles = dict.fromkeys(agents, "exploit")
         divergent_agent = divergent_worker()
         if exa_enabled:
             scouts = [divergent_agent]
@@ -2293,20 +2292,23 @@ def _orchestrate(args, publish_state):
                     log=memory_log,
                     arm=args.arm,
                 )
-                if event_status == "keep" and event.get("commit"):
-                    if git_text(conductor, "rev-parse", "HEAD") != event["commit"]:
-                        merge_result = git(
-                            conductor,
-                            "merge",
-                            "--ff-only",
-                            event["commit"],
-                            check=False,
+                if (
+                    event_status == "keep"
+                    and event.get("commit")
+                    and git_text(conductor, "rev-parse", "HEAD") != event["commit"]
+                ):
+                    merge_result = git(
+                        conductor,
+                        "merge",
+                        "--ff-only",
+                        event["commit"],
+                        check=False,
+                    )
+                    if merge_result.returncode:
+                        raise RuntimeError(
+                            "kept candidate could not fast-forward the arm branch: "
+                            + merge_result.stderr.strip()
                         )
-                        if merge_result.returncode:
-                            raise RuntimeError(
-                                "kept candidate could not fast-forward the arm branch: "
-                                + merge_result.stderr.strip()
-                            )
             if critic_event is not None:
                 critic_event = meter.submit(
                     profile, ledger_path, {**critic_event, "ts": timestamp()}
@@ -2320,7 +2322,7 @@ def _orchestrate(args, publish_state):
                 )
 
             events = write_results(ledger_path, results_path)
-            status_after, status_record = append_status(
+            _status_after, status_record = append_status(
                 out_dir, profile, events, args.arm
             )
             copy_target = copy_artifacts_to_arm_branch(

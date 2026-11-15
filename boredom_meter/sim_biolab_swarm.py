@@ -4,7 +4,10 @@
 Not a biological model. Compares a greedy swarm against the same swarm obeying
 the meter (status -> suggest -> gate) with identical seeds and budgets.
 """
-import argparse, math, random, sys
+import argparse
+import math
+import random
+import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import meter

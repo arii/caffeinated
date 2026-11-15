@@ -4,7 +4,11 @@ Data comes from the public futurehouse/BixBench dataset on Hugging Face and is c
 .cache/ (gitignored) so benchmark answers never get committed. evaluate.py runs this
 automatically on first use.
 """
-import io, json, shutil, urllib.request, zipfile
+import io
+import json
+import shutil
+import urllib.request
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
