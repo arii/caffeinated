@@ -20,7 +20,7 @@ export function replayPeople<T extends RecordedAgent>(agents:readonly T[],tick:n
 export function replayStation(a:RecordedAgent):StationId{
  // Recorded experiment execution belongs to a discipline. Thinking and discussion
  // share the roundtable regardless of the archive adapter's generic station IDs.
- if(a.state==='thinking'||a.state==='reviewing'||['talking','sharing','assigned','writing_diary'].includes(a.activity||'')||a.state==='idle')return 'culture';
+ if(['talking','sharing'].includes(a.activity||''))return 'culture';
  const family=(a.family||'').toLowerCase();
  if(family==='physics'||/^P\d+$/.test(a.name))return 'analyzer';
  if(family==='chem'||family==='chemistry'||/^C\d+$/.test(a.name))return 'explorer';

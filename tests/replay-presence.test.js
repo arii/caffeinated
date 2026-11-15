@@ -18,7 +18,7 @@ test('recorded addresses summon listeners, while future roster members remain ab
  assert.equal(replayPeople(agents,2,presence).length,3);
  const poses=buildReplayPoses(data,bounds,[]);
  assert.equal(poses[0].positions.size,0);assert.equal(poses[1].positions.has('future'),false);
- assert.deepEqual(poses.at(-1).positions.get('future'),discussionGoal(3));
+ assert.deepEqual(poses.find(f=>f.tick===8).positions.get('future'),{...discussionGoal(3),atTable:false});
  assert.deepEqual(buildReplayPoses(data,bounds,[]),poses);
 });
 test('snapshot-only activation occurs at its first activity, without creating a front queue',()=>{
@@ -26,25 +26,29 @@ test('snapshot-only activation occurs at its first activity, without creating a 
  const data=recording([-1,0,1,2,3].map(tick=>({tick,snapshot:{agents:[tick>=2?{...idle,state:'thinking'}:idle]}})));
  const poses=buildReplayPoses(data,bounds,[]);
  for(const f of poses.filter(f=>f.tick<2))assert.equal(f.positions.has('B2'),false);
- assert.deepEqual(poses[3].positions.get('B2'),discussionGoal(0));
+ assert.deepEqual(poses.find(f=>f.tick===2).positions.get('B2'),{...discussionGoal(0),atTable:false});
 });
-test('experiment robots route by recorded discipline; thinking and conversation meet left',()=>{
+test('experiment robots route by recorded discipline; only conversation targets the roundtable',()=>{
  for(const [family,station]of [['Physics','analyzer'],['Chem','explorer'],['Bio','notebook']]){
   const a=agent('worker',{family,state:'working',activity:'training',stationId:'culture'});
   assert.equal(replayStation(a),station);
-  assert.equal(replayStation({...a,state:'thinking'}),'culture');
+  assert.equal(replayStation({...a,state:'thinking'}),station);
   assert.equal(replayStation({...a,activity:'talking'}),'culture');
  }
  assert.equal(replayStation(agent('worker',{name:'P3',state:'working'})),'analyzer');
 });
-test('new assignments never move a robot earlier than their causal frame',()=>{
- const idle=agent('C2',{family:'Chem',state:'thinking'});
- const frames=[0,1,2,3,4].map(tick=>({tick,snapshot:{agents:[tick>=2?{...idle,state:'working',activity:'training'}:idle]}}));
- const poses=buildReplayPoses(recording(frames),bounds,[]);
- for(const f of poses.filter(f=>f.tick<=2))assert.deepEqual(f.positions.get('C2'),discussionGoal(0));
- assert.notDeepEqual(poses[3].positions.get('C2'),discussionGoal(0));
- const p=poses[4].positions.get('C2'),goal=stationGoal('explorer',0);
- assert.ok(Math.hypot(p.x-goal.x,p.z-goal.z)<Math.hypot(discussionGoal(0).x-goal.x,discussionGoal(0).z-goal.z));
+test('thinking robots mostly walk and return only briefly for an invited exchange',()=>{
+ const a=agent('C2',{family:'Chem',state:'thinking'});
+ const data=recording(Array.from({length:121},(_,tick)=>({tick,snapshot:{agents:[a]}})),[
+  {tick:0,type:'message.sent',agentId:'C2'}, {tick:10,type:'message.sent',agentId:'C2'}]);
+ data.manifest.totalTicks=120;
+ const poses=buildReplayPoses(data,bounds,[]);
+ const moving=poses.slice(1).filter((f,i)=>{const p=f.positions.get('C2'),q=poses[i].positions.get('C2');return Math.hypot(p.x-q.x,p.z-q.z)>.001;});
+ assert.ok(moving.length>poses.length*.75,'walking should dominate the visual');
+ assert.ok(poses.some(f=>f.tick>15&&f.positions.get('C2').atTable),'invited researchers return after a tour');
+ assert.deepEqual(buildReplayPoses(data,bounds,[]),poses,'seeking must reproduce the same patrol');
+ const quiet=buildReplayPoses({...data,events:[]},bounds,[]);
+ assert.ok(quiet.every(f=>!f.positions.get('C2').atTable),'thinking alone must never park a researcher at the table');
 });
 test('all twelve discussion seats and discipline work slots are clear and reachable in the actual lab',async()=>{
  const {createWorld}=await import('../src/variants/lab.ts');
