@@ -392,7 +392,11 @@ class SwarmOrchestratorTests(unittest.TestCase):
 
             def without_commits(value):
                 if isinstance(value, dict):
-                    return {key: without_commits(item) for key, item in value.items() if key != "commit"}
+                    return {
+                        key: without_commits(item)
+                        for key, item in value.items()
+                        if key not in {"commit", "ts"}
+                    }
                 if isinstance(value, list):
                     return [without_commits(item) for item in value]
                 return value

@@ -30,6 +30,10 @@ DEFAULT_PROFILE = ROOT / "boredom_meter" / "profiles" / "autoresearch_llm.json"
 BASELINE_COMMIT = "7017194"
 BASELINE_VAL_BPB = 0.995814
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
+BOREDOM_COMPONENTS = (
+    "B", "regime", "novelty", "stagnation", "overload",
+    "fail_rate", "trivial_rate", "diversity", "frontier_stall",
+)
 RESULT_COLUMNS = (
     "commit",
     "val_bpb",
@@ -158,10 +162,10 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
-    per_agent = {
-        agent: meter.status(profile, events, agent=agent)["B"]
-        for agent in agents
+    agent_status = {
+        agent: meter.status(profile, events, agent=agent) for agent in agents
     }
+    per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
         (agent for agent in agents if per_agent[agent] >= 0.70),
         key=lambda agent: (-per_agent[agent], agent),
@@ -236,6 +240,14 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         "swarm_B": swarm_status["B"],
         "regime": regime,
         "per_agent_B": per_agent,
+        "per_agent_boredom": {
+            agent: {
+                key: agent_status[agent][key]
+                for key in BOREDOM_COMPONENTS
+                if key in agent_status[agent]
+            }
+            for agent in agents
+        },
         "roles": roles,
         "scouts": scouts,
         "rationale": rationale,
@@ -363,6 +375,7 @@ def recall_memory(query, author, *, backend, mirror, log, arm, limit=5):
         query,
         memory.RECALL_IDENTITY,
         limit=limit,
+        log_agent=author,
         backend=backend,
         mirror=mirror,
         log=log,
@@ -387,6 +400,7 @@ def append_assignment(
         "swarm_B": assignment["swarm_B"],
         "regime": assignment["regime"],
         "per_agent_B": assignment["per_agent_B"],
+        "per_agent_boredom": assignment.get("per_agent_boredom", {}),
         "roles": assignment["roles"],
         "scouts": assignment["scouts"],
         "rationale": assignment["rationale"],
@@ -1222,6 +1236,7 @@ def run_gpu_burst(repo, commits, seed, out_dir, gpu_mode):
 
 def add_result_event(profile, ledger_path, candidate, round_num, status, score, memory_gb):
     event = {
+        "ts": timestamp(),
         "kind": "candidate",
         "agent": candidate["agent"],
         "status": status,
@@ -1511,6 +1526,7 @@ def orchestrate(args):
                 profile,
                 ledger_path,
                 {
+                    "ts": timestamp(),
                     "kind": "baseline",
                     "agent": "baseline",
                     "status": "keep",
@@ -1819,7 +1835,9 @@ def orchestrate(args):
                                 + merge_result.stderr.strip()
                             )
             if critic_event is not None:
-                critic_event = meter.submit(profile, ledger_path, critic_event)
+                critic_event = meter.submit(
+                    profile, ledger_path, {**critic_event, "ts": timestamp()}
+                )
                 write_result_memory(
                     critic_event,
                     backend=memory_backend,

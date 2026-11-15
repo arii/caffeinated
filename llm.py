@@ -423,15 +423,20 @@ class LLMClient:
                 messages = chat.MessageList(
                     parser.parse_tokens(sequence.tokens).messages
                 ).to_openai_chat_dicts()
-                content = "\n".join(
-                    message.get("content") or "" for message in messages
-                    if message.get("role") == "assistant"
-                )
+                assistant = [m for m in messages if m.get("role") == "assistant"]
+                content = "\n".join(m.get("content") or "" for m in assistant)
+                reasoning = "\n".join(
+                    str(m.get("reasoning_content") or m.get("reasoning") or m.get("thinking") or "")
+                    for m in assistant
+                ).strip()
             except ValueError:
-                content = ""
+                content = reasoning = ""
         else:
-            content = self.tinker_tokenizer.decode(sequence.tokens, skip_special_tokens=True)
-            content = content.rsplit("</think>", 1)[-1]
+            text = self.tinker_tokenizer.decode(sequence.tokens, skip_special_tokens=True)
+            reasoning, _, content = text.rpartition("</think>")
+            reasoning = reasoning.replace("<think>", "").strip()
+        if reasoning:
+            usage["reasoning"] = reasoning
         return content, usage
 
     def _request_tinker(self, prompt):
@@ -440,11 +445,14 @@ class LLMClient:
         for attempt in range(2):
             started = time.monotonic()
             content, attempt_usage = self._tinker_completion(request_prompt)
+            reasoning = attempt_usage.pop("reasoning", "")
             record = {
                 "response": content,
                 "latency_ms": int((time.monotonic() - started) * 1000),
                 "usage": attempt_usage,
             }
+            if reasoning:
+                record["reasoning"] = reasoning
             self.request_attempts.append(record)
             for key in usage:
                 usage[key] += attempt_usage.get(key, 0)

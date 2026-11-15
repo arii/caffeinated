@@ -49,6 +49,21 @@ Hi have a look at program.md and let's kick off a new experiment! let's do the s
 
 The `program.md` file is essentially a super lightweight "skill".
 
+## Viewing a run in the lab frontend
+
+`export_viewer.py` turns a finished run into the read-only `swarm-viewer/v1`
+format from `docs/swarm-viewer-api.md`: deterministic UUIDs for the run,
+agents and events, a gap-free `tick`, plus manifest, timeline, keyframes and
+entity files. The frontend can replay these with no backend.
+
+```bash
+python export_viewer.py out/ --dest lab/data/runs          # autoresearch --out dir
+python export_viewer.py ../ignobel/runs/full-s0 --dest lab/data/runs   # ignobel events.jsonl
+```
+
+Prompts, responses and reasoning only appear in `entities/llm_calls.json`,
+never in the timeline. Missing source timestamps stay `null`.
+
 ## Project structure
 
 ```

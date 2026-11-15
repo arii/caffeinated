@@ -792,7 +792,7 @@ def scoped_pastdev_response(response, mirror, scope):
 
 
 def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-            mirror=None, log=None, arm=None, run_id=None):
+            mirror=None, log=None, arm=None, run_id=None, log_agent=None):
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
@@ -851,7 +851,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     log_record = {
         "type": "recall",
         "ts": utc_now(),
-        "agent": agent,
+        "agent": log_agent or agent,
         "backend": backend,
         "query": query,
         "latency_ms": latency_ms,
@@ -877,7 +877,7 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
 
 
 def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
-           mirror=None, log=None, arm=None, run_id=None):
+           mirror=None, log=None, arm=None, run_id=None, log_agent=None):
     result = _recall(
         query,
         agent,
@@ -888,6 +888,7 @@ def recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         log=log,
         arm=arm,
         run_id=run_id,
+        log_agent=log_agent,
     )
     result.pop("_raw_response", None)
     return result
