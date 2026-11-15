@@ -26,18 +26,18 @@ ENTITY_KINDS = (
     "diary", "memory", "sources", "llm_calls", "discoveries",
 )
 STATIONS = {
-    "assigned": "notebook", "searching": "explorer", "recalling": "notebook",
-    "proposing": "notebook", "gating": "analyzer", "training": "culture",
+    "assigned": "notebook", "researching": "explorer", "recalling": "notebook",
+    "proposing": "notebook", "gated": "analyzer", "training": "culture",
     "reviewing": "analyzer", "talking": "partner", "sharing": "partner",
-    "snapping": "explorer", "writing": "notebook", "idle": "home",
+    "snapping": "explorer", "writing_diary": "notebook", "idle": "home",
 }
 EVENT_ACTIVITY = {
-    "agent.assigned": "assigned", "question.asked": "searching",
-    "observation.received": "searching", "hypothesis.proposed": "proposing",
-    "gate.checked": "gating", "experiment.started": "training",
+    "agent.assigned": "assigned", "question.asked": "researching",
+    "observation.received": "researching", "hypothesis.proposed": "proposing",
+    "gate.checked": "gated", "experiment.started": "training",
     "experiment.finished": "reviewing", "verdict.issued": "reviewing",
     "message.sent": "talking", "items.shared": "sharing",
-    "diary.written": "writing", "memory.written": "writing",
+    "diary.written": "writing_diary",
 }
 
 
@@ -90,7 +90,7 @@ class Run:
                 "agent_id": uid(self.run_id, native),
                 "native_id": native,
                 "type": agent_type,
-                "label": label or native,
+                "display_name": label or native,
             }
         return self.agents[native]["agent_id"]
 
@@ -486,6 +486,7 @@ def export_autoresearch(out_dir, arm=None, title=None):
     baseline = next((number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None)
     manifest_extra = {
         "title": title or f"autoresearch · {out_dir.name}",
+        "compare_group": out_dir.name,
         "arm": {"id": arm, "label": "boredom meter on" if arm == "B" else "meter shadow only",
                 "boredom_enabled": arm != "A", "policy": "boredom_meter"},
         "metric": {"name": "loss", "unit": "", "direction": "minimize"},
@@ -630,6 +631,7 @@ def export_ignobel(out_dir, title=None):
                      payload={"kind": "lesson", "excerpt": (payload.get("text") or "")[:240]})
     manifest_extra = {
         "title": title or f"ignobel · {arm} · seed {seed}",
+        "compare_group": f"ignobel · seed {seed}",
         "arm": {"id": arm, "label": arm, "boredom_enabled": arm == "full", "policy": arm},
         "metric": {"name": "replicated_findings", "unit": "", "direction": "maximize"},
         "boredom": {"scale": [0, 1], "thresholds": {}, "regimes":
@@ -780,6 +782,7 @@ def build(run, extra):
     manifest = {
         "schema": SCHEMA, "run_id": run.run_id, "swarm": run.swarm, "title": extra["title"],
         "status": "completed", "live": False, "arm": extra["arm"], "metric": extra["metric"],
+        "compare_group": extra.get("compare_group"),
         "boredom": extra["boredom"],
         "time": {"ticks": len(events), "rounds": max((e["round"] for e in events), default=0),
                  "ts_start": min(ts_values) if ts_values else None,
@@ -794,24 +797,27 @@ def build(run, extra):
     for index, event in enumerate(events):
         if event["type"] == "round.started" or (not rounds or rounds[-1]["round"] != event["round"]):
             if not rounds or rounds[-1]["round"] != event["round"]:
-                rounds.append({"round": event["round"], "start_tick": event["tick"], "end_tick": event["tick"],
-                               "ts_start": event["ts"], "regime": None})
-        rounds[-1]["end_tick"] = event["tick"]
+                rounds.append({"round": event["round"], "tick_start": event["tick"], "tick_end": event["tick"],
+                               "ts_start": event["ts"], "regime": None, "swarm_B": None, "best": None})
+        rounds[-1]["tick_end"] = event["tick"]
         before_regime = world["swarm"]["regime"]
         apply(world, event, run.entities)
         if event["type"] == "round.started":
             rounds[-1]["regime"] = event["payload"].get("regime")
+        best = world["swarm"]["best"]
+        rounds[-1].update(swarm_B=world["swarm"]["B"], best=best and best["metric_value"])
         if world["swarm"]["regime"] != before_regime and before_regime is not None:
-            markers.append({"tick": event["tick"], "kind": "regime_change",
+            markers.append({"tick": event["tick"], "kind": "regime_change", "agent_id": None, "ref": None,
                             "label": f"{before_regime} → {world['swarm']['regime']}"})
         if event["type"] == "discovery.made":
             markers.append({"tick": event["tick"], "kind": "discovery", "ref": event["refs"]["discovery_id"],
-                            "label": event["payload"].get("title")})
+                            "agent_id": event["agent_id"], "label": event["payload"].get("title") or "discovery"})
         if event["type"] == "experiment.finished" and event["payload"].get("status") in {"crash", "failed"}:
-            markers.append({"tick": event["tick"], "kind": "crash", "ref": event["refs"]["experiment_id"]})
+            markers.append({"tick": event["tick"], "kind": "crash", "ref": event["refs"]["experiment_id"],
+                            "agent_id": event["agent_id"], "label": event["payload"].get("status")})
         if event["type"] == "verdict.issued":
             markers.append({"tick": event["tick"], "kind": "verdict", "ref": event["refs"]["experiment_id"],
-                            "label": event["payload"].get("verdict")})
+                            "agent_id": event["agent_id"], "label": event["payload"].get("verdict") or "verdict"})
         if event["type"] == "boredom.measured":
             if event["payload"].get("scope") == "swarm" or (event["agent_id"] is None):
                 series["swarm_B"].append([event["tick"], event["payload"].get("B")])
@@ -869,9 +875,13 @@ def write(dest, manifest, timeline, events, keyframes, entities):
         dump(run_dir / "entities" / f"{kind}.json", [table[key] for key in sorted(table)])
     index_path = Path(dest) / "index.json"
     index = json.loads(index_path.read_text()) if index_path.exists() else {"schema": SCHEMA, "runs": []}
-    summary = {key: manifest[key] for key in ("run_id", "swarm", "title", "status", "live", "arm", "time")}
-    summary["agents"] = len(manifest["agents"])
-    summary["discoveries"] = len(entities["discoveries"])
+    summary = {key: manifest[key] for key in ("run_id", "swarm", "title", "status", "live", "arm", "time",
+                                              "compare_group")}
+    summary.update(agents=len(manifest["agents"]), discoveries=len(entities["discoveries"]),
+                   ticks=manifest["time"]["ticks"], rounds=manifest["time"]["rounds"])
+    values = [d["metric_value"] for d in entities["discoveries"].values() if d.get("metric_value") is not None]
+    pick = min if manifest["metric"].get("direction") == "minimize" else max
+    summary["best"] = pick(values, default=None)
     index["runs"] = sorted([r for r in index["runs"] if r["run_id"] != manifest["run_id"]] + [summary],
                            key=lambda r: r["title"])
     dump(index_path, index)
