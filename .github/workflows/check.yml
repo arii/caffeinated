@@ -2,9 +2,9 @@ name: check
 
 on:
   pull_request:
-    branches: [main, autoresearch]
+    branches: [main, autoresearch, agent/devin/overnight]
   push:
-    branches: [main, autoresearch]
+    branches: [main, autoresearch, agent/devin/overnight]
 
 permissions:
   contents: read
