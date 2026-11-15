@@ -96,6 +96,8 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     cache_file = CACHE_DIR / "llm" / f"{key}.json"
     if cache_file.exists():
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        if isinstance(cached["data"], dict) and cached["data"].get("_parse_error"):
+            cached["data"] = parse_reply(cached["data"].get("_raw", ""))
         return LLMResult(**cached, cached=True)
 
     t0 = time.monotonic()
@@ -118,11 +120,7 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
             break
         budget *= 2
     latency_ms = int((time.monotonic() - t0) * 1000)
-    text = choice.message.content or ""
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        data = {"_raw": text, "_parse_error": True}
+    data = parse_reply(choice.message.content or "")
     if truncated:
         data["_truncated"] = True
     result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
@@ -131,6 +129,47 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     cache_file.write_text(json.dumps(result.model_dump(exclude={"cached"})), encoding="utf-8")
     return result
+
+
+def _quote_bare_keys(s: str) -> str:
+    """{code: "x", requests: []} -> {"code": "x", "requests": []}; string contents are left alone."""
+    out, i, in_str, esc, expect_key = [], 0, False, False, False
+    while i < len(s):
+        c = s[i]
+        if in_str:
+            esc, in_str = (False, True) if esc else (c == "\\", c != '"')
+        elif c == '"':
+            in_str = True
+        elif c in "{,":
+            expect_key = True
+        elif expect_key and (c.isalpha() or c == "_"):
+            j = i
+            while j < len(s) and (s[j].isalnum() or s[j] == "_"):
+                j += 1
+            k = j
+            while k < len(s) and s[k].isspace():
+                k += 1
+            expect_key = False
+            if k < len(s) and s[k] == ":":
+                out.append(f'"{s[i:j]}"')
+                i = j
+                continue
+        elif not c.isspace():
+            expect_key = False
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def parse_reply(text: str) -> dict:
+    """JSON object from a model reply. Some models (Tinker Inkling) leave object keys unquoted."""
+    for candidate in (text, _quote_bare_keys(text)):
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        return data if isinstance(data, dict) else {"_raw": text, "_parse_error": True}
+    return {"_raw": text, "_parse_error": True}
 
 
 def embed(texts: list[str]) -> np.ndarray:
