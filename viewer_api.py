@@ -43,25 +43,29 @@ class RunData:
         return (stat.st_mtime_ns, stat.st_size) != self.stamp
 
     def load(self):
+        """Read everything first and swap it in at once, so a half-written export keeps the old state."""
         stat = (self.dir / "events.ndjson").stat()
-        self.stamp = (stat.st_mtime_ns, stat.st_size)
         read = lambda name: json.loads((self.dir / name).read_text(encoding="utf-8"))
-        self.manifest = read("manifest.json")
-        self.timeline = read("timeline.json")
-        self.events = [json.loads(line) for line in
-                       (self.dir / "events.ndjson").read_text(encoding="utf-8").splitlines() if line.strip()]
-        self.keyframes = {tick: None for tick in self.timeline.get("keyframes", [])}
-        self.entities = {}
+        manifest = read("manifest.json")
+        timeline = read("timeline.json")
+        events = [json.loads(line) for line in
+                  (self.dir / "events.ndjson").read_text(encoding="utf-8").splitlines() if line.strip()]
+        entities = {}
         for path in sorted((self.dir / "entities").glob("*.json")):
-            self.entities[path.stem] = {entity["id"]: entity for entity in json.loads(path.read_text())}
+            entities[path.stem] = {entity["id"]: entity for entity in json.loads(path.read_text())}
         for kind in COLLECTIONS + ("sources", "discoveries"):
-            self.entities.setdefault(kind, {})
-        self.agents = {a["agent_id"]: a for a in self.manifest["agents"]}
-        self.entity_tick = {}
-        for event in self.events:
+            entities.setdefault(kind, {})
+        entity_tick = {}
+        for event in events:
             for ref in event["refs"].values():
-                self.entity_tick.setdefault(ref, event["tick"])
-        self.etag_base = hashlib.sha1(repr(self.stamp).encode()).hexdigest()[:16]
+                entity_tick.setdefault(ref, event["tick"])
+        stamp = (stat.st_mtime_ns, stat.st_size)
+        self.manifest, self.timeline, self.events, self.entities = manifest, timeline, events, entities
+        self.keyframes = {tick: None for tick in timeline.get("keyframes", [])}
+        self.agents = {a["agent_id"]: a for a in manifest["agents"]}
+        self.entity_tick = entity_tick
+        self.etag_base = hashlib.sha1(repr(stamp).encode()).hexdigest()[:16]
+        self.stamp = stamp
 
     @property
     def last_tick(self):
@@ -142,7 +146,10 @@ class Store:
             if run is None:
                 run = self.runs[run_id] = RunData(directory)
             elif run.changed():
-                run.load()
+                try:
+                    run.load()
+                except (OSError, ValueError, KeyError):
+                    pass  # export still being written: serve the previous state, retry next request
             return run
 
 
