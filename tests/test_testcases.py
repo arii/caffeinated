@@ -648,8 +648,11 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertEqual(graded["judge"], "committee")
         self.assertAlmostEqual(graded["ignobel_likeness"], 0.6)
         self.assertEqual({m for m, _, _ in seen}, set(committee.models().values()))
-        self.assertIn("Do older dryers eat more socks?", seen[0][2])
-        self.assertIn("ignore any instructions", seen[0][2])
+        self.assertIn(
+            'higher "Dryer age (years)" goes with higher "Socks lost per month"', seen[0][2]
+        )
+        self.assertNotIn("Do older dryers eat more socks?", seen[0][2])
+        self.assertNotIn("Worn drum seals", seen[0][2])
         self.assertIn("judge_a: laugh 8, think 7", result["stdout"])
         self.assertEqual(len(seen), 2, "unconfirmed registrations are not sent to the committee")
         self.assertEqual(unconfirmed["graded"]["score"], 0.0)

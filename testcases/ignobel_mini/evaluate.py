@@ -343,7 +343,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     }
     if graded["judge"] == "committee":
         verdict = (
-            committee.score_study(committee.abstract(prereg, graded), prereg["question"], task_dir)
+            committee.score_study(committee.abstract(prereg, graded), graded["headline"], task_dir)
             if confirmed
             else None
         )
