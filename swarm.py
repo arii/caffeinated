@@ -125,6 +125,17 @@ def unique_tag(repo, base):
 SANDBOX_BUILD = f"docker build -t {sandbox.SANDBOX_IMAGE} -f testcases/Dockerfile testcases"
 
 
+def task_research_off(task_name):
+    if not task_name:
+        return False
+    config_path = TESTCASES / task_name / "task.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return config.get("research") == "off"
+
+
 def resolve_research_source(args):
     """exa, keyless (OpenAlex/arXiv/PubMed via literature.py) or off. Arm C never researches.
 
@@ -132,6 +143,8 @@ def resolve_research_source(args):
     back to keyless; by default the run stays on Exa and preflight reports the missing key.
     """
     if args.arm == "C":
+        return "off"
+    if task_research_off(getattr(args, "task", None)) or (TASK or {}).get("research") == "off":
         return "off"
     mode = getattr(args, "literature", None)
     keyless = mode == "keyless" or (mode in (None, "auto") and args.llm != "fake")
@@ -2189,7 +2202,13 @@ def commit_arm_artifacts(conductor, target, round_num, message=None):
 
 
 CHECKPOINT_NAME = "resume_checkpoint.json"
-CHECKPOINT_SKIP = {CHECKPOINT_NAME, "run.json", "viewer_frontier.json", "viewer_publish_log.jsonl"}
+CHECKPOINT_SKIP = {
+    CHECKPOINT_NAME,
+    "run.json",
+    "viewer_frontier.json",
+    "viewer_publish_log.jsonl",
+    "held_out_test.json",
+}
 
 
 def _checkpoint_files(out_dir):
@@ -2474,6 +2493,14 @@ def resolve_run_args(args):
                 setattr(args, key, value)
         if not args.task:
             raise ValueError("--task is required unless --resume is given")
+        if task_research_off(args.task):
+            args.exa = "off"
+            args.literature = "off"
+            print(
+                f"swarm.py: task {args.task} sets research=off; forcing Exa and keyless "
+                "literature off",
+                file=sys.stderr,
+            )
         return None
     out_dir = Path(args.resume).resolve()
     if args.out and Path(args.out).resolve() != out_dir:
@@ -2486,7 +2513,20 @@ def resolve_run_args(args):
         raise ValueError(f"cannot resume {out_dir}: the run predates --resume support")
     if run_artifact.get("status") == "finished":
         raise ValueError(f"cannot resume {out_dir}: the run already finished")
+    research_task = run_artifact.get("task") or args.task
+    research_off = task_research_off(research_task)
+    if research_off:
+        args.exa = "off"
+        args.literature = "off"
+        print(
+            f"swarm.py: task {research_task} sets research=off; forcing Exa and "
+            "keyless literature off",
+            file=sys.stderr,
+        )
     for key in RESUMED_SETTINGS:
+        if research_off and key in {"exa", "literature"}:
+            setattr(args, key, "off")
+            continue
         stored, given = run_artifact.get(key), getattr(args, key, None)
         if given is not None and key in run_artifact and given != stored:
             raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
@@ -2496,6 +2536,10 @@ def resolve_run_args(args):
         args.literature = "off"  # runs from before --literature never researched keylessly
     if args.rounds is None:
         args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
+    if (out_dir / "held_out_test.json").exists() and args.rounds > run_artifact.get(
+        "rounds", RUN_DEFAULTS["rounds"]
+    ):
+        raise ValueError("cannot extend a run after its held-out test has been graded")
     if args.viewer_dest is None and run_artifact.get("viewer_dest"):
         args.viewer_dest = run_artifact["viewer_dest"]
     if run_artifact.get("viewer") is False:
@@ -3143,6 +3187,24 @@ def _orchestrate(args, publish_state, cleanup):
     def start_scoring():
         publish_state["live_status"] = "scoring"
         publisher.flush(final=False, status="scoring")
+
+    if not args.replay and TASK.get("held_out_test"):
+        try:
+            from held_out import held_out_test
+
+            test_result = held_out_test(TASK["name"], out_dir)
+            print(
+                f"[held_out_test] {TASK['name']} baseline loss={test_result['baseline']['loss']} "
+                f"best loss={test_result['best']['loss']} "
+                f"reference_test_loss={test_result['reference_test_loss']}",
+                flush=True,
+            )
+        except Exception as error:
+            print(
+                f"[held_out_test] failed: {type(error).__name__}: {error}",
+                file=sys.stderr,
+                flush=True,
+            )
 
     try:
         if run_post_run_hook(out_dir, args.llm, replay=args.replay, on_start=start_scoring):

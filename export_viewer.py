@@ -1341,6 +1341,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "native_run_id": native_run,
         },
         "baseline": baseline,
+        "held_out_test": held_out_test_result(out_dir),
         "profile": profile,
         "status": final_status if final else live_status,
         "live": not final,
@@ -1787,6 +1788,8 @@ def build(run, extra):
         "provenance": {**extra["provenance"], "artifacts": {}},
         "publish_errors": extra.get("publish_errors", []),
     }
+    if extra.get("held_out_test") is not None:
+        manifest["held_out_test"] = extra["held_out_test"]
     world = initial_world(run, extra)
     keyframes, rounds, markers = {}, [], []
     series = {
@@ -2001,6 +2004,14 @@ def publish_errors(out_dir):
         }
         for _, record in rows[-PUBLISH_ERRORS_SHOWN:]
     ]
+
+
+def held_out_test_result(out_dir):
+    path = Path(out_dir) / "held_out_test.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
 
 
 def _atomic_write(path, data):

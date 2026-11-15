@@ -6,7 +6,8 @@ sandbox, and keeps or discards experiments by their measured loss.
 
 The three tasks are honest local proxies: Hadamard-19 is exact with a known
 optimum; BixBench Mini is a 17-question subset, not full BixBench; Playworld
-Mini is a synthetic proxy, not PlayWorld, using an 8-frame-memory reference.
+Mini is a synthetic proxy, not PlayWorld. Its `RECORD = 0.3598` is a dev-only
+constant from the original commit; the reference model source is not in the repo.
 
 ## Quickstart
 
