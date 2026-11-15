@@ -7,7 +7,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from contextlib import suppress
 from pathlib import Path
 from unittest.mock import patch
 
@@ -44,6 +46,57 @@ class FakeLLMTests(unittest.TestCase):
         self.assertGreater(
             len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1
         )
+
+    def test_fake_edit_pairs_support_chained_multi_and_whole_file_edits(self):
+        source = "A = 1\nB = 2\n"
+        self.assertEqual(
+            llm.fake_edit_pairs({"old": "A = 1", "new": "A = 3"}, source),
+            [{"old": "A = 1", "new": "A = 3"}],
+        )
+        both = {"edits": [{"old": "A = 1", "new": "A = 3"}, {"old": "B = 2", "new": "B = 4"}]}
+        self.assertEqual(len(llm.fake_edit_pairs(both, source)), 2)
+        self.assertIsNone(llm.fake_edit_pairs({"old": "C = 1", "new": "C = 2"}, source))
+        insert = {"old": "B = 2\n", "new": "B = 2\nC = 3\n"}
+        self.assertIsNone(llm.fake_edit_pairs(insert, source.replace("B = 2\n", insert["new"])))
+        missing = {"edits": [both["edits"][0], {"old": "C = 1", "new": "C = 2"}]}
+        self.assertIsNone(llm.fake_edit_pairs(missing, source))
+        whole = {"replace_with": {"x": 1}}
+        [pair] = llm.fake_edit_pairs(whole, source)
+        self.assertEqual((pair["old"], json.loads(pair["new"])), (source, {"x": 1}))
+        self.assertIsNone(llm.fake_edit_pairs(whole, pair["new"]))
+        with self.assertRaises(ValueError):
+            llm.fake_edit_pairs({"old": "A = 1", "new": 3}, source)
+
+    def test_fake_worker_follows_task_trajectory_then_rejects(self):
+        edits = [
+            {
+                "descriptor": {"mechanism": "search", "method": "tabu"},
+                "old": "A = 1",
+                "new": "A = 2",
+            },
+            {
+                "descriptor": {"mechanism": "search", "method": "budget"},
+                "old": "A = 2",
+                "new": "A = 3",
+            },
+        ]
+        source = "A = 1\n"
+        for expected in ("A = 2", "A = 3"):
+            proposal = llm.fake_response(
+                "WORKER_PROPOSE",
+                {"agent": "worker-2", "candidate_source": source, "fake_edits": edits},
+            )
+            [edit] = proposal["edits"]
+            self.assertEqual(edit["new"], expected)
+            source = source.replace(edit["old"], edit["new"])
+        proposal = llm.fake_response(
+            "WORKER_PROPOSE",
+            {"agent": "worker-1", "candidate_source": source, "fake_edits": edits},
+        )
+        self.assertEqual(proposal["status"], "reject")
+        chained = [{**edits[0], "old": "A = 9"}, edits[0]]
+        assigned = llm.fake_assigned_proposal("search/tabu", "A = 1\n", fake_edits=chained)
+        self.assertEqual(assigned["edits"], [{"old": "A = 1", "new": "A = 2"}])
 
     def test_assigned_cell_uses_task_knob(self):
         task = swarm.load_task("hadamard19")
@@ -190,32 +243,38 @@ class SandboxedSwarmTests(unittest.TestCase):
         subprocess.run(["git", "commit", "-qm", "baseline"], cwd=repo, check=True)
         return repo
 
-    def run_three_rounds(self, parent, name):
-        repo = self.create_repo(parent, name)
-        out = Path(parent) / name
+    def swarm_env(self):
         env = os.environ.copy()
         env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
         env.pop("OPENAI_API_KEY", None)
+        return env
+
+    def swarm_command(self, repo, out, rounds):
+        return [
+            sys.executable,
+            str(ROOT / "swarm.py"),
+            "--task",
+            "hadamard19",
+            "--arm",
+            "B",
+            "--rounds",
+            str(rounds),
+            "--llm",
+            "fake",
+            "--no-push",
+            "--out",
+            str(out),
+            "--repo",
+            str(repo),
+        ]
+
+    def run_three_rounds(self, parent, name, rounds=3):
+        repo = self.create_repo(parent, name)
+        out = Path(parent) / name
         result = subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "swarm.py"),
-                "--task",
-                "hadamard19",
-                "--arm",
-                "B",
-                "--rounds",
-                "3",
-                "--llm",
-                "fake",
-                "--no-push",
-                "--out",
-                str(out),
-                "--repo",
-                str(repo),
-            ],
+            self.swarm_command(repo, out, rounds),
             cwd=ROOT,
-            env=env,
+            env=self.swarm_env(),
             capture_output=True,
             text=True,
             timeout=600,
@@ -376,6 +435,127 @@ class SandboxedSwarmTests(unittest.TestCase):
             self.assertGreaterEqual(len(entries), 2)
             ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
             self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
+
+    def kill_after_round(self, repo, out, rounds, round_num):
+        process = subprocess.Popen(
+            self.swarm_command(repo, out, rounds),
+            cwd=ROOT,
+            env=self.swarm_env(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        checkpoint = out / swarm.CHECKPOINT_NAME
+        deadline = time.monotonic() + 300
+        try:
+            while process.poll() is None and time.monotonic() < deadline:
+                if checkpoint.exists():
+                    with suppress(ValueError):
+                        if json.loads(checkpoint.read_text())["round"] >= round_num:
+                            break
+                time.sleep(0.01)
+        finally:
+            process.kill()
+            process.wait()
+        self.assertEqual(json.loads((out / "run.json").read_text())["status"], "running")
+        return json.loads(checkpoint.read_text())
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_killed_run_resumes_from_its_last_complete_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            reference, _ = self.run_three_rounds(tmp, "reference", rounds=4)
+            repo = self.create_repo(tmp, "killed")
+            out = tmp / "killed"
+            checkpoint = self.kill_after_round(repo, out, 4, 2)
+            run_id = (out / "run_id").read_text().strip()
+            with (out / "ledger.jsonl").open("a", encoding="utf-8") as handle:
+                handle.write('{"half-written": ')
+            (viewer,) = [path for path in (out / "viewer").iterdir() if path.is_dir()]
+            manifest = json.loads((viewer / "manifest.json").read_text())
+            self.assertEqual(manifest["status"], "running")
+            self.assertIn("heartbeat_ts", manifest)
+            published = (viewer / "events.ndjson").read_bytes()
+            prefix = published[: checkpoint["viewer"]["events_bytes"]]
+
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "swarm.py"), "--resume", str(out)],
+                cwd=ROOT,
+                env=self.swarm_env(),
+                capture_output=True,
+                text=True,
+                timeout=600,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn(f"resuming run {run_id} at round", result.stderr)
+            ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
+            self.assertEqual(self.without_commits(ledger), self.without_commits(reference))
+            run = json.loads((out / "run.json").read_text())
+            self.assertEqual((run["status"], run["run_id"]), ("finished", run_id))
+            self.assertEqual(len(run["resumes"]), 1)
+            self.assertTrue(run["resumes"][0]["checkpoint_ts"])
+            self.assertEqual(
+                [path for path in (out / "viewer").iterdir() if path.is_dir()], [viewer]
+            )
+            self.assertTrue((viewer / "events.ndjson").read_bytes().startswith(prefix))
+            manifest = json.loads((viewer / "manifest.json").read_text())
+            self.assertEqual(manifest["status"], "finished")
+            self.assertNotIn("heartbeat_ts", manifest)
+
+            branches = swarm.git_text(repo, "branch", "--format=%(refname:short)").splitlines()
+            self.assertEqual(len(branches), 2, branches)
+            tags = swarm.git_text(repo, "tag", "--list").splitlines()
+            self.assertTrue(tags)
+            self.assertTrue(all(tag.startswith(f"run/swarm_B/{run_id[:8]}/") for tag in tags))
+            self.assertEqual(len({tag.split("/")[-1] for tag in tags}), len(tags))
+            tree = swarm.git_text(
+                repo, "ls-tree", "-r", "--name-only", run["branch"], "experiments/swarm_B"
+            ).splitlines()
+            self.assertIn("experiments/swarm_B/llm_log.jsonl.gz", tree)
+            self.assertIn("experiments/swarm_B/ledger.jsonl", tree)
+            self.assertFalse([path for path in tree if "/viewer/" in path or "/runs/" in path])
+            self.assertNotIn("experiments/swarm_B/llm_log.jsonl", tree)
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_worker_llm_failure_becomes_a_crash_row(self):
+        call = llm.LLMClient.call
+
+        def failing(agents):
+            def wrapped(client, role, **kwargs):
+                if role == "WORKER_PROPOSE" and kwargs.get("agent") in agents:
+                    raise llm.LLMError(f"{role} call for {kwargs['agent']} failed: HTTP 503")
+                return call(client, role, **kwargs)
+
+            return wrapped
+
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, agents in (("one", {"worker-2"}), ("all", set(swarm.AGENTS))):
+                repo = self.create_repo(tmp, name)
+                out = Path(tmp) / f"out-{name}"
+                args = swarm.build_parser().parse_args(
+                    self.swarm_command(repo, out, 1)[2:] + ["--no-viewer"]
+                )
+                with (
+                    patch.dict(os.environ, {"EXA": "off", "MEMORY_BACKEND": "local"}),
+                    patch.object(llm.LLMClient, "call", failing(agents)),
+                    patch("sys.stderr"),
+                ):
+                    if name == "all":
+                        with self.assertRaisesRegex(RuntimeError, "every worker's LLM call"):
+                            swarm.orchestrate(args)
+                        run = json.loads((out / "run.json").read_text())
+                        self.assertEqual(run["status"], "stopped")
+                        continue
+                    swarm.orchestrate(args)
+                rows = [
+                    json.loads(line)
+                    for line in (out / "ledger.jsonl").read_text().splitlines()
+                    if json.loads(line).get("kind") == "candidate"
+                ]
+                self.assertEqual(len(rows), 4)
+                crashed = [row for row in rows if row["agent"] == "worker-2"]
+                self.assertEqual(crashed[0]["status"], "crash")
+                self.assertTrue(crashed[0]["gate_reasons"][0].startswith("llm_error: "))
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_fake_run_stops_early_when_converged(self):

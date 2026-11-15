@@ -7,7 +7,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
-- **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
+- **Experiment producer:** the Ig Nobel prize hunt is the swarm task `swarm.py --task ignobel` ([`testcases/README.md`](testcases/README.md), task files in `testcases/ignobel/`).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
@@ -29,7 +29,7 @@ Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so n
 From the repo root, in two terminals:
 
 ```sh
-# one-time: make setup && docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+# one-time: make setup && docker build -t caffeinated-testcases:py311-v2 -f testcases/Dockerfile testcases
 # put TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY in .env (see .env.example)
 npm run dev                                                          # terminal 1: lab
 python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker  # terminal 2: research
@@ -50,7 +50,7 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.
 
-The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample includes mock prior-art URLs and is labeled accordingly; its supplied provenance is not proof of live scientific validation.
+The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample is an offline `swarm.py --task ignobel` run (fake LLM) whose prior-art sources come from keyless OpenAlex/arXiv/PubMed search; its supplied provenance is not proof of live scientific validation.
 
 ## Data and future integration
 

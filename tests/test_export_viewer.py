@@ -1,3 +1,4 @@
+import gzip
 import json
 import tempfile
 import unittest
@@ -255,7 +256,9 @@ class ExportViewerTests(unittest.TestCase):
                 set(manifest["provenance"]),
                 {
                     "llm",
+                    "llm_mode",
                     "exa",
+                    "research",
                     "native_run_id",
                     "memory_backend",
                     "swarm_commit",
@@ -321,6 +324,25 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
 
+    def test_arm_branch_checkout_with_gzipped_logs_exports_the_same_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            events = self.export(out, root / "dest-raw")[1]
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                path = out / name
+                with gzip.open(out / f"{name}.gz", "wb") as archive:
+                    archive.write(path.read_bytes())
+                path.unlink()
+            archived = self.export(out, root / "dest-archived")[1]
+            self.assertEqual(len(archived), len(events))
+            self.assertEqual(
+                [event["type"] for event in archived], [event["type"] for event in events]
+            )
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                (out / f"{name}.gz").unlink()
+            self.assertLess(len(self.export(out, root / "dest-without-logs")[1]), len(events))
+
     def test_duplicate_experiment_maps_to_discard_with_reason(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -381,93 +403,6 @@ class ExportViewerTests(unittest.TestCase):
                 for frame in keyframes.values()
             ]
             self.assertIn("exploit", roles)  # earlier keyframes keep historical state
-
-    def test_ignobel_events_convert(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            out = root / "ig"
-            out.mkdir()
-            base = {"arm": "full", "seed": 0, "tokens": 0, "latency_ms": 0}
-            write_jsonl(
-                out / "events.jsonl",
-                [
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "idea",
-                        "payload": {
-                            "idea_id": "q1",
-                            "text": "Do cats nap more on Mondays?",
-                            "source_urls": [],
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "prediction",
-                        "payload": {"idea_id": "q1", "direction": "+", "effect_size": 0.2},
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "boredom",
-                        "payload": {
-                            "B": 0.4,
-                            "regime": "EXPLOIT",
-                            "similarity": 0.1,
-                            "action": "RUN_STUDY",
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "measurement_request",
-                        "payload": {"requester": "volkov", "instrument": "t", "n": 10},
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "study_result",
-                        "payload": {
-                            "study_id": "s1",
-                            "idea_id": "q1",
-                            "ok": True,
-                            "replicated": True,
-                            "prediction": {"direction": "+", "effect_size": 0.2},
-                            "stats": {"direction": "+", "effect_size": 0.2, "p": 0.01},
-                        },
-                    },
-                    {
-                        **base,
-                        "round": 1,
-                        "agent": "quill",
-                        "type": "talk",
-                        "payload": {"partner": "volkov", "turn": 1, "text": "hi"},
-                    },
-                ],
-            )
-            _run_dir, events, manifest, _timeline, entities = self.export(out, root / "dest")
-            types = {a["native_id"]: a["type"] for a in manifest["agents"]}
-            self.assertEqual(
-                types, {"quill": "researcher", "volkov": "statistician", "world": "world"}
-            )
-            self.assertTrue(all(e["ts"] is None for e in events))
-            self.assertEqual(entities["rewards"]["reward:s1"]["value"], 1.0)
-            self.assertEqual(
-                entities["hypotheses"]["hypothesis:q1"]["prediction"]["effect_size"], 0.2
-            )
-            talk = next(e for e in events if e["type"] == "message.sent")
-            self.assertEqual(
-                talk["refs"]["to_agent_id"],
-                next(a["agent_id"] for a in manifest["agents"] if a["native_id"] == "volkov"),
-            )
-            index = json.loads((root / "dest" / "index.json").read_text())
-            self.assertEqual(index["runs"][0]["run_id"], manifest["run_id"])
 
     def test_profile_sha_mismatch_fails_export(self):
         with tempfile.TemporaryDirectory() as tmp:

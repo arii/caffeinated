@@ -4,7 +4,10 @@ RUN python -m pip install --no-cache-dir \
     numpy==2.2.6 \
     pandas==2.2.3 \
     openpyxl==3.1.5 \
+    packaging==24.2 \
+    patsy==1.0.1 \
     scipy==1.15.3 \
+    statsmodels==0.14.4 \
     python-dateutil==4.0.0 \
     pytz==2026.6 \
     tzdata==2026.6 \

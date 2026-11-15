@@ -10,5 +10,29 @@
  {
   "url": "https://github.com/fivethirtyeight/data/tree/master/steak-survey",
   "title": "FiveThirtyEight steak-risk survey (CC BY 4.0), the dataset behind the baseline registration."
+ },
+ {
+  "url": "https://doi.org/10.1016/0195-6663(91)90022-k",
+  "title": "Rozin, Levine & Stoess (1991). Chocolate craving and liking. Appetite 17(3)."
+ },
+ {
+  "url": "https://doi.org/10.1016/j.appet.2017.11.064",
+  "title": "Richard, Meule & Blechert (2018). Trait and state chocolate craving, hunger, and implicit chocolate preference: a moderated mediation model. Appetite 121."
+ },
+ {
+  "url": "https://doi.org/10.1016/s0163-6383(86)80153-9",
+  "title": "Green & Gustafson (1986). Parents' and nonparents' perceptions of cries. Infant Behavior and Development 9(1)."
+ },
+ {
+  "url": "https://doi.org/10.1037/0012-1649.23.3.370",
+  "title": "Green, Jones & Gustafson (1987). Perception of cries by parents and nonparents: relation to cry acoustics. Developmental Psychology 23(3)."
+ },
+ {
+  "url": "https://github.com/fivethirtyeight/data/tree/master/candy-power-ranking",
+  "title": "FiveThirtyEight candy power ranking (CC BY 4.0), the dataset behind the fake fruity-candy registration."
+ },
+ {
+  "url": "https://github.com/fivethirtyeight/data/tree/master/flying-etiquette-survey",
+  "title": "FiveThirtyEight flying-etiquette survey (CC BY 4.0), the dataset behind the fake baby-on-a-plane registration."
  }
 ]

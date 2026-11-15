@@ -1,6 +1,6 @@
 {
   "domain": "testcase-ignobel-mini",
-  "version": 2,
+  "version": 3,
   "direction": "min",
   "objective": "loss",
   "eps": 0.02,
@@ -8,6 +8,12 @@
   "k": 5,
   "knn": 3,
   "patience": 5,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
   "levels": [
     "mechanism",
     "method"
@@ -100,6 +106,18 @@
       "ratio": 4
     }
   },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
   "fail_statuses": [
     "crash"
   ],

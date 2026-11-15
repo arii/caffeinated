@@ -15,4 +15,10 @@ answers["bix-18-q2"] = round(area["Wildtype"], -3)
 answers["bix-18-q3"] = (1 - area["ΔlasR"] / area["Wildtype"]) * 100
 answers["bix-18-q4"] = sw[sw.Genotype == "rhlR-"].Circularity.std()
 
+# Unanswered questions, one TODO line each (remove the line when you answer it):
+# TODO bix-18-q1
+# TODO bix-18-q5
+# TODO bix-19 (NeuN: effect size, normality, power, interaction)
+# TODO bix-51 (logistic regressions on data.xlsx)
+
 print(json.dumps({k: float(v) for k, v in answers.items()}))

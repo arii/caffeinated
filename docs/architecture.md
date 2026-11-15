@@ -94,6 +94,9 @@ files and HTTP without code changes.
 - **Benchmarks:** `hadamard19`, `bixbench_mini`, `playworld_mini`, which are small
   CPU-sized versions of the hackathon's records to beat (see
   [`testcases/README.md`](../testcases/README.md)).
-- **Ig Nobel:** a community of agents running reproducible studies with
-  replication and separate LAUGH/THINK judging (`ignobel/` on `main`). It uses
-  the same Boredom Meter with its own profile.
+- **Ig Nobel:** the swarm task `swarm.py --task ignobel`: expert labs
+  pre-register one Spearman test per real public dataset, the host grades
+  significance and split-half replication, and a separate LAUGH/THINK
+  committee (`testcases/ignobel/score_run.py`) judges replicated studies only
+  after the run. It uses the same Boredom Meter with its own profile
+  (`testcases/ignobel/boredom_profile.json`).

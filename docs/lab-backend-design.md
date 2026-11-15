@@ -50,7 +50,7 @@ Movement between stations is illustrative and deterministic under seeking. Camer
 
 The default service rejects live run creation. Playback and interaction require no API key and make no paid calls. The existing execution code remains in source for later integration but is not connected to the replay UI.
 
-All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample references mock prior-art sources and is labeled recorded sample. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
+All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample is an offline `swarm.py --task ignobel` run with a fake LLM; its sources are real keyless literature hits, but its studies are not model research. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
 
 Future Ig Nobel objectives should supply their own manifests, metric units/direction, identities, events, scientific artifacts, and provenance. The backend team can change experiment content while keeping replay controls and world interactions stable.
 

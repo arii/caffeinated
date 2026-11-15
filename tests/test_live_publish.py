@@ -125,10 +125,37 @@ class LiveExportTests(unittest.TestCase):
                         worker.join(3)
                     publisher.close()
             committed = swarm.git_text(conductor, "ls-tree", "-r", "--name-only", "HEAD")
-            relative = "experiments/swarm_B/viewer/run/entities/rewards.json"
-            self.assertIn(relative, committed.splitlines())
-            self.assertNotIn(".rewards.json.", committed)
-            self.assertEqual(swarm.git_text(conductor, "show", f"HEAD:{relative}"), "published")
+            self.assertEqual(committed.splitlines(), ["experiments/swarm_B/ledger.jsonl"])
+            self.assertEqual(entity.read_text(), "published")
+
+    def test_idle_publisher_sends_heartbeats(self):
+        beats = threading.Event()
+        publishes = []
+        publisher = live_publish.Publisher(
+            lambda **kwargs: publishes.append(kwargs), heartbeat=0.02, on_heartbeat=beats.set
+        )
+        try:
+            self.assertTrue(beats.wait(2))
+            self.assertEqual(publishes, [])
+        finally:
+            publisher.close()
+
+    def test_heartbeat_refreshes_only_live_manifests(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "run"
+            run_dir.mkdir()
+            manifest = run_dir / "manifest.json"
+            self.assertFalse(export_viewer.heartbeat(tmp, "missing"))
+            manifest.write_text(json.dumps({"live": True, "status": "running"}))
+            self.assertTrue(export_viewer.heartbeat(tmp, "run"))
+            data = json.loads(manifest.read_text())
+            self.assertEqual(data["status"], "running")
+            self.assertEqual(data["heartbeat_interval_s"], export_viewer.HEARTBEAT_INTERVAL_S)
+            stamp = datetime.fromisoformat(data["heartbeat_ts"].replace("Z", "+00:00"))
+            self.assertLess(abs((datetime.now(timezone.utc) - stamp).total_seconds()), 60)
+            manifest.write_text(json.dumps({"live": False, "status": "stopped"}))
+            self.assertFalse(export_viewer.heartbeat(tmp, "run"))
+            self.assertNotIn("heartbeat_ts", json.loads(manifest.read_text()))
 
     def test_research_and_proposals_sort_together(self):
         run = export_viewer.Run(

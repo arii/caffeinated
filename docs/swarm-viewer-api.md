@@ -21,11 +21,10 @@ python -m viewer --data /path/to/export-root --port 8000
 ```
 
 The export root contains index.json and UUID-named run directories. The CLI binds
-to 127.0.0.1. Static export supports both source formats:
+to 127.0.0.1. Static export reads a `swarm.py --out` dir (any `--task`, including `ignobel`):
 
 ```sh
-python export_viewer.py /path/to/run --swarm autoresearch --dest /path/to/export-root
-python export_viewer.py /path/to/ignobel-run --swarm ignobel --dest /path/to/export-root
+python export_viewer.py /path/to/run --dest /path/to/export-root
 ```
 
 ### Implemented HTTP routes
@@ -58,6 +57,11 @@ only an event suffix, preserves keyframes and refuses non-prefix histories.
 Files are replaced atomically one at a time, not as a directory transaction.
 Publish errors are logged without stopping research. Terminal publication adds
 run.finished and sets live=false. Visibility is round-level rather than worker-log tailing.
+While live, manifest.json carries heartbeat_ts (UTC ISO-8601) and heartbeat_interval_s;
+the conductor refreshes heartbeat_ts at least every 30 seconds, so a live manifest whose
+heartbeat is several intervals old belongs to a writer that died (for example SIGKILL).
+The viewer run id is fixed in run.json (viewer_run_id), so a resumed run keeps
+appending to the same recording.
 
 ### Contract differences and access boundary
 
@@ -103,7 +107,6 @@ and publishes exports; [log coverage](#gaps-in-current-logs) describes available
 | swarm | code | native artifacts |
 |---|---|---|
 | autoresearch | `swarm.py` on `autoresearch` | `ledger.jsonl`, `assignments.jsonl`, `boredom_log.jsonl`, `research_log.jsonl`, `memory.jsonl`, `memory_log.jsonl`, `llm_log.jsonl`, `critic.tsv`, `results.tsv`, `run_id`, `run.json`, `boredom_profile.json`, optional `viewer_publish_log.jsonl`, `runs/`, default `viewer/` |
-| ignobel | `ignobel/world.py` on `main` | `events.jsonl` (schema in `ignobel/events.md`), `scores.jsonl`, `state.json`, `prompts.jsonl`, `plots/` |
 
 This replaces the per-experiment `caffeinated-trace/v1` (`export_trace.py`, closed PR #4), which
 has no per-agent state between experiments. It also extends the `ResearchEvent` envelope in
@@ -117,16 +120,16 @@ and `version`/`runId`/`eventId` map one-to-one.
 | field | type | meaning |
 |---|---|---|
 | `tick` | int ≥ 0 | **Primary index.** One per normalized event, strictly increasing, gap-free within a run. "Pause at T" means "every event with `tick ≤ T` has happened". |
-| `round` | int ≥ 0 | The swarm's natural step: an autoresearch round or an ignobel round. 0 is setup (baseline, seeding). |
-| `phase` | enum | Position within a round, e.g. `assign → research → propose → gate → evaluate → critic → status` (autoresearch) or `boredom → talk → share → snap → propose → study → diary` (ignobel). Used for ordering and for the scrubber's sub-ticks. |
-| `ts` | ISO-8601 or `null` | Source wall-clock time **only if the source record had one**. It is never invented. Ig Nobel events have no timestamps; current CPU ledger rows carry `ts`. |
+| `round` | int ≥ 0 | The swarm's natural step: an autoresearch round. 0 is setup (baseline, seeding). |
+| `phase` | enum | Position within a round, e.g. `assign → research → propose → gate → evaluate → critic → status` Used for ordering and for the scrubber's sub-ticks. |
+| `ts` | ISO-8601 or `null` | Source wall-clock time **only if the source record had one**. It is never invented. Current CPU ledger rows carry `ts`. |
 
 The frontend owns animation time. It interpolates between ticks and never treats it as data.
 
 **Ordering rule (exporter).** autoresearch writes several files, so events are merged by
 `(round, phase rank, ts, file, line)`. Current CPU ledger timestamps are used for both experiment
 events; older rows without `ts` borrow the matching gate timestamp for `experiment.started`
-and a following status timestamp for `experiment.finished` when available. Ig Nobel uses file order. Running the exporter
+and a following status timestamp for `experiment.finished` when available. Running the exporter
 twice on the same artifacts must produce byte-identical output.
 
 **Keyframes.** The server or exporter stores a full `WorldSnapshot` at the end of every round (and
@@ -139,11 +142,11 @@ remaining events. This keeps pause and seek instant on long runs.
 
 - `run_id`: UUIDv5(`NS_CAFFEINATED`, `"{swarm}:{arm}:{branch or out_dir}:{first ts or seed}"`).
   One run is one arm. Arms that are compared share a `compare_group`.
-- `agent_id`: UUIDv5(`run_id`, `native_id`), for example `native_id = "worker-2"` or `"quill"`.
+- `agent_id`: UUIDv5(`run_id`, `native_id`), for example `native_id = "worker-2"`.
   It is deterministic, so a re-export keeps the same IDs. It does not depend on avatar appearance.
 - `event_id`: UUIDv5(`run_id`, `"{file}:{line}:{sub}"`). This deduplicates events on reconnect.
 - Entity IDs keep native IDs where they exist: `S25` (source), `Q13` (query), `lead-B-3-worker-1`
-  (memory item), ledger `seq`, ignobel `study_id`/`idea_id`. Each is prefixed with its kind
+  (memory item), ledger `seq`. Each is prefixed with its kind
   (`source:S25`) so it is unique within the run.
 
 `NS_CAFFEINATED = 6f1c3d2e-5b7a-4c1e-9a43-0c0ffee00001` (fixed and committed with the exporter).
@@ -158,8 +161,9 @@ keys). Optional fields are absent, never `null`, unless the type says `| null`.
 ### 3.1 Run manifest
 
 ```ts
-type Swarm = 'autoresearch' | 'ignobel';
-type RunStatus = 'running' | 'completed' | 'failed' | 'stopped';
+type Swarm = 'autoresearch';  // every swarm.py --task (including ignobel) exports 'autoresearch'
+type RunStatus = 'running' | 'completed' | 'failed' | 'stopped' | 'finished'
+  | 'scoring';  // live: rounds done, task post_run hook (ignobel committee) running
 
 interface RunManifest {
   schema: 'swarm-viewer/v1';
@@ -170,17 +174,39 @@ interface RunManifest {
   live: boolean;                       // true while the producer is still appending
   arm: { id: string; label: string; boredom_enabled: boolean; policy: string };
   compare_group?: string;              // runs whose arms are compared share this
-  metric: { name: string; unit: string; direction: 'minimize' | 'maximize' };
+  metric: { name: string; unit: string; direction: 'minimize' | 'maximize';
+            label?: string; description?: string };  // from task.json "metric" when present
+  publish_errors: PublishIssue[];      // last 20 publish failures/recoveries; [] when healthy
   boredom: { scale: [0, 1]; thresholds: Record<string, number>; regimes: string[] };
   time: { ticks: number; rounds: number; ts_start: string | null; ts_end: string | null };
   agents: AgentIdentity[];
   provenance: {
     llm: string; gpu: string; exa: string; memory_backend: string; // gpu is a legacy contract field
+    research: 'exa' | 'keyless' | 'off' | 'unknown';  // run.json research source
+    llm_mode: string;                  // run.json --llm (e.g. 'fake', 'tinker'); 'unknown' if absent
     command: string; swarm_commit: string;
     artifacts: Record<string, string>; // file -> sha256[:16]
   };
 }
+
+interface PublishIssue {               // from <out>/viewer_publish_log.jsonl
+  ts: string;
+  kind: string;                        // 'recovered' or the exception class, e.g. 'RuntimeError'
+  final: boolean;                      // true when the failing publish was the final one
+  message: string;                     // capped at 500 chars
+}
 ```
+
+Live publishing is append-only: a republish keeps the published `events.ndjson` bytes as a
+prefix. If a late record would sort into the published prefix, the exporter pins the published
+events and appends the new ones after them (never in an earlier round) and logs a `recovered`
+issue instead of raising `PublishConflict`. Only unreadable published bytes still conflict.
+After a recovery the producer keeps the published events pinned for the rest of the run, so the
+published bundle's tick order (and the round of appended events) can differ from a fresh
+re-export of the same native logs. Consumers must treat the published bundle as authoritative.
+A `recovered` issue is logged at most once per out-of-order event (its `event_ids` are kept in
+`viewer_publish_log.jsonl`), so repeated publishes do not flood `publish_errors`.
+A failed final publish is retried once, then printed to stderr and kept in `publish_errors`.
 
 ### 3.2 Agents
 
@@ -189,16 +215,15 @@ interface RunManifest {
 ```ts
 type AgentType =
   | 'conductor' | 'worker' | 'critic' | 'baseline'   // autoresearch
-  | 'researcher' | 'statistician'                    // ignobel (statistician = no dataset)
   | 'world';                                         // system / environment pseudo-agent
 
 interface AgentIdentity {
   agent_id: string;           // uuid
-  native_id: string;          // "worker-2", "quill"
+  native_id: string;          // "worker-2"
   display_name: string;
   type: AgentType;
-  field?: string;             // ignobel: "behavioral economics"
-  instruments?: string[];     // ignobel lab instruments
+  field?: string;             // task-named labs, e.g. --task ignobel: "physics"
+  named?: boolean;            // display_name comes from the task, not a family number
 }
 
 type Activity =
@@ -208,7 +233,7 @@ type Activity =
 interface AgentState {                 // one agent at tick T
   agent_id: string;
   type: AgentType;
-  role: string | null;                 // autoresearch: exploit|divergent|critic; ignobel: REFINE|SNAP|RUN_STUDY
+  role: string | null;                 // exploit|divergent|critic
   scout: boolean;                      // autoresearch: assigned a research-scout slot this round
   activity: Activity;
   station: string;                     // frontend hint: culture|analyzer|explorer|notebook|...
@@ -216,7 +241,7 @@ interface AgentState {                 // one agent at tick T
   boredom: Boredom;
   focus: {                             // what it's working on right now
     question_id?: string; hypothesis_id?: string; experiment_id?: string;
-    partner_agent_id?: string;         // ignobel talk/share partner
+    partner_agent_id?: string;         // talk/share partner
   };
   last_observation_id: string | null;
   last_question_id: string | null;
@@ -229,8 +254,7 @@ interface AgentState {                 // one agent at tick T
 interface Boredom {
   B: number;                           // 0..1 (the trace-v1 B×100 is a display choice only)
   regime: string;                      // EXPLOIT | BOREDOM_SNAP | PARADIGM_BREAKOUT | CONVERGED | FRUSTRATED | YOKED_SNAP
-  components: Record<string, number>;  // autoresearch: novelty, stagnation, overload, fail_rate, trivial_rate, diversity
-                                       // ignobel: similarity, self_repeat, ext_familiar, unsurprise, stall, frustration
+  components: Record<string, number>;  // novelty, stagnation, overload, fail_rate, trivial_rate, diversity
   shadow: boolean;                     // true when the meter is disabled (arm A): what B would have been
   measured_tick: number;               // tick of the boredom.measured event this came from
 }
@@ -261,15 +285,17 @@ interface Observation {     // something the agent saw
 
 interface Hypothesis {      // a proposal plus its reasoning
   hypothesis_id: string; agent_id: string; tick: number; round: number;
-  text: string;             // autoresearch claim.idea; ignobel idea.title / text
-  rationale: string;        // autoresearch claim.rationale; ignobel idea.hypothesis + method
+  text: string;             // claim.idea (regime tags like "[EXPLOIT]" stripped). A repeated
+                            // claim (same author, same idea) adds no new hypothesis; its
+                            // memory item gets repeat_of.
+  rationale: string;        // claim.rationale
   descriptor?: Record<string, unknown>;
   prediction?: { delta?: number; direction?: '+' | '-'; effect_size?: number };
   lead_id?: string; source_ids: string[];
   llm_call_id?: string;     // full prompt / response
 }
 
-interface Experiment {      // one ledger row (autoresearch) or study (ignobel)
+interface Experiment {      // one ledger row
   experiment_id: string; agent_id: string; round: number;
   tick_started: number; tick_finished: number | null;
   kind: 'baseline' | 'candidate' | 'critic' | 'study';
@@ -280,14 +306,39 @@ interface Experiment {      // one ledger row (autoresearch) or study (ignobel)
   status: 'keep' | 'discard' | 'crash' | 'reject' | 'replicated' | 'not_replicated' | 'failed';
   verdict?: { by_agent_id: string; verdict: string; why: string };
   reward: Reward | null;
-  artifacts: string[];                    // diff, plot_path, run log
+  artifacts: Record<string, string>;      // log: runs/<commit>.log, diff: runs/<commit>.diff
+                                          // (diff capped at 20,000 chars); each key present
+                                          // only when the file exists; copied under the
+                                          // bundle's artifacts/
+  log_tail: string | null;                // last 2,000 chars of the run log; null when none
+}
+
+interface Study {           // ignobel_studies.jsonl: one per candidate study (critic re-runs
+                            // are folded into replications, not duplicated)
+  id: string;               // study:<line>
+  agent_id: string | null; experiment_id: string | null; commit: string | null; round: number;
+  field?: string; study_type?: string; question?: string; hypothesis?: string; mechanism?: string;
+  dataset: { url?: string; x?: string; x_level?: string; x_per?: string;
+             y?: string; y_level?: string; y_per?: string };
+  dataset_id?: string; direction?: string;
+  predicted_rho: number | null; rho: number | null; p: number | null; n: number | null;
+  halves: { rho: number; p: number; n: number; problem: string | null }[] | null;
+  significant: boolean | null; replicated: boolean | null; confirmed: boolean;
+  headline: string | null;
+  rejected: string | null;  // rejection reason (bad dataset, wrong direction, ...)
+  outcome: string;          // one readable line, e.g. "rho 0.065 (predicted 0.15), p 0.18,
+                            // n 428: not significant" ("...: REPLICATED", "...: significant
+                            // but did not replicate", "Rejected: <reason>", "Not run")
+  citations: string[];
+  replications: { rho; p; n; halves; significant; replicated; confirmed }[];  // critic re-runs
+  committee: { score: number | null; rejected: string | null; verdicts: unknown } | null;
 }
 
 interface Reward {
   experiment_id: string; tick: number;
   value: number;            // direction-normalized, higher = better (see §3.5)
   metric_value: number | null;
-  reference: number | null; // best before this experiment (autoresearch) / predicted effect (ignobel)
+  reference: number | null; // best before this experiment
   delta: number | null;     // metric_value - reference, in metric units
   accepted: boolean;        // kept / replicated
   outcome: Experiment['status'];
@@ -297,14 +348,17 @@ interface DiaryEntry {      // the agent's own running notes
   diary_id: string; agent_id: string; tick: number; round: number;
   kind: 'lesson' | 'rationale' | 'critic_lesson' | 'round_summary' | 'talk';
   text: string;
-  replaces?: string;        // ignobel lessons are rewritten each round; keep the chain
+  replaces?: string;        // a rewritten note keeps the chain
   refs: string[];
 }
 
-interface MemoryItem {      // shared or private memory (past.dev mirror / ignobel stores)
+interface MemoryItem {      // shared or private memory (past.dev mirror / local store)
   memory_id: string; author_agent_id: string; tick: number; round: number;
   type: string;             // lead|claim|result|verdict|lesson|assignment|idea|prediction|failure
-  text: string; source_ids: string[];
+  text: string;             // readable text, never raw JSON ("<idea>. Why: <rationale>" for claims)
+  content?: string;         // the raw stored content (often JSON), for detail views
+  repeat_of?: string;       // memory_id of the same author's earlier claim with the same idea
+  source_ids: string[];
   scope: 'shared' | 'private';
   recalled_by: { agent_id: string; tick: number; inferred: boolean }[];
 }
@@ -348,30 +402,37 @@ interface SwarmEvent<T extends EventType = EventType, P = unknown> {
 }
 ```
 
-| `type` | payload (summary) | autoresearch source | ignobel source |
-|---|---|---|---|
-| `run.started` | manifest subset | `run.json` | first line / `run_arm.py` args |
-| `run.finished` | `{status, best}` | last `status` | last `lesson` of last round |
-| `round.started` | `{regime, swarm_B, rationale}` | `assignments.jsonl` | first `boredom` of round |
-| `agent.assigned` | `{role, scout, rationale}` | `assignment.roles/scouts` (one per worker) | `boredom.action` |
-| `boredom.measured` | `Boredom` | `assignment.per_agent_B` + recomputed components†, `status` (swarm) | `boredom` |
-| `question.asked` | `Question` | `research_log` `query`/`extract`; `memory_log` `recall` | `seed.query`, `snap`, `study_result.novelty` |
-| `observation.received` | `Observation` | `research_log` `source`; `memory_log` `recall` results; gate/critic outcomes | `seed.sources`, `snap.source`, `talk` (partner), `share.kept`, `measurement_request` |
-| `hypothesis.proposed` | `Hypothesis` | `memory.jsonl` `claim` + `llm_log` WORKER_PROPOSE | `idea` + `prediction` |
-| `gate.checked` | `{experiment_id, pass, reasons}` | `boredom_log` `gate` | — |
-| `experiment.started` | `Experiment` (partial) | ledger row (status pending) | `measurement_request` / study start |
-| `experiment.finished` | `Experiment` with `reward` | ledger row, `critic.tsv` | `study_result` |
-| `verdict.issued` | `{experiment_id, verdict, why}` | `critic.tsv`, `verdict` memory | — (committee is post-run) |
-| `memory.written` | `MemoryItem` | `memory.jsonl` / `memory_log` `write` | private store writes (idea, prediction, result) |
-| `message.sent` | `{to_agent_id, turn, text}` | — | `talk` |
-| `items.shared` | `{to_agent_id, offered, kept}` | — | `share` |
-| `diary.written` | `DiaryEntry` | `claim.rationale`, critic `lesson`, round summary | `lesson` |
-| `discovery.made` | `Discovery` | critic `keep` that improves the best by more than `eps` | `study_result.replicated` (+ `scores.jsonl` picks at the end) |
-| `llm.called` | `LlmCall` (no prompt body) | `llm_log.jsonl` | prompt log |
+| `type` | payload (summary) | autoresearch source |
+|---|---|---|
+| `run.started` | manifest subset | `run.json` |
+| `run.finished` | `{status, best}` | last `status` |
+| `round.started` | `{regime, swarm_B, rationale}` | `assignments.jsonl` |
+| `agent.assigned` | `{role, scout, rationale}` | `assignment.roles/scouts` (one per worker) |
+| `boredom.measured` | `Boredom` | `assignment.per_agent_B` + recomputed components†, `status` (swarm) |
+| `question.asked` | `Question` | `research_log` `query`/`extract`; `memory_log` `recall` |
+| `observation.received` | `Observation` | `research_log` `source`; `memory_log` `recall` results; gate/critic outcomes |
+| `hypothesis.proposed` | `Hypothesis` | `memory.jsonl` `claim` + `llm_log` WORKER_PROPOSE |
+| `gate.checked` | `{experiment_id, pass, reasons}` | `boredom_log` `gate` |
+| `experiment.started` | `Experiment` (partial) | ledger row (status pending) |
+| `experiment.finished` | `Experiment` with `reward` | ledger row, `critic.tsv` |
+| `verdict.issued` | `{experiment_id, verdict, why}` | `critic.tsv`, `verdict` memory |
+| `memory.written` | `MemoryItem` | `memory.jsonl` / `memory_log` `write` |
+| `message.sent` | `{kind: 'assignment' \| 'verdict', to_agent_id, text}` | conductor→worker per `assignments.jsonl` role; critic→author per `critic.tsv` row (`refs.experiment_id`) |
+| `items.shared` | `{kind: 'lead', to_agent_id, items, text}` | a claim whose `lead_id` is another agent's lead (actor = lead author) |
+| `study.registered` | `{field, question, x, y, predicted_rho, text}` | `ignobel_studies.jsonl` prereg (`refs.study_id`, `refs.experiment_id`) |
+| `study.result` | `{rho, predicted_rho, p, n, replicated, confirmed, rejected, headline, text}` | `ignobel_studies.jsonl` result |
+| `study.replicated` | `{rho, p, n, halves, significant, replicated, confirmed, text}` | critic re-run of a study (actor `critic`) |
+| `award.issued` | `{award, score, rejected, verdicts, headline, text}` | `scores.jsonl` committee row (end of run, phase `finish`) |
+| `diary.written` | `DiaryEntry` | `claim.rationale`, critic `lesson`, round summary |
+| `discovery.made` | `Discovery` | critic `keep` that improves the best by more than `eps` |
+| `llm.called` | `LlmCall` (no prompt body) | `llm_log.jsonl` |
 
 † Current assignments record full per_agent_boredom as well as per_agent_B and ledger/profile
 hashes. The exporter recomputes components against each assignment's logged ledger prefix,
 checks hashes and verifies logged B/components. Older assignments may contain only B.
+
+Every exported event carries a one-line human-readable `payload.text` (speech bubbles, the
+event feed). Events that have a native text keep it; the rest get a generated sentence.
 
 Unknown `type` values are ignored by the reducer, so new types do not require a version bump.
 Renaming or removing a field does.
@@ -383,9 +444,6 @@ Renaming or removing a field does.
 - `Reward.value` (autoresearch): `(reference - metric_value) / reference × 100` for `minimize`
   (positive = better than the best before it); `crash`/`reject` = `0`, `accepted = false`.
   This uses the same sign convention as trace-v1 `score`.
-- `Reward.value` (ignobel): `replicated ? 1 - gap(prediction, actual) : 0`, from `ignobel/boredom.py`.
-  Committee scores arrive at the end as `discovery.made` (`committee_pick`). They are never shown to
-  agents during the run.
 - **Swarm best** is the confirmed (critic-accepted) best, as in trace v1, not the raw provisional
   minimum.
 
@@ -469,7 +527,7 @@ Errors: `404 {error: "unknown_run" | "unknown_agent" | "unknown_entity"}`,
 
 ### 4.1 Static export (no server)
 
-Replay does not need a backend. `export_viewer.py <out_dir> --swarm autoresearch|ignobel` writes
+Replay does not need a backend. `export_viewer.py <out_dir>` writes
 files whose JSON matches the endpoints, so the frontend can switch base URLs:
 
 ```
@@ -575,8 +633,15 @@ Current CPU runs have closed several gaps from the original proposal:
 5. **Model text.** llm_log.jsonl stores prompts, parsed responses and provider-returned
    attempt content/reasoning when available. A proposal's rationale and recorded response
    provide the available explanations; additional internal reasoning is not guaranteed.
-6. **Ig Nobel timestamps.** events.jsonl intentionally omits wall-clock timestamps;
-   file order and ticks supply replay time.
+6. **Ig Nobel sources.** Swarm `ignobel`
+   research_log sources carry `ts`, `round` and `agent: conductor`. Records without a ts
+   inherit the previous record's ts and are placed in the newest round, never round 0.
+7. **Committee.** A swarm `ignobel` run invokes the task's `post_run` hook (`score_run.py`)
+   when it ran with a real LLM (not `--llm fake` or `--replay`) and `TINKER_API_KEY` is set;
+   otherwise it prints a skip line and no `award.issued` events appear. While the hook runs
+   (up to 30 minutes) the live manifest has `status: 'scoring'` (`live: true`). The run's
+   rounds are complete by then, so an interrupted or failed hook (including its arm-branch
+   push) still ends the run as `finished`, not `stopped`.
 
 ## Out of scope
 
