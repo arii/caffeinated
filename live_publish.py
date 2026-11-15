@@ -1,11 +1,35 @@
 """Coalesced, best-effort publication after source logs are closed."""
 
+import json
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _listeners = {}
 _listeners_lock = threading.Lock()
+_log_lock = threading.Lock()
+
+
+def append_records(path, records, timestamp_field="ts"):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with _log_lock, path.open("a", encoding="utf-8") as stream:
+        for record in records:
+            record[timestamp_field] = (
+                datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+            )
+            stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+    changed(path)
+
+
+def watermark():
+    with _log_lock:
+        return (
+            (datetime.now(timezone.utc) - timedelta(seconds=2))
+            .isoformat(timespec="microseconds")
+            .replace("+00:00", "Z")
+        )
 
 
 def watch(directory, callback):
@@ -26,7 +50,7 @@ def changed(path):
 
 
 class Publisher:
-    def __init__(self, callback, interval=3.0):
+    def __init__(self, callback, interval=3.0, settle=0.0):
         self.callback = callback
         self.interval = interval
         self.condition = threading.Condition()
@@ -34,6 +58,8 @@ class Publisher:
         self.dirty = False
         self.closed = False
         self.last = float("-inf")
+        self.settle = settle
+        self.settle_until = float("-inf")
         self.thread = threading.Thread(target=self._work, daemon=True)
         self.thread.start()
 
@@ -41,6 +67,7 @@ class Publisher:
         with self.condition:
             if not self.closed:
                 self.dirty = True
+                self.settle_until = time.monotonic() + self.settle
                 self.condition.notify()
 
     def _call(self, **kwargs):
@@ -70,6 +97,9 @@ class Publisher:
                         continue
                     self.dirty = False
                 self._call()
+                with self.condition:
+                    if time.monotonic() < self.settle_until:
+                        self.dirty = True
 
     def flush(self, **kwargs):
         with self.publish_lock:

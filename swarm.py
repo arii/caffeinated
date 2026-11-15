@@ -2115,7 +2115,7 @@ def _orchestrate(args, publish_state, cleanup):
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
     publisher = live_publish.Publisher(
-        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs)
+        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs), settle=2.0
     )
     publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"

@@ -61,11 +61,7 @@ def read_log(path):
 
 
 def append_log(path, record):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
-    live_publish.changed(path)
+    live_publish.append_records(path, [record])
 
 
 def fill_placeholders(template, values):

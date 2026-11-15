@@ -17,6 +17,7 @@ import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
+import live_publish
 from boredom_meter import meter
 
 SCHEMA = "swarm-viewer/v1"
@@ -117,6 +118,8 @@ class Run:
         self.swarm = swarm
         self.run_id = run_id
         self.phase_rank = {phase: rank for rank, phase in enumerate(PHASES[swarm])}
+        if swarm == "autoresearch":
+            self.phase_rank["propose"] = self.phase_rank["research"]
         self.raw = []
         self.entities = {kind: {} for kind in ENTITY_KINDS}
         self.agents = {}
@@ -275,6 +278,7 @@ def _recompute_boredom(out_dir, assignments, ledger, run_artifact):
 
 def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
+    watermark = live_publish.watermark()
     frontier_path = out_dir / "viewer_frontier.json"
     frontier = (
         json.loads(frontier_path.read_text())
@@ -654,10 +658,10 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         round_ = (
             meta.get("round")
             if isinstance(meta.get("round"), int)
-            else round_of_ts(starts, item.get("timestamp"))
+            else round_of_ts(starts, item.get("logged_at") or item.get("timestamp"))
         )
         mid = f"memory:{item.get('sourceId') or item.get('id') or line}"  # recalls report sourceId
-        ts = item.get("timestamp")
+        ts = item.get("logged_at") or item.get("timestamp")
         run.put(
             "memory",
             mid,
@@ -1030,9 +1034,18 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     }
     if not final and run_artifact.get("status") not in {"finished", "stopped"}:
         boundary = (frontier["round"], run.phase_rank[frontier["phase"]])
-        # Phase barriers are written only after all producers of that phase join.
-        # Timestamps alone are not watermarks: parallel workers can log late.
-        run.raw = [event for event in run.raw if event["key"][:2] <= boundary]
+
+        # Worker logs are stamped at append, not before network calls. The shared
+        # writer lock drains older writes before the two-second watermark is read.
+        # Gate/ledger events still wait for final outcomes and references.
+        def stable(event):
+            if event["round"] == frontier["round"] and frontier["phase"] in {"assign", "research"}:
+                if event["phase"] in {"research", "propose"}:
+                    return bool(event["ts"]) and event["ts"] < watermark
+                return event["phase"] == "assign"
+            return event["key"][:2] <= boundary
+
+        run.raw = [event for event in run.raw if stable(event)]
         run.live_round = (
             frontier["round"] if frontier["phase"] != "finish" else frontier["round"] + 1
         )

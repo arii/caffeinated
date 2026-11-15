@@ -50,12 +50,7 @@ def read_log(path):
 
 
 def append_records(path, records):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as log_file:
-        for record in records:
-            log_file.write(json.dumps(record, sort_keys=True) + "\n")
-    live_publish.changed(path)
+    live_publish.append_records(path, records)
 
 
 def next_id(records, record_type, id_pattern):
