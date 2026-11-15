@@ -183,6 +183,12 @@ class RunCostTests(unittest.TestCase):
         self.assertEqual(report["llm"]["prompt_tokens"], 140)
         self.assertEqual(report["llm"]["completion_tokens"], 37)
         self.assertEqual(report["llm"]["models"]["model-a"]["calls"], 2)
+        for usage in report["llm"]["models"].values():
+            self.assertEqual(usage["input_tokens"], usage["prompt_tokens"])
+            self.assertEqual(usage["output_tokens"], usage["completion_tokens"])
+        self.assertEqual(
+            sum(usage["input_tokens"] for usage in report["llm"]["models"].values()), 140
+        )
         self.assertEqual(report["llm"]["models"]["model-a"]["estimated_cost_usd"], 0.00036)
         self.assertEqual(report["llm"]["models"]["model-b"]["estimated_cost_usd"], None)
         self.assertEqual(report["research_costs"]["exa"]["cost_usd"], 0.007)

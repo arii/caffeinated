@@ -263,7 +263,7 @@ def build_report(run_dir, prices=None):
         model_usage["calls"] += 1
         model_usage["prompt_tokens"] += values["input_tokens"]
         model_usage["completion_tokens"] += values["output_tokens"]
-        for field in ("cached_tokens", "reasoning_tokens"):
+        for field in TOKEN_FIELDS:
             model_usage[field] += values[field]
 
     total_calls = sum(model["calls"] for model in calls_by_model.values())
