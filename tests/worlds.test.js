@@ -71,3 +71,10 @@ test('stable robot archetypes include distinct pink researcher palettes',()=>{
  assert.ok(new Set(ROBOT_APPEARANCES.map(a=>a.shell)).size>=6);
  assert.deepEqual(robotAppearance('researcher-pink'),robotAppearance('researcher-pink'));
 });
+test('each avatar carries a boredom badge, and drowsy robots doze, droop and slow down',()=>{
+ const world=createWorld(),base={id:'w1',name:'Worker 1',role:'worker',state:'working',stationId:'analyzer',position:{x:0,z:0,heading:0}};
+ world.update(1,{progress:0,boredom:0,running:true,replay:true,agents:[{...base,boredom:92,regime:'BOREDOM_SNAP'},{...base,id:'w2',name:'Worker 2',boredom:5,position:{x:1,z:0,heading:0}}]});
+ const meters=[],zzz=[];world.scene.traverse(o=>{if(o.name==='boredom-meter')meters.push(o);if(o.name==='boredom-zzz')zzz.push(o);});
+ assert.equal(meters.length,2);
+ assert.deepEqual(zzz.map(z=>z.visible),[true,false]);
+});

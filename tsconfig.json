@@ -14,7 +14,8 @@
     "allowJs": true,
     "checkJs": false,
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src"

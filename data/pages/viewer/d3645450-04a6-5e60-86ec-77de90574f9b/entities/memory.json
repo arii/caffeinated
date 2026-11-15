@@ -1,0 +1,1562 @@
+[
+ {
+  "author": "conductor",
+  "author_agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+  "content": "{\"frustration\": 0.0, \"ledger_sha256\": \"c1fc30dad95c52db2bf70895c40c208fdce7b9171ec17837a57a2d3e9cf1192d\", \"per_agent_B\": {\"worker-1\": 0.0, \"worker-2\": 0.0, \"worker-3\": 0.0, \"worker-4\": 0.0}, \"per_agent_boredom\": {\"worker-1\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}, \"worker-2\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}, \"worker-3\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}, \"worker-4\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}}, \"profile_sha256\": \"481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66\", \"provenance\": {\"command\": [\"swarm.py\", \"--task\", \"ignobel\", \"--rounds\", \"5\", \"--llm\", \"fake\", \"--exa\", \"off\", \"--memory-backend\", \"local\", \"--no-push\", \"--out\", \"/tmp/out-real-ignobel\"], \"model\": \"fake\", \"seed\": null, \"swarm_commit\": \"c2b3598515e9d9ad62454c4ca647a9eab6c6c82a\"}, \"rationale\": \"EXPLOIT assigns three exploit slots and one divergent slot.\", \"regime\": \"EXPLOIT\", \"roles\": {\"worker-1\": \"divergent\", \"worker-2\": \"exploit\", \"worker-3\": \"exploit\", \"worker-4\": \"exploit\"}, \"round\": 1, \"scouts\": [], \"stuck_cells\": [], \"swarm_B\": 0.0, \"ts\": \"2026-11-15T08:17:45.270369Z\", \"type\": \"assignment\"}",
+  "id": "memory:assignment-B-1",
+  "metadata": {
+   "arm": "B",
+   "author": "conductor",
+   "ledger_sha256": "c1fc30dad95c52db2bf70895c40c208fdce7b9171ec17837a57a2d3e9cf1192d",
+   "profile_sha256": "481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66",
+   "regime": "EXPLOIT",
+   "roles": {
+    "worker-1": "divergent",
+    "worker-2": "exploit",
+    "worker-3": "exploit",
+    "worker-4": "exploit"
+   },
+   "round": 1,
+   "scouts": [],
+   "type": "assignment"
+  },
+  "native_id": "assignment-B-1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "Assignment: regime EXPLOIT; roles worker-1 divergent, worker-2 exploit, worker-3 exploit, worker-4 exploit; EXPLOIT assigns three exploit slots and one divergent slot.",
+  "tick": 18,
+  "type": "assignment"
+ },
+ {
+  "author": "conductor",
+  "author_agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+  "content": "{\"frustration\": 0.0, \"ledger_sha256\": \"e104ddd8441cf3e0ae74b80eddff89abe1f0b7efe8b3454b21a7562b70b79b58\", \"per_agent_B\": {\"worker-1\": 0.0, \"worker-2\": 0.0, \"worker-3\": 0.25, \"worker-4\": 0.25}, \"per_agent_boredom\": {\"worker-1\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}, \"worker-2\": {\"B\": 0.0, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 1.0, \"overload\": 0.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 0.0}, \"worker-3\": {\"B\": 0.25, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 0.666667, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 1.0}, \"worker-4\": {\"B\": 0.25, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 0, \"frustration\": 0.0, \"novelty\": 0.666667, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.0, \"trivial_rate\": 1.0}}, \"profile_sha256\": \"481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66\", \"provenance\": {\"command\": [\"swarm.py\", \"--task\", \"ignobel\", \"--rounds\", \"5\", \"--llm\", \"fake\", \"--exa\", \"off\", \"--memory-backend\", \"local\", \"--no-push\", \"--out\", \"/tmp/out-real-ignobel\"], \"model\": \"fake\", \"seed\": null, \"swarm_commit\": \"c2b3598515e9d9ad62454c4ca647a9eab6c6c82a\"}, \"rationale\": \"EXPLOIT assigns three exploit slots and one divergent slot.\", \"regime\": \"EXPLOIT\", \"roles\": {\"worker-1\": \"divergent\", \"worker-2\": \"exploit\", \"worker-3\": \"exploit\", \"worker-4\": \"exploit\"}, \"round\": 2, \"scouts\": [], \"stuck_cells\": [], \"swarm_B\": 0.1, \"ts\": \"2026-11-15T08:17:46.016403Z\", \"type\": \"assignment\"}",
+  "id": "memory:assignment-B-2",
+  "metadata": {
+   "arm": "B",
+   "author": "conductor",
+   "ledger_sha256": "e104ddd8441cf3e0ae74b80eddff89abe1f0b7efe8b3454b21a7562b70b79b58",
+   "profile_sha256": "481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66",
+   "regime": "EXPLOIT",
+   "roles": {
+    "worker-1": "divergent",
+    "worker-2": "exploit",
+    "worker-3": "exploit",
+    "worker-4": "exploit"
+   },
+   "round": 2,
+   "scouts": [],
+   "type": "assignment"
+  },
+  "native_id": "assignment-B-2",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "Assignment: regime EXPLOIT; roles worker-1 divergent, worker-2 exploit, worker-3 exploit, worker-4 exploit; EXPLOIT assigns three exploit slots and one divergent slot.",
+  "tick": 109,
+  "type": "assignment"
+ },
+ {
+  "author": "conductor",
+  "author_agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+  "content": "{\"frustration\": 0.0, \"ledger_sha256\": \"81a5e4b9849a6b4704de705afeba0b74a3715bebe276f838a381c867ef925bec\", \"per_agent_B\": {\"worker-1\": 0.29, \"worker-2\": 0.365, \"worker-3\": 0.49, \"worker-4\": 0.49}, \"per_agent_boredom\": {\"worker-1\": {\"B\": 0.29, \"diversity\": 0.5, \"fail_rate\": 0.0, \"frontier_stall\": 1, \"frustration\": 0.0, \"novelty\": 0.666667, \"overload\": 0.5, \"regime\": \"EXPLOIT\", \"stagnation\": 0.2, \"trivial_rate\": 0.5}, \"worker-2\": {\"B\": 0.365, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 1, \"frustration\": 0.0, \"novelty\": 0.5, \"overload\": 0.5, \"regime\": \"EXPLOIT\", \"stagnation\": 0.2, \"trivial_rate\": 0.5}, \"worker-3\": {\"B\": 0.49, \"diversity\": 0.5, \"fail_rate\": 0.0, \"frontier_stall\": 1, \"frustration\": 0.0, \"novelty\": 0.333333, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.2, \"trivial_rate\": 1.0}, \"worker-4\": {\"B\": 0.49, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 1, \"frustration\": 0.0, \"novelty\": 0.333333, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.2, \"trivial_rate\": 1.0}}, \"profile_sha256\": \"481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66\", \"provenance\": {\"command\": [\"swarm.py\", \"--task\", \"ignobel\", \"--rounds\", \"5\", \"--llm\", \"fake\", \"--exa\", \"off\", \"--memory-backend\", \"local\", \"--no-push\", \"--out\", \"/tmp/out-real-ignobel\"], \"model\": \"fake\", \"seed\": null, \"swarm_commit\": \"c2b3598515e9d9ad62454c4ca647a9eab6c6c82a\"}, \"rationale\": \"EXPLOIT assigns three exploit slots and one divergent slot.\", \"regime\": \"EXPLOIT\", \"roles\": {\"worker-1\": \"divergent\", \"worker-2\": \"exploit\", \"worker-3\": \"exploit\", \"worker-4\": \"exploit\"}, \"round\": 3, \"scouts\": [], \"stuck_cells\": [], \"swarm_B\": 0.55, \"ts\": \"2026-11-15T08:17:46.571025Z\", \"type\": \"assignment\"}",
+  "id": "memory:assignment-B-3",
+  "metadata": {
+   "arm": "B",
+   "author": "conductor",
+   "ledger_sha256": "81a5e4b9849a6b4704de705afeba0b74a3715bebe276f838a381c867ef925bec",
+   "profile_sha256": "481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66",
+   "regime": "EXPLOIT",
+   "roles": {
+    "worker-1": "divergent",
+    "worker-2": "exploit",
+    "worker-3": "exploit",
+    "worker-4": "exploit"
+   },
+   "round": 3,
+   "scouts": [],
+   "type": "assignment"
+  },
+  "native_id": "assignment-B-3",
+  "recalled_by": [],
+  "round": 3,
+  "scope": "swarm",
+  "text": "Assignment: regime EXPLOIT; roles worker-1 divergent, worker-2 exploit, worker-3 exploit, worker-4 exploit; EXPLOIT assigns three exploit slots and one divergent slot.",
+  "tick": 189,
+  "type": "assignment"
+ },
+ {
+  "author": "conductor",
+  "author_agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+  "content": "{\"frustration\": 0.0, \"ledger_sha256\": \"f1150d0f956dcb66d797e1f07f5243bb5155f5dd2261f80445408272fe0a30e2\", \"per_agent_B\": {\"worker-1\": 0.496667, \"worker-2\": 0.546667, \"worker-3\": 0.63, \"worker-4\": 0.63}, \"per_agent_boredom\": {\"worker-1\": {\"B\": 0.496667, \"diversity\": 0.444444, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.444444, \"overload\": 0.666667, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 0.666667}, \"worker-2\": {\"B\": 0.546667, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.333333, \"overload\": 0.666667, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 0.666667}, \"worker-3\": {\"B\": 0.63, \"diversity\": 0.444444, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.222222, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 1.0}, \"worker-4\": {\"B\": 0.63, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.222222, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 1.0}}, \"profile_sha256\": \"481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66\", \"provenance\": {\"command\": [\"swarm.py\", \"--task\", \"ignobel\", \"--rounds\", \"5\", \"--llm\", \"fake\", \"--exa\", \"off\", \"--memory-backend\", \"local\", \"--no-push\", \"--out\", \"/tmp/out-real-ignobel\"], \"model\": \"fake\", \"seed\": null, \"swarm_commit\": \"c2b3598515e9d9ad62454c4ca647a9eab6c6c82a\"}, \"rationale\": \"SNAP assigns one exploit and three divergent slots; 0 divergent workers scout.\", \"regime\": \"BOREDOM_SNAP\", \"roles\": {\"worker-1\": \"divergent\", \"worker-2\": \"divergent\", \"worker-3\": \"divergent\", \"worker-4\": \"exploit\"}, \"round\": 4, \"scouts\": [], \"stuck_cells\": [], \"swarm_B\": 0.73, \"ts\": \"2026-11-15T08:17:47.083754Z\", \"type\": \"assignment\"}",
+  "id": "memory:assignment-B-4",
+  "metadata": {
+   "arm": "B",
+   "author": "conductor",
+   "ledger_sha256": "f1150d0f956dcb66d797e1f07f5243bb5155f5dd2261f80445408272fe0a30e2",
+   "profile_sha256": "481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66",
+   "regime": "BOREDOM_SNAP",
+   "roles": {
+    "worker-1": "divergent",
+    "worker-2": "divergent",
+    "worker-3": "divergent",
+    "worker-4": "exploit"
+   },
+   "round": 4,
+   "scouts": [],
+   "type": "assignment"
+  },
+  "native_id": "assignment-B-4",
+  "recalled_by": [],
+  "round": 4,
+  "scope": "swarm",
+  "text": "Assignment: regime BOREDOM_SNAP; roles worker-1 divergent, worker-2 divergent, worker-3 divergent, worker-4 exploit; SNAP assigns one exploit and three divergent slots; 0 divergent workers scout.",
+  "tick": 265,
+  "type": "assignment"
+ },
+ {
+  "author": "conductor",
+  "author_agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+  "content": "{\"frustration\": 0.0, \"ledger_sha256\": \"8d58948cb237cd384c28e104b0e870861b6593147af06d3ccd9b09d2b448769a\", \"per_agent_B\": {\"worker-1\": 0.496667, \"worker-2\": 0.546667, \"worker-3\": 0.63, \"worker-4\": 0.63}, \"per_agent_boredom\": {\"worker-1\": {\"B\": 0.496667, \"diversity\": 0.444444, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.444444, \"overload\": 0.666667, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 0.666667}, \"worker-2\": {\"B\": 0.546667, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.333333, \"overload\": 0.666667, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 0.666667}, \"worker-3\": {\"B\": 0.63, \"diversity\": 0.444444, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.222222, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 1.0}, \"worker-4\": {\"B\": 0.63, \"diversity\": 0.0, \"fail_rate\": 0.0, \"frontier_stall\": 2, \"frustration\": 0.0, \"novelty\": 0.222222, \"overload\": 1.0, \"regime\": \"EXPLOIT\", \"stagnation\": 0.4, \"trivial_rate\": 1.0}}, \"profile_sha256\": \"481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66\", \"provenance\": {\"command\": [\"swarm.py\", \"--task\", \"ignobel\", \"--rounds\", \"5\", \"--llm\", \"fake\", \"--exa\", \"off\", \"--memory-backend\", \"local\", \"--no-push\", \"--out\", \"/tmp/out-real-ignobel\"], \"model\": \"fake\", \"seed\": null, \"swarm_commit\": \"c2b3598515e9d9ad62454c4ca647a9eab6c6c82a\"}, \"rationale\": \"SNAP assigns one exploit and three divergent slots; 0 divergent workers scout.\", \"regime\": \"BOREDOM_SNAP\", \"roles\": {\"worker-1\": \"divergent\", \"worker-2\": \"divergent\", \"worker-3\": \"divergent\", \"worker-4\": \"exploit\"}, \"round\": 5, \"scouts\": [], \"stuck_cells\": [], \"swarm_B\": 0.73, \"ts\": \"2026-11-15T08:17:47.737706Z\", \"type\": \"assignment\"}",
+  "id": "memory:assignment-B-5",
+  "metadata": {
+   "arm": "B",
+   "author": "conductor",
+   "ledger_sha256": "8d58948cb237cd384c28e104b0e870861b6593147af06d3ccd9b09d2b448769a",
+   "profile_sha256": "481d01b04def2e2f3cfe81d7f3566e85cec427b51b870a61e0176f297ee8cd66",
+   "regime": "BOREDOM_SNAP",
+   "roles": {
+    "worker-1": "divergent",
+    "worker-2": "divergent",
+    "worker-3": "divergent",
+    "worker-4": "exploit"
+   },
+   "round": 5,
+   "scouts": [],
+   "type": "assignment"
+  },
+  "native_id": "assignment-B-5",
+  "recalled_by": [],
+  "round": 5,
+  "scope": "swarm",
+  "text": "Assignment: regime BOREDOM_SNAP; roles worker-1 divergent, worker-2 divergent, worker-3 divergent, worker-4 exploit; SNAP assigns one exploit and three divergent slots; 0 divergent workers scout.",
+  "tick": 360,
+  "type": "assignment"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"food_science\", \"method\": \"new_population\"}, \"idea\": \"Register fruity candies lose FiveThirtyEight candy matchups\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r1-worker-1-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "food_science",
+    "method": "new_population"
+   },
+   "idea": "Register fruity candies lose FiveThirtyEight candy matchups",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 1,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r1-worker-1-a1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "Register fruity candies lose FiveThirtyEight candy matchups. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 28,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r1-worker-2-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 1,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r1-worker-2-a1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 39,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"food_science\", \"method\": \"new_population\"}, \"idea\": \"Register fruity candies lose FiveThirtyEight candy matchups\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r1-worker-3-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "food_science",
+    "method": "new_population"
+   },
+   "idea": "Register fruity candies lose FiveThirtyEight candy matchups",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 1,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r1-worker-3-a1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "Register fruity candies lose FiveThirtyEight candy matchups. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 50,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r1-worker-4-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 1,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r1-worker-4-a1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 61,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r2-worker-1-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 2,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r2-worker-1-a1",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 119,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r2-worker-2-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 2,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r2-worker-2-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 2,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 130,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r2-worker-3-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 2,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r2-worker-3-a1",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 139,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r2-worker-4-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 2,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r2-worker-4-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 2,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 150,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r3-worker-1-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 3,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r3-worker-1-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-1-a1",
+  "round": 3,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 199,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r3-worker-2-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 3,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r3-worker-2-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 3,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 208,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r3-worker-3-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 3,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r3-worker-3-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-3-a1",
+  "round": 3,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 217,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r3-worker-4-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 3,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r3-worker-4-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 3,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 226,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-1-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-1-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-1-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 275,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-1-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-1-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-1-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 278,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-2-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-2-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 290,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-2-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-2-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 293,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-3-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-3-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-3-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 305,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-3-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-3-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-3-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 308,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-4-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-4-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 320,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r4-worker-4-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 4,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r4-worker-4-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 4,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 323,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-1-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-1-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-1-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 370,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-1-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-1-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-1-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 373,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-2-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-2-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 385,
+  "type": "claim"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-2-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-2-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-2-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 388,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-3-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-3-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-3-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 400,
+  "type": "claim"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-3-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-3-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r2-worker-3-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 403,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-4-a1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-4-a1",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 415,
+  "type": "claim"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "{\"descriptor\": {\"mechanism\": \"psychology\", \"method\": \"new_population\"}, \"idea\": \"Register parents find babies on planes less rude\", \"lead_id\": null, \"predicted_delta\": -0.001, \"rationale\": \"Apply a distinct task-specific edit for offline runs.\", \"source_ids\": []}",
+  "id": "memory:claim-B-r5-worker-4-a2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "idea": "Register parents find babies on planes less rude",
+   "lead_id": null,
+   "predicted_delta": -0.001,
+   "rationale": "Apply a distinct task-specific edit for offline runs.",
+   "round": 5,
+   "source_ids": [],
+   "type": "claim"
+  },
+  "native_id": "claim-B-r5-worker-4-a2",
+  "recalled_by": [],
+  "repeat_of": "memory:claim-B-r1-worker-4-a1",
+  "round": 5,
+  "scope": "swarm",
+  "text": "Re-proposes: Register parents find babies on planes less rude. Why: Apply a distinct task-specific edit for offline runs.",
+  "tick": 418,
+  "type": "claim"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "autoresearch B round 4 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+  "id": "memory:reject:B:r4-worker-1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 4,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r4-worker-1",
+  "recalled_by": [],
+  "round": 4,
+  "scope": "swarm",
+  "text": "autoresearch B round 4 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+  "tick": 342,
+  "type": "result"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "autoresearch B round 4 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+  "id": "memory:reject:B:r4-worker-2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "replicate_published"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 4,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r4-worker-2",
+  "recalled_by": [],
+  "round": 4,
+  "scope": "swarm",
+  "text": "autoresearch B round 4 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+  "tick": 343,
+  "type": "result"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "autoresearch B round 4 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+  "id": "memory:reject:B:r4-worker-3",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "resolve_conflict"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 4,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r4-worker-3",
+  "recalled_by": [],
+  "round": 4,
+  "scope": "swarm",
+  "text": "autoresearch B round 4 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+  "tick": 344,
+  "type": "result"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "autoresearch B round 4 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+  "id": "memory:reject:B:r4-worker-4",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "untested_prediction"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 4,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r4-worker-4",
+  "recalled_by": [],
+  "round": 4,
+  "scope": "swarm",
+  "text": "autoresearch B round 4 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+  "tick": 345,
+  "type": "result"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "autoresearch B round 5 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+  "id": "memory:reject:B:r5-worker-1",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 5,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r5-worker-1",
+  "recalled_by": [],
+  "round": 5,
+  "scope": "swarm",
+  "text": "autoresearch B round 5 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+  "tick": 437,
+  "type": "result"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "autoresearch B round 5 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+  "id": "memory:reject:B:r5-worker-2",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "replicate_published"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 5,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r5-worker-2",
+  "recalled_by": [],
+  "round": 5,
+  "scope": "swarm",
+  "text": "autoresearch B round 5 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+  "tick": 438,
+  "type": "result"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "autoresearch B round 5 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+  "id": "memory:reject:B:r5-worker-3",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "resolve_conflict"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 5,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r5-worker-3",
+  "recalled_by": [],
+  "round": 5,
+  "scope": "swarm",
+  "text": "autoresearch B round 5 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+  "tick": 439,
+  "type": "result"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "autoresearch B round 5 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+  "id": "memory:reject:B:r5-worker-4",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "commit": null,
+   "descriptor": {
+    "mechanism": "acoustics",
+    "method": "untested_prediction"
+   },
+   "kind": "candidate",
+   "loss": null,
+   "round": 5,
+   "sources": [],
+   "status": "reject",
+   "type": "result"
+  },
+  "native_id": "reject:B:r5-worker-4",
+  "recalled_by": [],
+  "round": 5,
+  "scope": "swarm",
+  "text": "autoresearch B round 5 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+  "tick": 440,
+  "type": "result"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:06cc409b573166755e8acc2149d1ca1355bc331a",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "commit": "06cc409b573166755e8acc2149d1ca1355bc331a",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 2,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:06cc409b573166755e8acc2149d1ca1355bc331a",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 174,
+  "type": "result"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "autoresearch B round 3 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:558d1e71f099a90f2371b175814bba0e878990f9",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "commit": "558d1e71f099a90f2371b175814bba0e878990f9",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 3,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:558d1e71f099a90f2371b175814bba0e878990f9",
+  "recalled_by": [],
+  "round": 3,
+  "scope": "swarm",
+  "text": "autoresearch B round 3 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 247,
+  "type": "result"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "autoresearch B round 3 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:6c70151bdc8e447cbf6d19dbf1f1e9dfa1779f7b",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "commit": "6c70151bdc8e447cbf6d19dbf1f1e9dfa1779f7b",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 3,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:6c70151bdc8e447cbf6d19dbf1f1e9dfa1779f7b",
+  "recalled_by": [],
+  "round": 3,
+  "scope": "swarm",
+  "text": "autoresearch B round 3 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 248,
+  "type": "result"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "commit": "75acfd18aa46e803d97cd75235f03d90b5786f6e",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 2,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 171,
+  "type": "result"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "commit": "93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 1,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 88,
+  "type": "result"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "autoresearch B round 3 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:94a81e12306ecef1ac8989eaeaf2d436744f5590",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "commit": "94a81e12306ecef1ac8989eaeaf2d436744f5590",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 3,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:94a81e12306ecef1ac8989eaeaf2d436744f5590",
+  "recalled_by": [],
+  "round": 3,
+  "scope": "swarm",
+  "text": "autoresearch B round 3 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 249,
+  "type": "result"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "autoresearch B round 3 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:9935f48bb50fd992cd0a2d91c77c3812f615c5fc",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "commit": "9935f48bb50fd992cd0a2d91c77c3812f615c5fc",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 3,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:9935f48bb50fd992cd0a2d91c77c3812f615c5fc",
+  "recalled_by": [],
+  "round": 3,
+  "scope": "swarm",
+  "text": "autoresearch B round 3 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 250,
+  "type": "result"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "commit": "9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 2,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 173,
+  "type": "result"
+ },
+ {
+  "author": "worker-1",
+  "author_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+  "content": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-1",
+   "commit": "c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "descriptor": {
+    "mechanism": "food_science",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 1,
+   "sources": [],
+   "status": "keep",
+   "type": "result"
+  },
+  "native_id": "run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "tick": 87,
+  "type": "result"
+ },
+ {
+  "author": "critic",
+  "author_agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+  "content": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846:critic:r1",
+  "metadata": {
+   "arm": "B",
+   "author": "critic",
+   "commit": "c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "descriptor": {
+    "mechanism": "food_science",
+    "method": "new_population"
+   },
+   "kind": "critic",
+   "loss": 0.0,
+   "round": 1,
+   "sources": [],
+   "status": "keep",
+   "type": "result"
+  },
+  "native_id": "run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846:critic:r1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "tick": 94,
+  "type": "result"
+ },
+ {
+  "author": "worker-3",
+  "author_agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+  "content": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:d671661a5506057773d15dd3f39af5681fc2895b",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-3",
+   "commit": "d671661a5506057773d15dd3f39af5681fc2895b",
+   "descriptor": {
+    "mechanism": "food_science",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 1,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:d671661a5506057773d15dd3f39af5681fc2895b",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+  "tick": 89,
+  "type": "result"
+ },
+ {
+  "author": "worker-2",
+  "author_agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+  "content": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-2",
+   "commit": "e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 2,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+  "recalled_by": [],
+  "round": 2,
+  "scope": "swarm",
+  "text": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 172,
+  "type": "result"
+ },
+ {
+  "author": "worker-4",
+  "author_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+  "content": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "id": "memory:run:B:e8e058fc8a680bdef1581645f1e875237ec415ba",
+  "metadata": {
+   "arm": "B",
+   "author": "worker-4",
+   "commit": "e8e058fc8a680bdef1581645f1e875237ec415ba",
+   "descriptor": {
+    "mechanism": "psychology",
+    "method": "new_population"
+   },
+   "kind": "candidate",
+   "loss": 0.0,
+   "round": 1,
+   "sources": [],
+   "status": "discard",
+   "type": "result"
+  },
+  "native_id": "run:B:e8e058fc8a680bdef1581645f1e875237ec415ba",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+  "tick": 90,
+  "type": "result"
+ },
+ {
+  "author": "critic",
+  "author_agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+  "content": "{\"lesson\": null, \"verdict\": \"replicated\", \"why\": \"The second evaluation matches the candidate run.\"}",
+  "id": "memory:verdict-B-1-worker-1",
+  "metadata": {
+   "accepted": true,
+   "arm": "B",
+   "author": "critic",
+   "commit": "c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "round": 1,
+   "type": "verdict"
+  },
+  "native_id": "verdict-B-1-worker-1",
+  "recalled_by": [],
+  "round": 1,
+  "scope": "swarm",
+  "text": "The second evaluation matches the candidate run.",
+  "tick": 86,
+  "type": "verdict"
+ }
+]

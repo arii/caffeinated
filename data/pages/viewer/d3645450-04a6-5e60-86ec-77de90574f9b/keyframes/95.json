@@ -1,0 +1,868 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 1,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 18,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:c2b3598"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:c2b3598",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 5,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 10,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 2,
+    "observations": 3,
+    "questions": 5,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:2",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "hypothesis_id": "hypothesis:2",
+    "question_id": "question:Q2"
+   },
+   "last_observation_id": "observation:recall-4",
+   "last_question_id": "question:Q2",
+   "last_reward": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "metric_value": 0.0,
+    "reward_id": "reward:2",
+    "status": "keep",
+    "tick": 77,
+    "value": 100.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 87,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 11,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 3,
+    "questions": 4,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:3",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+    "hypothesis_id": "hypothesis:3",
+    "question_id": "question:Q3"
+   },
+   "last_observation_id": "observation:recall-8",
+   "last_question_id": "question:Q3",
+   "last_reward": {
+    "experiment_id": "experiment:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+    "metric_value": 0.0,
+    "reward_id": "reward:3",
+    "status": "discard",
+    "tick": 79,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 88,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 12,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 3,
+    "questions": 4,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:4",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:d671661a5506057773d15dd3f39af5681fc2895b",
+    "hypothesis_id": "hypothesis:4",
+    "question_id": "question:Q4"
+   },
+   "last_observation_id": "observation:recall-12",
+   "last_question_id": "question:Q4",
+   "last_reward": {
+    "experiment_id": "experiment:d671661a5506057773d15dd3f39af5681fc2895b",
+    "metric_value": 0.0,
+    "reward_id": "reward:4",
+    "status": "discard",
+    "tick": 81,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 89,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 13,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 1,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 3,
+    "questions": 4,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:5",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:e8e058fc8a680bdef1581645f1e875237ec415ba",
+    "hypothesis_id": "hypothesis:5",
+    "question_id": "question:Q5"
+   },
+   "last_observation_id": "observation:recall-16",
+   "last_question_id": "question:Q5",
+   "last_reward": {
+    "experiment_id": "experiment:e8e058fc8a680bdef1581645f1e875237ec415ba",
+    "metric_value": 0.0,
+    "reward_id": "reward:5",
+    "status": "discard",
+    "tick": 83,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 90,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 94,
+   "station": "notebook",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "0ae2fac2-64b2-5b7b-86c7-72090036fdf8"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   ],
+   [
+    "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+    "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "9febffbf-d272-5b10-9172-130e140af5c9",
+   "payload": {
+    "description": "Register fruity candies lose FiveThirtyEight candy matchups",
+    "role": "divergent",
+    "text": "Testing: Register fruity candies lose FiveThirtyEight candy matchups"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "hypothesis_id": "hypothesis:2"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 2,
+    "native_type": "candidate"
+   },
+   "tick": 76,
+   "ts": "2026-11-15T08:17:45.902924Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "30099e58-b62c-5ab1-90fa-3513a4bc897b",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 100.0,
+    "status": "keep",
+    "text": "Result keep: replication loss 0, reward +100.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "reward_id": "reward:2"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 2,
+    "native_type": "candidate"
+   },
+   "tick": 77,
+   "ts": "2026-11-15T08:17:45.902924Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "4d10f7e4-7772-5ca1-b4da-84d696f8012c",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "exploit",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+    "hypothesis_id": "hypothesis:3"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 3,
+    "native_type": "candidate"
+   },
+   "tick": 78,
+   "ts": "2026-11-15T08:17:45.910059Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "2fe4f79d-f76b-52d1-a312-de595174f84c",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514",
+    "reward_id": "reward:3"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 3,
+    "native_type": "candidate"
+   },
+   "tick": 79,
+   "ts": "2026-11-15T08:17:45.910059Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "fa67d0ee-1266-51b5-b712-b1f9dba62f99",
+   "payload": {
+    "description": "Register fruity candies lose FiveThirtyEight candy matchups",
+    "role": "exploit",
+    "text": "Testing: Register fruity candies lose FiveThirtyEight candy matchups"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:d671661a5506057773d15dd3f39af5681fc2895b",
+    "hypothesis_id": "hypothesis:4"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 4,
+    "native_type": "candidate"
+   },
+   "tick": 80,
+   "ts": "2026-11-15T08:17:45.910479Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "9a804c84-3771-5e65-ac2b-1deab64207cb",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:d671661a5506057773d15dd3f39af5681fc2895b",
+    "reward_id": "reward:4"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 4,
+    "native_type": "candidate"
+   },
+   "tick": 81,
+   "ts": "2026-11-15T08:17:45.910479Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "b0b50c98-115e-54e1-930a-d33894459967",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "exploit",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e8e058fc8a680bdef1581645f1e875237ec415ba",
+    "hypothesis_id": "hypothesis:5"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 5,
+    "native_type": "candidate"
+   },
+   "tick": 82,
+   "ts": "2026-11-15T08:17:45.910792Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "816d597e-dcd8-5e68-88d0-0c415a2c79ac",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e8e058fc8a680bdef1581645f1e875237ec415ba",
+    "reward_id": "reward:5"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 5,
+    "native_type": "candidate"
+   },
+   "tick": 83,
+   "ts": "2026-11-15T08:17:45.910792Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "692d7690-40d9-5f3f-91f9-a25ccc34c0bb",
+   "payload": {
+    "confirmed": true,
+    "halves": [
+     {
+      "n": 46,
+      "p": 0.005353822411251347,
+      "problem": null,
+      "rho": -0.4040666737305971
+     },
+     {
+      "n": 39,
+      "p": 0.03574276760624875,
+      "problem": null,
+      "rho": -0.337294104631834
+     }
+    ],
+    "n": 85,
+    "p": 0.001022067803778504,
+    "replicated": true,
+    "rho": -0.35008028359319904,
+    "significant": true,
+    "text": "Critic re-ran the study: rho -0.35 (predicted 0.3), p 0.001, n 85: REPLICATED"
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "study_id": "study:2"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 6,
+    "native_type": "study"
+   },
+   "tick": 84,
+   "ts": "2026-11-15T08:17:45.902004Z",
+   "type": "study.replicated"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "b00c8db3-a7a1-5246-a572-670b020a4b58",
+   "payload": {
+    "latency_ms": 0,
+    "model": "fake",
+    "prompt_sha": "a02c72db16f41274c458e793b0662822e8d56df81a90a783dc70815ff8367ff0",
+    "role": "CRITIC",
+    "text": "Asked the CRITIC model (fake)",
+    "tokens": null
+   },
+   "phase": "critic",
+   "refs": {
+    "llm_call_id": "llm_call:5"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "llm_log.jsonl",
+    "line": 5,
+    "native_type": "CRITIC"
+   },
+   "tick": 85,
+   "ts": "2026-11-15T08:17:45.902482Z",
+   "type": "llm.called"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "9b3b5b63-7523-5f34-ae4d-972c55c1e6fe",
+   "payload": {
+    "excerpt": "The second evaluation matches the candidate run.",
+    "text": "The second evaluation matches the candidate run.",
+    "type": "verdict"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:verdict-B-1-worker-1"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 6,
+    "native_type": "verdict"
+   },
+   "tick": 86,
+   "ts": "2026-11-15T08:17:45.902703Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "013fecf5-8620-565b-9f5c-1dc682ddc9d9",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by worker-1\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 7,
+    "native_type": "result"
+   },
+   "tick": 87,
+   "ts": "2026-11-15T08:17:45.903124Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "9b934b5e-822a-516c-abfb-eb34f45b405b",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:93bc6713134d0aad7d1c08bed39ea6dfe0fb0514"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 8,
+    "native_type": "result"
+   },
+   "tick": 88,
+   "ts": "2026-11-15T08:17:45.910340Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "2aa83df8-8fd8-59d0-8185-e65e95e67ec9",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by worker-3\nIdea: [EXPLOIT] Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:d671661a5506057773d15dd3f39af5681fc2895b"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 9,
+    "native_type": "result"
+   },
+   "tick": 89,
+   "ts": "2026-11-15T08:17:45.910663Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "daf2ae75-b76d-584c-a22f-4567b5b65208",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:e8e058fc8a680bdef1581645f1e875237ec415ba"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 10,
+    "native_type": "result"
+   },
+   "tick": 90,
+   "ts": "2026-11-15T08:17:45.910967Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "664a739d-e754-5b17-96a0-7bd4f3621b81",
+   "payload": {
+    "accepted": true,
+    "replicate_score": null,
+    "text": "Critic verdict replicated: The second evaluation matches the candidate run.",
+    "verdict": "replicated",
+    "why": "The second evaluation matches the candidate run."
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 91,
+   "ts": "2026-11-15T08:17:45.911089Z",
+   "type": "verdict.issued"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "83f5db51-3db1-5c4c-b7f0-d10ec68ad1ea",
+   "payload": {
+    "metric_value": 0.0,
+    "previous_best": 1.0,
+    "text": "New best replication loss 0: Register fruity candies lose FiveThirtyEight candy matchups",
+    "title": "Register fruity candies lose FiveThirtyEight candy matchups"
+   },
+   "phase": "critic",
+   "refs": {
+    "discovery_id": "discovery:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 92,
+   "ts": "2026-11-15T08:17:45.911089Z",
+   "type": "discovery.made"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "abbe53c2-fde5-5a2d-9706-f3c6efa43080",
+   "payload": {
+    "kind": "verdict",
+    "text": "Re \"Register fruity candies lose FiveThirtyEight candy matchups\": accepted (replicated). The second evaluation matches the candidate run.",
+    "to_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   },
+   "phase": "critic",
+   "refs": {
+    "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+    "to_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 6,
+    "native_type": "critic"
+   },
+   "tick": 93,
+   "ts": "2026-11-15T08:17:45.911089Z",
+   "type": "message.sent"
+  },
+  {
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "event_id": "962fe2bd-eafd-5282-a0c0-6bdd20d578dd",
+   "payload": {
+    "excerpt": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 1 by critic\nIdea: critic second-evaluation confirmation for Register fruity candies lose FiveThirtyEight candy matchups\nOutcome: keep (loss 0.000000)\nDescriptor: {\"mechanism\": \"food_science\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846:critic:r1"
+   },
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 11,
+    "native_type": "result"
+   },
+   "tick": 94,
+   "ts": "2026-11-15T08:17:45.911217Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "4dd013c7-87c3-5191-b996-777524f533a2",
+   "payload": {
+    "B": 0.1,
+    "best_metric": 0.0,
+    "directive": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "frontier_stall": 0,
+    "frustration": 0.0,
+    "regime": "EXPLOIT",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.1 (EXPLOIT)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 1,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 5,
+    "native_type": "status"
+   },
+   "tick": 95,
+   "ts": "2026-11-15T08:17:45.911787Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 1,
+ "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "swarm": {
+  "B": 0.1,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "metric_value": 0.0,
+   "tick": 92
+  },
+  "frontier_stall": 0,
+  "regime": "EXPLOIT"
+ },
+ "tick": 95,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 5,
+  "memory_items": 11,
+  "questions": 17,
+  "sources": 0,
+  "tokens": 0
+ },
+ "ts": "2026-11-15T08:17:45.911787Z"
+}

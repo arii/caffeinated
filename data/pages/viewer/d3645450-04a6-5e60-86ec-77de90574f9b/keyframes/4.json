@@ -1,0 +1,332 @@
+{
+ "agents": [
+  {
+   "activity": "idle",
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "conductor"
+  },
+  {
+   "activity": "reviewing",
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:c2b3598"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:c2b3598",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 4,
+   "station": "analyzer",
+   "type": "baseline"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {},
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 0,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [],
+ "in_flight": {
+  "conversations": [],
+  "experiment_ids": []
+ },
+ "phase": "evaluate",
+ "recent_events": [
+  {
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "event_id": "3b3b81b5-10c5-5c7f-97ff-b0da36299b3d",
+   "payload": {
+    "arm": "B",
+    "native_run_id": "0303243dad0346ec98ddc9e654af6cfe",
+    "text": "Run started (arm B)"
+   },
+   "phase": "assign",
+   "refs": {},
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "run_id",
+    "line": 1,
+    "native_type": "run"
+   },
+   "tick": 0,
+   "ts": "2026-11-15T08:17:45.270369Z",
+   "type": "run.started"
+  },
+  {
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "event_id": "d9d51b84-3a5c-546c-a681-fdec9bf617de",
+   "payload": {
+    "field": "behavioral_economics",
+    "predicted_rho": 0.15,
+    "question": "Do people who like their steak rare take more everyday risks?",
+    "text": "Preregistered: Do people who like their steak rare take more everyday risks? (How do you like your steak prepared? vs Do you ever smoke cigarettes?)",
+    "x": "How do you like your steak prepared?",
+    "y": "Do you ever smoke cigarettes?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c2b3598",
+    "study_id": "study:1"
+   },
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 1,
+    "native_type": "study"
+   },
+   "tick": 1,
+   "ts": "2026-11-15T08:17:45.120860Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "event_id": "4f3c9262-4717-5bad-8b14-5fe900d09c62",
+   "payload": {
+    "confirmed": false,
+    "headline": "In the steak-risk-survey data (raw.githubusercontent.com), answering \"Rare\" to \"How do you like your steak prepared?\" goes with answering \"Yes\" to \"Do you ever smoke cigarettes?\"",
+    "n": 428,
+    "p": 0.1793085282005522,
+    "predicted_rho": 0.15,
+    "rejected": null,
+    "replicated": false,
+    "rho": 0.0650323569080444,
+    "text": "rho 0.065 (predicted 0.15), p 0.18, n 428: not significant"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c2b3598",
+    "study_id": "study:1"
+   },
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 1,
+    "native_type": "study"
+   },
+   "tick": 2,
+   "ts": "2026-11-15T08:17:45.120860Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "event_id": "ac80f572-f2d2-5cf9-a23d-07a9946119ba",
+   "payload": {
+    "description": "baseline",
+    "role": null,
+    "text": "Testing: baseline"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c2b3598"
+   },
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 1,
+    "native_type": "baseline"
+   },
+   "tick": 3,
+   "ts": "2026-11-15T08:17:45.121134Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "event_id": "c58f2c60-2ebc-515e-b6f9-e397a0bd750b",
+   "payload": {
+    "metric_value": 1.0,
+    "reward": 0.0,
+    "status": "keep",
+    "text": "Result keep: replication loss 1, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:c2b3598",
+    "reward_id": "reward:1"
+   },
+   "round": 0,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 1,
+    "native_type": "baseline"
+   },
+   "tick": 4,
+   "ts": "2026-11-15T08:17:45.121134Z",
+   "type": "experiment.finished"
+  }
+ ],
+ "round": 0,
+ "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "swarm": {
+  "B": null,
+  "baseline": 1.0,
+  "best": null,
+  "frontier_stall": null,
+  "regime": null
+ },
+ "tick": 4,
+ "totals": {
+  "discoveries": 0,
+  "experiments": 1,
+  "memory_items": 0,
+  "questions": 0,
+  "sources": 0,
+  "tokens": 0
+ },
+ "ts": "2026-11-15T08:17:45.121134Z"
+}

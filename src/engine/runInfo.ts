@@ -1,4 +1,4 @@
-import type {RecordingManifest} from './replay.ts';
+import {recordingPrefix,type RecordingManifest} from './replay.ts';
 export type RunStatus='live'|'stale'|'stopped'|'finished'|'sample';
 const TASK_TITLES:Record<string,string>={hadamard19:'Hadamard 19×19 max determinant',bixbench_mini:'BixBench mini · bioinformatics Q&A',playworld_mini:'PlayWorld mini · world model',ignobel:'Ig Nobel prize hunt'};
 /** Seconds/minutes/hours wording for "last update" copy. */
@@ -21,7 +21,7 @@ export function runStatus(m:RecordingManifest,now=Date.now(),staleMs=90_000):{st
  const beat=Date.parse(m.heartbeat_ts||m.updated_at||'');
  const quiet=Number.isFinite(beat)?now-beat:NaN;
  if(m.live||m.stale||m.status==='stale'){
-  if(m.stale||m.status==='stale'||quiet>staleMs)return {status:'stale',label:'LIVE · NO RECENT UPDATES',detail:Number.isFinite(quiet)?`Last update ${ago(quiet)} ago`:'The swarm stopped publishing'};
+  if(m.stale||m.status==='stale'||quiet>staleMs)return {status:'stale',label:'◌ STALLED RUN',detail:Number.isFinite(quiet)?`Last update ${ago(quiet)} ago`:'The swarm stopped publishing'};
   return {status:'live',label:'● LIVE',detail:Number.isFinite(quiet)?`Updated ${ago(quiet)} ago`:'Following the running swarm'};
  }
  const status=String(m.status||'finished');
@@ -33,7 +33,7 @@ export function publishWarning(m:RecordingManifest){const n=publishErrorCount(m)
 function started(m:RecordingManifest){const t=Date.parse(m.time?.ts_start||'');return Number.isFinite(t)?new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';}
 export function pickerLabel(m:RecordingManifest){
  const status=runStatus(m);
- const prefix=status.status==='live'?'● LIVE · ':status.status==='stale'?'◌ STALE · ':m.sample===false?'SWARM · ':'';
+ const prefix=m.sample===false?recordingPrefix({...m,stale:status.status==='stale',live:status.status==='live'}):'';
  const title=taskTitle(m),extra=title===m.title?'':(m.title||'').split(' · ').slice(2).join(' · ');
  return [prefix+title,extra,m.sample===false&&status.status==='stopped'?status.label.toLowerCase():'',m.sample===false?started(m):''].filter(Boolean).join(' · ');
 }

@@ -1,0 +1,877 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 109,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:c2b3598"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:c2b3598",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 96,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 101,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 1,
+    "memory_writes": 4,
+    "observations": 6,
+    "questions": 10,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:13",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+    "hypothesis_id": "hypothesis:13",
+    "question_id": "question:Q7"
+   },
+   "last_observation_id": "observation:recall-27",
+   "last_question_id": "question:Q7",
+   "last_reward": {
+    "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+    "metric_value": 0.0,
+    "reward_id": "reward:7",
+    "status": "discard",
+    "tick": 164,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 171,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "boredom": {
+    "B": 0.0,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 1.0,
+     "overload": 0.0,
+     "stagnation": 0.0,
+     "trivial_rate": 0.0
+    },
+    "measured_tick": 102,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 6,
+    "questions": 8,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:3",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "hypothesis_id": "hypothesis:3",
+    "question_id": "question:Q8"
+   },
+   "last_observation_id": "observation:recall-31",
+   "last_question_id": "question:Q8",
+   "last_reward": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "metric_value": 0.0,
+    "reward_id": "reward:8",
+    "status": "discard",
+    "tick": 166,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 172,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "boredom": {
+    "B": 0.25,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.666667,
+     "overload": 1.0,
+     "stagnation": 0.0,
+     "trivial_rate": 1.0
+    },
+    "measured_tick": 103,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 6,
+    "questions": 8,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:15",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "hypothesis_id": "hypothesis:15",
+    "question_id": "question:Q9"
+   },
+   "last_observation_id": "observation:recall-35",
+   "last_question_id": "question:Q9",
+   "last_reward": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "metric_value": 0.0,
+    "reward_id": "reward:9",
+    "status": "discard",
+    "tick": 168,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 173,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "boredom": {
+    "B": 0.25,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.666667,
+     "overload": 1.0,
+     "stagnation": 0.0,
+     "trivial_rate": 1.0
+    },
+    "measured_tick": 104,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 2,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 6,
+    "questions": 8,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:5",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "hypothesis_id": "hypothesis:5",
+    "question_id": "question:Q10"
+   },
+   "last_observation_id": "observation:recall-39",
+   "last_question_id": "question:Q10",
+   "last_reward": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "metric_value": 0.0,
+    "reward_id": "reward:10",
+    "status": "discard",
+    "tick": 170,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 174,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 96,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "0ae2fac2-64b2-5b7b-86c7-72090036fdf8"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "672d2d12-86b3-5eec-93fd-6ef8e228f3c0",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the flying-etiquette data (raw.githubusercontent.com), answering \"Yes\" to \"Do you have any children under 18?\" goes with answering \"No, not at all rude\" to \"In general, is itrude to bring a baby on a plane?\"",
+    "n": 845,
+    "p": 1.2756637214766667e-06,
+    "predicted_rho": 0.15,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.16571374245614015,
+    "text": "rho 0.166 (predicted 0.15), p 1.3e-06, n 845: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+    "study_id": "study:7"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 7,
+    "native_type": "study"
+   },
+   "tick": 156,
+   "ts": "2026-11-15T08:17:46.359020Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "94fc076a-024a-5327-b6cf-08e5ccfd576c",
+   "payload": {
+    "field": "psychology",
+    "predicted_rho": 0.15,
+    "question": "Do parents of minors judge bringing a baby on a plane as less rude than non-parents?",
+    "text": "Preregistered: Do parents of minors judge bringing a baby on a plane as less rude than non-parents? (Do you have any children under 18? vs In general, is itrude to bring a baby on a plane?)",
+    "x": "Do you have any children under 18?",
+    "y": "In general, is itrude to bring a baby on a plane?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "study_id": "study:8"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 8,
+    "native_type": "study"
+   },
+   "tick": 157,
+   "ts": "2026-11-15T08:17:46.393961Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "740a2c0d-d86a-5278-8adf-28019ee8c0aa",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the flying-etiquette data (raw.githubusercontent.com), answering \"Yes\" to \"Do you have any children under 18?\" goes with answering \"No, not at all rude\" to \"In general, is itrude to bring a baby on a plane?\"",
+    "n": 845,
+    "p": 1.2756637214766667e-06,
+    "predicted_rho": 0.15,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.16571374245614015,
+    "text": "rho 0.166 (predicted 0.15), p 1.3e-06, n 845: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "study_id": "study:8"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 8,
+    "native_type": "study"
+   },
+   "tick": 158,
+   "ts": "2026-11-15T08:17:46.393961Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "27aa3828-75d6-5acf-90a1-82d4a29e17fc",
+   "payload": {
+    "field": "psychology",
+    "predicted_rho": 0.15,
+    "question": "Do parents of minors judge bringing a baby on a plane as less rude than non-parents?",
+    "text": "Preregistered: Do parents of minors judge bringing a baby on a plane as less rude than non-parents? (Do you have any children under 18? vs In general, is itrude to bring a baby on a plane?)",
+    "x": "Do you have any children under 18?",
+    "y": "In general, is itrude to bring a baby on a plane?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "study_id": "study:9"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 9,
+    "native_type": "study"
+   },
+   "tick": 159,
+   "ts": "2026-11-15T08:17:46.417940Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "0cc2eac9-5f10-5e84-9650-53ada8af5a77",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the flying-etiquette data (raw.githubusercontent.com), answering \"Yes\" to \"Do you have any children under 18?\" goes with answering \"No, not at all rude\" to \"In general, is itrude to bring a baby on a plane?\"",
+    "n": 845,
+    "p": 1.2756637214766667e-06,
+    "predicted_rho": 0.15,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.16571374245614015,
+    "text": "rho 0.166 (predicted 0.15), p 1.3e-06, n 845: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "study_id": "study:9"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 9,
+    "native_type": "study"
+   },
+   "tick": 160,
+   "ts": "2026-11-15T08:17:46.417940Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "6ac3146b-b627-505f-bfc9-18fbc8c41fa1",
+   "payload": {
+    "field": "psychology",
+    "predicted_rho": 0.15,
+    "question": "Do parents of minors judge bringing a baby on a plane as less rude than non-parents?",
+    "text": "Preregistered: Do parents of minors judge bringing a baby on a plane as less rude than non-parents? (Do you have any children under 18? vs In general, is itrude to bring a baby on a plane?)",
+    "x": "Do you have any children under 18?",
+    "y": "In general, is itrude to bring a baby on a plane?"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "study_id": "study:10"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 10,
+    "native_type": "study"
+   },
+   "tick": 161,
+   "ts": "2026-11-15T08:17:46.450213Z",
+   "type": "study.registered"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "be6a9769-1c92-5fd1-a6d8-feff3abccf8a",
+   "payload": {
+    "confirmed": true,
+    "headline": "In the flying-etiquette data (raw.githubusercontent.com), answering \"Yes\" to \"Do you have any children under 18?\" goes with answering \"No, not at all rude\" to \"In general, is itrude to bring a baby on a plane?\"",
+    "n": 845,
+    "p": 1.2756637214766667e-06,
+    "predicted_rho": 0.15,
+    "rejected": null,
+    "replicated": true,
+    "rho": 0.16571374245614015,
+    "text": "rho 0.166 (predicted 0.15), p 1.3e-06, n 845: REPLICATED"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "study_id": "study:10"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ignobel_studies.jsonl",
+    "line": 10,
+    "native_type": "study"
+   },
+   "tick": 162,
+   "ts": "2026-11-15T08:17:46.450213Z",
+   "type": "study.result"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "0a31462c-ba72-5f25-973d-5a74b2d9917c",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "divergent",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+    "hypothesis_id": "hypothesis:13"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 7,
+    "native_type": "candidate"
+   },
+   "tick": 163,
+   "ts": "2026-11-15T08:17:46.450493Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "c8841dec-4d3d-5af1-b20b-aa6dbfe857b0",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:75acfd18aa46e803d97cd75235f03d90b5786f6e",
+    "reward_id": "reward:7"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 7,
+    "native_type": "candidate"
+   },
+   "tick": 164,
+   "ts": "2026-11-15T08:17:46.450493Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "027faa2a-e11f-5254-9e7c-3a9680cc916c",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "exploit",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "hypothesis_id": "hypothesis:3"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 8,
+    "native_type": "candidate"
+   },
+   "tick": 165,
+   "ts": "2026-11-15T08:17:46.451122Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "53ec115e-203e-5fb6-ad44-50c0129d81bd",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:e84c96874fb000b3488efe5fc51dc9c09bbbd978",
+    "reward_id": "reward:8"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 8,
+    "native_type": "candidate"
+   },
+   "tick": 166,
+   "ts": "2026-11-15T08:17:46.451122Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "ca5608ca-365f-5307-a276-dcee4c44eccf",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "exploit",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "hypothesis_id": "hypothesis:15"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 9,
+    "native_type": "candidate"
+   },
+   "tick": 167,
+   "ts": "2026-11-15T08:17:46.451624Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "37e3a050-9906-5db8-bc95-d6ecc17cbe1c",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd",
+    "reward_id": "reward:9"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 9,
+    "native_type": "candidate"
+   },
+   "tick": 168,
+   "ts": "2026-11-15T08:17:46.451624Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "27239827-8af4-5545-89f9-2d144f830b75",
+   "payload": {
+    "description": "Register parents find babies on planes less rude",
+    "role": "exploit",
+    "text": "Testing: Register parents find babies on planes less rude"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "hypothesis_id": "hypothesis:5"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 10,
+    "native_type": "candidate"
+   },
+   "tick": 169,
+   "ts": "2026-11-15T08:17:46.452118Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "aca157ac-3162-5a5f-8957-1cf656a54076",
+   "payload": {
+    "metric_value": 0.0,
+    "reward": 0.0,
+    "status": "discard",
+    "text": "Result discard: replication loss 0, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:06cc409b573166755e8acc2149d1ca1355bc331a",
+    "reward_id": "reward:10"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 10,
+    "native_type": "candidate"
+   },
+   "tick": 170,
+   "ts": "2026-11-15T08:17:46.452118Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "4d5cc7d3-d5f4-54b9-a7ce-c618ef8596f2",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-1\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:75acfd18aa46e803d97cd75235f03d90b5786f6e"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 17,
+    "native_type": "result"
+   },
+   "tick": 171,
+   "ts": "2026-11-15T08:17:46.450891Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "a1ac0553-62af-5b1d-b0fc-243dd7155148",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-2\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:e84c96874fb000b3488efe5fc51dc9c09bbbd978"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 18,
+    "native_type": "result"
+   },
+   "tick": 172,
+   "ts": "2026-11-15T08:17:46.451423Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "516f6ab3-aa49-51c5-9db2-42d23e0fcb56",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-3\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:9c02d741c2bc4d65ff8edfe13603b05cab9c18cd"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 19,
+    "native_type": "result"
+   },
+   "tick": 173,
+   "ts": "2026-11-15T08:17:46.451931Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "85e22eaa-b175-56f8-80d5-7230aba03ba5",
+   "payload": {
+    "excerpt": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 2 by worker-4\nIdea: [EXPLOIT] Register parents find babies on planes less rude\nOutcome: discard (loss 0.000000)\nDescriptor: {\"mechanism\": \"psychology\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:run:B:06cc409b573166755e8acc2149d1ca1355bc331a"
+   },
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 20,
+    "native_type": "result"
+   },
+   "tick": 174,
+   "ts": "2026-11-15T08:17:46.452419Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "1c5d1dd8-e71e-51ae-be3d-3aae47448c1a",
+   "payload": {
+    "B": 0.55,
+    "best_metric": 0.0,
+    "directive": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "frontier_stall": 1,
+    "frustration": 0.0,
+    "regime": "EXPLOIT",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.55 (EXPLOIT)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 2,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 10,
+    "native_type": "status"
+   },
+   "tick": 175,
+   "ts": "2026-11-15T08:17:46.456282Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 2,
+ "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "swarm": {
+  "B": 0.55,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "metric_value": 0.0,
+   "tick": 92
+  },
+  "frontier_stall": 1,
+  "regime": "EXPLOIT"
+ },
+ "tick": 175,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 9,
+  "memory_items": 20,
+  "questions": 34,
+  "sources": 0,
+  "tokens": 0
+ },
+ "ts": "2026-11-15T08:17:46.456282Z"
+}

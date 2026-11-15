@@ -69,6 +69,30 @@ def event_message(event):
     )[:3000]
 
 
+TESTCASES = Path(__file__).resolve().parents[1] / "testcases"
+
+
+def task_proxy_note(manifest):
+    """The task's honest benchmark caveat (testcases/<task>/task.json proxy_note), if known."""
+    command = (manifest.get("provenance") or {}).get("command") or []
+    parts = command.split() if isinstance(command, str) else list(command)
+    task = manifest.get("task") or ""
+    for i, part in enumerate(parts):
+        if part == "--task" and i + 1 < len(parts):
+            task = parts[i + 1]
+        elif str(part).startswith("--task="):
+            task = str(part).split("=", 1)[1]
+    if not task and "ig nobel" in str(manifest.get("title", "")).lower():
+        task = "ignobel"
+    path = TESTCASES / str(task) / "task.json"
+    if not task or "/" in str(task) or not path.is_file():
+        return ""
+    try:
+        return str(json.loads(path.read_text()).get("proxy_note") or "")
+    except (OSError, ValueError):
+        return ""
+
+
 def build_recording(native_manifest, native_events, entities, sample=True, stale=False):
     """Pure deterministic fold. Entity lookups never import late verdicts/results.
 
@@ -129,6 +153,9 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
             llm = provider
     except (ValueError, IndexError):
         pass
+    note = task_proxy_note(manifest)
+    if note:
+        manifest.setdefault("proxy_note", note)
     manifest["description"] = (
         (
             "Recorded offline run · fake LLM (scripted agents)"
@@ -151,7 +178,6 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
         datetime.fromisoformat(created.replace("Z", "+00:00")).timestamp() if created else 0
     )
     agents = []
-    family_counts = {"B": 0, "C": 0, "P": 0}
     human_index = 0
     for identity in manifest.get("agents", []):
         original = (
@@ -160,11 +186,8 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
             or identity.get("native_id", identity["agent_id"])
         )
         identity["original_display_name"] = original
-        if identity.get("type") in {"baseline", "world"}:
-            identity["display_name"] = (
-                "Reference" if identity["type"] == "baseline" else "Environment"
-            )
-        else:
+        identity["display_name"] = original
+        if identity.get("type") not in {"baseline", "world"}:
             field = str(identity.get("family") or identity.get("field") or "").lower()
             prefix = (
                 "B"
@@ -181,10 +204,6 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
                 else "display assignment"
             )
             identity["family"] = {"B": "Bio", "C": "Chem", "P": "Physics"}[prefix]
-            family_counts[prefix] += 1
-            identity["display_name"] = (
-                original if identity.get("named") else prefix + str(family_counts[prefix])
-            )
             human_index += 1
         identity["label"] = identity["display_name"]
     for identity in manifest.get("agents", []):

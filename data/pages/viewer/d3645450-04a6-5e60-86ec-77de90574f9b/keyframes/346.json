@@ -1,0 +1,900 @@
+{
+ "agents": [
+  {
+   "activity": "writing",
+   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 4,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 265,
+   "station": "notebook",
+   "type": "conductor"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "boredom": null,
+   "counters": {
+    "experiments": 1,
+    "keeps": 1,
+    "memory_writes": 0,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "experiment_id": "experiment:c2b3598"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": {
+    "experiment_id": "experiment:c2b3598",
+    "metric_value": 1.0,
+    "reward_id": "reward:1",
+    "status": "keep",
+    "tick": 4,
+    "value": 0.0
+   },
+   "role": null,
+   "scout": false,
+   "since_tick": 252,
+   "station": "home",
+   "type": "baseline"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "boredom": {
+    "B": 0.496667,
+    "components": {
+     "diversity": 0.444444,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.444444,
+     "overload": 0.666667,
+     "stagnation": 0.4,
+     "trivial_rate": 0.666667
+    },
+    "measured_tick": 257,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 1,
+    "memory_writes": 9,
+    "observations": 12,
+    "questions": 22,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:13",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-15",
+    "hypothesis_id": "hypothesis:13",
+    "question_id": "question:Q19"
+   },
+   "last_observation_id": "observation:recall-69",
+   "last_question_id": "question:Q19",
+   "last_reward": {
+    "experiment_id": "experiment:seq-15",
+    "metric_value": null,
+    "reward_id": "reward:15",
+    "status": "reject",
+    "tick": 335,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 342,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "boredom": {
+    "B": 0.546667,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.333333,
+     "overload": 0.666667,
+     "stagnation": 0.4,
+     "trivial_rate": 0.666667
+    },
+    "measured_tick": 258,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 9,
+    "observations": 12,
+    "questions": 19,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:3",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-16",
+    "hypothesis_id": "hypothesis:3",
+    "question_id": "question:Q23"
+   },
+   "last_observation_id": "observation:recall-74",
+   "last_question_id": "question:Q23",
+   "last_reward": {
+    "experiment_id": "experiment:seq-16",
+    "metric_value": null,
+    "reward_id": "reward:16",
+    "status": "reject",
+    "tick": 337,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 343,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "boredom": {
+    "B": 0.63,
+    "components": {
+     "diversity": 0.444444,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.222222,
+     "overload": 1.0,
+     "stagnation": 0.4,
+     "trivial_rate": 1.0
+    },
+    "measured_tick": 259,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 9,
+    "observations": 12,
+    "questions": 19,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:15",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-17",
+    "hypothesis_id": "hypothesis:15",
+    "question_id": "question:Q27"
+   },
+   "last_observation_id": "observation:recall-79",
+   "last_question_id": "question:Q27",
+   "last_reward": {
+    "experiment_id": "experiment:seq-17",
+    "metric_value": null,
+    "reward_id": "reward:17",
+    "status": "reject",
+    "tick": 339,
+    "value": 0.0
+   },
+   "role": "divergent",
+   "scout": false,
+   "since_tick": 344,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "writing",
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "boredom": {
+    "B": 0.63,
+    "components": {
+     "diversity": 0.0,
+     "fail_rate": 0.0,
+     "frustration": 0.0,
+     "novelty": 0.222222,
+     "overload": 1.0,
+     "stagnation": 0.4,
+     "trivial_rate": 1.0
+    },
+    "measured_tick": 260,
+    "regime": "EXPLOIT",
+    "shadow": false
+   },
+   "counters": {
+    "experiments": 4,
+    "keeps": 0,
+    "memory_writes": 9,
+    "observations": 12,
+    "questions": 19,
+    "tokens": 0
+   },
+   "diary_head": {
+    "diary_id": "diary:5",
+    "excerpt": "Apply a distinct task-specific edit for offline runs."
+   },
+   "focus": {
+    "experiment_id": "experiment:seq-18",
+    "hypothesis_id": "hypothesis:5",
+    "question_id": "question:Q31"
+   },
+   "last_observation_id": "observation:recall-84",
+   "last_question_id": "question:Q31",
+   "last_reward": {
+    "experiment_id": "experiment:seq-18",
+    "metric_value": null,
+    "reward_id": "reward:18",
+    "status": "reject",
+    "tick": 341,
+    "value": 0.0
+   },
+   "role": "exploit",
+   "scout": false,
+   "since_tick": 345,
+   "station": "notebook",
+   "type": "worker"
+  },
+  {
+   "activity": "idle",
+   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "boredom": null,
+   "counters": {
+    "experiments": 0,
+    "keeps": 0,
+    "memory_writes": 2,
+    "observations": 0,
+    "questions": 0,
+    "tokens": 0
+   },
+   "diary_head": null,
+   "focus": {
+    "partner_agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   },
+   "last_observation_id": null,
+   "last_question_id": null,
+   "last_reward": null,
+   "role": null,
+   "scout": false,
+   "since_tick": 252,
+   "station": "home",
+   "type": "critic"
+  }
+ ],
+ "discovery_ids": [
+  "discovery:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846"
+ ],
+ "in_flight": {
+  "conversations": [
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "a94a1cd6-2d91-5070-a74f-1bc51753f309"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "0ae2fac2-64b2-5b7b-86c7-72090036fdf8"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6"
+   ],
+   [
+    "ba27810f-d413-5def-94a1-342c4e80b09c",
+    "665aed22-e0e9-52b6-9e0e-405d4350e9f1"
+   ]
+  ],
+  "experiment_ids": []
+ },
+ "phase": "status",
+ "recent_events": [
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "58118ad6-df36-5194-9f04-d29f3215aefe",
+   "payload": {
+    "candidate_commit": "9da63fb643d467d93ca5276c1c33abc7aca6159d",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q18"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 17,
+    "native_type": "gate"
+   },
+   "tick": 327,
+   "ts": "2026-11-15T08:17:47.227835+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "10943055-0ef2-597d-b778-0a7024c63c6f",
+   "payload": {
+    "candidate_commit": "4aee8a9dd1ada583535cf504eaa4fcb9491802d4",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q21"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 18,
+    "native_type": "gate"
+   },
+   "tick": 328,
+   "ts": "2026-11-15T08:17:47.293956+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "a432c0aa-a43b-5217-98e6-17c39c3d4dea",
+   "payload": {
+    "candidate_commit": "0b9c6464c0e939556e31029381e0661c32b4747e",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q22"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 19,
+    "native_type": "gate"
+   },
+   "tick": 329,
+   "ts": "2026-11-15T08:17:47.358360+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "cb687f48-545b-5fe9-9019-5474989af3e9",
+   "payload": {
+    "candidate_commit": "ea4373a9b735b400c3a056dfda8c4fcc1be15f77",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q25"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 20,
+    "native_type": "gate"
+   },
+   "tick": 330,
+   "ts": "2026-11-15T08:17:47.436021+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "bf690ce3-d79f-5a92-bbbf-be06aeddd651",
+   "payload": {
+    "candidate_commit": "6a089f04b6bf739e50db70b525abac49e506103e",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q26"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 21,
+    "native_type": "gate"
+   },
+   "tick": 331,
+   "ts": "2026-11-15T08:17:47.511246+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "31dc8be3-7148-59b2-afe4-5117c8bd8ea1",
+   "payload": {
+    "candidate_commit": "60d1d0cafed38d7bfd7850297d96346cd71f905a",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q29"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 22,
+    "native_type": "gate"
+   },
+   "tick": 332,
+   "ts": "2026-11-15T08:17:47.581271+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "0b31d0a4-c93d-504f-8b7d-c898825b4fa0",
+   "payload": {
+    "candidate_commit": "052dc5ede901345bec1079377e2be4d5cd24c4d1",
+    "descriptor": {
+     "mechanism": "psychology",
+     "method": "new_population"
+    },
+    "grounded": false,
+    "lead": "none",
+    "min_failed_dist": 0.0,
+    "min_recent_dist": 0.0,
+    "pass": false,
+    "prior_art": [
+     "Q30"
+    ],
+    "text": "Novelty gate blocked"
+   },
+   "phase": "gate",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 23,
+    "native_type": "gate"
+   },
+   "tick": 333,
+   "ts": "2026-11-15T08:17:47.605966+00:00",
+   "type": "gate.checked"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "bca9cfa1-38cc-5667-ad31-1aef01dafb27",
+   "payload": {
+    "description": "assigned cell has no buildable fake target",
+    "role": "divergent",
+    "text": "Testing: assigned cell has no buildable fake target"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-15",
+    "hypothesis_id": "hypothesis:13"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 15,
+    "native_type": "candidate"
+   },
+   "tick": 334,
+   "ts": "2026-11-15T08:17:47.623815Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "8be7dc89-5012-5137-9204-c1204fa2d835",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-15",
+    "reward_id": "reward:15"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 15,
+    "native_type": "candidate"
+   },
+   "tick": 335,
+   "ts": "2026-11-15T08:17:47.623815Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "2b94c948-8e0e-5036-aab1-cfafc679dcda",
+   "payload": {
+    "description": "assigned cell has no buildable fake target",
+    "role": "divergent",
+    "text": "Testing: assigned cell has no buildable fake target"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-16",
+    "hypothesis_id": "hypothesis:3"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 16,
+    "native_type": "candidate"
+   },
+   "tick": 336,
+   "ts": "2026-11-15T08:17:47.624273Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "f6d4a540-aab4-5f58-bfa7-b5b6906714f5",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-16",
+    "reward_id": "reward:16"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 16,
+    "native_type": "candidate"
+   },
+   "tick": 337,
+   "ts": "2026-11-15T08:17:47.624273Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "3bbdf9ba-fae4-5686-989e-c5ef74b30873",
+   "payload": {
+    "description": "assigned cell has no buildable fake target",
+    "role": "divergent",
+    "text": "Testing: assigned cell has no buildable fake target"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-17",
+    "hypothesis_id": "hypothesis:15"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 17,
+    "native_type": "candidate"
+   },
+   "tick": 338,
+   "ts": "2026-11-15T08:17:47.624688Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "1425a34c-c632-5bf6-ab20-4e99d04de57f",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-17",
+    "reward_id": "reward:17"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 17,
+    "native_type": "candidate"
+   },
+   "tick": 339,
+   "ts": "2026-11-15T08:17:47.624688Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "07cf7c53-4257-5773-a05d-1ea0e63bfbdf",
+   "payload": {
+    "description": "assigned cell has no buildable fake target",
+    "role": "exploit",
+    "text": "Testing: assigned cell has no buildable fake target"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-18",
+    "hypothesis_id": "hypothesis:5"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 18,
+    "native_type": "candidate"
+   },
+   "tick": 340,
+   "ts": "2026-11-15T08:17:47.625084Z",
+   "type": "experiment.started"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "e9739f10-34f3-5b3b-9d14-a654676005b2",
+   "payload": {
+    "metric_value": null,
+    "reward": 0.0,
+    "status": "reject",
+    "text": "Result reject: replication loss n/a, reward +0.0%"
+   },
+   "phase": "evaluate",
+   "refs": {
+    "experiment_id": "experiment:seq-18",
+    "reward_id": "reward:18"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "ledger.jsonl",
+    "line": 18,
+    "native_type": "candidate"
+   },
+   "tick": 341,
+   "ts": "2026-11-15T08:17:47.625084Z",
+   "type": "experiment.finished"
+  },
+  {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "event_id": "1a324b9c-74db-5ac6-84f9-ee52160b815c",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+    "text": "autoresearch B round 4 by worker-1\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"new_population\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r4-worker-1"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 39,
+    "native_type": "result"
+   },
+   "tick": 342,
+   "ts": "2026-11-15T08:17:47.624132Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "event_id": "adb67b02-72bf-5952-8a3c-9d3a1de1a1e0",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+    "text": "autoresearch B round 4 by worker-2\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"replicate_published\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r4-worker-2"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 40,
+    "native_type": "result"
+   },
+   "tick": 343,
+   "ts": "2026-11-15T08:17:47.624531Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "event_id": "0ed3d401-9320-5bf3-8491-9d73e7bd28cb",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+    "text": "autoresearch B round 4 by worker-3\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"resolve_conflict\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r4-worker-3"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 41,
+    "native_type": "result"
+   },
+   "tick": 344,
+   "ts": "2026-11-15T08:17:47.624943Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "event_id": "bc61496d-d5ab-5ebe-a4cd-ec82d130f96d",
+   "payload": {
+    "excerpt": "autoresearch B round 4 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+    "text": "autoresearch B round 4 by worker-4\nIdea: [SNAP] assigned cell has no buildable fake target\nOutcome: reject (loss n/a)\nDescriptor: {\"mechanism\": \"acoustics\", \"method\": \"untested_prediction\"}",
+    "type": "result"
+   },
+   "phase": "critic",
+   "refs": {
+    "memory_id": "memory:reject:B:r4-worker-4"
+   },
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "memory.jsonl",
+    "line": 42,
+    "native_type": "result"
+   },
+   "tick": 345,
+   "ts": "2026-11-15T08:17:47.625338Z",
+   "type": "memory.written"
+  },
+  {
+   "agent_id": null,
+   "event_id": "aac18095-fe57-505c-a8c2-aae3aff0523e",
+   "payload": {
+    "B": 0.73,
+    "best_metric": 0.0,
+    "directive": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "frontier_stall": 2,
+    "frustration": 0.0,
+    "regime": "BOREDOM_SNAP",
+    "scope": "swarm",
+    "shadow": false,
+    "text": "Boredom 0.73 (BOREDOM_SNAP)"
+   },
+   "phase": "status",
+   "refs": {},
+   "round": 4,
+   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "schema": "swarm-viewer/v1",
+   "source": {
+    "file": "boredom_log.jsonl",
+    "line": 24,
+    "native_type": "status"
+   },
+   "tick": 346,
+   "ts": "2026-11-15T08:17:47.626097Z",
+   "type": "boredom.measured"
+  }
+ ],
+ "round": 4,
+ "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "swarm": {
+  "B": 0.73,
+  "baseline": 1.0,
+  "best": {
+   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "experiment_id": "experiment:c0c7a0662febeb9e2a7a18bc8f6ced0ca928d846",
+   "metric_value": 0.0,
+   "tick": 92
+  },
+  "frontier_stall": 2,
+  "regime": "BOREDOM_SNAP"
+ },
+ "tick": 346,
+ "totals": {
+  "discoveries": 1,
+  "experiments": 17,
+  "memory_items": 42,
+  "questions": 79,
+  "sources": 0,
+  "tokens": 0
+ },
+ "ts": "2026-11-15T08:17:47.626097Z"
+}
