@@ -386,6 +386,9 @@ class SwarmOrchestratorTests(unittest.TestCase):
             command[command.index("--repo") + 1] = str(second_repo)
             repeated = subprocess.run(command, cwd=REPO_ROOT, env=env, capture_output=True, text=True)
             self.assertEqual(repeated.returncode, 0, repeated.stderr + repeated.stdout)
+            run_id = (out_dir / "run_id").read_text().strip()
+            self.assertTrue(run_id)
+            self.assertNotEqual(run_id, (second_out / "run_id").read_text().strip())
 
             def without_commits(value):
                 if isinstance(value, dict):
@@ -528,6 +531,12 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
             with swarm.arm_environment("D", True):
                 self.assertEqual(os.environ["MEMORY_BACKEND"], "local")
+
+    def test_arm_environment_propagates_and_restores_swarm_run_id(self):
+        with patch.dict(os.environ, {"AUTORESEARCH_RUN_ID": "previous-run"}):
+            with swarm.arm_environment("B", False, "pastdev", run_id="current-run"):
+                self.assertEqual(swarm.memory.arm_run_scope(), {"arm": "B", "run_id": "current-run"})
+            self.assertEqual(os.environ["AUTORESEARCH_RUN_ID"], "previous-run")
 
     def test_converged_round_keeps_confirmation_roles_and_scouts(self):
         profile = meter.load_profile(PROFILE_PATH)

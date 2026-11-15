@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
+import uuid
 from types import SimpleNamespace
 
 import boredom
@@ -1406,9 +1407,10 @@ def critic_lesson_memory(
 
 
 @contextmanager
-def arm_environment(arm, exa_enabled, memory_backend=None):
+def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
     names = (
         "AUTORESEARCH_ARM",
+        "AUTORESEARCH_RUN_ID",
         "EXA",
         "BOREDOM",
         "PRIOR_ART",
@@ -1417,6 +1419,8 @@ def arm_environment(arm, exa_enabled, memory_backend=None):
     )
     saved = {name: os.environ.get(name) for name in names}
     os.environ["AUTORESEARCH_ARM"] = arm
+    if run_id is not None:
+        os.environ["AUTORESEARCH_RUN_ID"] = run_id
     os.environ["EXA"] = "on" if exa_enabled else "off"
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
@@ -1495,7 +1499,13 @@ def orchestrate(args):
             encoding="utf-8",
         )
 
-    with arm_environment(args.arm, exa_enabled, memory_backend):
+    run_id_path = out_dir / "run_id"
+    if not run_id_path.exists():
+        run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
+    run_id = run_id_path.read_text(encoding="utf-8").strip()
+    if not run_id:
+        raise ValueError("swarm run_id must not be empty")
+    with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,
