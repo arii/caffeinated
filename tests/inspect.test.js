@@ -107,6 +107,12 @@ test('empty baseline gate placeholders are not shown as a gate check and rejecte
  assert.match(studyCardHtml(cards[1],ctx),/Rejected: dataset reused/);
 });
 
+test('native hypothesis_id rows keep the experiment idea',()=>{
+ const r={entities:{hypotheses:[{hypothesis_id:'h',text:'Seeds matter',rationale:'Variance'}],studies:[{study_id:'s'}]},events:[{tick:0,type:'hypothesis.proposed',refs:{hypothesis_id:'h'}},{tick:1,type:'experiment.started',refs:{experiment_id:'e',hypothesis_id:'h'}}]};
+ assert.deepEqual(entityRows(r,'hypotheses').map(x=>x.id),['h']);assert.deepEqual(entityRows(r,'studies').map(x=>x.id),['s']);
+ assert.equal(experimentDetail(r,'e',1).idea.rationale,'Variance');
+});
+
 test('legacy JSON proposal text is shown as the idea and rationale',()=>{
  const r={entities:{hypotheses:[{id:'h',text:'{"idea":"Use seed 43","rationale":"Seed 42 worked"}'}]},events:[{tick:0,type:'hypothesis.proposed',refs:{hypothesis_id:'h'}},{tick:1,type:'experiment.started',refs:{experiment_id:'e',hypothesis_id:'h'}}]};
  assert.deepEqual([experimentDetail(r,'e',1).idea.text,experimentDetail(r,'e',1).idea.rationale],['Use seed 43','Seed 42 worked']);

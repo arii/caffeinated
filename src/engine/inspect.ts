@@ -10,7 +10,7 @@ const text=(v:unknown)=>typeof v==='string'&&v.trim()?v.trim():null;
 const num=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const bool=(v:unknown)=>typeof v==='boolean'?v:null;
 
-export function entityRows(recording:Source|null|undefined,name:string,key=`${name.replace(/s$/,'').replace(/ie$/,'y')}_id`):Row[]{
+export function entityRows(recording:Source|null|undefined,name:string,key=`${name.replace(/ies$/,'y').replace(/ses$/,'sis').replace(/s$/,'')}_id`):Row[]{
  const raw=recording?.entities?.[name] as unknown;const rows=Array.isArray(raw)?raw:raw&&typeof raw==='object'?Object.values(raw):[];
  return rows.filter((r):r is Row=>!!r&&typeof r==='object').map(r=>({...r,id:r.id??r[key]})).filter(r=>r.id!=null);
 }
