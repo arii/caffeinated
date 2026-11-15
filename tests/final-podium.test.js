@@ -37,6 +37,12 @@ test('replay hides final results until the finale, and live uses the same compon
  live.events=[{type:'run.finished',tick:10}];
  assert.equal(recordingPodiumHtml(live,10,esc),recordingPodiumHtml(recording,10,esc));
 });
+test('ideas the judge left unranked never fill podium places',()=>{
+ const judged={...artifact,ideas:[...artifact.ideas,{study_id:'seed',title:'Seed',hypothesis:'Baseline seed',total:99}]};
+ assert.doesNotMatch(recordingPodiumHtml({...recording,igjudge:judged},10,esc),/Baseline seed/);
+ const none={...recording,igjudge:{...judged,leaderboard:[],winner:null}};
+ assert.doesNotMatch(recordingPodiumHtml(none,10,esc),/Prize winner/);
+});
 test('late judge scores can arrive through a live delta',()=>{
  const pending={...recording,igjudge:undefined};
  assert.match(recordingPodiumHtml(pending,10,esc),/Awaiting/);
