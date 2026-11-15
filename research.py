@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 
 import live_publish
 
+SOURCE_ID_PATTERN = r"S\d+|D\d+_\d+"
 SOURCE_ID_RE = re.compile(r"^S(\d+)$")
 QUERY_ID_RE = re.compile(r"^Q(\d+)$")
 EXTRACT_ID_RE = re.compile(r"^E(\d+)$")

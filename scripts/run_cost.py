@@ -8,6 +8,8 @@ import statistics
 from pathlib import Path
 
 EXA_ENDPOINTS = frozenset({"/search", "/contents", "/findSimilar", "/answer"})
+WASTED_OUTCOMES = frozenset({"rejected", "duplicate", "invalid", "edit_error"})
+TOKEN_FIELDS = ("input_tokens", "cached_tokens", "output_tokens", "reasoning_tokens")
 
 
 def read_jsonl(path):
@@ -78,6 +80,109 @@ def _pastdev_usage(records):
     return usage
 
 
+def _token_count(value):
+    if isinstance(value, bool):
+        return 0
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _usage_values(record):
+    usage = record.get("usage") or {}
+    if not isinstance(usage, dict):
+        usage = {}
+    prompt_details = usage.get("prompt_tokens_details")
+    if not isinstance(prompt_details, dict):
+        prompt_details = {}
+    completion_details = usage.get("completion_tokens_details")
+    if not isinstance(completion_details, dict):
+        completion_details = {}
+    return {
+        "input_tokens": _token_count(usage.get("prompt_tokens")),
+        "cached_tokens": _token_count(
+            usage.get("cached_tokens", prompt_details.get("cached_tokens"))
+        ),
+        "output_tokens": _token_count(usage.get("completion_tokens")),
+        "reasoning_tokens": _token_count(
+            usage.get("reasoning_tokens", completion_details.get("reasoning_tokens"))
+        ),
+    }
+
+
+def _usage_totals(records):
+    totals = {"calls": len(records), **dict.fromkeys(TOKEN_FIELDS, 0)}
+    for record in records:
+        for field, value in _usage_values(record).items():
+            totals[field] += value
+    return totals
+
+
+def _group_usage(records, field):
+    groups = {}
+    for record in records:
+        raw_key = record.get(field)
+        key = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+        group = groups.setdefault(key, {"calls": 0, **dict.fromkeys(TOKEN_FIELDS, 0)})
+        group["calls"] += 1
+        for name, value in _usage_values(record).items():
+            group[name] += value
+    return dict(sorted(groups.items(), key=lambda item: _group_sort_key(field, item[0])))
+
+
+def _group_sort_key(field, key):
+    if field == "round" and key.isdigit():
+        return (0, int(key))
+    return (1, key)
+
+
+def _wasted_usage(records, outcomes):
+    outcome_by_call = {
+        record.get("call_id"): record.get("outcome") for record in outcomes if record.get("call_id")
+    }
+    wasted_records = [
+        record
+        for record in records
+        if record.get("call_id") and outcome_by_call.get(record["call_id"]) in WASTED_OUTCOMES
+    ]
+    totals = _usage_totals(records)
+    wasted = _usage_totals(wasted_records)
+    wasted["percent_of_total"] = {
+        "calls": round(100 * wasted["calls"] / totals["calls"], 2) if totals["calls"] else 0.0,
+        **{
+            field: round(100 * wasted[field] / totals[field], 2) if totals[field] else 0.0
+            for field in TOKEN_FIELDS
+        },
+    }
+    return wasted
+
+
+def _tool_counts(research_records, memory_records):
+    exa_searches = sum(
+        1
+        for record in research_records
+        if record.get("type") == "query"
+        and str(record.get("endpoint", "")).strip().casefold().lstrip("/") == "search"
+        and not record.get("replay")
+    )
+    pastdev_recalls = sum(
+        1
+        for record in memory_records
+        if record.get("backend") == "pastdev" and record.get("type") == "recall"
+    )
+    pastdev_writes = sum(
+        1
+        for record in memory_records
+        if record.get("backend") == "pastdev" and record.get("type") == "write"
+    )
+    return {
+        "exa_searches": exa_searches,
+        "pastdev_recalls": pastdev_recalls,
+        "pastdev_writes": pastdev_writes,
+    }
+
+
 def _research_costs(records, memory_records=()):
     totals = {"exa": 0.0, "past_dev": 0.0}
     counts = {"exa": 0, "past_dev": 0}
@@ -142,19 +247,24 @@ def build_report(run_dir, prices=None):
     run_dir = Path(run_dir).resolve()
     prices = prices or {}
     calls_by_model = {}
-    for record in read_jsonl(run_dir / "llm_log.jsonl"):
+    llm_records = read_jsonl(run_dir / "llm_log.jsonl")
+    for record in llm_records:
         model = record.get("model") or "unknown"
-        usage = record.get("usage") or {}
-        if not isinstance(usage, dict):
-            usage = {}
+        values = _usage_values(record)
         model_usage = calls_by_model.setdefault(
-            model, {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0}
+            model,
+            {
+                "calls": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                **dict.fromkeys(TOKEN_FIELDS, 0),
+            },
         )
         model_usage["calls"] += 1
-        for token_name in ("prompt_tokens", "completion_tokens"):
-            value = usage.get(token_name, 0)
-            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-                model_usage[token_name] += value
+        model_usage["prompt_tokens"] += values["input_tokens"]
+        model_usage["completion_tokens"] += values["output_tokens"]
+        for field in ("cached_tokens", "reasoning_tokens"):
+            model_usage[field] += values[field]
 
     total_calls = sum(model["calls"] for model in calls_by_model.values())
     total_prompt_tokens = sum(model["prompt_tokens"] for model in calls_by_model.values())
@@ -171,18 +281,37 @@ def build_report(run_dir, prices=None):
             else None
         )
 
+    outcomes = read_jsonl(run_dir / "llm_outcomes.jsonl")
+    research_records = read_jsonl(run_dir / "research_log.jsonl")
+    memory_records = read_jsonl(run_dir / "memory_log.jsonl")
+    usage_totals = _usage_totals(llm_records)
     return {
         "run_dir": str(run_dir),
         "llm": {
             "calls": total_calls,
             "prompt_tokens": total_prompt_tokens,
             "completion_tokens": total_completion_tokens,
+            "input_tokens": usage_totals["input_tokens"],
+            "cached_tokens": usage_totals["cached_tokens"],
+            "output_tokens": usage_totals["output_tokens"],
+            "reasoning_tokens": usage_totals["reasoning_tokens"],
+            "by_role": _group_usage(llm_records, "role"),
+            "by_round": _group_usage(llm_records, "round"),
+            "by_agent": _group_usage(llm_records, "agent"),
+            "wasted": _wasted_usage(llm_records, outcomes),
+            "outcomes": {
+                outcome: sum(1 for record in outcomes if record.get("outcome") == outcome)
+                for outcome in sorted(
+                    {record.get("outcome") for record in outcomes if record.get("outcome")}
+                )
+            },
             "models": dict(sorted(calls_by_model.items())),
         },
         "research_costs": _research_costs(
-            read_jsonl(run_dir / "research_log.jsonl"),
-            read_jsonl(run_dir / "memory_log.jsonl"),
+            research_records,
+            memory_records,
         ),
+        "tools": _tool_counts(research_records, memory_records),
     }
 
 
@@ -195,6 +324,11 @@ def main(argv=None):
         default=[],
         metavar="MODEL=IN_PER_MTOK,OUT_PER_MTOK",
         help="optional input/output USD prices per million tokens; may be repeated",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON (the default; retained for explicit machine-readable invocations)",
     )
     args = parser.parse_args(argv)
     try:

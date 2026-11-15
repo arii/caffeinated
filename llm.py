@@ -19,11 +19,39 @@ load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
 TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
 TINKER_TIMEOUT_SECONDS = 900
+DEFAULT_TINKER_REASONING_EFFORT = "low"
 TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
 def timestamp():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _usage_int(value):
+    if isinstance(value, bool):
+        return 0
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _usage_with_token_details(usage, raw_usage, reasoning_content=None):
+    usage = dict(usage or {})
+    if isinstance(raw_usage, dict):
+        prompt_details = raw_usage.get("prompt_tokens_details")
+        if isinstance(prompt_details, dict):
+            usage["prompt_tokens_details"] = prompt_details
+            if "cached_tokens" in prompt_details:
+                usage["cached_tokens"] = _usage_int(prompt_details["cached_tokens"])
+        completion_details = raw_usage.get("completion_tokens_details")
+        if isinstance(completion_details, dict):
+            usage["completion_tokens_details"] = completion_details
+            if "reasoning_tokens" in completion_details:
+                usage["reasoning_tokens"] = _usage_int(completion_details["reasoning_tokens"])
+    if reasoning_content is not None:
+        usage["reasoning_chars"] = len(str(reasoning_content))
+    return usage
 
 
 def prompt_sha(prompt):
@@ -319,6 +347,20 @@ class LLMClient:
         self.seed = seed
         self.sampling_seed = None
         self.records = read_log(self.log_path)
+        self.call_counter = len(self.records)
+        self.call_ids = [
+            record["call_id"] for record in self.records if isinstance(record.get("call_id"), str)
+        ]
+        self.call_metadata = {
+            record["call_id"]: {
+                "role": record.get("role"),
+                "agent": record.get("agent"),
+                "round": record.get("round"),
+            }
+            for record in self.records
+            if isinstance(record.get("call_id"), str)
+        }
+        self.last_call_id = None
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
@@ -344,6 +386,9 @@ class LLMClient:
             raise ValueError("LLM mode must be openai, tinker, or fake")
 
     def call(self, role, *, agent, round_num, values):
+        self.call_counter += 1
+        call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
+        self.last_call_id = None
         prompt_values = dict(values)
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
@@ -391,6 +436,7 @@ class LLMClient:
             raise LLMError(f"LLM role {role} response must be a JSON object")
         record = {
             "ts": timestamp(),
+            "call_id": call_id,
             "role": role.upper(),
             "agent": agent,
             "round": round_num,
@@ -406,6 +452,9 @@ class LLMClient:
             record["attempts"] = self.request_attempts
         append_log(self.log_path, record)
         self.records.append(record)
+        self.call_ids.append(call_id)
+        self.call_metadata[call_id] = {"role": role.upper(), "agent": agent, "round": round_num}
+        self.last_call_id = call_id
         return response
 
     def _tinker_completion(self, prompt, model=None):
@@ -416,7 +465,9 @@ class LLMClient:
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 8192,
             "temperature": 0.3,
-            "reasoning_effort": os.environ.get("TINKER_REASONING_EFFORT", "low"),
+            "reasoning_effort": os.environ.get(
+                "TINKER_REASONING_EFFORT", DEFAULT_TINKER_REASONING_EFFORT
+            ),
         }
         if self.sampling_seed is not None:
             payload["seed"] = self.sampling_seed
@@ -453,12 +504,17 @@ class LLMClient:
         except (KeyError, IndexError, TypeError) as error:
             raise RuntimeError("Tinker returned no completion message") from error
         content = message.get("content") or ""
-        reasoning = str(message.get("reasoning_content") or "").strip()
+        reasoning_content = message.get("reasoning_content")
+        reasoning = str(reasoning_content or "").strip()
         raw_usage = response.get("usage") or {}
-        usage = {
-            key: int(raw_usage.get(key) or 0)
-            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
-        }
+        usage = _usage_with_token_details(
+            {
+                key: _usage_int(raw_usage.get(key))
+                for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+            },
+            raw_usage,
+            reasoning_content=reasoning_content,
+        )
         if reasoning:
             usage["reasoning"] = reasoning
         return content, usage
@@ -478,8 +534,20 @@ class LLMClient:
             if reasoning:
                 record["reasoning"] = reasoning
             self.request_attempts.append(record)
-            for key in usage:
-                usage[key] += attempt_usage.get(key, 0)
+            for key in (
+                "prompt_tokens",
+                "completion_tokens",
+                "total_tokens",
+                "cached_tokens",
+                "reasoning_tokens",
+                "reasoning_chars",
+            ):
+                if key in attempt_usage:
+                    usage[key] = usage.get(key, 0) + attempt_usage[key]
+            if "cached_tokens" in usage:
+                usage["prompt_tokens_details"] = {"cached_tokens": usage["cached_tokens"]}
+            if "reasoning_tokens" in usage:
+                usage["completion_tokens_details"] = {"reasoning_tokens": usage["reasoning_tokens"]}
             try:
                 return first_json_object(content), usage
             except ValueError as error:
@@ -524,10 +592,17 @@ class LLMClient:
         except json.JSONDecodeError as error:
             raise RuntimeError("OpenAI returned invalid JSON") from error
         try:
-            content = response["choices"][0]["message"]["content"]
+            message = response["choices"][0]["message"]
+            content = message["content"]
             parsed = json.loads(content)
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as error:
             raise RuntimeError("OpenAI returned an invalid JSON-mode completion") from error
         if not isinstance(parsed, dict):
             raise RuntimeError("OpenAI completion must be a JSON object")
-        return parsed, response.get("usage")
+        raw_usage = response.get("usage") or {}
+        usage = _usage_with_token_details(
+            raw_usage,
+            raw_usage,
+            reasoning_content=message.get("reasoning_content"),
+        )
+        return parsed, usage

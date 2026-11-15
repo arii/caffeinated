@@ -12,6 +12,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import research
+
 METER_PATH = Path(__file__).parent / "boredom_meter"
 if str(METER_PATH) not in sys.path:
     sys.path.insert(0, str(METER_PATH))
@@ -224,7 +226,7 @@ def source_trailers(message):
         has_trailer = True
         for source_id in match.group(1).split(","):
             source_id = source_id.strip()
-            if re.fullmatch(r"S\d+", source_id) and source_id not in sources:
+            if re.fullmatch(research.SOURCE_ID_PATTERN, source_id) and source_id not in sources:
                 sources.append(source_id)
     return sources, has_trailer
 
