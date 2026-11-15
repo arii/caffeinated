@@ -106,7 +106,12 @@ def render_prompt(role, values, prompt_dir=DEFAULT_PROMPT_DIR):
     }
     common = (prompt_dir / "common.md").read_text(encoding="utf-8")
     common = fill_placeholders(common, values)
-    role_file = prompt_dir / f"{role.casefold()}.md"
+    template_role = (
+        "worker_execute"
+        if values.get("supervisor_instruction") and role.upper().startswith("WORKER_")
+        else role.casefold()
+    )
+    role_file = prompt_dir / f"{template_role}.md"
     role_template = role_file.read_text(encoding="utf-8")
     role_template = role_template.replace("{common}", common)
     return fill_placeholders(role_template, values)
@@ -338,8 +343,20 @@ class LLMClient:
         replay=False,
         seed=None,
         fake_delay=0.0,
+        worker_tokens=600,
+        supervisor_tokens=4096,
+        ollama_context=8192,
     ):
         self.mode = mode.casefold()
+        self.worker_tokens = worker_tokens
+        self.supervisor_tokens = supervisor_tokens
+        self.ollama_context = ollama_context
+        self.supervised = bool((role_models or {}).get("SUPERVISOR"))
+        self.worker_calls = {}
+        if not 128 <= worker_tokens <= 4096 or not 256 <= supervisor_tokens <= 8192:
+            raise ValueError("invalid worker/supervisor token limit")
+        if not 4096 <= ollama_context <= 32768:
+            raise ValueError("Ollama context must be 4096-32768")
         self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
@@ -372,6 +389,8 @@ class LLMClient:
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
+        elif self.mode == "ollama":
+            self.model = model or "qwen3:4b"
         elif self.mode == "tinker":
             if not replay and not self.model:
                 raise ValueError("set --model or TINKER_MODEL for Tinker requests")
@@ -383,9 +402,14 @@ class LLMClient:
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY is required for OpenAI requests")
         elif self.mode != "openai":
-            raise ValueError("LLM mode must be openai, tinker, or fake")
+            raise ValueError("LLM mode must be openai, tinker, ollama, or fake")
 
     def call(self, role, *, agent, round_num, values):
+        if self.supervised and role.upper().startswith("WORKER_") and not self.replay:
+            key = (agent, round_num)
+            if self.worker_calls.get(key, 0) >= 2:
+                raise LLMError(f"{agent}: local call budget reached (one execution + one repair)")
+            self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
         self.last_call_id = None
@@ -426,7 +450,9 @@ class LLMClient:
             response = fake_response(role, prompt_values)
         else:
             try:
-                if self.mode == "tinker":
+                if self.mode == "ollama":
+                    response, usage = self._request_ollama(prompt, model=model, role=role)
+                elif self.mode == "tinker":
                     response, usage = self._request_tinker(prompt, model=model)
                 else:
                     response, usage = self._request(prompt, model=model)
@@ -562,6 +588,66 @@ class LLMClient:
                     + str(error)
                     + "\nReturn a single valid JSON object only."
                 )
+
+    def _request_ollama(self, prompt, model=None, role="WORKER_PROPOSE"):
+        """Local-only inference, with bounded output and reasoning only for the supervisor."""
+        from urllib.parse import urlparse
+
+        base = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+        address = urlparse(base)
+        if address.scheme != "http" or address.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError("--llm ollama requires a local HTTP OLLAMA_HOST")
+        thinking = role.upper() == "SUPERVISOR"
+        limit = self.supervisor_tokens if thinking else self.worker_tokens
+        # Leave space for the output; fail visibly instead of silently truncating task context.
+        if len(prompt) > (self.ollama_context - limit) * 3:
+            raise RuntimeError(
+                "Local prompt exceeds conservative context budget; reduce task context"
+            )
+        payload = {
+            "model": model or self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "format": "json",
+            "stream": False,
+            "think": thinking,
+            "keep_alive": "10m",
+            "options": {"num_ctx": self.ollama_context, "num_predict": limit, "temperature": 0.2},
+        }
+        if self.sampling_seed is not None:
+            payload["options"]["seed"] = self.sampling_seed
+        request = Request(
+            f"{base}/api/chat",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=240) as response:
+                result = json.loads(response.read())
+        except (URLError, TimeoutError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"Ollama request failed: {error}") from error
+        message = result.get("message", {})
+        usage = {
+            "prompt_tokens": result.get("prompt_eval_count", 0),
+            "completion_tokens": result.get("eval_count", 0),
+            "total_tokens": result.get("prompt_eval_count", 0) + result.get("eval_count", 0),
+            "reasoning_chars": len(message.get("thinking", "")),
+            "thinking_enabled": thinking,
+            "output_limit": limit,
+            "eval_duration_ns": result.get("eval_duration", 0),
+        }
+        self.request_attempts.append({"response": message.get("content", ""), "usage": usage})
+        if result.get("done_reason") == "length":
+            raise RuntimeError(
+                f"Ollama hit the {limit}-token limit; no partial proposal will be executed"
+            )
+        try:
+            parsed = json.loads(message.get("content", ""))
+        except (ValueError, TypeError) as error:
+            raise RuntimeError("Ollama returned invalid JSON") from error
+        if not isinstance(parsed, dict):
+            raise RuntimeError("Ollama completion must be a JSON object")
+        return parsed, usage
 
     def _request(self, prompt, model=None):
         api_key = os.environ.get("OPENAI_API_KEY")

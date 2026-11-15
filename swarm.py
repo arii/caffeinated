@@ -375,9 +375,7 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         scout = agents[0]
         roles[scout] = "divergent"
         scouts = [scout] if exa_enabled else []
-        rationale = (
-            "Arm A fixes three exploit slots and one divergent slot; it scouts when Exa is enabled."
-        )
+        rationale = f"Arm A fixes {len(agents) - 1} exploit slots and one divergent slot; it scouts when Exa is enabled."
     elif regime == "BOREDOM_SNAP":
         if exa_enabled:
             scout_count = min(2, 1 + len(bored))
@@ -392,13 +390,13 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
         for agent in scouts:
             roles[agent] = "divergent"
         non_scouts = [agent for agent in agents if agent not in scouts]
-        remaining_divergent = 3 - len(scouts)
+        remaining_divergent = max(0, len(agents) - 1 - len(scouts))
         for agent in sorted(non_scouts, key=lambda agent: (per_agent[agent], agent))[
             :remaining_divergent
         ]:
             roles[agent] = "divergent"
         rationale = (
-            f"SNAP assigns one exploit and three divergent slots; "
+            f"SNAP assigns one exploit and {len(agents) - 1} divergent slots; "
             f"{len(scouts)} divergent workers scout."
         )
     elif regime == "PARADIGM_BREAKOUT":
@@ -411,14 +409,14 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
                 )
                 scouts.extend(remaining[: 2 - len(scouts)])
         roles = dict.fromkeys(agents, "divergent")
-        rationale = f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
+        rationale = f"BREAKOUT assigns {len(agents)} divergent slots and {len(scouts)} scouts."
     else:
         roles = dict.fromkeys(agents, "exploit")
         divergent_agent = divergent_worker()
         if exa_enabled:
             scouts = [divergent_agent]
         roles[divergent_agent] = "divergent"
-        rationale = "EXPLOIT assigns three exploit slots and one divergent slot."
+        rationale = f"EXPLOIT assigns {len(agents) - 1} exploit slots and one divergent slot."
 
     return {
         "swarm_B": swarm_status["B"],
@@ -1767,8 +1765,10 @@ def worker_attempts(
             log=memory_log,
             arm=arm,
         )
-        for query in memory_queries
+        for query in (memory_queries if not getattr(llm_client, "supervised", False) else [])
     ]
+    if not recalls:
+        recalls = [{"results": []} for _ in range(3)]
     recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
     known_leads = known_lead_records(all_leads, lead, recalls[1])
     recalled_leads = "\n".join(
@@ -1792,7 +1792,11 @@ def worker_attempts(
         deterministic=bool(TASK.get("deterministic")),
         out_dir=out_dir,
     )
-    search_cell = worker_search_cell(agent, role, status)
+    search_cell = (
+        None
+        if getattr(llm_client, "supervised", False)
+        else worker_search_cell(agent, role, status)
+    )
     worker_sources = []
     searches_used = 0
     if search_cell:
@@ -1819,6 +1823,10 @@ def worker_attempts(
             "fake_edits": TASK.get("fake_edits", []),
         }
     )
+    if getattr(llm_client, "supervised", False):
+        common["supervisor_instruction"] = status["supervisor_tasks"][agent]
+        common["problem"] = "none"
+        common["proposal"] = "none"
     proposal = llm_client.call(
         "WORKER_PROPOSE",
         agent=agent,
@@ -2328,7 +2336,7 @@ def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
     hook = (TASK or {}).get("post_run")
     if not hook:
         return False
-    if replay or llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
+    if replay or llm_mode in {"fake", "ollama"} or not os.environ.get("TINKER_API_KEY"):
         print(
             f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
             "not --replay)",
@@ -3202,11 +3210,25 @@ RESUMED_SETTINGS = (
     "llm",
     "model",
     "critic_model",
+    "workers",
+    "supervisor_model",
+    "worker_tokens",
+    "supervisor_tokens",
+    "ollama_context",
     "exa",
     "literature",
     "memory_backend",
 )
-RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
+RUN_DEFAULTS = {
+    "arm": "B",
+    "rounds": 10,
+    "llm": "openai",
+    "exa": "on",
+    "workers": 4,
+    "worker_tokens": 600,
+    "supervisor_tokens": 4096,
+    "ollama_context": 8192,
+}
 
 
 def resolve_run_args(args):
@@ -3275,6 +3297,80 @@ def resolve_run_args(args):
     return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
 
 
+def plan_local_workers(
+    client,
+    agents,
+    round_num,
+    profile,
+    status,
+    base_commit,
+    best_val,
+    repo,
+    out_dir,
+    backend,
+    mirror,
+    memory_log,
+    arm,
+):
+    recalled = recall_memory(
+        "prior experiments, failures and promising directions for " + TASK.get("brief", "")[:200],
+        "conductor",
+        backend=backend,
+        mirror=mirror,
+        log=memory_log,
+        arm=arm,
+        limit=8,
+    )
+    values = {
+        "task_brief": TASK.get("brief", ""),
+        "agents": json.dumps(list(agents)),
+        "source": git(repo, "show", f"{base_commit}:{TARGET_FILE}").stdout,
+        "vocab": json.dumps(vocab_with_extensions(profile, out_dir)),
+        "task_inputs": TASK.get("prompt_values", {}).get("task_context", "none"),
+        "history": memory_text(recalled),
+        "best_loss": best_val,
+        "regime": status["regime"],
+    }
+    result = client.call("SUPERVISOR", agent="conductor", round_num=round_num, values=values)
+    tasks = result.get("tasks")
+    if not isinstance(tasks, list) or len(tasks) != len(agents):
+        raise ValueError("Supervisor must assign exactly one task to each worker")
+    assignments = {}
+    for task in tasks:
+        if not isinstance(task, dict):
+            raise ValueError("Invalid supervisor task")
+        agent, instruction = task.get("agent"), task.get("instruction")
+        if agent not in agents or agent in assignments:
+            raise ValueError("Supervisor returned an unknown or duplicate worker")
+        if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1600:
+            raise ValueError("Supervisor instruction must be 1-1600 characters")
+        assignments[agent] = instruction
+    if len(set(assignments.values())) != len(agents):
+        raise ValueError("Supervisor assigned identical work to multiple workers")
+    append_jsonl(
+        out_dir / "supervisor_plans.jsonl",
+        {
+            "ts": timestamp(),
+            "round": round_num,
+            "model": client.role_models["SUPERVISOR"],
+            "tasks": tasks,
+            "llm_call_id": client.last_call_id,
+        },
+    )
+    write_memory_item(
+        "assignment",
+        f"supervisor-{arm}-{round_num}",
+        json.dumps(tasks),
+        "conductor",
+        {"round": round_num},
+        backend=backend,
+        mirror=mirror,
+        log=memory_log,
+        arm=arm,
+    )
+    return assignments
+
+
 def llm_failure_candidate(agent, role, error):
     return {
         "agent": agent,
@@ -3300,7 +3396,14 @@ def _orchestrate(args, publish_state, cleanup):
     prompt_dir = configure_task(args)
     if args.arm not in {"A", "B", "C", "D", "S"}:
         raise ValueError("--arm must be A, B, C, D, or S")
-    agents = AGENTS[:1] if args.arm == "S" else AGENTS
+    worker_count = getattr(args, "workers", None) or 4
+    if not 1 <= worker_count <= 12:
+        raise ValueError("--workers must be between 1 and 12")
+    if getattr(args, "supervisor_model", None) and args.llm != "ollama":
+        raise ValueError("--supervisor-model currently requires --llm ollama")
+    agents = (
+        AGENTS[:1] if args.arm == "S" else tuple(f"worker-{n}" for n in range(1, worker_count + 1))
+    )
     repo = Path(args.repo).resolve()
     git_text(repo, "rev-parse", "--show-toplevel")
     profile_path = TASK["profile"].resolve()
@@ -3326,7 +3429,7 @@ def _orchestrate(args, publish_state, cleanup):
             "and PubMed search instead of Exa",
             file=sys.stderr,
         )
-    effective_no_push = args.no_push or args.llm == "fake"
+    effective_no_push = args.no_push or args.llm in {"fake", "ollama"}
     memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
     if memory_override:
         memory_backend = memory.selected_backend(memory_override, args.arm)
@@ -3450,12 +3553,16 @@ def _orchestrate(args, publish_state, cleanup):
         role_models={
             "CRITIC": args.critic_model,
             "CRITIC_NOVELTY": args.critic_model,
+            "SUPERVISOR": getattr(args, "supervisor_model", None),
         },
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=prompt_dir,
         replay=args.replay,
         seed=args.seed,
         fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
+        worker_tokens=args.worker_tokens or 600,
+        supervisor_tokens=args.supervisor_tokens or 4096,
+        ollama_context=args.ollama_context or 8192,
     )
     critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
     provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
@@ -3465,6 +3572,10 @@ def _orchestrate(args, publish_state, cleanup):
             "model": llm_client.model,
             "critic_model": critic_model,
             "memory_backend": memory_backend,
+            "supervisor_model": getattr(args, "supervisor_model", None),
+            "worker_tokens": args.worker_tokens or 600,
+            "supervisor_tokens": args.supervisor_tokens or 4096,
+            "ollama_context": args.ollama_context or 8192,
         }
     )
     _write_run_artifact(out_dir, run_artifact)
@@ -3600,7 +3711,7 @@ def _orchestrate(args, publish_state, cleanup):
                 live_publish.watch(out_dir, publisher.request)
                 publisher.request()
             leads = run_scouts(
-                allocation["scouts"],
+                [] if llm_client.supervised else allocation["scouts"],
                 profile=profile,
                 events=events_for_scouts,
                 status=status,
@@ -3621,6 +3732,22 @@ def _orchestrate(args, publish_state, cleanup):
             claims = []
             assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
+            if llm_client.supervised:
+                status["supervisor_tasks"] = plan_local_workers(
+                    llm_client,
+                    agents,
+                    round_num,
+                    profile,
+                    status,
+                    base_commit,
+                    best_val,
+                    conductor,
+                    out_dir,
+                    memory_backend,
+                    memory_mirror,
+                    memory_log,
+                    args.arm,
+                )
             for agent in agents:
                 role = allocation["roles"][agent]
                 lead = lead_for_agent(agent, leads, all_leads)
@@ -4075,7 +4202,9 @@ def build_parser():
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
-    parser.add_argument("--llm", choices=("openai", "tinker", "fake"), help="default openai")
+    parser.add_argument(
+        "--llm", choices=("openai", "tinker", "ollama", "fake"), help="default openai"
+    )
     parser.add_argument(
         "--resume",
         metavar="OUT",
@@ -4087,6 +4216,15 @@ def build_parser():
         help="CPU benchmark to run with its sandboxed evaluator",
     )
     parser.add_argument("--model")
+    parser.add_argument(
+        "--workers", type=int, help="worker identities (1-12, default 4); calls are queued"
+    )
+    parser.add_argument("--supervisor-model", help="Ollama planning model; one plan per round")
+    parser.add_argument("--worker-tokens", type=int, help="Ollama output cap (default 600)")
+    parser.add_argument(
+        "--supervisor-tokens", type=int, help="Ollama planning cap including thought (default 4096)"
+    )
+    parser.add_argument("--ollama-context", type=int, help="local context window (default 8192)")
     parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), help="default on")
