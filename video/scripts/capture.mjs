@@ -1,15 +1,17 @@
 import {spawn} from 'node:child_process';
-import {mkdir, rename, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, rename, writeFile} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
+import {createServer} from 'node:http';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(root, '..');
+const docsRoot = path.join(repoRoot, 'docs');
 const captures = path.join(root, 'public', 'captures');
-const serverUrl = new URL(
-  process.env.LAB_URL ?? 'http://localhost:8932/caffeinated/'
-);
+let localServer;
+let serverUrl;
 const captureSeconds = Number(process.env.CAPTURE_SECONDS ?? 270);
 const walkAtSeconds = Number(
   process.env.WALK_AT_SECONDS ?? Math.min(48, captureSeconds * 0.18)
@@ -19,7 +21,7 @@ const width = 1920;
 const height = 1080;
 const ffmpeg = process.env.FFMPEG ?? '/usr/bin/ffmpeg';
 const ffprobe = process.env.FFPROBE ?? '/usr/bin/ffprobe';
-const chromePath = process.env.CHROME_PATH ?? '/home/ubuntu/.local/bin/google-chrome';
+const chromePath = process.env.CHROME_PATH;
 
 if (!Number.isFinite(captureSeconds) || captureSeconds < 45) {
   throw new Error('CAPTURE_SECONDS must be at least 45 for the real Lab sequence.');
@@ -31,11 +33,70 @@ if (!existsSync(ffmpeg) || !existsSync(ffprobe)) {
   throw new Error('ffmpeg and ffprobe must be available; expected /usr/bin/ffmpeg.');
 }
 
+if (process.env.LAB_URL) {
+  serverUrl = new URL(process.env.LAB_URL);
+} else {
+  if (!existsSync(path.join(docsRoot, 'index.html'))) {
+    throw new Error('Pages build not found in ../docs; run npm run build:pages from the repo root.');
+  }
+  const contentTypes = {
+    '.css': 'text/css; charset=utf-8',
+    '.gz': 'application/gzip',
+    '.html': 'text/html; charset=utf-8',
+    '.ico': 'image/x-icon',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.woff2': 'font/woff2'
+  };
+  localServer = createServer(async (request, response) => {
+    try {
+      const pathname = decodeURIComponent(
+        new URL(request.url ?? '/', 'http://localhost').pathname
+      );
+      if (pathname !== '/caffeinated' && !pathname.startsWith('/caffeinated/')) {
+        response.writeHead(404).end();
+        return;
+      }
+      const relativePath = pathname.slice('/caffeinated'.length).replace(/^\/+/, '');
+      const relativeFile = !relativePath || relativePath.endsWith('/')
+        ? `${relativePath}index.html`
+        : relativePath;
+      const filePath = path.resolve(docsRoot, relativeFile);
+      if (!filePath.startsWith(`${docsRoot}${path.sep}`)) {
+        response.writeHead(403).end();
+        return;
+      }
+      const body = await readFile(filePath);
+      response.writeHead(200, {
+        'Content-Type': contentTypes[path.extname(filePath)] ?? 'application/octet-stream'
+      });
+      response.end(body);
+    } catch {
+      response.writeHead(404).end();
+    }
+  });
+  await new Promise((resolve, reject) => {
+    localServer.once('error', reject);
+    localServer.listen(0, '127.0.0.1', resolve);
+  });
+  localServer.unref();
+  const address = localServer.address();
+  serverUrl = new URL(`http://127.0.0.1:${address.port}/caffeinated/`);
+}
+
+async function closeLocalServer() {
+  if (!localServer?.listening) return;
+  await new Promise((resolve) => localServer.close(resolve));
+}
+
 await mkdir(captures, {recursive: true});
 
 const catalogUrl = new URL('recordings/index.json', serverUrl);
 const catalogResponse = await fetch(catalogUrl);
 if (!catalogResponse.ok) {
+  await closeLocalServer();
   throw new Error(
     `Lab recording catalog unavailable (${catalogResponse.status}) at ${catalogUrl}`
   );
@@ -47,12 +108,13 @@ const recording = catalog.find(
     String(item.title ?? '').includes('out-ignobel')
 );
 if (!recording) {
+  await closeLocalServer();
   throw new Error('The real out-ignobel recording was not found in the Lab catalog.');
 }
 
 const browser = await chromium.launch({
   headless: true,
-  ...(existsSync(chromePath) ? {executablePath: chromePath} : {}),
+  ...(chromePath ? {executablePath: chromePath} : {}),
   args: [
     '--no-sandbox',
     '--disable-dev-shm-usage',
@@ -398,9 +460,11 @@ try {
 } catch (error) {
   await context.close().catch(() => {});
   await browser.close().catch(() => {});
+  await closeLocalServer();
   throw error;
 }
 await browser.close();
+await closeLocalServer();
 
 if (errors.length) {
   console.error(`Browser page errors: ${errors.join(' | ')}`);

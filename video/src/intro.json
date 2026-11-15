@@ -2,7 +2,7 @@
   "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Built in one weekend at the SF AI Research Hack (Nov 14–15, hosted by Iterate): an artificial scientist swarm that notices when it is bored and changes approach."},
   "tools": [
     {"kind": "llm", "name": "Language model", "tinkerName": "Tinker", "detail": "{model} powers the researchers' language-model calls.", "tinkerDetail": "{model} runs through Tinker, the researchers' language-model provider.", "fakeName": "LLM", "fakeDetail": "A simulated model drives the researchers for this plumbing demo.", "fakeSuffix": "(fake LLM in this recording)", "unverifiedDetail": "A language model helps researchers plan and evaluate ideas.", "unknownSuffix": "(model not verified in this recording)"},
-    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; every citation links to its Exa result.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
+    {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; each source card links to the Exa result it came from.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"kind": "memory", "name": "past.dev", "detail": "Shared memory helps agents recall earlier attempts and share what they learn.", "localSuffix": "(local memory in this recording)", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
   ],
@@ -20,7 +20,8 @@
     "title": "This year the Ig Nobel research prize was discovered early by a phenomenal breakthrough in artificial scientist swarms.",
     "subline": "The secret: making AI less boring.",
     "button": "Watch the swarm",
-    "qualifier": "tongue-in-cheek headline · see the real results"
+    "qualifier": "tongue-in-cheek headline",
+    "resultsButton": "See the real results"
   },
   "sections": {
     "about": "About this project ▾",
@@ -33,7 +34,7 @@
   },
   "labels": {
     "source": "Exa result:",
-    "missingExa": "no Exa result in this recording",
+    "missingExa": "results not kept as source cards",
     "recording": "This recording",
     "searches": "literature searches",
     "sources": "Exa source cards",
@@ -45,11 +46,20 @@
   "results": {
     "studyCount": "Ig Nobel studies",
     "passedCount": "passed",
-    "awardCount": "award.issued entries",
+    "awardCount": "Prizes awarded: {N}",
     "awardFallback": "Award issued",
-    "proxyNote": "Proxy note",
+    "creditErrorSuffix": " (Tinker credit ran out)",
+    "proxyNote": "Metric / proxy",
     "noStudies": "No Ig Nobel study registrations appear in this recording.",
-    "noAwards": "No award.issued entries appear in this recording.",
-    "noProxy": "No proxy note is present in this recording."
+    "noAwards": "No prizes awarded yet — this run stopped before committee judging.",
+    "noProxy": "No proxy note is present in this recording.",
+    "factualLine": "Real result so far: {C} of {R} tests that ran passed their preregistered gates; {K} also pass the |ρ| ≥ 0.1 floor added after the run ({N} registered){committeeSuffix}",
+    "noPrizeDisclaimer": "No prize has been awarded. The swarm found known relationships in public teaching datasets, not discoveries.",
+    "noCommitteeSuffix": "; no committee score yet",
+    "countLine": "{N} registered · {M} confirmed ({K} under the post-hoc |ρ| ≥ 0.1 floor)",
+    "track3Line": "Track 3 check (exploratory, 3 runs each): preregistered primary (guard2, stopped early, guarded) B 0.26 > S 0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06. B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two runs.",
+    "memoryComparisonLine": "past.dev vs local memory on 419 real memories: hit@1 0.65 vs 0.30, 562 ms vs 15 ms (hand-written probes)",
+    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/memory-comparison/README.md",
+    "bixbenchLine": "BixBench held-out: baseline 1/7 → swarm best 6/7 (one run; 95% CI 0.49–0.97)"
   }
 }

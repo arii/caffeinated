@@ -527,32 +527,27 @@ function IgNobel() {
   return (
     <SceneShell duration={420}>
       <FadeBeat from={0} to={48} fontSize={40} maxWidth={1650}>
-        Pre-committee real run (stopped at round 13/15): 21 studies registered, 13 run,
+        Pre-committee real run (stopped at round 13/15)
       </FadeBeat>
-      <FadeBeat from={48} to={96} fontSize={40} maxWidth={1650}>
-        11 passed preregistered gates; 10 hold under today's |ρ| ≥ 0.1 rule
+      <FadeBeat from={48} to={114} fontSize={36} maxWidth={1650}>
+        21 registered, 13 run, 11 passed the preregistered gates, 10 also pass the |ρ| ≥ 0.1
+        floor added after the run.
       </FadeBeat>
       {STUDIES.map((study, index) => (
-        <ContentCard key={study} from={96 + index * 45} to={141 + index * 45}>
-          <FadeBeat from={96 + index * 45} to={141 + index * 45} fontSize={48} maxWidth={1500}>
+        <ContentCard key={study} from={114 + index * 45} to={159 + index * 45}>
+          <FadeBeat from={114 + index * 45} to={159 + index * 45} fontSize={48} maxWidth={1500}>
             {study}
           </FadeBeat>
         </ContentCard>
       ))}
-      <FadeBeat from={276} to={309} fontSize={40}>
+      <FadeBeat from={294} to={336} fontSize={40}>
         Known relationships in public teaching datasets — not discoveries.
       </FadeBeat>
-      <FadeBeat from={309} to={340} fontSize={47}>
-        Mostly true — but not surprising.
+      <FadeBeat from={336} to={378} fontSize={38} maxWidth={1600}>
+        ρ = 0.07 x/y failed the post-hoc floor; the critic rerun is not a new test.
       </FadeBeat>
-      <FadeBeat from={340} to={370} fontSize={45}>
-        So we added an Ig Nobel committee score
-      </FadeBeat>
-      <FadeBeat from={370} to={398} fontSize={42}>
-        (lower judge's min of laugh and think; two non-Kimi judges).
-      </FadeBeat>
-      <FadeBeat from={398} to={420} fontSize={31} color={COLORS.muted}>
-        committee-scored rerun pending Tinker credit
+      <FadeBeat from={378} to={420} fontSize={40}>
+        No committee score has been run yet.
       </FadeBeat>
     </SceneShell>
   );

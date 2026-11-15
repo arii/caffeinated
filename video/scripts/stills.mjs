@@ -7,7 +7,7 @@ import {spawnSync} from 'node:child_process';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const video = path.join(root, 'out', 'demo.mp4');
 const metadataPath = path.join(root, 'public', 'captures', 'manifest.json');
-const output = process.env.STILLS_DIR ?? '/home/ubuntu/video-assets/stills';
+const output = process.env.STILLS_DIR ?? path.join(process.env.HOME ?? root, 'video-assets', 'stills');
 const ffmpeg = process.env.FFMPEG ?? '/usr/bin/ffmpeg';
 const stills = [
   ['scene-01-hook.png', 4],
@@ -17,7 +17,9 @@ const stills = [
   ['scene-05-boredom.png', 34],
   ['scene-06-real-lab.png', 59],
   ['scene-07-results.png', 89],
+  ['track3-metric-direction.png', 84],
   ['track3-results.png', 88],
+  ['ignobel-counts.png', 102.5],
   ['scene-08-ignobel.png', 107],
   ['ignobel-known-relationships.png', 110],
   ['scene-09-close.png', 117],
