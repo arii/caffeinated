@@ -1164,7 +1164,7 @@ def worker_attempts(
         if gate_pass:
             return candidate
         common["reasons"] = "; ".join(gate_record.get("reasons", []))
-        if attempt == 2:
+        if attempt == 2 and arm != "A":
             events = meter.read_ledger(Path(out_dir) / "ledger.jsonl")
             reserved = assigned_cells if assigned_cells is not None else []
             cells = meter.suggest(profile, events, n=len(meter.all_cells(profile, 2)))

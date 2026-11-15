@@ -166,6 +166,21 @@ class CollectionTests(unittest.TestCase):
 
 
 class SeedAndControlTests(unittest.TestCase):
+    def test_all_task_fake_proposals_use_their_profile_vocab(self):
+        for task in ab.TASKS:
+            directory = swarm.ROOT / "testcases" / task
+            config = json.loads((directory / "task.json").read_text())
+            profile = swarm.meter.load_profile(directory / "boredom_profile.json")
+            source = (directory / config["editable"]).read_text()
+            for agent in swarm.AGENTS:
+                proposal = llm.fake_response("WORKER_PROPOSE", {
+                    "agent": agent, "candidate_source": source,
+                    "fake_edits": config.get("fake_edits", []),
+                    "fake_targets": config.get("fake_targets", []),
+                })
+                with self.subTest(task=task, agent=agent):
+                    swarm.validate_proposal(profile, proposal)
+
     def test_seed_replays_fake_edits_and_varies_between_pairs(self):
         task = swarm.load_task("hadamard19")
         values = {"candidate_source": (swarm.ROOT / task["target"]).read_text(), "fake_targets": task["fake_targets"]}
