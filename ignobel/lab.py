@@ -73,6 +73,15 @@ def dataset_path(agent) -> Path | None:
     return p if p.is_absolute() else HERE / p
 
 
+def _well_formed(result) -> bool:
+    """A @@RESULT as lab_runtime.report / report_corr write it: two lists of numbers."""
+    if not isinstance(result, dict) or result.get("kind") not in ("two_group", "corr"):
+        return False
+    keys = ("group_a", "group_b") if result["kind"] == "two_group" else ("x", "y")
+    return all(isinstance(result.get(k), list) and all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                                                       for v in result[k]) for k in keys)
+
+
 def _parse(stdout: str) -> tuple[dict | None, int, list[str]]:
     result, calls, read = None, 0, []
     for line in stdout.splitlines():
@@ -84,6 +93,8 @@ def _parse(stdout: str) -> tuple[dict | None, int, list[str]]:
             try:
                 result = json.loads(line[len("@@RESULT "):])
             except json.JSONDecodeError:
+                result = None
+            if not _well_formed(result):  # study code can print this line itself
                 result = None
     return result, calls, read
 
