@@ -57,8 +57,9 @@ committee output exists.
 **How many tests, and how many held up?**
 21 registered (the raw log has 22 lines because one study was registered twice), 13 run,
 11 passed the preregistered gates (p < .005 plus split-half consistency), 10 still pass under
-today's |ρ| ≥ 0.1 effect-size rule. No multiplicity correction was applied; Bonferroni at .005/21
-would still pass most because n is large and effects are textbook-sized.
+today's |ρ| ≥ 0.1 effect-size rule. No multiplicity correction was applied, but every
+confirmed study's main-test p is below Bonferroni .005/21 ≈ 2.4e-4 (the largest is 1.9e-7), because
+n is large and effects are textbook-sized (`experiments/real-runs/ignobel/ignobel_studies.jsonl`).
 
 **These findings are textbook results from R teaching datasets.**
 Mostly, yes: true but unsurprising. That is why we added the committee: two independent non-Kimi
@@ -83,8 +84,8 @@ returns no price. Caveats: one run, hand-written probes favour semantic retrieva
 embedding baseline. See `experiments/memory-comparison/README.md`.
 
 **Are recall queries meaningful?**
-Partly. The proposal-time recall uses the agent's idea as the query (`swarm.py` near line 1516),
-but per-round context recalls are templated strings (`swarm.py` near line 1363).
+Not yet. Memory recall queries are fixed templates (`swarm.py` near line 1363), not the agent's
+current idea. The Exa prior-art search does use the proposal's idea as its query (near line 1516).
 
 **Does Exa change decisions?**
 It shapes prompts, and SNAP/BREAKOUT moves must cite an existing source id. The effect on outcomes
