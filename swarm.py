@@ -3363,6 +3363,7 @@ CHECKPOINT_SKIP = {
     "viewer_frontier.json",
     "viewer_publish_log.jsonl",
     "held_out_test.json",
+    "openai_budget.jsonl",  # paid OpenAI requests stay reserved across --resume
 }
 
 
