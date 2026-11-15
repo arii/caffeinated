@@ -1984,9 +1984,8 @@ def local_task_result(repo, commit, out_dir, role="candidate"):
             else os.environ.get("EXA", "").casefold() != "off"
             and bool(os.environ.get("EXA_API_KEY"))
         )
-        committee_flag = (
-            "off" if run_settings.get("llm") == "fake" else "on" if run_settings else None
-        )
+        # Fake runs are gate-only; otherwise IGNOBEL_COMMITTEE (default on) is inherited.
+        committee_flag = "off" if run_settings.get("llm") == "fake" else None
         previous = os.environ.get("TASK_EVAL_CONTEXT")
         previous_committee_flag = os.environ.get("IGNOBEL_COMMITTEE")
         if committee_flag is not None:

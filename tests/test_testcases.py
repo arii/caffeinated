@@ -1185,6 +1185,36 @@ class IgnobelPreregTests(unittest.TestCase):
 
 
 class IgnobelTaskTests(unittest.TestCase):
+    def test_swarm_evaluation_respects_committee_env_and_fake_runs(self):
+        seen = {}
+
+        def fake_eval(task_dir, source):
+            seen["flag"] = os.environ.get("IGNOBEL_COMMITTEE")
+            return {"status": "ok", "loss": 0.0, "stdout": "", "stderr": ""}
+
+        shown = types.SimpleNamespace(returncode=0, stdout="{}", stderr="")
+        for llm_mode, env_flag, expected in (
+            ("openai", "off", "off"),
+            ("tinker", None, None),
+            ("fake", None, "off"),
+        ):
+            with (
+                self.subTest(llm=llm_mode, env=env_flag),
+                tempfile.TemporaryDirectory() as tmp,
+                patch.dict(os.environ, {}, clear=False),
+                patch.object(swarm, "TASK", {"dir": TESTCASES / "ignobel"}),
+                patch.object(swarm, "git", return_value=shown),
+                patch.object(swarm.sandbox, "evaluate_task", side_effect=fake_eval),
+            ):
+                os.environ.pop("IGNOBEL_COMMITTEE", None)
+                if env_flag is not None:
+                    os.environ["IGNOBEL_COMMITTEE"] = env_flag
+                (Path(tmp) / "run.json").write_text(json.dumps({"llm": llm_mode}))
+                out_dir = Path(tmp) / "runs" / "critic_confirmation"
+                swarm.local_task_result(Path(tmp), "abc123", out_dir, role="critic")
+                self.assertEqual(seen["flag"], expected)
+                self.assertEqual(os.environ.get("IGNOBEL_COMMITTEE"), env_flag)
+
     def test_both_judges_use_the_same_vocabulary_and_schema(self):
         committee = ignobel_score_run.committee
         for which, prompt in committee.judge_prompts().items():
