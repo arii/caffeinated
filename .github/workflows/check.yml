@@ -20,6 +20,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.10"
+          activate-environment: true
       - name: Install dev and viewer dependencies
         run: uv pip install -r pyproject.toml --extra dev --extra viewer
       - name: make check
