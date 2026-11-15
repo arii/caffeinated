@@ -27,7 +27,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 import autoresearch_research as ar
 import llm
@@ -58,6 +58,18 @@ def _allowed(url: str) -> bool:
     return parts.scheme == "https" and (host in HOSTS or host.endswith(HOST_SUFFIXES))
 
 
+class _CheckedRedirects(HTTPRedirectHandler):
+    """Refuse a redirect to a host outside the allowlist before any request is sent to it."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not _allowed(newurl):
+            raise ResearchError(f"redirected to a host that is not allowed: {urlsplit(newurl).hostname}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_opener = build_opener(_CheckedRedirects)
+
+
 def _http(url: str, max_bytes: int = 2_000_000, first_bytes: int | None = None) -> bytes:
     """GET with allowlist, disk cache, size cap, per-host spacing and a global call budget."""
     if not _allowed(url):
@@ -78,7 +90,7 @@ def _http(url: str, max_bytes: int = 2_000_000, first_bytes: int | None = None) 
     if first_bytes:
         headers["Range"] = f"bytes=0-{first_bytes - 1}"
     try:
-        with urlopen(Request(url, headers=headers), timeout=30) as resp:
+        with _opener.open(Request(url, headers=headers), timeout=30) as resp:
             if not _allowed(resp.geturl()):
                 raise ResearchError(f"redirected to a host that is not allowed: {urlsplit(resp.geturl()).hostname}")
             body = resp.read((first_bytes or max_bytes) + 1)
@@ -194,12 +206,20 @@ class Bibliography:
                     "query": query, "url": h["url"], "title": h["title"], "published": h.get("published") or None,
                     "highlights": [h["text"]] if h.get("text") else []} for i, h in enumerate(hits) if h.get("url")]
         q = ar.append_query_record(self._args(agent), records, qid, "search", query, tool, len(sources), None, 0)
+        q["disabled"] = True  # not an Exa call: research.py's EXA_MAX_CALLS check skips records with this flag
         ar.append_records(self.path, [q, *sources])
         return sources
 
     def add(self, agent: str, tool: str, query: str, hits: list[dict]) -> list[dict]:
         with self._lock:
             return self._register(agent, tool, query, hits)
+
+    @staticmethod
+    def _exa_key() -> None:
+        """research.py reads EXA_API_KEY only; search.py also accepts a comma-separated EXA_KEYS."""
+        keys = [k.strip() for k in os.environ.get("EXA_KEYS", "").split(",") if k.strip()]
+        if keys and not os.environ.get("EXA_API_KEY"):
+            os.environ["EXA_API_KEY"] = keys[0]
 
     def search(self, agent: str, tool: str, query: str, n: int = 4) -> list[dict]:
         """Literature search with `tool` (exa, openalex, arxiv, pubmed) -> source records with S ids."""
@@ -209,6 +229,7 @@ class Bibliography:
         if llm.MOCK:
             return self.add(agent, tool, query, _mock_papers(tool, query, n))
         if tool == "exa":
+            self._exa_key()
             with self._lock, contextlib.redirect_stdout(io.StringIO()):
                 before = len(ar.read_log(self.path))
                 try:
@@ -232,6 +253,7 @@ class Bibliography:
             raise ResearchError(f"unknown source {sid}")
         if llm.MOCK:
             return f"Mock reading of {src['title']}: the reported effect was modest. ({question[:80]})"
+        self._exa_key()
         with self._lock, contextlib.redirect_stdout(io.StringIO()) as out:
             try:
                 ar.run_extract(self._args(agent, command="extract", source=sid, question=question))
@@ -367,6 +389,7 @@ def find_datasets(query: str, n: int = 3) -> list[dict]:
             errors.append(str(e))
     if not found and errors:
         raise ResearchError("; ".join(errors))
+    found = found[:n]
     for c in found:
         try:
             head = _http(c["file_url"], first_bytes=20_000)
