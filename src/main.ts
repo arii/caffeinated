@@ -80,7 +80,8 @@ function setBarCollapsed(collapsed:boolean){
  $('tick-label').textContent=collapsed?`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
 }
 function updateDockAutoCollapse(){
- const shouldCollapse=modal()||bubbleExpanded;
+ const overlayOpen=modal(),shouldCollapse=overlayOpen||bubbleExpanded;
+ document.body.classList.toggle('dock-auto-hidden',overlayOpen);
  if(shouldCollapse&&!barAutoCollapsed){barStateBeforeAutoCollapse=document.body.classList.contains('bar-collapsed');barAutoCollapsed=true;}
  if(shouldCollapse)setBarCollapsed(true);
  else if(barAutoCollapsed){barAutoCollapsed=false;setBarCollapsed(barStateBeforeAutoCollapse);}
@@ -179,7 +180,7 @@ function renderResultsPanel(){
  $('results-title').textContent=`RUN RESULTS · ${summary.status.toUpperCase()}`;
  $('results-content').innerHTML=`${badgeHtml}<h2>${esc(taskTitle(recording.manifest))}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p class="result-winner-description">${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote&&!summary.heldOut?.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote&&!summary.heldOut?.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
 }
-function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-52)}px`;strip.style.bottom='auto';strip.style.transform='none';}
+function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();if(innerHeight<=500&&innerWidth>innerHeight){const sidebar=document.querySelector<HTMLElement>('.sidebar'),left=Math.max(8,(sidebar?.getBoundingClientRect().right??0)+8);strip.style.left=`${left}px`;strip.style.width=`${Math.max(0,rect.left-left-8)}px`;strip.style.top='58px';}else{strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-52)}px`;}strip.style.bottom='auto';strip.style.transform='none';}
 const replayBar=document.querySelector<HTMLElement>('.replay-bar');if(replayBar)new ResizeObserver(alignStatusStrip).observe(replayBar);
 window.addEventListener('resize',alignStatusStrip);
 function renderBubble(){
