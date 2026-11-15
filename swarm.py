@@ -1895,7 +1895,7 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
     target = target.resolve()
     if out_dir != target:
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(out_dir, target, dirs_exist_ok=True)
+        shutil.copytree(out_dir, target, dirs_exist_ok=True, ignore=shutil.ignore_patterns("viewer"))
     return target
 
 

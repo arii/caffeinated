@@ -18,6 +18,19 @@ import swarm
 
 
 class LiveExportTests(unittest.TestCase):
+    def test_artifact_copy_excludes_publisher_owned_viewer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = root / "out"
+            (out / "viewer" / "run").mkdir(parents=True)
+            (out / "viewer" / "run" / ".temporary-manifest").write_text("in flight")
+            (out / "ledger.jsonl").write_text("{}\n")
+            conductor = root / "conductor"
+            conductor.mkdir()
+            target = swarm.copy_artifacts_to_arm_branch(out, conductor, "B")
+            self.assertEqual((target / "ledger.jsonl").read_text(), "{}\n")
+            self.assertFalse((target / "viewer").exists())
+
     def test_research_and_proposals_sort_together(self):
         run = export_viewer.Run(
             "autoresearch", export_viewer.uid(export_viewer.NS_CAFFEINATED, "ordering")
