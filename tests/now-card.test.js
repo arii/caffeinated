@@ -47,3 +47,11 @@ test('a proposal rejected before evaluation is not described as a scored discard
  assert.equal(why,'Rejected before scoring: invalid descriptor');
  assert.match(eventWhy({tick:1,type:'experiment.finished',payload:{status:'discard',metric_value:0.3}},c),/^Discarded: loss 0.3/);
 });
+test('a newly blocked idea replaces the previous experiment on the Now card',()=>{
+ const c={name:id=>id,metric:{name:'loss',direction:'minimize'},best:0.1,esc:v=>String(v)};
+ const r={manifest:{},events:[{tick:1,type:'experiment.started',agentId:'w',refs:{experiment_id:'e1'},payload:{description:'old'}},{tick:2,type:'gate.checked',agentId:'w',refs:{experiment_id:'e1'},payload:{pass:true}},{tick:5,type:'gate.checked',agentId:'w',payload:{pass:false,reasons:['same cell as e1']}}],entities:{experiments:[{id:'e1',gate:{pass:true}}]},frames:[]};
+ const n=agentNow(r,'w','writing',6,c);
+ assert.equal(n.experiment,null);
+ assert.match(nowCardHtml(n,c,c.metric),/blocked<\/span> same cell as e1/);
+ assert.notEqual(agentNow(r,'w','writing',3,c).experiment,null);
+});

@@ -37,16 +37,17 @@ export function eventWhy(e:InspectEvent,c:WhyContext):string{
  }
 }
 
-export interface AgentNow{activity:string;latest:InspectEvent|null;experiment:ExperimentDetail|null;sources:SourceCard[];feed:{tick:number;why:string}[]}
+export interface AgentNow{activity:string;latest:InspectEvent|null;blocked?:InspectEvent|null;experiment:ExperimentDetail|null;sources:SourceCard[];feed:{tick:number;why:string}[]}
 /** Everything the run has said about one agent by this tick. */
 export function agentNow(recording:Source|null|undefined,agentId:string,activity:string|undefined,tick:number,c:WhyContext):AgentNow{
  const own=(recording?.events||[]).filter(e=>e.tick<=tick&&e.agentId===agentId);
  const started=own.filter(e=>e.type==='experiment.started'&&e.refs?.experiment_id).at(-1);
- const experiment=started?experimentDetail(recording,String(started.refs!.experiment_id),tick):null;
+ const gate=own.filter(e=>e.type==='gate.checked').at(-1),blocked=gate&&gate.payload?.pass===false&&(!started||gate.tick>started.tick)?gate:null;
+ const experiment=started&&!blocked?experimentDetail(recording,String(started.refs!.experiment_id),tick):null;
  const verdict=experiment&&(recording?.events||[]).filter(e=>e.tick<=tick&&e.type==='verdict.issued'&&e.refs?.experiment_id===experiment.id).at(-1);
  const feedEvents=[...own,...(verdict&&verdict.agentId!==agentId?[verdict]:[])].sort((a,b)=>a.tick-b.tick);
  const feed=feedEvents.map(e=>({tick:e.tick,why:eventWhy(e,c)})).filter(f=>f.why).slice(-6).reverse();
- return {activity:humanizeActivity(activity),latest:own.at(-1)||null,experiment,sources:sourceCards(recording,tick).filter(s=>s.agentId===agentId).slice(-3).reverse(),feed};
+ return {activity:humanizeActivity(activity),latest:own.at(-1)||null,blocked,experiment,sources:sourceCards(recording,tick).filter(s=>s.agentId===agentId).slice(-3).reverse(),feed};
 }
 
 export function nowCardHtml(n:AgentNow,c:WhyContext&{esc:(v:unknown)=>string},metric?:{name:string;direction:string}){
@@ -54,7 +55,7 @@ export function nowCardHtml(n:AgentNow,c:WhyContext&{esc:(v:unknown)=>string},me
  const doing=n.latest?`${e(n.activity||'working')} · <span class="muted">${e(eventWhy(n.latest,c)||n.latest.type)}</span>`:e(n.activity||'Not active yet');
  const idea=x?`${e(x.idea?.text||x.description||'')}${x.idea?.predictedDelta!=null?` <span class="pill">predicted Δ ${x.idea.predictedDelta>0?'+':''}${fmt(x.idea.predictedDelta)}</span>`:''}${x.descriptor?.mechanism?` <span class="pill">${e(String(x.descriptor.mechanism).replaceAll('_',' '))}${x.descriptor.method?` / ${e(String(x.descriptor.method).replaceAll('_',' '))}`:''}</span>`:''}`:'';
  const sources=n.sources.map(s=>`<button class="chip" data-source="${e(s.id)}">${e(clip(s.title,60))}</button>`).join('');
- const gate=x?.gate?`<span class="pill ${x.gate.pass?'ok':'bad'}">${x.gate.pass?'passed':x.gate.pass===false?'blocked':'checked'}</span> ${e(x.gate.reasons.length?x.gate.reasons.join('; '):x.gate.pass?'The idea is new enough to try.':'')}`:x?'<span class="muted">Not checked yet</span>':'';
+ const gate=n.blocked?`<span class="pill bad">blocked</span> ${e(list(n.blocked.payload?.reasons).join('; ')||'Too close to an earlier idea.')}`:x?.gate?`<span class="pill ${x.gate.pass?'ok':'bad'}">${x.gate.pass?'passed':x.gate.pass===false?'blocked':'checked'}</span> ${e(x.gate.reasons.length?x.gate.reasons.join('; '):x.gate.pass?'The idea is new enough to try.':'')}`:x?'<span class="muted">Not checked yet</span>':'';
  const verdict=x?.verdict?`<span class="pill ${/replicat|accept|approv/i.test(x.verdict.verdict||'')&&!/not_/i.test(x.verdict.verdict||'')?'ok':'bad'}">${e(x.verdict.verdict||'verdict')}</span> ${e(x.verdict.why||'')}`:x?.result?'<span class="muted">Waiting for the critic</span>':'';
  const m=metric?.name.replaceAll('_',' ')||'score',better=metric?.direction==='maximize'?'higher':'lower';
  const score=x?.result?`<span class="pill">${e(x.result.status||'done')}</span> ${x.result.metric==null?'':`${e(m)} ${fmt(x.result.metric)}`}${c.best==null?'':` · best so far ${fmt(c.best)} (${better} is better)`}`:x?'<span class="muted">Still running</span>':'';
