@@ -558,7 +558,6 @@ def research_call(
         log=str(log_path),
         cache_dir=str(cache_dir),
         replay=replay,
-        category="publication",
         cell=cell,
         category=category,
         domains=domains,
