@@ -52,3 +52,11 @@ that never completed are dropped. Arms where the 402 hit an early completed roun
 `llm_failed_slots` (bixbench 3001 A and B: one slot each in round 5). With 3 pairs the smallest
 two-sided sign-flip p is 0.25, so the confirmatory tests cannot reach significance; results are
 reported per seed with mean and spread only, and the Holm column is kept for completeness.
+
+## Guard deviation (01:50 PST, after inspecting rejection reasons, not held-out scores of the rerun)
+The gold-literal guard rejected 198 bixbench_numeric candidates (about 45% of attempts in every arm);
+all were false positives from conventional constants (power 0.8, `ppf(0.975)`, `1.0`, quantile 0.75)
+that fall inside wide gold ranges. bixbench_numeric's guard now ignores conventional statistical
+constants (commit c31ab55); none of the 198 sources are flagged under it, while a planted gold literal
+still is. The primary bixbench result is the rerun in `conf-bixbench-numeric-guard2` (seeds 3001-3003,
+A/B/S, same rounds/model/settings). The strict-guard runs are reported separately as a pre-fix set.
