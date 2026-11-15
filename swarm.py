@@ -1166,9 +1166,10 @@ def preview_file(path, max_chars=6000):
     if path.suffix in (".xlsx", ".xls"):
         try:
             import pandas
-        except ImportError:
-            return "(spreadsheet; pandas unavailable for preview)"
-        sheets = pandas.read_excel(path, sheet_name=None)
+
+            sheets = pandas.read_excel(path, sheet_name=None)
+        except ImportError as error:
+            return f"(spreadsheet; preview unavailable: {error})"
         text = "\n".join(
             f"[sheet {sheet}] {frame.shape[0]} rows x {frame.shape[1]} cols\n"
             f"{frame.head(5).to_csv(index=False)}"

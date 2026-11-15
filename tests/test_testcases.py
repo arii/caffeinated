@@ -139,6 +139,17 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertLess(context.count("1,2"), 10)
             self.assertNotIn("missing.csv", context)
 
+    def test_spreadsheet_preview_survives_missing_excel_engine(self):
+        pandas = __import__("pandas")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "data.xlsx"
+            path.write_bytes(b"")
+            with patch.object(
+                pandas, "read_excel", side_effect=ImportError("Missing openpyxl")
+            ):
+                preview = swarm.preview_file(path)
+            self.assertIn("preview unavailable", preview)
+
     def test_fake_llm_swarm_scores_candidates_with_task_evaluator(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory) / "repo"
