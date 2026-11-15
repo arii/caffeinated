@@ -27,3 +27,6 @@ One JSON object per line. Every line has exactly these keys:
 - `lesson` {text} the agent's rewritten private lessons note
 
 Search-backed events (seed, snap, study_result.novelty) always carry source URLs in `payload`.
+
+A sample from the mock run (`--arm full --agents 4 --rounds 3 --seed 0`) is in `examples/mock_events.jsonl`,
+with its committee output in `examples/mock_scores.jsonl`. Dashboards can develop against those files.
