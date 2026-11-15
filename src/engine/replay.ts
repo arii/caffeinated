@@ -3,6 +3,7 @@ export interface RecordingManifest{id:string;live?:boolean;contentVersion?:strin
 export interface ReplayEvent{tick:number;type:string;agentId?:string;message?:string}
 export interface Recording{manifest:RecordingManifest;frames:{tick:number;snapshot:RunSnapshot}[];events:ReplayEvent[];entities?:Record<string,unknown[]>}
 export function recordingChanged(current:RecordingManifest,updated?:RecordingManifest){return !!current.live&&updated?.id===current.id&&updated.contentVersion!==current.contentVersion;}
+export function playbackContinues(manifest:Pick<RecordingManifest,'live'|'totalTicks'>,tick:number){return !!manifest.live||tick<manifest.totalTicks;}
 /** Binary search is deliberately stateless: rewinding must discard later knowledge. */
 export function frameAt<T extends {tick:number}>(frames:readonly T[],tick:number):T|undefined{
  let low=0,high=frames.length-1,result=-1;

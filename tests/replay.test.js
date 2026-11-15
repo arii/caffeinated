@@ -1,6 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {frameAt,advanceTick,eventsThrough,recordingChanged} from '../src/engine/replay.ts';
+import {frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
+test('live playback waits at the current end while finished recordings stop',()=>{
+ assert.equal(playbackContinues({live:true,totalTicks:10},10),true);
+ assert.equal(playbackContinues({live:true,totalTicks:0},0),true);
+ assert.equal(playbackContinues({live:true,totalTicks:20},10),true);
+ assert.equal(playbackContinues({live:false,totalTicks:10},10),false);
+ assert.equal(playbackContinues({totalTicks:0},0),false);
+ assert.equal(playbackContinues({live:false,totalTicks:20},10),true);
+});
 test('live recording refresh requires a changed version of the selected run',()=>{
  const current={id:'live-run',live:true,contentVersion:'one'};
  assert.equal(recordingChanged(current,{...current,contentVersion:'two'}),true);
