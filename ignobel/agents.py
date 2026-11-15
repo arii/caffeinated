@@ -251,6 +251,18 @@ class Agent:
         return llm.chat_json(model, self.system_prompt(), user, kind=kind, seed=self.run_seed,
                              max_tokens=max_tokens, mock_context=self._mock_ctx(**ctx))
 
+    def _idea_call(self, kind: str, user: str, max_tokens: int = 900) -> llm.LLMResult:
+        result = self._call(kind, user, max_tokens=max_tokens)
+        fields = _idea_fields(result.data)
+        has_idea = any(_idea_text(fields.get(key)) for key in ("title", "idea", "hypothesis"))
+        if not result.data.get("_truncated") and has_idea:
+            return result
+        retry = self._call(kind, user, max_tokens=max_tokens * 2)
+        return retry.model_copy(update={
+            "tokens": result.tokens + retry.tokens,
+            "latency_ms": result.latency_ms + retry.latency_ms,
+        })
+
     def _new_idea(self, data: dict, kind: str, round: int, source_urls: list[str]) -> Idea:
         data = _idea_fields(data)
         idea_number = len(self.ideas) + 1
@@ -290,7 +302,7 @@ class Agent:
         user = ("Propose one new study. Return JSON with keys: title, idea, hypothesis, method, "
                 "prediction {direction: '+' or '-', effect_size: number (Cohen's d or r)}" + self._real_rules() + ".\n"
                 "Relevant notes from your library:\n" + "\n".join(lines))
-        res = self._call("propose", user)
+        res = self._idea_call("propose", user)
         return self._new_idea(res.data, "propose", round, urls), res
 
     def refine(self, round: int) -> tuple[Idea, llm.LLMResult]:
@@ -308,7 +320,7 @@ class Agent:
                 + self._real_rules() + ".")
         if self.spec.family:
             user += "\nNotes from your library:\n" + "\n".join(_note(it) for it in self.memory.search(prior, 6))
-        res = self._call("refine", user)
+        res = self._idea_call("refine", user)
         urls = cur.source_urls if cur else []
         return self._new_idea(res.data, "refine", round, urls), res
 

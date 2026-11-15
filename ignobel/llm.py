@@ -25,7 +25,7 @@ CACHE_DIR = Path(os.environ.get("LLM_CACHE_DIR", Path(__file__).parent / ".cache
 TOKEN_CAP = int(os.environ.get("TOKEN_CAP", "0") or 0)  # 0 = unlimited
 # Reasoning models spend completion tokens thinking before they answer; this is added to every
 # call's max_tokens so the answer isn't cut off (Tinker's Inkling needs ~2000).
-REASONING_TOKENS = int(os.environ.get("REASONING_TOKENS", "0") or 0)
+REASONING_TOKENS = int(os.environ.get("REASONING_TOKENS", "2500") or 0)
 MOCK_EMBED_DIM = 64
 
 

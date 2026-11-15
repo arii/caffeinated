@@ -206,3 +206,31 @@ def test_status_counts_survive_world_state_resume(tmp_path):
     resumed = run_arm.build_world("full", 1, 0, out, roster="flat")
     assert resumed.load_state()
     assert resumed.status_counts == {"quill-i1": 2}
+
+
+def test_truncated_proposal_retries_with_double_budget_and_uses_second_title(monkeypatch):
+    import numpy as np
+
+    spec = agents.load_specs(n=1)[0]
+    a = agents.Agent(spec, LocalMemory(), {})
+    responses = [
+        agents.llm.LLMResult(data={"_truncated": True}, tokens=7, latency_ms=2, model="fake"),
+        agents.llm.LLMResult(
+            data={"title": "Recovered title", "idea": "A complete idea.",
+                  "hypothesis": "A complete hypothesis."},
+            tokens=11, latency_ms=3, model="fake",
+        ),
+    ]
+    calls = []
+
+    def fake_chat(model, system, user, **kwargs):
+        calls.append((kwargs["kind"], kwargs["max_tokens"]))
+        return responses.pop(0)
+
+    monkeypatch.setattr(agents.llm, "chat_json", fake_chat)
+    monkeypatch.setattr(agents.llm, "embed", lambda texts: [np.zeros(64) for _ in texts])
+
+    idea, result = a.propose(0, [])
+    assert idea.title == "Recovered title"
+    assert calls == [("propose", 900), ("propose", 1800)]
+    assert result.tokens == 18 and result.latency_ms == 5
