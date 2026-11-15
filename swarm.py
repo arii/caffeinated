@@ -1331,8 +1331,6 @@ def validate_proposal(profile, proposal):
     proposal["source_ids"] = sources
     proposal["predicted_delta"] = predicted_delta
     proposal["lead_id"] = proposal.get("lead_id") or None
-    if proposal["lead_id"] is not None and not re.fullmatch(r"[A-Za-z0-9_-]+", proposal["lead_id"]):
-        raise ValueError("lead_id must contain only letters, digits, '_' or '-'")
     proposal["descriptor"] = json.loads(json.dumps(descriptor))
     return proposal
 
@@ -1573,14 +1571,24 @@ def deduplicate_round_candidates(repo, candidates, out_dir):
         )
         attempts = list(candidate.get("attempts") or [])
         attempt_number = attempts[-1].get("attempt", 1) if attempts else 1
-        attempts.append(
-            {
-                "attempt": attempt_number,
-                "commit": candidate["commit"],
-                "pass": False,
-                "reasons": [reason],
-            }
+        duplicate_attempt = {
+            "attempt": attempt_number,
+            "commit": candidate["commit"],
+            "pass": False,
+            "outcome": "duplicate",
+            "reasons": [reason],
+        }
+        call_ids = candidate.get("llm_call_ids") or []
+        call_id = (
+            call_ids[-1]
+            if call_ids
+            else (
+                attempts[-1].get("call_id") if attempts and isinstance(attempts[-1], dict) else None
+            )
         )
+        if call_id:
+            duplicate_attempt["call_id"] = call_id
+        attempts.append(duplicate_attempt)
         candidate["attempts"] = attempts
         append_jsonl(
             Path(out_dir) / "boredom_log.jsonl",
@@ -1798,6 +1806,7 @@ def run_pi_steering(
     best_val,
     leads,
     research_start,
+    lead_records=None,
 ):
     # A supervised round already buys one Sol plan; never add a second PI call.
     if not enabled or getattr(llm_client, "supervised", False):
@@ -1886,15 +1895,20 @@ def run_pi_steering(
     )
     call_ids = getattr(llm_client, "call_ids", [])
     call_id_start = len(call_ids)
+    previous_last_call_id = getattr(llm_client, "last_call_id", None)
     call_id = None
     try:
         response = llm_client.call("PI", agent="pi", round_num=round_num, values=values)
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
         steers = validate_pi_steers(response, stuck_agents, known_sources, known_leads)
-    except Exception as error:
+    except (llm.LLMError, ValueError, RuntimeError) as error:
         call_ids = getattr(llm_client, "call_ids", [])
         call_id = call_ids[-1] if len(call_ids) > call_id_start else None
+        if call_id is None:
+            last_call_id = getattr(llm_client, "last_call_id", None)
+            if last_call_id != previous_last_call_id:
+                call_id = last_call_id
         print(
             f"round {round_num}: PI steering unavailable: {type(error).__name__}: {error}",
             file=sys.stderr,
@@ -1911,6 +1925,13 @@ def run_pi_steering(
         )
         steers = {}
 
+    if lead_records is not None:
+        for agent, steer in steers.items():
+            lead_id = steer.get("lead_id")
+            lead = next((item for item in known_leads if item.get("id") == lead_id), None)
+            if lead is not None:
+                lead_records[agent] = lead
+
     if call_id:
         append_jsonl(
             Path(out_dir) / "llm_outcomes.jsonl",
@@ -1919,7 +1940,7 @@ def run_pi_steering(
                 "round": round_num,
                 "agent": "pi",
                 "role": "PI",
-                "outcome": "steered",
+                "outcome": "steered" if steers else "pi_no_steer",
                 "agents": sorted(steers),
             },
         )
@@ -1961,6 +1982,21 @@ def validate_lead_reference(proposal, known_leads):
     if lead is None:
         raise ValueError("lead_id must reference a known lead")
     return lead
+
+
+def normalize_proposal_lead_id(proposal, known_leads):
+    lead_id = proposal.get("lead_id")
+    if not lead_id:
+        proposal["lead_id"] = None
+        return []
+    if isinstance(lead_id, str) and re.fullmatch(research.SOURCE_ID_PATTERN, lead_id):
+        proposal["source_ids"] = source_union(proposal.get("source_ids", []), [lead_id])
+        proposal["lead_id"] = None
+        return [f"lead_id {lead_id} moved to source_ids"]
+    if not any(lead.get("id") == lead_id for lead in known_leads):
+        proposal["lead_id"] = None
+        return [f"unknown lead_id {str(lead_id)[:80]} cleared"]
+    return []
 
 
 def cited_sources_for_proposal(proposal, lead):
@@ -2077,6 +2113,7 @@ def worker_attempts(
     replay,
     assigned_cells=None,
     pi_steer="none",
+    pi_lead=None,
 ):
     call_id_start = len(getattr(llm_client, "call_ids", []))
 
@@ -2104,7 +2141,10 @@ def worker_attempts(
     if not recalls:
         recalls = [{"results": []} for _ in range(3)]
     recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
-    known_leads = known_lead_records(all_leads, lead, recalls[1])
+    worker_leads = list(all_leads)
+    if isinstance(pi_lead, dict):
+        worker_leads.append(pi_lead)
+    known_leads = known_lead_records(worker_leads, lead, recalls[1])
     recalled_leads = render_leads_for_prompt(known_leads)
     current_base = base_commit
     candidate_source = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
@@ -2179,8 +2219,10 @@ def worker_attempts(
     current_proposal = proposal
     preflight_repaired = False
     for attempt in (1, 2, 3):
+        normalized = []
         try:
             current_proposal = validate_proposal(profile, current_proposal)
+            normalized = normalize_proposal_lead_id(current_proposal, known_leads)
             mismatch_reason = assigned_cell_mismatch_reason(
                 profile, current_proposal["descriptor"], common["assigned_cell"]
             )
@@ -2202,6 +2244,7 @@ def worker_attempts(
                     "pass": False,
                     "outcome": "invalid",
                     "reasons": [str(error)],
+                    "normalized": normalized,
                 }
             )
             log_worker_rejection(
@@ -2305,6 +2348,7 @@ def worker_attempts(
                     "pass": False,
                     "outcome": "duplicate" if cached_duplicate else "rejected",
                     "reasons": precheck_reasons,
+                    "normalized": normalized,
                 }
             )
             log_worker_rejection(
@@ -2478,6 +2522,7 @@ def worker_attempts(
                     "edit_error": str(error),
                     "outcome": "edit_error",
                     "reasons": [str(error)],
+                    "normalized": normalized,
                 }
             )
             if attempt == 1:
@@ -2555,6 +2600,7 @@ def worker_attempts(
                     else "rejected"
                 ),
                 "reasons": gate_record.get("reasons", []),
+                "normalized": normalized,
             }
         )
         candidate = {
@@ -3264,9 +3310,19 @@ def _token_count(value):
         return 0
 
 
-def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts):
+def _transport_retry_count(records):
+    return sum(
+        1
+        for record in records
+        for attempt in (record.get("attempts") if isinstance(record.get("attempts"), list) else [])
+        if isinstance(attempt, dict) and attempt.get("transport_error")
+    )
+
+
+def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts, error_start=0):
     llm_records = read_jsonl(Path(out_dir) / "llm_log.jsonl")[llm_start:]
     outcomes = read_jsonl(Path(out_dir) / "llm_outcomes.jsonl")[outcome_start:]
+    errors = read_jsonl(Path(out_dir) / "llm_errors.jsonl")[error_start:]
     usage = {"input_tokens": 0, "cached_tokens": 0, "output_tokens": 0, "reasoning_tokens": 0}
     for record in llm_records:
         call_usage = record.get("usage") or {}
@@ -3289,13 +3345,16 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
     wasted_calls = sum(
         1
         for record in outcomes
-        if record.get("outcome") in {"rejected", "duplicate", "invalid", "edit_error"}
+        if record.get("outcome")
+        in {"rejected", "duplicate", "invalid", "edit_error", "pi_no_steer"}
     )
     spend = {
         "round": round_num,
         "calls": len(llm_records),
         **usage,
         "wasted_calls": wasted_calls,
+        "failed_calls": len(errors),
+        "transport_retries": _transport_retry_count(llm_records + errors),
         "exa_searches": tool_counts["exa_searches"],
         "pastdev_recalls": tool_counts["pastdev_recalls"],
         "pastdev_writes": tool_counts["pastdev_writes"],
@@ -3305,6 +3364,8 @@ def record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts
         f"round {round_num} spend: calls={spend['calls']} in={spend['input_tokens']} "
         f"cached={spend['cached_tokens']} out={spend['output_tokens']} "
         f"reasoning={spend['reasoning_tokens']} wasted={spend['wasted_calls']} "
+        f"failed_calls={spend['failed_calls']} "
+        f"transport_retries={spend['transport_retries']} "
         f"Exa searches={spend['exa_searches']} past.dev recalls={spend['pastdev_recalls']} "
         f"writes={spend['pastdev_writes']}",
         flush=True,
@@ -4134,6 +4195,7 @@ def _orchestrate(args, publish_state, cleanup):
             memory_start = len(read_jsonl(memory_log))
             llm_start = len(read_jsonl(out_dir / "llm_log.jsonl"))
             outcome_start = len(read_jsonl(out_dir / "llm_outcomes.jsonl"))
+            error_start = len(read_jsonl(out_dir / "llm_errors.jsonl"))
             events = meter.read_ledger(ledger_path)
             allocation = allocate_roles(profile, events, agents, args.arm, research_source != "off")
             status = {
@@ -4194,6 +4256,7 @@ def _orchestrate(args, publish_state, cleanup):
             )
             attach_assignment_call_ids(out_dir, round_num, leads)
             all_leads = list(leads.values())
+            pi_lead_records = {}
             pi_steers = run_pi_steering(
                 enabled=args.pi == "on",
                 profile=profile,
@@ -4212,6 +4275,7 @@ def _orchestrate(args, publish_state, cleanup):
                 best_val=best_val,
                 leads=all_leads,
                 research_start=research_start,
+                lead_records=pi_lead_records,
             )
             candidate_records = []
             claims = []
@@ -4265,6 +4329,7 @@ def _orchestrate(args, publish_state, cleanup):
                         claims=claims,
                         replay=args.replay,
                         pi_steer=pi_steers.get(agent, "none"),
+                        pi_lead=pi_lead_records.get(agent),
                     )
                 except llm.LLMError as error:
                     print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
@@ -4507,7 +4572,14 @@ def _orchestrate(args, publish_state, cleanup):
                 )
 
             tool_counts = round_tool_counts(out_dir, research_start, memory_start)
-            record_round_spend(out_dir, round_num, llm_start, outcome_start, tool_counts)
+            record_round_spend(
+                out_dir,
+                round_num,
+                llm_start,
+                outcome_start,
+                tool_counts,
+                error_start=error_start,
+            )
             assert_live_tool_use(
                 out_dir,
                 round_num=round_num,

@@ -20,6 +20,7 @@ DEFAULT_PROMPT_DIR = ROOT / "prompts"
 TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
 TINKER_TIMEOUT_SECONDS = 900
 DEFAULT_TINKER_REASONING_EFFORT = "low"
+DEFAULT_TINKER_PI_REASONING_EFFORT = "high"
 TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
@@ -90,6 +91,23 @@ def read_log(path):
 
 def append_log(path, record):
     live_publish.append_records(path, [record])
+
+
+def _transport_attempt(error, started):
+    if isinstance(error, HTTPError):
+        detail = f"HTTP {error.code}"
+    elif isinstance(error, URLError):
+        detail = str(error.reason)
+    else:
+        detail = str(error)
+    detail = " ".join(detail.split())[:160]
+    if not detail:
+        detail = "request timed out" if isinstance(error, TimeoutError) else "request failed"
+    return {
+        "transport_error": f"{type(error).__name__}: {detail}",
+        "latency_ms": int((time.monotonic() - started) * 1000),
+        "usage": None,
+    }
 
 
 def fill_placeholders(template, values):
@@ -412,7 +430,7 @@ class LLMClient:
             self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
-        self.last_call_id = None
+        self.last_call_id = call_id
         prompt_values = dict(values)
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
@@ -491,6 +509,20 @@ class LLMClient:
                         "round": round_num,
                     }
                     self.last_call_id = call_id
+                append_log(
+                    self.log_path.with_name("llm_errors.jsonl"),
+                    {
+                        "ts": timestamp(),
+                        "call_id": call_id,
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                        "model": model,
+                        "prompt_sha": digest,
+                        "error": str(error),
+                        "attempts": self.request_attempts,
+                    },
+                )
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
             raise LLMError(f"LLM role {role} response must be a JSON object")
@@ -521,7 +553,7 @@ class LLMClient:
         """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
         base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
         reasoning_effort = (
-            os.environ.get("TINKER_PI_REASONING_EFFORT", "medium")
+            os.environ.get("TINKER_PI_REASONING_EFFORT", DEFAULT_TINKER_PI_REASONING_EFFORT)
             if str(role or "").upper() == "PI"
             else os.environ.get("TINKER_REASONING_EFFORT", DEFAULT_TINKER_REASONING_EFFORT)
         )
@@ -545,20 +577,26 @@ class LLMClient:
             method="POST",
         )
         for attempt in range(3):
+            attempt_started = time.monotonic()
             try:
                 with urlopen(request, timeout=TINKER_TIMEOUT_SECONDS) as http_response:
                     response = json.loads(http_response.read().decode("utf-8"))
                 break
             except HTTPError as error:
-                if error.code in TRANSIENT_HTTP and attempt < 2:
-                    time.sleep(5 * (attempt + 1))
-                    continue
+                if error.code in TRANSIENT_HTTP:
+                    self.request_attempts.append(_transport_attempt(error, attempt_started))
+                    if attempt < 2:
+                        time.sleep(5 * (attempt + 1))
+                        continue
                 detail = error.read().decode("utf-8", "replace")[:300]
                 raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
-            except URLError as error:
+            except (URLError, TimeoutError) as error:
+                self.request_attempts.append(_transport_attempt(error, attempt_started))
                 if attempt < 2:
                     time.sleep(5 * (attempt + 1))
                     continue
+                if isinstance(error, TimeoutError):
+                    raise RuntimeError("Tinker request timed out") from error
                 raise RuntimeError(f"Tinker request failed: {error.reason}") from error
             except json.JSONDecodeError as error:
                 raise RuntimeError("Tinker returned invalid JSON") from error
@@ -647,15 +685,29 @@ class LLMClient:
             },
             method="POST",
         )
-        try:
-            with urlopen(request, timeout=60) as http_response:
-                response = json.loads(http_response.read().decode("utf-8"))
-        except HTTPError as error:
-            raise RuntimeError(f"OpenAI returned HTTP {error.code}") from error
-        except URLError as error:
-            raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
-        except json.JSONDecodeError as error:
-            raise RuntimeError("OpenAI returned invalid JSON") from error
+        for attempt in range(3):
+            attempt_started = time.monotonic()
+            try:
+                with urlopen(request, timeout=60) as http_response:
+                    response = json.loads(http_response.read().decode("utf-8"))
+                break
+            except HTTPError as error:
+                if error.code in TRANSIENT_HTTP:
+                    self.request_attempts.append(_transport_attempt(error, attempt_started))
+                    if attempt < 2:
+                        time.sleep(5 * (attempt + 1))
+                        continue
+                raise RuntimeError(f"OpenAI returned HTTP {error.code}") from error
+            except (URLError, TimeoutError) as error:
+                self.request_attempts.append(_transport_attempt(error, attempt_started))
+                if attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                if isinstance(error, TimeoutError):
+                    raise RuntimeError("OpenAI request timed out") from error
+                raise RuntimeError(f"OpenAI request failed: {error.reason}") from error
+            except json.JSONDecodeError as error:
+                raise RuntimeError("OpenAI returned invalid JSON") from error
         try:
             message = response["choices"][0]["message"]
             content = message["content"]
@@ -670,4 +722,12 @@ class LLMClient:
             raw_usage,
             reasoning_content=message.get("reasoning_content"),
         )
+        if self.request_attempts:
+            self.request_attempts.append(
+                {
+                    "response": content,
+                    "latency_ms": int((time.monotonic() - attempt_started) * 1000),
+                    "usage": usage,
+                }
+            )
         return parsed, usage
