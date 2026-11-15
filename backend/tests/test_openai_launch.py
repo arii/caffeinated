@@ -37,9 +37,9 @@ class OpenAILaunchTests(unittest.TestCase):
             with patch.object(openai_launch.subprocess, "Popen", return_value=process) as popen:
                 r = c.post("/api/openai-runs", json={"rounds": 2})
                 self.assertEqual(r.status_code, 201)
-                self.assertEqual(r.json()["maxCostUsd"], 20.0)
+                self.assertEqual(r.json()["maxCostUsd"], 10.0)
                 env = popen.call_args.kwargs["env"]
-                self.assertEqual(env["OPENAI_MAX_COST_USD"], "20.0")
+                self.assertEqual(env["OPENAI_MAX_COST_USD"], "10.0")
                 self.assertEqual(env["OPENAI_RUN_ROUNDS"], "2")
                 self.assertTrue(env["OPENAI_RUN_OUT"].startswith("experiments/openai-ignobel-"))
                 self.assertEqual(c.post("/api/openai-runs", json={}).status_code, 409)

@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "run_openai_ignobel.sh"
-MAX_COST_USD = 20.0
+MAX_COST_USD = 10.0
 
 
 def enabled():

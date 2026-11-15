@@ -19,5 +19,5 @@ exec .venv/bin/python swarm.py \
   --task ignobel --arm B --rounds "${OPENAI_RUN_ROUNDS:-5}" --workers 8 \
   --llm openai --model gpt-6-luna --supervisor-model gpt-6.1-sol \
   --critic-model gpt-6-luna --worker-tokens 1200 --supervisor-tokens 4096 \
-  --max-cost-usd "${OPENAI_MAX_COST_USD:-20}" "${research[@]}" --memory-backend local \
+  --max-cost-usd "${OPENAI_MAX_COST_USD:-10}" "${research[@]}" --memory-backend local \
   --no-push --out "${OPENAI_RUN_OUT:-experiments/openai-ignobel}"

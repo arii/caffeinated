@@ -25,11 +25,11 @@ It disables paid search, hosted memory, automatic Git pushes and the old
 Tinker-funded prize committee. It does not claim to award an Ig Nobel prize.
 The Runs panel also supports the live Ig Nobel launcher. Enable it with
 `LAB_OPENAI_LAUNCH=1`, a backend `OPENAI_API_KEY`, and
-`LAB_OPENAI_MAX_COST_USD=1` for a small test. The server caps the configurable
-ceiling at $20. The button runs three rounds with eight Luna labs and Sol
+`LAB_OPENAI_MAX_COST_USD=10` for a small test. The server caps the configurable
+ceiling at $10. The button runs three rounds with eight Luna labs and Sol
 supervision/committee judging. Model and committee requests share the run's
 budget ledger. It is idle until explicitly started. The equivalent CLI is
-`scripts/run_openai_ignobel.sh` (defaults to five rounds and a $20 cap).
+`scripts/run_openai_ignobel.sh` (defaults to five rounds and a $10 cap).
 
 The default replay is run 3 (`f8fa53cc-6afd-5e98-9596-0c7b8711e718`) from the
 bundled `data/replays/ignobel-real-runs.zip`. Explicit `?recording=` links
