@@ -18,21 +18,19 @@ These are summaries of the recorded artifacts, not broad benchmark claims.
 - **Hadamard19:** the `out-hadamard19` results include a best loss of 0. The
   task defines loss 0 as matching the known order-19 determinant optimum, so
   this run reaches the ceiling of that task.
-- **Confirmatory A/B/S:** in the completed strict-guard `bixbench_numeric` set,
-  single-agent arm S has mean held-out accuracy 0.296 versus 0.056 for boredom
-  swarm B, and S is higher on all 3 paired seeds. The comparison is not
-  statistically significant (smallest attainable sign-flip p = 0.25), and the
-  ordering depends on a held-out grader tolerance fix made after the winners were
-  known: under the earlier grader the means are A 0.093, B 0.056, S 0.074 (S above
-  B on 1 of 3 seeds). The whole set is exploratory after deviations. See
+- **Confirmatory A/B/S:** preregistered primary (guard2, stopped early, guarded):
+  B 0.26, S 0.24, A 0.11. Complete strict-guard set, headlined after seeing which set
+  finished: S 0.30, A 0.09, B 0.06. Minimum sign-flip p = 0.25 (complete strict-guard set)
+  and 0.5 (guard2 primary); 3 runs (orchestration seeds; Kimi sampling is not seeded), neither
+  ordering is significant. No arm is consistently best. See
   [`experiments/confirmatory/RESULTS.md`](../experiments/confirmatory/RESULTS.md)
   for the full per-seed results and limitations.
-- **Ig Nobel (pre-committee):** the stopped `out-ignobel` artifact has 22 study
-  registrations. 13 were evaluated (9 crashed or were rejected before a result),
-  and 12 have `result.confirmed == true`. One confirmed study is a duplicate, so
-  11 are unique (the Lab replay shows the 21 unique records). One of the 11 (x vs y
-  coordinates, ρ = 0.07) fails today's |ρ| ≥ 0.1 effect-size gate, leaving 10 under current rules. The confirmed findings are mostly true but unsurprising (for
-  example, heavier cars have lower city MPG, ρ = −0.89). No committee result is
+  Under the earlier grader, the means were A 0.093, B 0.056, S 0.074.
+- **Ig Nobel (pre-committee):** 21 studies were registered and 13 run; 10 are held.
+  Eleven passed preregistered gates, and 10 remain after the post-hoc |ρ| ≥ 0.1 threshold was added
+  after the run. The x/y coordinate study (ρ = 0.07), registered twice, is the failure
+  case. These are gate-passing correlations on public teaching datasets (Cars93, cats,
+  sleepstudy, and others): known relationships, not discoveries. No committee result is
   present in these records, so committee scoring has not been run on them. The
   committee-scored rerun is blocked: both Tinker keys return HTTP 402.
 

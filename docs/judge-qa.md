@@ -6,13 +6,15 @@ committed artifact. Where the answer is unfavourable we say so.
 ## Results
 
 **Does the swarm beat a single agent?**
-Not shown. On 18 held-out `bixbench_numeric` questions over 3 seeds, the single agent (arm S) scored
-0.296, the swarm without the meter (A) 0.093 and the boredom swarm (B) 0.056 under the final grader.
-That ordering depends on a grader tolerance fix (`a0d4fcd`) made after the winners were known; under
-the earlier grader (`c31ab55`) it is A 0.093, B 0.056, S 0.074. n = 3 pairs, so the smallest
-achievable two-sided sign-flip p is 0.25. S also had no critic or confirmation step. We call the
-whole set exploratory after deviations. See `experiments/confirmatory/RESULTS.md` and
-`experiments/confirmatory/results/heldout_by_grader.tsv`.
+No consistent winner is shown. Preregistered primary (guard2, stopped early, guarded): B 0.26,
+S 0.24, A 0.11. Complete strict-guard set, headlined after seeing which set finished: S 0.30,
+A 0.09, B 0.06. Minimum sign-flip p = 0.25 (complete strict-guard set) and 0.5 (guard2 primary);
+3 runs (orchestration seeds; Kimi sampling is not seeded), neither ordering is significant.
+Under guard2, B > S > A guarded; S leads only unguarded (0.352). The strict-set ordering depends
+on a grader tolerance fix (`a0d4fcd`) made after the winners were known; under the earlier grader
+the means were A 0.093, B 0.056,
+S 0.074. S also had no critic or confirmation step. See
+`experiments/confirmatory/RESULTS.md` and `experiments/confirmatory/results/heldout_by_grader.tsv`.
 
 **Does the boredom meter help?**
 No evidence that it does. B ≤ A on BixBench at about 1.75× S's tokens; B's best candidate gets 1/18
@@ -55,11 +57,13 @@ scoring existed in the loop. The Lab labels it "Stopped real run (13/15 rounds)"
 committee output exists.
 
 **How many tests, and how many held up?**
-21 registered (the raw log has 22 lines because one study was registered twice), 13 run,
-11 passed the preregistered gates (p < .005 plus split-half consistency), 10 still pass under
-today's |ρ| ≥ 0.1 effect-size rule. No multiplicity correction was applied, but every
-confirmed study's main-test p is below Bonferroni .005/21 ≈ 2.4e-4 (the largest is 1.9e-7), because
-n is large and effects are textbook-sized (`experiments/real-runs/ignobel/ignobel_studies.jsonl`).
+21 studies were registered and 13 run; 10 are held under today's rule. Eleven passed the
+preregistered gates; 10 remain after the
+post-hoc |ρ| ≥ 0.1 effect-size rule was added after the run. The failure case is the x/y coordinate
+study (ρ = 0.07), registered twice. These are gate-passing correlations on public teaching datasets
+(Cars93, cats, sleepstudy, and others): known relationships, not discoveries. No multiplicity
+correction was applied; the largest confirmed main-test p is approximately 3.4e-7 (3.39e-7 for shell distance).
+See `experiments/real-runs/ignobel/ignobel_studies.jsonl`.
 
 **These findings are textbook results from R teaching datasets.**
 Mostly, yes: true but unsurprising. That is why we added the committee: two independent non-Kimi
@@ -109,8 +113,9 @@ boredom meter, evaluates, keeps and resumes with no human. Cross-run lessons exi
 not active in the reported runs, so we do not claim self-improvement.
 
 **Can I reproduce the Pages replay?**
-Yes: `npm run build:pages` rebuilds the static, replay-only site from the committed real recording.
-Regenerating the run itself needs Tinker credit.
+Functionally, yes; byte-for-byte, not yet. A build changed only the generated recording
+`manifest.contentVersion` (`0a11e20ac256d6a4-v4` to `d8be0c94977fb5c8-v4`); regenerating the run
+itself needs Tinker credit.
 
 **What is novel versus AlphaEvolve, FunSearch, AI-Scientist, MAP-Elites?**
 Islands, quality-diversity and novelty search are prior art. Our addition is a psychologically
@@ -121,3 +126,34 @@ agent trace. The descriptor space is hand-designed and LLM-self-labelled.
 Restore Tinker credit; committee-score the Ig Nobel studies; give S the same acceptance rule as the
 swarm; run 6+ paired seeds with an output-based guard; add a local embedding baseline to the memory
 comparison.
+
+## Ten hard questions
+
+1. **Did the run discover anything new?** No. The 10 current survivors are gate-passing
+   correlations on public teaching datasets (Cars93, cats, sleepstudy, and others); these are known
+   relationships, not discoveries.
+2. **What is the preregistered Track-3 result?** Guard2 stopped early: guarded means B 0.259,
+   S 0.241, A 0.111; seed 3001 had S 0.000 vs B 0.278. S leads only unguarded (0.352). The
+   completed strict-guard ordering is S 0.296, A 0.093, B 0.056, but was headlined after that set
+   finished. Minimum sign-flip p = 0.25 (complete strict-guard set) and 0.5 (guard2 primary);
+   3 runs (orchestration seeds; Kimi sampling is not seeded), neither ordering is significant.
+3. **Was the committee run on these studies?** No. The manifest's committee-scored string is
+   false for this run: it stopped before committee scoring, and the records have no committee result.
+4. **Why did a weak correlation pass?** The x/y coordinate study had ρ = 0.07, passed the old
+   gates, and was registered twice. The |ρ| ≥ 0.1 threshold was added after the run; it is the
+   failure case under today's rule.
+5. **What is the contribution?** An instrumented, replayable research harness and explicit
+   evaluation protocol—not evidence of superior scientific discovery.
+6. **How strong is BixBench Mini?** One run, n = 7: baseline 1/7 and best 6/7, with overlapping
+   Wilson intervals (0.026–0.513 and 0.487–0.974).
+7. **Is Playworld a real benchmark result?** No. It is a synthetic proxy with 200 held-out seeds,
+   not PlayWorld or Genie 3.
+8. **Are the three runs independent model samples?** No. They are orchestration seeds; Kimi
+   sampling is not seeded.
+9. **Is Pages byte-reproducible?** No. It is functionally reproducible, but the generated
+   `contentVersion` changed on rebuild as noted above.
+10. **Did Exa improve outcomes?** No effect has been measured because there is no ablation.
+    Committee HTTP 402 and missing-key cases fail loudly rather than producing a score; see
+    `test_committee_http_error_is_a_grader_error_with_the_status` and
+    `test_missing_tinker_key_raises_instead_of_changing_the_objective` in
+    `tests/test_testcases.py`.

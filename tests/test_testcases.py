@@ -64,6 +64,66 @@ def task_evaluation(task, source, **kwargs):
     return sandbox.evaluate_task(TESTCASES / task, source, **kwargs)
 
 
+class HeldOutCacheTests(unittest.TestCase):
+    def evaluate_cached_result(self, changes=None, grader_hash="grader-v1"):
+        with tempfile.TemporaryDirectory() as directory:
+            out_dir = Path(directory)
+            (out_dir / "run.json").write_text(
+                json.dumps({"repo": directory, "swarm_commit": "base"}), encoding="utf-8"
+            )
+            (out_dir / "resume_checkpoint.json").write_text(
+                json.dumps({"best_commit": "best", "best_val": 0.5}), encoding="utf-8"
+            )
+            evaluate = Mock(return_value={"status": "ok", "score": 0.5, "loss": 0.5, "n_items": 7})
+            with (
+                patch.object(
+                    held_out, "_git_show", side_effect=lambda _repo, commit, _target: commit
+                ),
+                patch.object(held_out.sandbox, "evaluate_task", side_effect=evaluate),
+                patch.object(held_out, "_grader_sha256", return_value="grader-v1"),
+            ):
+                first = held_out.held_out_test("bixbench_mini", out_dir)
+            self.assertEqual(first["baseline_commit"], "base")
+            self.assertEqual(first["best_commit"], "best")
+            self.assertEqual(first["grader_sha256"], "grader-v1")
+            self.assertEqual(evaluate.call_count, 2)
+
+            if changes:
+                changes(out_dir)
+            evaluate.reset_mock()
+            with (
+                patch.object(
+                    held_out, "_git_show", side_effect=lambda _repo, commit, _target: commit
+                ),
+                patch.object(held_out.sandbox, "evaluate_task", side_effect=evaluate),
+                patch.object(held_out, "_grader_sha256", return_value=grader_hash),
+            ):
+                result = held_out.held_out_test("bixbench_mini", out_dir)
+            return result, evaluate
+
+    def test_matching_commits_and_grader_hash_reuse_cached_result(self):
+        result, evaluate = self.evaluate_cached_result()
+        self.assertEqual(result["grader_sha256"], "grader-v1")
+        evaluate.assert_not_called()
+
+    def test_mismatched_commit_recomputes_cached_result(self):
+        def change_best_commit(out_dir):
+            (out_dir / "resume_checkpoint.json").write_text(
+                json.dumps({"best_commit": "new-best", "best_val": 0.4}), encoding="utf-8"
+            )
+
+        result, evaluate = self.evaluate_cached_result(change_best_commit)
+        self.assertEqual(result["best_commit"], "new-best")
+        self.assertEqual(evaluate.call_count, 2)
+
+    def test_mismatched_grader_hash_recomputes_cached_result(self):
+        result, evaluate = self.evaluate_cached_result(
+            lambda _out_dir: None, grader_hash="grader-v2"
+        )
+        self.assertEqual(result["grader_sha256"], "grader-v2")
+        self.assertEqual(evaluate.call_count, 2)
+
+
 class EvaluatorTests(unittest.TestCase):
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_bixbench_dev_and_test_splits_grade_only_their_questions(self):

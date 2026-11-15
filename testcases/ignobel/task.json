@@ -57,7 +57,7 @@
    }
   }
  ],
- "proxy_note": "pre-registered confirmatory test on real public data; committee-scored in-run, with cached verdicts reported by score_run.py",
+ "proxy_note": "pre-registered confirmatory test on real public data; studies passed split-half consistency; committee scoring runs after studies and has not been run on the published recording",
  "context_files": [
   "sources.json"
  ],
