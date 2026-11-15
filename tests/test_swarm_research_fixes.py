@@ -1970,7 +1970,7 @@ class IgnobelIdeaDescriptorTest(unittest.TestCase):
         swarm.describe_idea(self.profile, proposal, source)
         self.assertEqual(
             proposal["descriptor"]["idea"],
-            ["data:https://x.org/d.csv", "var:price", "var:shell", "var:size"],
+            ["data:https://x.org/D.csv", "var:price", "var:shell", "var:size"],
         )
         self.assertEqual(proposal["descriptor"]["params"], {"confidence": 0.62})
         meter.validate_descriptor(self.profile, proposal["descriptor"])

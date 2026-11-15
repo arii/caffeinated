@@ -1574,7 +1574,7 @@ def describe_idea(profile, proposal, source_text):
             words = re.findall(r"[a-z][a-z0-9]{2,}", value.casefold())
             tags.extend(f"{field['tag']}:{word}" for word in words)
         else:
-            tags.append(f"{field['tag']}:{value.strip().casefold()}")
+            tags.append(f"{field['tag']}:{value.strip()}")
     descriptor = proposal["descriptor"]
     if tags:
         descriptor["idea"] = sorted(set(tags))
