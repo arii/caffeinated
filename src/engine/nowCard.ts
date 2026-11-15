@@ -21,6 +21,7 @@ export function eventWhy(e:InspectEvent,c:WhyContext):string{
   case 'experiment.finished':{const v=num(p.metric_value),status=text(p.status).toLowerCase(),score=v==null?'':` ${metric} ${fmt(v)}`,best=c.best==null?'':` (best ${fmt(c.best)})`;
    if(/crash|error|fail|timeout/.test(status))return 'Crashed: the experiment failed to run';
    if(/keep|replicated|accept/.test(status)&&!/not_/.test(status))return `Kept:${score||' result'} beats the previous best`;
+   if(v==null&&status)return `${/reject|invalid|block/.test(status)?'Rejected before scoring':'Not scored'}${text(p.text)?`: ${clip(text(p.text))}`:''}`;
    return status?`Discarded:${score} didn't beat the best${best}`:text(p.text);}
   case 'agent.assigned':{const role=text(p.role);return role?`Conductor assigned ${role}${text(p.rationale)?`: ${clip(text(p.rationale))}`:''}`:text(p.text);}
   case 'round.started':{const r=regimeLabel(text(p.regime)).label;return `${e.round?`Round ${e.round} begins`:'New round'}${r?` · ${r}`:''}${text(p.rationale)?`: ${clip(text(p.rationale))}`:''}`;}

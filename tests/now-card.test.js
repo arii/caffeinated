@@ -41,3 +41,9 @@ test('the Now card gathers idea, gate, score, critic and sources for the agent a
  assert.match(html,/data-experiment="experiment:a"/);
  assert.equal(agentNow(recording,'nobody','idle',6,c).experiment,null);
 });
+test('a proposal rejected before evaluation is not described as a scored discard',()=>{
+ const c={name:id=>id,metric:{name:'loss',direction:'minimize'},best:0.1};
+ const why=eventWhy({tick:1,type:'experiment.finished',payload:{status:'reject',text:'invalid descriptor'}},c);
+ assert.equal(why,'Rejected before scoring: invalid descriptor');
+ assert.match(eventWhy({tick:1,type:'experiment.finished',payload:{status:'discard',metric_value:0.3}},c),/^Discarded: loss 0.3/);
+});
