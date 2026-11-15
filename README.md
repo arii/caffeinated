@@ -35,7 +35,7 @@ docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
 python swarm.py --task hadamard19 --rounds 1 --llm fake --exa off --memory-backend local --no-push --out "$HOME/swarm-demo"
 ```
 
-Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. While the selected recording is live, the picker and recording refresh every four seconds, preserving the playhead. Otherwise use **Refresh** to discover new runs. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
+Then, from the lab checkout, start `LAB_RECORDINGS_DIRS="$HOME/swarm-demo/viewer" npm run dev` and select the run in **Archive**. You can start the lab before the swarm. No ZIP or API restart is needed. The picker refreshes every four seconds, including while viewing finished recordings. Live recordings also reload when changed, preserving the playhead. Multiple roots use the platform path separator (`:` on Unix); out roots and folders of outs also work (five-level scan). Directory runs override matching ZIP IDs. `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. Both dev commands inherit these variables, and `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
 
