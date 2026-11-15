@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swarm knowledge graph</title>
+<style>
+:root{--bg:#0f1117;--panel:#171a23;--ink:#e8e8ee;--mute:#9a9fb0;--line:#2a2f3d}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:1fr 380px;grid-template-rows:auto 1fr;height:100vh}
+header{grid-column:1/3;padding:12px 18px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+h1{font-size:17px;margin:0 12px 0 0}.stat{color:var(--mute)}.stat b{color:var(--ink)}
+#controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:auto}
+label{color:var(--mute);cursor:pointer}input[type=search]{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:5px 8px;border-radius:6px}
+svg{width:100%;height:100%;cursor:grab;display:block}svg:active{cursor:grabbing}
+#side{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px 16px}
+#side h2{font-size:15px;margin:0 0 6px}.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;margin:0 4px 4px 0;background:#262b38}
+.ev{border-left:3px solid var(--line);padding:3px 0 3px 8px;margin:4px 0;font-size:13px}.ev small{color:var(--mute)}
+.r{color:var(--mute);font-size:12px;margin-top:10px;text-transform:uppercase;letter-spacing:.05em}
+a{color:#8ab4ff}.legend span{display:inline-flex;align-items:center;gap:4px;margin-right:10px;color:var(--mute);font-size:12px}.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+text{fill:var(--ink);font-size:10px;pointer-events:none;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
+@media(max-width:800px){body{grid-template-columns:1fr;grid-template-rows:auto 55vh auto;height:auto}#side{border-left:0;border-top:1px solid var(--line)}header{grid-column:1}}
+</style></head><body>
+<header><h1 id="title"></h1><div id="stats"></div>
+<div id="controls"><button id="fit" type="button" style="background:#262b38;color:inherit;border:1px solid #2a2f3d;border-radius:6px;padding:4px 10px">Fit</button><input type="search" id="q" placeholder="Search nodes…" aria-label="Search nodes"><span id="filters"></span></div>
+<div class="legend" id="legend"></div></header>
+<svg id="g" role="img" aria-label="Knowledge graph of agents, studies, datasets and sources"></svg>
+<aside id="side"></aside>
+<script>
+const G=__GRAPH__;
+const COLORS={agent:'#f2c14e',confirmed:'#4cc38a',rejected:'#e5484d','not significant':'#f76b15',pending:'#8e8e8e',dataset:'#3e9bff',citation:'#b18cff','prior work':'#6b7280'};
+const color=n=>n.kind==='study'?COLORS[n.status]||'#999':COLORS[n.kind];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S=G.summary;
+document.getElementById('title').textContent=S.title||'Swarm knowledge graph';
+document.getElementById('stats').innerHTML=[['rounds',S.rounds],['LLM calls',S.llm_calls],['searches',S.searches],['sources read',S.sources],['memories',S.memories],['hypotheses',S.hypotheses],['studies',S.studies],['confirmed',S.confirmed]].map(([k,v])=>`<span class="stat"><b>${esc(v)}</b> ${k}</span>`).join(' · ');
+document.getElementById('legend').innerHTML=Object.entries(COLORS).map(([k,c])=>`<span><i style="background:${c}"></i>${k}</span>`).join('');
+const kinds=['agent','study','dataset','citation','prior work'];const show=new Set(['agent','study','dataset','citation']);
+document.getElementById('filters').innerHTML=kinds.map(k=>`<label><input type="checkbox" data-k="${k}" ${show.has(k)?'checked':''}> ${k}</label>`).join(' ');
+const nodes=G.nodes.map(n=>({...n,x:0,y:0,vx:0,vy:0}));
+const byId=new Map(nodes.map(n=>[n.id,n]));
+const edges=G.edges.filter(e=>byId.has(e.source)&&byId.has(e.target)).map(e=>({...e,s:byId.get(e.source),t:byId.get(e.target)}));
+const jitter=()=>Math.random()*40-20;
+nodes.filter(n=>n.kind==='agent').forEach((n,i,a)=>{const t=2*Math.PI*i/a.length;n.x=Math.cos(t)*320;n.y=Math.sin(t)*320});
+for(const kind of ['study','dataset','citation','prior work'])for(const n of nodes.filter(m=>m.kind===kind)){const e=edges.find(e=>e.t===n&&(e.s.x||e.s.y));const a=e?e.s:{x:0,y:0};n.x=a.x*1.15+jitter();n.y=a.y*1.15+jitter()}
+const radius=n=>n.kind==='agent'?16:n.kind==='study'?6+(n.score??20)/8:n.kind==='dataset'?6:4;
+const svg=document.getElementById('g'),NS='http://www.w3.org/2000/svg';
+const root=document.createElementNS(NS,'g');svg.appendChild(root);
+let view={x:0,y:0,k:1};const apply=()=>{const b=svg.getBoundingClientRect();root.setAttribute('transform',`translate(${b.width/2+view.x},${b.height/2+view.y}) scale(${view.k})`)};
+const lineEls=edges.map(e=>{const l=document.createElementNS(NS,'line');l.setAttribute('stroke',e.kind==='directed'?'#f2c14e55':'#ffffff22');l.setAttribute('stroke-width',e.kind==='proposed'?1.6:1);root.appendChild(l);return l});
+const nodeEls=nodes.map(n=>{const g=document.createElementNS(NS,'g');g.style.cursor='pointer';const c=document.createElementNS(NS,'circle');c.setAttribute('r',radius(n));c.setAttribute('fill',color(n));if(n.winner){c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',3)}if(n.baseline){c.setAttribute('stroke-dasharray','3 2');c.setAttribute('stroke','#fff')}g.appendChild(c);
+ if(n.kind==='agent'||n.winner||n.rank&&n.rank<=3){const t=document.createElementNS(NS,'text');t.setAttribute('x',radius(n)+3);t.setAttribute('y',4);t.textContent=(n.winner?'★ ':'')+(n.label.length>48?n.label.slice(0,46)+'…':n.label);g.appendChild(t)}
+ const tt=document.createElementNS(NS,'title');tt.textContent=n.label;g.appendChild(tt);root.appendChild(g);g.addEventListener('click',ev=>{ev.stopPropagation();select(n)});g.addEventListener('pointerdown',ev=>{ev.stopPropagation();drag=n;n.fixed=true});return g});
+const visible=n=>show.has(n.kind);let query='';const match=n=>!query||(n.label+' '+(n.hypothesis||'')).toLowerCase().includes(query);
+function refresh(){nodes.forEach((n,i)=>{nodeEls[i].style.display=visible(n)?'':'none';nodeEls[i].style.opacity=match(n)?1:.15});edges.forEach((e,i)=>{lineEls[i].style.display=visible(e.s)&&visible(e.t)?'':'none'});heat=1}
+document.getElementById('filters').addEventListener('change',e=>{const k=e.target.dataset.k;e.target.checked?show.add(k):show.delete(k);refresh()});
+document.getElementById('q').addEventListener('input',e=>{query=e.target.value.toLowerCase();refresh()});
+let heat=1,drag=null,pan=null,fitted=false;
+function fit(){const vs=nodes.filter(visible);if(!vs.length)return;const b=svg.getBoundingClientRect(),xs=vs.map(n=>n.x),ys=vs.map(n=>n.y),w=Math.max(...xs)-Math.min(...xs)+80,h=Math.max(...ys)-Math.min(...ys)+80;view.k=Math.min(2,Math.max(.2,Math.min(b.width/w,b.height/h)));view.x=-(Math.max(...xs)+Math.min(...xs))/2*view.k;view.y=-(Math.max(...ys)+Math.min(...ys))/2*view.k;apply()}
+function tick(){const vs=nodes.filter(visible);if(heat>0.01){
+ for(let i=0;i<vs.length;i++)for(let j=i+1;j<vs.length;j++){const a=vs[i],b=vs[j];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+1;if(d2>90000)continue;const f=350/d2*heat;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f}
+ for(const e of edges){if(!visible(e.s)||!visible(e.t))continue;const dx=e.t.x-e.s.x,dy=e.t.y-e.s.y,d=Math.hypot(dx,dy)||1,want=e.kind==='proposed'?60:e.kind==='directed'?260:30,f=(d-want)/d*(e.kind==='directed'?0.01:0.08)*heat;e.s.vx+=dx*f;e.s.vy+=dy*f;e.t.vx-=dx*f;e.t.vy-=dy*f}
+ for(const n of vs){n.vx-=n.x*0.004*heat;n.vy-=n.y*0.004*heat;if(!n.fixed){n.x+=n.vx;n.y+=n.vy}n.vx*=.6;n.vy*=.6}heat*=.985;if(heat<0.08&&!fitted){fitted=true;fit()}}
+ edges.forEach((e,i)=>{const l=lineEls[i];l.setAttribute('x1',e.s.x);l.setAttribute('y1',e.s.y);l.setAttribute('x2',e.t.x);l.setAttribute('y2',e.t.y)});
+ nodes.forEach((n,i)=>nodeEls[i].setAttribute('transform',`translate(${n.x},${n.y})`));requestAnimationFrame(tick)}
+const toGraph=ev=>{const b=svg.getBoundingClientRect();return{x:(ev.clientX-b.left-b.width/2-view.x)/view.k,y:(ev.clientY-b.top-b.height/2-view.y)/view.k}};
+svg.addEventListener('pointerdown',ev=>{pan={x:ev.clientX-view.x,y:ev.clientY-view.y}});
+window.addEventListener('pointermove',ev=>{if(drag){const p=toGraph(ev);drag.x=p.x;drag.y=p.y;heat=Math.max(heat,.3)}else if(pan){view.x=ev.clientX-pan.x;view.y=ev.clientY-pan.y;apply()}});
+window.addEventListener('pointerup',()=>{drag=null;pan=null});
+svg.addEventListener('wheel',ev=>{ev.preventDefault();view.k=Math.min(4,Math.max(.2,view.k*(ev.deltaY<0?1.1:.9)));apply()},{passive:false});
+window.addEventListener('resize',apply);document.getElementById('fit').addEventListener('click',fit);
+const side=document.getElementById('side');
+const KIND_COLOR={role:'#f2c14e',boredom:'#6b7280',hypothesis:'#b18cff',registered:'#3e9bff',result:'#4cc38a',gate:'#e5484d',diary:'#9a9fb0',award:'#f2c14e',replicated:'#4cc38a',verdict:'#4cc38a'};
+function neighbours(n){return edges.filter(e=>e.s===n||e.t===n).map(e=>({e,o:e.s===n?e.t:e.s}))}
+function link(o){return `<a href="#" data-id="${esc(o.id)}">${esc(o.label)}</a>`}
+function select(n){const nb=neighbours(n);let h=`<h2>${esc(n.label)}</h2><span class="pill">${esc(n.kind==='study'?n.status:n.kind)}</span>`;
+ if(n.kind==='agent'){const j=G.journey[n.id]||[];const studies=nb.filter(x=>x.o.kind==='study').map(x=>x.o);
+  h+=`<span class="pill">${esc(n.role)}</span><p>${studies.length} studies · ${studies.filter(s=>s.status==='confirmed').length} confirmed · ${j.filter(e=>e.kind==='hypothesis').length} hypotheses · ${j.filter(e=>e.kind==='gate'&&/block/i.test(e.text)).length} novelty blocks</p>`;
+  if(studies.length)h+='<div class="r">Studies</div>'+studies.map(s=>`<div class="ev" style="border-color:${color(s)}">${link(s)} <small>${esc(s.status)}${s.score!=null?' · IgJudge '+s.score:''}${s.rank?' · #'+s.rank:''}</small></div>`).join('');
+  h+='<div class="r">Journey</div>';let round=null;for(const e of j){if(e.round!==round){round=e.round;h+=`<div class="r">Round ${esc(round)}</div>`}h+=`<div class="ev" style="border-color:${KIND_COLOR[e.kind]||'#444'}"><small>${esc(e.kind)} · tick ${esc(e.tick)}</small><br>${esc(e.text)}</div>`}}
+ else if(n.kind==='study'){h+=n.rank?`<span class="pill">IgJudge #${n.rank} · ${n.score}</span>`:n.score!=null?`<span class="pill">IgJudge ${n.score} (unranked)</span>`:'';if(n.baseline)h+='<span class="pill">human-written seed</span>';
+  h+=`<p><b>Hypothesis:</b> ${esc(n.hypothesis)}</p>${n.mechanism?`<p><b>Mechanism:</b> ${esc(n.mechanism)}</p>`:''}<p><b>Variables:</b> ${esc(n.x)} vs ${esc(n.y)}</p>`;
+  if(n.rho!=null)h+=`<p><b>Result:</b> rho ${(+n.rho).toFixed(3)}, p ${(+n.p).toExponential(2)}, n ${esc(n.n)}</p>`;if(n.outcome)h+=`<p><b>Outcome:</b> ${esc(n.outcome)}</p>`;if(n.committee)h+=`<p><b>Committee:</b> ${esc(n.committee)}</p>`;if(n.verdict)h+=`<p><b>IgJudge verdict:</b> ${esc(n.verdict)}</p>`;
+  h+='<div class="r">Connections</div>'+nb.map(({e,o})=>`<div class="ev" style="border-color:${color(o)}"><small>${esc(e.kind)}</small> ${link(o)}</div>`).join('')}
+ else{if(n.url)h+=`<p><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.url)}</a></p>`;h+='<div class="r">Used by</div>'+nb.map(({e,o})=>`<div class="ev" style="border-color:${color(o)}"><small>${esc(e.kind)}</small> ${link(o)}</div>`).join('')}
+ side.innerHTML=h;nodes.forEach((m,i)=>nodeEls[i].querySelector('circle').setAttribute('opacity',m===n||nb.some(x=>x.o===m)?1:.35))}
+side.addEventListener('click',ev=>{const id=ev.target.dataset?.id;if(id){ev.preventDefault();const n=byId.get(id);show.add(n.kind);document.querySelector(`[data-k="${n.kind}"]`).checked=true;refresh();select(n)}});
+svg.addEventListener('click',()=>{nodes.forEach((m,i)=>nodeEls[i].querySelector('circle').setAttribute('opacity',1))});
+side.innerHTML=`<h2>What the agents did</h2><p>Each gold node is an agent; click one to replay its journey round by round: role assignments, boredom, hypotheses, novelty gates, preregistrations, results and awards.</p><p>Studies are coloured by outcome and sized by IgJudge score. ★ marks the IgJudge winner${S.winner?`: <b>${esc(S.winner)}</b>`:''}. Dashed outline marks the human-written seed.</p><p>Toggle “prior work” to see the Exa papers IgJudge checked each study against.</p><p class="stat">Run ${esc(S.run)} · ${esc(S.model)}</p>`;
+apply();refresh();tick();setTimeout(()=>{fitted=true;fit()},2500);
+const pick=decodeURIComponent(location.hash.slice(1));if(pick){const n=nodes.find(m=>m.label===pick||m.id===pick);if(n)select(n)}
+</script></body></html>
