@@ -70,7 +70,11 @@ class TaskInputTests(unittest.TestCase):
             "recipe": "adjust one parameter",
             "source_ids": ["S1"],
         }
-        with_ids = {**lead, "llm_call_ids": ["SCOUT_LEAD-r2-worker-1-7"]}
+        with_ids = {
+            **lead,
+            "llm_call_ids": ["SCOUT_LEAD-r2-worker-1-7"],
+            "critic_call_ids": ["CRITIC-r2-critic-8"],
+        }
         values = task_values("bixbench_mini")
         values["recalled_leads"] = swarm.render_leads_for_prompt([lead])
         prompt_without_ids = llm.render_prompt("WORKER_PROPOSE", values)
@@ -78,6 +82,7 @@ class TaskInputTests(unittest.TestCase):
         prompt_with_ids = llm.render_prompt("WORKER_PROPOSE", values)
         self.assertEqual(llm.prompt_sha(prompt_without_ids), llm.prompt_sha(prompt_with_ids))
         self.assertNotIn("SCOUT_LEAD-r2-worker-1-7", prompt_with_ids)
+        self.assertNotIn("CRITIC-r2-critic-8", prompt_with_ids)
 
 
 class ProposalGroundingTests(unittest.TestCase):

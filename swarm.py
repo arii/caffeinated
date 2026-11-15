@@ -1657,7 +1657,8 @@ def strip_call_ids(value):
         return {
             key: strip_call_ids(item)
             for key, item in value.items()
-            if key not in {"call_id", "llm_call_ids", "call_ids", "call_id_counter", "call_counter"}
+            if not isinstance(key, str)
+            or ("call_id" not in key.casefold() and "call_counter" not in key.casefold())
         }
     if isinstance(value, list):
         return [strip_call_ids(item) for item in value]
