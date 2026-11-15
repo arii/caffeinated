@@ -1,7 +1,7 @@
 {
  "agents": [
   {
-   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
    "field": "",
    "label": "Program Office",
    "named": true,
@@ -9,13 +9,13 @@
    "type": "conductor"
   },
   {
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
    "label": "Baseline",
    "native_id": "baseline",
    "type": "baseline"
   },
   {
-   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
    "field": "physics",
    "label": "Kitchen Physics Lab",
    "named": true,
@@ -23,7 +23,7 @@
    "type": "worker"
   },
   {
-   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
    "field": "biology",
    "label": "Animal Behaviour Lab",
    "named": true,
@@ -31,7 +31,7 @@
    "type": "worker"
   },
   {
-   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
    "field": "biology",
    "label": "Sleep & Medicine Lab",
    "named": true,
@@ -39,7 +39,7 @@
    "type": "worker"
   },
   {
-   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "field": "chemistry",
    "label": "Mind & Money Lab",
    "named": true,
@@ -47,7 +47,7 @@
    "type": "worker"
   },
   {
-   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
    "field": "",
    "label": "Peer Review Board",
    "named": true,
@@ -96,35 +96,37 @@
    "--task",
    "ignobel",
    "--rounds",
-   "5",
+   "15",
    "--llm",
-   "fake",
+   "tinker",
+   "--model",
+   "moonshotai/Kimi-K3.1-Pro:peft:262144",
    "--exa",
-   "off",
+   "on",
    "--memory-backend",
-   "local",
+   "pastdev",
    "--no-push",
    "--out",
-   "/tmp/out-real-ignobel"
+   "/home/ubuntu/longruns2/out-ignobel"
   ],
-  "exa": "off",
-  "llm": "fake",
-  "llm_mode": "fake",
-  "memory_backend": "local",
-  "native_run_id": "0303243dad0346ec98ddc9e654af6cfe",
-  "research": "off",
-  "swarm_commit": "c2b3598515e9d9ad62454c4ca647a9eab6c6c82a"
+  "exa": "live",
+  "llm": "moonshotai/Kimi-K3.1-Pro:peft:262144",
+  "llm_mode": "tinker",
+  "memory_backend": "pastdev",
+  "native_run_id": "065dd413fd174fadb38f1136ce68cfb4",
+  "research": "exa",
+  "swarm_commit": "47be2271b0812f50c377bdb7318703d439f3f5e6"
  },
  "publish_errors": [],
- "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
  "schema": "swarm-viewer/v1",
- "status": "finished",
+ "status": "stopped",
  "swarm": "autoresearch",
  "time": {
-  "rounds": 5,
-  "ticks": 443,
-  "ts_end": "2026-11-15T08:17:48.261117Z",
-  "ts_start": "2026-11-15T08:17:45.120860Z"
+  "rounds": 13,
+  "ticks": 1492,
+  "ts_end": "2026-11-15T08:53:15.268785Z",
+  "ts_start": "2026-11-15T08:09:19.810226Z"
  },
- "title": "Ig Nobel Prize hunt · out-real-ignobel"
+ "title": "Ig Nobel Prize hunt · out-ignobel"
 }

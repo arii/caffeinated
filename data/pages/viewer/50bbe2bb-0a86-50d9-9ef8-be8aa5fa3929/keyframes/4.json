@@ -2,7 +2,7 @@
  "agents": [
   {
    "activity": "idle",
-   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -25,7 +25,7 @@
   },
   {
    "activity": "reviewing",
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
    "boredom": null,
    "counters": {
     "experiments": 1,
@@ -37,12 +37,12 @@
    },
    "diary_head": null,
    "focus": {
-    "experiment_id": "experiment:c2b3598"
+    "experiment_id": "experiment:47be227"
    },
    "last_observation_id": null,
    "last_question_id": null,
    "last_reward": {
-    "experiment_id": "experiment:c2b3598",
+    "experiment_id": "experiment:47be227",
     "metric_value": 1.0,
     "reward_id": "reward:1",
     "status": "keep",
@@ -57,7 +57,7 @@
   },
   {
    "activity": "idle",
-   "agent_id": "a94a1cd6-2d91-5070-a74f-1bc51753f309",
+   "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -80,7 +80,7 @@
   },
   {
    "activity": "idle",
-   "agent_id": "0ae2fac2-64b2-5b7b-86c7-72090036fdf8",
+   "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -103,7 +103,7 @@
   },
   {
    "activity": "idle",
-   "agent_id": "d5e4fea2-619d-5f1c-8de6-f6dc3f8f69c6",
+   "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -126,7 +126,7 @@
   },
   {
    "activity": "idle",
-   "agent_id": "665aed22-e0e9-52b6-9e0e-405d4350e9f1",
+   "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -149,7 +149,7 @@
   },
   {
    "activity": "idle",
-   "agent_id": "5e88b95e-1993-5b6e-80ed-bde8ded2b995",
+   "agent_id": "48800556-998f-552b-aa75-6ab96f83acde",
    "boredom": null,
    "counters": {
     "experiments": 0,
@@ -179,17 +179,17 @@
  "phase": "evaluate",
  "recent_events": [
   {
-   "agent_id": "ba27810f-d413-5def-94a1-342c4e80b09c",
-   "event_id": "3b3b81b5-10c5-5c7f-97ff-b0da36299b3d",
+   "agent_id": "a4c218dd-0d5c-5347-b359-49dcf51bad4e",
+   "event_id": "0e438602-2359-58d2-898a-4174c3006ef9",
    "payload": {
     "arm": "B",
-    "native_run_id": "0303243dad0346ec98ddc9e654af6cfe",
+    "native_run_id": "065dd413fd174fadb38f1136ce68cfb4",
     "text": "Run started (arm B)"
    },
    "phase": "assign",
    "refs": {},
    "round": 0,
-   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
    "schema": "swarm-viewer/v1",
    "source": {
     "file": "run_id",
@@ -197,12 +197,12 @@
     "native_type": "run"
    },
    "tick": 0,
-   "ts": "2026-11-15T08:17:45.270369Z",
+   "ts": "2026-11-15T08:09:19.822891Z",
    "type": "run.started"
   },
   {
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
-   "event_id": "d9d51b84-3a5c-546c-a681-fdec9bf617de",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "event_id": "f08b4b81-d7c0-5232-8f63-2ecbfe210e34",
    "payload": {
     "field": "behavioral_economics",
     "predicted_rho": 0.15,
@@ -213,11 +213,11 @@
    },
    "phase": "evaluate",
    "refs": {
-    "experiment_id": "experiment:c2b3598",
+    "experiment_id": "experiment:47be227",
     "study_id": "study:1"
    },
    "round": 0,
-   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
    "schema": "swarm-viewer/v1",
    "source": {
     "file": "ignobel_studies.jsonl",
@@ -225,12 +225,12 @@
     "native_type": "study"
    },
    "tick": 1,
-   "ts": "2026-11-15T08:17:45.120860Z",
+   "ts": "2026-11-15T08:09:19.810226Z",
    "type": "study.registered"
   },
   {
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
-   "event_id": "4f3c9262-4717-5bad-8b14-5fe900d09c62",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "event_id": "b4ef5b61-3cb1-5c43-93c3-67ed7c5357df",
    "payload": {
     "confirmed": false,
     "headline": "In the steak-risk-survey data (raw.githubusercontent.com), answering \"Rare\" to \"How do you like your steak prepared?\" goes with answering \"Yes\" to \"Do you ever smoke cigarettes?\"",
@@ -244,11 +244,11 @@
    },
    "phase": "evaluate",
    "refs": {
-    "experiment_id": "experiment:c2b3598",
+    "experiment_id": "experiment:47be227",
     "study_id": "study:1"
    },
    "round": 0,
-   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
    "schema": "swarm-viewer/v1",
    "source": {
     "file": "ignobel_studies.jsonl",
@@ -256,12 +256,12 @@
     "native_type": "study"
    },
    "tick": 2,
-   "ts": "2026-11-15T08:17:45.120860Z",
+   "ts": "2026-11-15T08:09:19.810226Z",
    "type": "study.result"
   },
   {
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
-   "event_id": "ac80f572-f2d2-5cf9-a23d-07a9946119ba",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "event_id": "3d5f2573-b3a4-5755-b7fb-df65548481c7",
    "payload": {
     "description": "baseline",
     "role": null,
@@ -269,10 +269,10 @@
    },
    "phase": "evaluate",
    "refs": {
-    "experiment_id": "experiment:c2b3598"
+    "experiment_id": "experiment:47be227"
    },
    "round": 0,
-   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
    "schema": "swarm-viewer/v1",
    "source": {
     "file": "ledger.jsonl",
@@ -280,12 +280,12 @@
     "native_type": "baseline"
    },
    "tick": 3,
-   "ts": "2026-11-15T08:17:45.121134Z",
+   "ts": "2026-11-15T08:09:19.810442Z",
    "type": "experiment.started"
   },
   {
-   "agent_id": "f8aaaa65-c54e-5911-883e-16b43c47a5cf",
-   "event_id": "c58f2c60-2ebc-515e-b6f9-e397a0bd750b",
+   "agent_id": "43c27b0a-be23-53fb-9562-ba9f2260c6d4",
+   "event_id": "693a3aae-8e95-5563-bfb6-f6f3e6e74b1c",
    "payload": {
     "metric_value": 1.0,
     "reward": 0.0,
@@ -294,11 +294,11 @@
    },
    "phase": "evaluate",
    "refs": {
-    "experiment_id": "experiment:c2b3598",
+    "experiment_id": "experiment:47be227",
     "reward_id": "reward:1"
    },
    "round": 0,
-   "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+   "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
    "schema": "swarm-viewer/v1",
    "source": {
     "file": "ledger.jsonl",
@@ -306,12 +306,12 @@
     "native_type": "baseline"
    },
    "tick": 4,
-   "ts": "2026-11-15T08:17:45.121134Z",
+   "ts": "2026-11-15T08:09:19.810442Z",
    "type": "experiment.finished"
   }
  ],
  "round": 0,
- "run_id": "d3645450-04a6-5e60-86ec-77de90574f9b",
+ "run_id": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929",
  "swarm": {
   "B": null,
   "baseline": 1.0,
@@ -328,5 +328,5 @@
   "sources": 0,
   "tokens": 0
  },
- "ts": "2026-11-15T08:17:45.121134Z"
+ "ts": "2026-11-15T08:09:19.810442Z"
 }

@@ -1,0 +1,3504 @@
+[
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S1",
+   "observation:S2",
+   "observation:S3"
+  ],
+  "id": "question:Q1",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 1,
+  "text": "2024 2025 2026 food acoustics crunch sound crispness perception open data everyday oddity Ig Nobel raw participant ratings",
+  "tick": 24
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S25",
+   "observation:S26",
+   "observation:S27"
+  ],
+  "id": "question:Q10",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 2,
+  "text": "GitHub raw CSV food acoustics crispness crunchiness chewing sound sensory ratings dataset",
+  "tick": 152
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S268",
+   "observation:S269",
+   "observation:S270"
+  ],
+  "id": "question:Q100",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 10,
+  "text": "Do heavier diamonds also cost more?",
+  "tick": 1225
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S271",
+   "observation:S272",
+   "observation:S273"
+  ],
+  "id": "question:Q101",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 11,
+  "text": "2024 2025 food acoustics crispness crunch fracture sound acoustic emission sensory study open data, including Ig Nobel research on everyday food sounds",
+  "tick": 1272
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S274",
+   "observation:S275",
+   "observation:S276"
+  ],
+  "id": "question:Q102",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 11,
+  "text": "GitHub raw CSV OR TSV food crispness crunch acoustic measurements dataset Zenodo figshare Dryad sound pressure frequency fracture",
+  "tick": 1276
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q103",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 11,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 1281
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S277",
+   "observation:S278",
+   "observation:S279"
+  ],
+  "id": "question:Q104",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 11,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1290
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S280",
+   "observation:S281",
+   "observation:S282"
+  ],
+  "id": "question:Q105",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 11,
+  "text": "Do adult birds that attend more unrelated fledglings also feed more unrelated fl",
+  "tick": 1295
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S283",
+   "observation:S284",
+   "observation:S285"
+  ],
+  "id": "question:Q106",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 11,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 1309
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S286",
+   "observation:S287",
+   "observation:S288"
+  ],
+  "id": "question:Q107",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 11,
+  "text": "Do adult birds that attend more of their own fledglings also feed more of their ",
+  "tick": 1314
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S289",
+   "observation:S290",
+   "observation:S291"
+  ],
+  "id": "question:Q108",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 11,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (behavioral economics)",
+  "tick": 1328
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S292",
+   "observation:S293",
+   "observation:S294"
+  ],
+  "id": "question:Q109",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 11,
+  "text": "Do students who visited the gym more often before the experiment also visit more",
+  "tick": 1333
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q11",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 2,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 157
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S295",
+   "observation:S296",
+   "observation:S297"
+  ],
+  "id": "question:Q110",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 11,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1345
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S298",
+   "observation:S299",
+   "observation:S300"
+  ],
+  "id": "question:Q111",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 11,
+  "text": "Do households burn less gas during warmer weeks?",
+  "tick": 1350
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S301",
+   "observation:S302",
+   "observation:S303"
+  ],
+  "id": "question:Q112",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 12,
+  "text": "2024 2025 food acoustics crunchiness crispness acoustic emission sensory perception open dataset potato chips vegetables everyday sounds Ig Nobel",
+  "tick": 1396
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S304",
+   "observation:S305",
+   "observation:S306"
+  ],
+  "id": "question:Q113",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 12,
+  "text": "GitHub Zenodo figshare OSF Dryad raw CSV TSV crispness crunchiness acoustic measurements sensory rating potato chips vegetables dataset",
+  "tick": 1400
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q114",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 12,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 1405
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S307",
+   "observation:S308",
+   "observation:S309"
+  ],
+  "id": "question:Q115",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 12,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1414
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S310",
+   "observation:S311",
+   "observation:S312"
+  ],
+  "id": "question:Q116",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 12,
+  "text": "Does water boiling at a higher temperature also come with higher barometric pres",
+  "tick": 1419
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S313",
+   "observation:S314",
+   "observation:S315"
+  ],
+  "id": "question:Q117",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 12,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 1433
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S316",
+   "observation:S317",
+   "observation:S318"
+  ],
+  "id": "question:Q118",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 12,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (behavioral economics)",
+  "tick": 1443
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S319",
+   "observation:S320",
+   "observation:S321"
+  ],
+  "id": "question:Q119",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 12,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1453
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S28",
+   "observation:S29",
+   "observation:S30"
+  ],
+  "id": "question:Q12",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 2,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 166
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S31",
+   "observation:S32",
+   "observation:S33"
+  ],
+  "id": "question:Q13",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 2,
+  "text": "Do heavier cars get fewer miles per gallon because more mass requires more energ",
+  "tick": 171
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S34",
+   "observation:S35",
+   "observation:S36"
+  ],
+  "id": "question:Q14",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 2,
+  "text": "Test whether bigger-bodied animals have bigger brains in an unused comparative-a",
+  "tick": 185
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S37",
+   "observation:S38",
+   "observation:S39"
+  ],
+  "id": "question:Q15",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 2,
+  "text": "Do doctors and patients independently rate patients' get-up-and-go similarly, so",
+  "tick": 199
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S40",
+   "observation:S41",
+   "observation:S42"
+  ],
+  "id": "question:Q16",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 2,
+  "text": "Do students with wider writing hands also tend to be taller?",
+  "tick": 213
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S43",
+   "observation:S44",
+   "observation:S45"
+  ],
+  "id": "question:Q17",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 3,
+  "text": "2024 2025 swallowing acoustics food consistency chewing crunch sounds published study open dataset figshare 14798565",
+  "tick": 264
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S46",
+   "observation:S47",
+   "observation:S48"
+  ],
+  "id": "question:Q18",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 3,
+  "text": "figshare 14798565 swallowing acoustics CSV OR GitHub raw swallowing sounds food texture dataset",
+  "tick": 268
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q19",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 3,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 273
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S4",
+   "observation:S5",
+   "observation:S6"
+  ],
+  "id": "question:Q2",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 1,
+  "text": "GitHub Zenodo figshare OSF Dryad crunch sound crispness acoustic ratings raw CSV TSV dataset",
+  "tick": 28
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S49",
+   "observation:S50",
+   "observation:S51"
+  ],
+  "id": "question:Q20",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 3,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 282
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S52",
+   "observation:S53",
+   "observation:S54"
+  ],
+  "id": "question:Q21",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 3,
+  "text": "Do chocolate cakes baked at higher oven temperatures tend to break at a larger a",
+  "tick": 287
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S55",
+   "observation:S56",
+   "observation:S57"
+  ],
+  "id": "question:Q22",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 3,
+  "text": "Do heavier cats carry heavier hearts? Test body-weight–heart-weight scaling in a",
+  "tick": 301
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S58",
+   "observation:S59",
+   "observation:S60"
+  ],
+  "id": "question:Q23",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 3,
+  "text": "Does a higher BMI come with a thicker triceps pinch among Pima women?",
+  "tick": 315
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S61",
+   "observation:S62",
+   "observation:S63"
+  ],
+  "id": "question:Q24",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 3,
+  "text": "Do countries that serve more beer also serve more wine? Test whether national dr",
+  "tick": 329
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S64",
+   "observation:S65",
+   "observation:S66"
+  ],
+  "id": "question:Q25",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 4,
+  "text": "2024 2025 food acoustics crispness crunchiness sound loudness sensory perception open data published study downloadable dataset",
+  "tick": 380
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S67",
+   "observation:S68",
+   "observation:S69"
+  ],
+  "id": "question:Q26",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 4,
+  "text": "GitHub Zenodo figshare OSF Dryad food acoustic crispness crunchiness sound pressure sensory rating raw CSV TSV",
+  "tick": 384
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q27",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 4,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 389
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S70",
+   "observation:S71",
+   "observation:S72"
+  ],
+  "id": "question:Q28",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 4,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 398
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S73",
+   "observation:S74",
+   "observation:S75"
+  ],
+  "id": "question:Q29",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 4,
+  "text": "Do heavier cars get fewer city miles per gallon? Test vehicle-mass versus city f",
+  "tick": 403
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q3",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 1,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 33
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S76",
+   "observation:S77",
+   "observation:S78"
+  ],
+  "id": "question:Q30",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 4,
+  "text": "Do bigger mammals sleep less? Test body weight against total daily sleep across ",
+  "tick": 417
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S79",
+   "observation:S80",
+   "observation:S81"
+  ],
+  "id": "question:Q31",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 4,
+  "text": "Among Pima women in the independent test cohort, does a higher BMI come with a t",
+  "tick": 431
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S82",
+   "observation:S83",
+   "observation:S84"
+  ],
+  "id": "question:Q32",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 4,
+  "text": "Do classroom whizz-kids also have a way with words? Test IQ against language-tes",
+  "tick": 445
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S85",
+   "observation:S86",
+   "observation:S87"
+  ],
+  "id": "question:Q33",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 5,
+  "text": "2024 2025 acoustics psychoacoustics everyday oddity food crunch loudness perceived freshness crispness published study open data Ig Nobel",
+  "tick": 496
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S88",
+   "observation:S89",
+   "observation:S90"
+  ],
+  "id": "question:Q34",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 5,
+  "text": "GitHub raw CSV OR Zenodo TSV food crunch sound loudness crispness freshness acoustic ratings dataset",
+  "tick": 500
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [],
+  "id": "question:Q35",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 5,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 505
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S91",
+   "observation:S92",
+   "observation:S93"
+  ],
+  "id": "question:Q36",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 5,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 514
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S94",
+   "observation:S95",
+   "observation:S96"
+  ],
+  "id": "question:Q37",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do longer Old Faithful eruptions make tourists wait longer for the next one?",
+  "tick": 519
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S97",
+   "observation:S98",
+   "observation:S99"
+  ],
+  "id": "question:Q38",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do heavier cabbages shortchange you on vitamin C?",
+  "tick": 527
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S100",
+   "observation:S101",
+   "observation:S102"
+  ],
+  "id": "question:Q39",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 5,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 540
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S7",
+   "observation:S8",
+   "observation:S9"
+  ],
+  "id": "question:Q4",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 1,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: new population approach (acoustics)",
+  "tick": 42
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S103",
+   "observation:S104",
+   "observation:S105"
+  ],
+  "id": "question:Q40",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do longer possums also tend to have longer tails?",
+  "tick": 545
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S106",
+   "observation:S107",
+   "observation:S108"
+  ],
+  "id": "question:Q41",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do speech sounds that are intense in the first frequency bin also tend to be int",
+  "tick": 553
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S109",
+   "observation:S110",
+   "observation:S111"
+  ],
+  "id": "question:Q42",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 5,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (acoustics)",
+  "tick": 566
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S112",
+   "observation:S113",
+   "observation:S114"
+  ],
+  "id": "question:Q43",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do voices with a higher average pitch also have a higher pitch ceiling?",
+  "tick": 571
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S115",
+   "observation:S116",
+   "observation:S117"
+  ],
+  "id": "question:Q44",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 5,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 584
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S118",
+   "observation:S119",
+   "observation:S120"
+  ],
+  "id": "question:Q45",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 5,
+  "text": "Do irises with longer petals also have wider petals?",
+  "tick": 589
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S121",
+   "observation:S122",
+   "observation:S123"
+  ],
+  "id": "question:Q46",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 6,
+  "text": "2024 2025 acoustics everyday oddity hot versus cold water pouring sound temperature acoustic features published study open data",
+  "tick": 643
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S124",
+   "observation:S125",
+   "observation:S126"
+  ],
+  "id": "question:Q47",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 6,
+  "text": "GitHub raw CSV hot cold water pouring acoustic features temperature frequency dataset",
+  "tick": 647
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [],
+  "id": "question:Q48",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 6,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 652
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S127",
+   "observation:S128",
+   "observation:S129"
+  ],
+  "id": "question:Q49",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 6,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 661
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S10",
+   "observation:S11",
+   "observation:S12"
+  ],
+  "id": "question:Q5",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 1,
+  "text": "Test whether street sound sources line up along a diagonal corridor, so x and y ",
+  "tick": 48
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S130",
+   "observation:S131",
+   "observation:S132"
+  ],
+  "id": "question:Q50",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 6,
+  "text": "Do shell-dwelling fish attack simulated newcomers more when the rival's shell is",
+  "tick": 666
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S133",
+   "observation:S134",
+   "observation:S135"
+  ],
+  "id": "question:Q51",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 6,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 680
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S136",
+   "observation:S137",
+   "observation:S138"
+  ],
+  "id": "question:Q52",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 6,
+  "text": "Do birds feed more unrelated chicks when more unrelated chicks beg at them?",
+  "tick": 685
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S139",
+   "observation:S140",
+   "observation:S141"
+  ],
+  "id": "question:Q53",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 6,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (animal behavior)",
+  "tick": 699
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S142",
+   "observation:S143",
+   "observation:S144"
+  ],
+  "id": "question:Q54",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 6,
+  "text": "Do longer mountain brushtail possums also tend to have longer tails?",
+  "tick": 704
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S145",
+   "observation:S146",
+   "observation:S147"
+  ],
+  "id": "question:Q55",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 6,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (acoustics)",
+  "tick": 718
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S148",
+   "observation:S149",
+   "observation:S150"
+  ],
+  "id": "question:Q56",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 6,
+  "text": "Do vowel recordings with more energy in the first spectral feature also have mor",
+  "tick": 723
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S151",
+   "observation:S152",
+   "observation:S153"
+  ],
+  "id": "question:Q57",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 7,
+  "text": "2024 2025 food acoustics crunch sound loudness pitch crispness perception open data experiment CSV Ig Nobel",
+  "tick": 770
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S154",
+   "observation:S155",
+   "observation:S156"
+  ],
+  "id": "question:Q58",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 7,
+  "text": "GitHub Zenodo figshare OSF Dryad food acoustic crispness crunchiness loudness ratings raw CSV dataset",
+  "tick": 774
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q59",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 7,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 779
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S13",
+   "observation:S14",
+   "observation:S15"
+  ],
+  "id": "question:Q6",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 1,
+  "text": "Test whether penguins with longer flippers are heavier, a strong body-size allom",
+  "tick": 62
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S157",
+   "observation:S158",
+   "observation:S159"
+  ],
+  "id": "question:Q60",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 7,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 788
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S160",
+   "observation:S161",
+   "observation:S162"
+  ],
+  "id": "question:Q61",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 7,
+  "text": "Do fledglings that beg more also get fed more by their own parents?",
+  "tick": 793
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S163",
+   "observation:S164",
+   "observation:S165"
+  ],
+  "id": "question:Q62",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 7,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (animal behavior)",
+  "tick": 807
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S166",
+   "observation:S167",
+   "observation:S168"
+  ],
+  "id": "question:Q63",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 7,
+  "text": "Do shell-dwelling fish become more aggressive when an outsider’s shell is closer",
+  "tick": 812
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S169",
+   "observation:S170",
+   "observation:S171"
+  ],
+  "id": "question:Q64",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 7,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 825
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S172",
+   "observation:S173",
+   "observation:S174"
+  ],
+  "id": "question:Q65",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 7,
+  "text": "Do crabs with wider shells also tend to have longer shells?",
+  "tick": 830
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S175",
+   "observation:S176",
+   "observation:S177"
+  ],
+  "id": "question:Q66",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 7,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 844
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S178",
+   "observation:S179",
+   "observation:S180"
+  ],
+  "id": "question:Q67",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 7,
+  "text": "Do people who say they do a thorough job also tend to say they inquire about oth",
+  "tick": 849
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S181",
+   "observation:S182",
+   "observation:S183"
+  ],
+  "id": "question:Q68",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 8,
+  "text": "2024 2025 bubble acoustics popping sound pitch bubble size everyday physics published study open data Ig Nobel",
+  "tick": 898
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S184",
+   "observation:S185",
+   "observation:S186"
+  ],
+  "id": "question:Q69",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 8,
+  "text": "GitHub Zenodo figshare Dryad bubble acoustics raw CSV TSV bubble radius size resonance frequency sound measurements",
+  "tick": 902
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S16",
+   "observation:S17",
+   "observation:S18"
+  ],
+  "id": "question:Q7",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 1,
+  "text": "Test whether reaction times steadily lengthen as days of sleep restriction accum",
+  "tick": 76
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q70",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 8,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 907
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S187",
+   "observation:S188",
+   "observation:S189"
+  ],
+  "id": "question:Q71",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 8,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 916
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S190",
+   "observation:S191",
+   "observation:S192"
+  ],
+  "id": "question:Q72",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 8,
+  "text": "Do fledglings that beg more often also get fed more often?",
+  "tick": 921
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S193",
+   "observation:S194",
+   "observation:S195"
+  ],
+  "id": "question:Q73",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 8,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 935
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S196",
+   "observation:S197",
+   "observation:S198"
+  ],
+  "id": "question:Q74",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 8,
+  "text": "Do adult birds that spend more time attending unrelated fledglings also feed tho",
+  "tick": 940
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S199",
+   "observation:S200",
+   "observation:S201"
+  ],
+  "id": "question:Q75",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 8,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (behavioral economics)",
+  "tick": 954
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S202",
+   "observation:S203",
+   "observation:S204"
+  ],
+  "id": "question:Q76",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 8,
+  "text": "Do students who visited the gym more often before the experiment also visit more",
+  "tick": 959
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S205",
+   "observation:S206",
+   "observation:S207"
+  ],
+  "id": "question:Q77",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 8,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 973
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S208",
+   "observation:S209",
+   "observation:S210"
+  ],
+  "id": "question:Q78",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 8,
+  "text": "Do cars with larger engines travel fewer highway miles per gallon?",
+  "tick": 978
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S211",
+   "observation:S212",
+   "observation:S213"
+  ],
+  "id": "question:Q79",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 9,
+  "text": "2024 2025 food acoustics crispness crunchiness acoustic emission conflicting results open dataset chewing sounds fracture events downloadable data",
+  "tick": 1024
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S19",
+   "observation:S20",
+   "observation:S21"
+  ],
+  "id": "question:Q8",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 1,
+  "text": "Test whether heavier cars are thirstier: vehicle weight should strongly reduce m",
+  "tick": 90
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S214",
+   "observation:S215",
+   "observation:S216"
+  ],
+  "id": "question:Q80",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 9,
+  "text": "GitHub raw CSV food acoustic emission crunch crispness chewing sound dataset Zenodo figshare Dryad",
+  "tick": 1028
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q81",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 9,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 1033
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S217",
+   "observation:S218",
+   "observation:S219"
+  ],
+  "id": "question:Q82",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 9,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1042
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S220",
+   "observation:S221",
+   "observation:S222"
+  ],
+  "id": "question:Q83",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 9,
+  "text": "Do adult birds that attend their own offspring more often also feed them more of",
+  "tick": 1047
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S223",
+   "observation:S224",
+   "observation:S225"
+  ],
+  "id": "question:Q84",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 9,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 1061
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S226",
+   "observation:S227",
+   "observation:S228"
+  ],
+  "id": "question:Q85",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 9,
+  "text": "Do adult birds that attend unrelated fledglings more often also feed those unrel",
+  "tick": 1066
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S229",
+   "observation:S230",
+   "observation:S231"
+  ],
+  "id": "question:Q86",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 9,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (behavioral economics)",
+  "tick": 1080
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S232",
+   "observation:S233",
+   "observation:S234"
+  ],
+  "id": "question:Q87",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 9,
+  "text": "Do students who visited the gym more often before the experiment also visit more",
+  "tick": 1085
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S235",
+   "observation:S236",
+   "observation:S237"
+  ],
+  "id": "question:Q88",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 9,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1097
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S238",
+   "observation:S239",
+   "observation:S240"
+  ],
+  "id": "question:Q89",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 9,
+  "text": "Do students who attend the gym more often in week 1 also attend more often in we",
+  "tick": 1102
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S22",
+   "observation:S23",
+   "observation:S24"
+  ],
+  "id": "question:Q9",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 2,
+  "text": "2024 2025 food acoustics crispness crunchiness chewing sound sensory ratings published study open data OR Ig Nobel everyday acoustic oddity",
+  "tick": 148
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S241",
+   "observation:S242",
+   "observation:S243"
+  ],
+  "id": "question:Q90",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 10,
+  "text": "2024 2025 food acoustics crispness crunch loudness freshness sensory perception open data potato chips acoustic emission study",
+  "tick": 1148
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S244",
+   "observation:S245",
+   "observation:S246"
+  ],
+  "id": "question:Q91",
+  "kind": "search",
+  "purpose": "scout",
+  "round": 10,
+  "text": "GitHub raw CSV crispness acoustic crunch sound sensory rating potato chips dataset",
+  "tick": 1152
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [],
+  "id": "question:Q92",
+  "kind": "search",
+  "purpose": "extract",
+  "round": 10,
+  "text": "Give any direct CSV/TSV download URL for the data, what each column measures, the sample size, and the headline finding (effect size, p-value).",
+  "tick": 1157
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S247",
+   "observation:S248",
+   "observation:S249"
+  ],
+  "id": "question:Q93",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 10,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1166
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:S250",
+   "observation:S251",
+   "observation:S252"
+  ],
+  "id": "question:Q94",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 10,
+  "text": "Do adult birds that attend unrelated fledglings more often also feed unrelated f",
+  "tick": 1171
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S253",
+   "observation:S254",
+   "observation:S255"
+  ],
+  "id": "question:Q95",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 10,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: untested prediction approach (animal behavior)",
+  "tick": 1185
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:S256",
+   "observation:S257",
+   "observation:S258"
+  ],
+  "id": "question:Q96",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 10,
+  "text": "Do adult birds that attend their own offspring more often also feed those offspr",
+  "tick": 1190
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S259",
+   "observation:S260",
+   "observation:S261"
+  ],
+  "id": "question:Q97",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 10,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: replicate published approach (behavioral economics)",
+  "tick": 1204
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:S262",
+   "observation:S263",
+   "observation:S264"
+  ],
+  "id": "question:Q98",
+  "kind": "search",
+  "purpose": "prior-art",
+  "round": 10,
+  "text": "Do students who visited the gym more often before the experiment also visit more",
+  "tick": 1209
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:S265",
+   "observation:S266",
+   "observation:S267"
+  ],
+  "id": "question:Q99",
+  "kind": "search",
+  "purpose": "worker-search",
+  "round": 10,
+  "text": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one f: resolve conflict approach (acoustics)",
+  "tick": 1220
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-10"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-10",
+  "kind": "recall",
+  "round": 1,
+  "text": "who is testing what this round",
+  "tick": 59
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-100"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-100",
+  "kind": "recall",
+  "round": 5,
+  "text": "untested implementation leads",
+  "tick": 510
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-101"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-101",
+  "kind": "recall",
+  "round": 5,
+  "text": "who is testing what this round",
+  "tick": 512
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-104"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-104",
+  "kind": "recall",
+  "round": 5,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 534
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-105"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-105",
+  "kind": "recall",
+  "round": 5,
+  "text": "untested implementation leads",
+  "tick": 536
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-106"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-106",
+  "kind": "recall",
+  "round": 5,
+  "text": "who is testing what this round",
+  "tick": 538
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-109"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-109",
+  "kind": "recall",
+  "round": 5,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 560
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-110"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-110",
+  "kind": "recall",
+  "round": 5,
+  "text": "untested implementation leads",
+  "tick": 562
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-111"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-111",
+  "kind": "recall",
+  "round": 5,
+  "text": "who is testing what this round",
+  "tick": 564
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-113"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-113",
+  "kind": "recall",
+  "round": 5,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 578
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-114"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-114",
+  "kind": "recall",
+  "round": 5,
+  "text": "untested implementation leads",
+  "tick": 580
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-115"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-115",
+  "kind": "recall",
+  "round": 5,
+  "text": "who is testing what this round",
+  "tick": 582
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-12"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-12",
+  "kind": "recall",
+  "round": 1,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 69
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-122"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-122",
+  "kind": "recall",
+  "round": 6,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 640
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-124"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-124",
+  "kind": "recall",
+  "round": 6,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 655
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-125"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-125",
+  "kind": "recall",
+  "round": 6,
+  "text": "untested implementation leads",
+  "tick": 657
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-126"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-126",
+  "kind": "recall",
+  "round": 6,
+  "text": "who is testing what this round",
+  "tick": 659
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-128"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-128",
+  "kind": "recall",
+  "round": 6,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 674
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-129"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-129",
+  "kind": "recall",
+  "round": 6,
+  "text": "untested implementation leads",
+  "tick": 676
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-13"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-13",
+  "kind": "recall",
+  "round": 1,
+  "text": "untested implementation leads",
+  "tick": 71
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-130"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-130",
+  "kind": "recall",
+  "round": 6,
+  "text": "who is testing what this round",
+  "tick": 678
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-132"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-132",
+  "kind": "recall",
+  "round": 6,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 693
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-133"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-133",
+  "kind": "recall",
+  "round": 6,
+  "text": "untested implementation leads",
+  "tick": 695
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-134"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-134",
+  "kind": "recall",
+  "round": 6,
+  "text": "who is testing what this round",
+  "tick": 697
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-136"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-136",
+  "kind": "recall",
+  "round": 6,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 712
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-137"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-137",
+  "kind": "recall",
+  "round": 6,
+  "text": "untested implementation leads",
+  "tick": 714
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-138"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-138",
+  "kind": "recall",
+  "round": 6,
+  "text": "who is testing what this round",
+  "tick": 716
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-14"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-14",
+  "kind": "recall",
+  "round": 1,
+  "text": "who is testing what this round",
+  "tick": 73
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-145"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-145",
+  "kind": "recall",
+  "round": 7,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 767
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-147"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-147",
+  "kind": "recall",
+  "round": 7,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 782
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-148"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-148",
+  "kind": "recall",
+  "round": 7,
+  "text": "untested implementation leads",
+  "tick": 784
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-149"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-149",
+  "kind": "recall",
+  "round": 7,
+  "text": "who is testing what this round",
+  "tick": 786
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-151"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-151",
+  "kind": "recall",
+  "round": 7,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 801
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-152"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-152",
+  "kind": "recall",
+  "round": 7,
+  "text": "untested implementation leads",
+  "tick": 803
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-153"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-153",
+  "kind": "recall",
+  "round": 7,
+  "text": "who is testing what this round",
+  "tick": 805
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-155"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-155",
+  "kind": "recall",
+  "round": 7,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 819
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-156"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-156",
+  "kind": "recall",
+  "round": 7,
+  "text": "untested implementation leads",
+  "tick": 821
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-157"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-157",
+  "kind": "recall",
+  "round": 7,
+  "text": "who is testing what this round",
+  "tick": 823
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-159"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-159",
+  "kind": "recall",
+  "round": 7,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 838
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-16"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-16",
+  "kind": "recall",
+  "round": 1,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 83
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-160"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-160",
+  "kind": "recall",
+  "round": 7,
+  "text": "untested implementation leads",
+  "tick": 840
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-161"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-161",
+  "kind": "recall",
+  "round": 7,
+  "text": "who is testing what this round",
+  "tick": 842
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-168"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-168",
+  "kind": "recall",
+  "round": 8,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 895
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-17"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-17",
+  "kind": "recall",
+  "round": 1,
+  "text": "untested implementation leads",
+  "tick": 85
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-170"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-170",
+  "kind": "recall",
+  "round": 8,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 910
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-171"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-171",
+  "kind": "recall",
+  "round": 8,
+  "text": "untested implementation leads",
+  "tick": 912
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-172"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-172",
+  "kind": "recall",
+  "round": 8,
+  "text": "who is testing what this round",
+  "tick": 914
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-174"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-174",
+  "kind": "recall",
+  "round": 8,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 929
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-175"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-175",
+  "kind": "recall",
+  "round": 8,
+  "text": "untested implementation leads",
+  "tick": 931
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-176"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-176",
+  "kind": "recall",
+  "round": 8,
+  "text": "who is testing what this round",
+  "tick": 933
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-178"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-178",
+  "kind": "recall",
+  "round": 8,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 948
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-179"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-179",
+  "kind": "recall",
+  "round": 8,
+  "text": "untested implementation leads",
+  "tick": 950
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-18"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-18",
+  "kind": "recall",
+  "round": 1,
+  "text": "who is testing what this round",
+  "tick": 87
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-180"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-180",
+  "kind": "recall",
+  "round": 8,
+  "text": "who is testing what this round",
+  "tick": 952
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-182"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-182",
+  "kind": "recall",
+  "round": 8,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 967
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-183"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-183",
+  "kind": "recall",
+  "round": 8,
+  "text": "untested implementation leads",
+  "tick": 969
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-184"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-184",
+  "kind": "recall",
+  "round": 8,
+  "text": "who is testing what this round",
+  "tick": 971
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-191"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-191",
+  "kind": "recall",
+  "round": 9,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 1021
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-193"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-193",
+  "kind": "recall",
+  "round": 9,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1036
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-194"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-194",
+  "kind": "recall",
+  "round": 9,
+  "text": "untested implementation leads",
+  "tick": 1038
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-195"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-195",
+  "kind": "recall",
+  "round": 9,
+  "text": "who is testing what this round",
+  "tick": 1040
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-197"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-197",
+  "kind": "recall",
+  "round": 9,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1055
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-198"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-198",
+  "kind": "recall",
+  "round": 9,
+  "text": "untested implementation leads",
+  "tick": 1057
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-199"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-199",
+  "kind": "recall",
+  "round": 9,
+  "text": "who is testing what this round",
+  "tick": 1059
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-2"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-2",
+  "kind": "recall",
+  "round": 1,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 21
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-201"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-201",
+  "kind": "recall",
+  "round": 9,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1074
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-202"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-202",
+  "kind": "recall",
+  "round": 9,
+  "text": "untested implementation leads",
+  "tick": 1076
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-203"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-203",
+  "kind": "recall",
+  "round": 9,
+  "text": "who is testing what this round",
+  "tick": 1078
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-205"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-205",
+  "kind": "recall",
+  "round": 9,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1091
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-206"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-206",
+  "kind": "recall",
+  "round": 9,
+  "text": "untested implementation leads",
+  "tick": 1093
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-207"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-207",
+  "kind": "recall",
+  "round": 9,
+  "text": "who is testing what this round",
+  "tick": 1095
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-214"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-214",
+  "kind": "recall",
+  "round": 10,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 1145
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-216"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-216",
+  "kind": "recall",
+  "round": 10,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1160
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-217"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-217",
+  "kind": "recall",
+  "round": 10,
+  "text": "untested implementation leads",
+  "tick": 1162
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-218"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-218",
+  "kind": "recall",
+  "round": 10,
+  "text": "who is testing what this round",
+  "tick": 1164
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-220"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-220",
+  "kind": "recall",
+  "round": 10,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1179
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-221"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-221",
+  "kind": "recall",
+  "round": 10,
+  "text": "untested implementation leads",
+  "tick": 1181
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-222"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-222",
+  "kind": "recall",
+  "round": 10,
+  "text": "who is testing what this round",
+  "tick": 1183
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-224"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-224",
+  "kind": "recall",
+  "round": 10,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1198
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-225"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-225",
+  "kind": "recall",
+  "round": 10,
+  "text": "untested implementation leads",
+  "tick": 1200
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-226"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-226",
+  "kind": "recall",
+  "round": 10,
+  "text": "who is testing what this round",
+  "tick": 1202
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-228"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-228",
+  "kind": "recall",
+  "round": 10,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1214
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-229"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-229",
+  "kind": "recall",
+  "round": 10,
+  "text": "untested implementation leads",
+  "tick": 1216
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-230"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-230",
+  "kind": "recall",
+  "round": 10,
+  "text": "who is testing what this round",
+  "tick": 1218
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-237"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-237",
+  "kind": "recall",
+  "round": 11,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 1269
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-239"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-239",
+  "kind": "recall",
+  "round": 11,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1284
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-240"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-240",
+  "kind": "recall",
+  "round": 11,
+  "text": "untested implementation leads",
+  "tick": 1286
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-241"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-241",
+  "kind": "recall",
+  "round": 11,
+  "text": "who is testing what this round",
+  "tick": 1288
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-243"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-243",
+  "kind": "recall",
+  "round": 11,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1303
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-244"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-244",
+  "kind": "recall",
+  "round": 11,
+  "text": "untested implementation leads",
+  "tick": 1305
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-245"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-245",
+  "kind": "recall",
+  "round": 11,
+  "text": "who is testing what this round",
+  "tick": 1307
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-247"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-247",
+  "kind": "recall",
+  "round": 11,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1322
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-248"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-248",
+  "kind": "recall",
+  "round": 11,
+  "text": "untested implementation leads",
+  "tick": 1324
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-249"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-249",
+  "kind": "recall",
+  "round": 11,
+  "text": "who is testing what this round",
+  "tick": 1326
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-251"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-251",
+  "kind": "recall",
+  "round": 11,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1339
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-252"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-252",
+  "kind": "recall",
+  "round": 11,
+  "text": "untested implementation leads",
+  "tick": 1341
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-253"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-253",
+  "kind": "recall",
+  "round": 11,
+  "text": "who is testing what this round",
+  "tick": 1343
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-260"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-260",
+  "kind": "recall",
+  "round": 12,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 1393
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-262"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-262",
+  "kind": "recall",
+  "round": 12,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1408
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-263"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-263",
+  "kind": "recall",
+  "round": 12,
+  "text": "untested implementation leads",
+  "tick": 1410
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-264"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-264",
+  "kind": "recall",
+  "round": 12,
+  "text": "who is testing what this round",
+  "tick": 1412
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-266"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-266",
+  "kind": "recall",
+  "round": 12,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1427
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-267"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-267",
+  "kind": "recall",
+  "round": 12,
+  "text": "untested implementation leads",
+  "tick": 1429
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-268"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-268",
+  "kind": "recall",
+  "round": 12,
+  "text": "who is testing what this round",
+  "tick": 1431
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-269"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-269",
+  "kind": "recall",
+  "round": 12,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1437
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-270"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-270",
+  "kind": "recall",
+  "round": 12,
+  "text": "untested implementation leads",
+  "tick": 1439
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-271"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-271",
+  "kind": "recall",
+  "round": 12,
+  "text": "who is testing what this round",
+  "tick": 1441
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-272"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-272",
+  "kind": "recall",
+  "round": 12,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 1447
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-273"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-273",
+  "kind": "recall",
+  "round": 12,
+  "text": "untested implementation leads",
+  "tick": 1449
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-274"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-274",
+  "kind": "recall",
+  "round": 12,
+  "text": "who is testing what this round",
+  "tick": 1451
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-28"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-28",
+  "kind": "recall",
+  "round": 2,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 145
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-280"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-280",
+  "kind": "recall",
+  "round": 13,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 1489
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-30"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-30",
+  "kind": "recall",
+  "round": 2,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 160
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-31"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-31",
+  "kind": "recall",
+  "round": 2,
+  "text": "untested implementation leads",
+  "tick": 162
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-32"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-32",
+  "kind": "recall",
+  "round": 2,
+  "text": "who is testing what this round",
+  "tick": 164
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-34"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-34",
+  "kind": "recall",
+  "round": 2,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 178
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-35"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-35",
+  "kind": "recall",
+  "round": 2,
+  "text": "untested implementation leads",
+  "tick": 180
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-36"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-36",
+  "kind": "recall",
+  "round": 2,
+  "text": "who is testing what this round",
+  "tick": 182
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-38"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-38",
+  "kind": "recall",
+  "round": 2,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 192
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-39"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-39",
+  "kind": "recall",
+  "round": 2,
+  "text": "untested implementation leads",
+  "tick": 194
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-4"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-4",
+  "kind": "recall",
+  "round": 1,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 36
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-40"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-40",
+  "kind": "recall",
+  "round": 2,
+  "text": "who is testing what this round",
+  "tick": 196
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-42"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-42",
+  "kind": "recall",
+  "round": 2,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 206
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-43"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-43",
+  "kind": "recall",
+  "round": 2,
+  "text": "untested implementation leads",
+  "tick": 208
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-44"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-44",
+  "kind": "recall",
+  "round": 2,
+  "text": "who is testing what this round",
+  "tick": 210
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-5"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-5",
+  "kind": "recall",
+  "round": 1,
+  "text": "untested implementation leads",
+  "tick": 38
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-51"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-51",
+  "kind": "recall",
+  "round": 3,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 261
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-53"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-53",
+  "kind": "recall",
+  "round": 3,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 276
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-54"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-54",
+  "kind": "recall",
+  "round": 3,
+  "text": "untested implementation leads",
+  "tick": 278
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-55"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-55",
+  "kind": "recall",
+  "round": 3,
+  "text": "who is testing what this round",
+  "tick": 280
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-57"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-57",
+  "kind": "recall",
+  "round": 3,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 294
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-58"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-58",
+  "kind": "recall",
+  "round": 3,
+  "text": "untested implementation leads",
+  "tick": 296
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-59"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-59",
+  "kind": "recall",
+  "round": 3,
+  "text": "who is testing what this round",
+  "tick": 298
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-6"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-6",
+  "kind": "recall",
+  "round": 1,
+  "text": "who is testing what this round",
+  "tick": 40
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-61"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-61",
+  "kind": "recall",
+  "round": 3,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 308
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-62"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-62",
+  "kind": "recall",
+  "round": 3,
+  "text": "untested implementation leads",
+  "tick": 310
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-63"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-63",
+  "kind": "recall",
+  "round": 3,
+  "text": "who is testing what this round",
+  "tick": 312
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-65"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-65",
+  "kind": "recall",
+  "round": 3,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 322
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-66"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-66",
+  "kind": "recall",
+  "round": 3,
+  "text": "untested implementation leads",
+  "tick": 324
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-67"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-67",
+  "kind": "recall",
+  "round": 3,
+  "text": "who is testing what this round",
+  "tick": 326
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-74"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-74",
+  "kind": "recall",
+  "round": 4,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 377
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-76"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-76",
+  "kind": "recall",
+  "round": 4,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 392
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-77"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-77",
+  "kind": "recall",
+  "round": 4,
+  "text": "untested implementation leads",
+  "tick": 394
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-78"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-78",
+  "kind": "recall",
+  "round": 4,
+  "text": "who is testing what this round",
+  "tick": 396
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-8"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-8",
+  "kind": "recall",
+  "round": 1,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 55
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-80"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-80",
+  "kind": "recall",
+  "round": 4,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 410
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-81"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-81",
+  "kind": "recall",
+  "round": 4,
+  "text": "untested implementation leads",
+  "tick": 412
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-82"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-82",
+  "kind": "recall",
+  "round": 4,
+  "text": "who is testing what this round",
+  "tick": 414
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-84"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-84",
+  "kind": "recall",
+  "round": 4,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 424
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-85"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-85",
+  "kind": "recall",
+  "round": 4,
+  "text": "untested implementation leads",
+  "tick": 426
+ },
+ {
+  "agent_id": "ae0e2c70-a57f-5a47-b79b-c3efb8a02b20",
+  "answered_by": [
+   "observation:recall-86"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-86",
+  "kind": "recall",
+  "round": 4,
+  "text": "who is testing what this round",
+  "tick": 428
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-88"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-88",
+  "kind": "recall",
+  "round": 4,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 438
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-89"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-89",
+  "kind": "recall",
+  "round": 4,
+  "text": "untested implementation leads",
+  "tick": 440
+ },
+ {
+  "agent_id": "4c465584-2795-5949-97ec-1ea1e61bc43c",
+  "answered_by": [
+   "observation:recall-9"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-9",
+  "kind": "recall",
+  "round": 1,
+  "text": "untested implementation leads",
+  "tick": 57
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-90"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-90",
+  "kind": "recall",
+  "round": 4,
+  "text": "who is testing what this round",
+  "tick": 442
+ },
+ {
+  "agent_id": "03115058-d1df-5f91-96a7-f00a06d4bfb4",
+  "answered_by": [
+   "observation:recall-97"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-97",
+  "kind": "recall",
+  "round": 5,
+  "text": "lessons and results that identify exhausted or already tried directions",
+  "tick": 493
+ },
+ {
+  "agent_id": "25797bf0-b2e0-5d92-b8f1-114f404f98e8",
+  "answered_by": [
+   "observation:recall-99"
+  ],
+  "attribution": "logged",
+  "id": "question:recall-99",
+  "kind": "recall",
+  "round": 5,
+  "text": "what has been tried involving loss and what happened",
+  "tick": 508
+ }
+]
