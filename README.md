@@ -10,8 +10,7 @@ follow a run from its hypotheses through evaluation, decisions, memory and read-
 **Nothing here trains or fine-tunes a model.** There is no GPU execution stage in the
 backend: candidate programs run on CPU in Docker, and Tinker is used only through its
 sampling API for stateless LLM inference. Fake and OpenAI inference adapters are also
-available. Remote inference providers choose their own hardware; the repository does not
-establish that their services are GPU-free. The separate Ig Nobel backend on main uses
+available. The separate Ig Nobel backend on main uses
 Modal **CPU** study sandboxes in real mode; its sandbox request specifies no accelerator.
 
 ```mermaid
