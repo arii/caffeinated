@@ -74,3 +74,15 @@ First milestone: bring existing trace replay into the selected Lab Environment. 
 Planned API surface: `GET /experiments`, `POST /runs`, `GET /runs/{id}`, `GET /runs/{id}/events`, `GET /runs/{id}/artifacts`, `POST /runs/{id}/stop`. Keep API keys server-side. Verify existing gate/meter review findings and sandbox execution before enabling expensive or generated-code runs.
 
 Detailed design and integration lifecycle: [Lab backend and research agents](docs/lab-backend-design.md).
+
+## Local credentials
+
+Copy `.env.example` to `.env` and supply your own Tinker key. `.env` is ignored by Git. The Python runner reads environment variables; it does not automatically load dotenv files. From the repository root, load the local file before invoking the runner:
+
+```sh
+set -a
+source .env
+set +a
+```
+
+Use the separate Tinker environment described in `program_swarm.md`. Keep server credentials unprefixed: never rename them with `VITE_`, which is reserved for values exposed to the frontend. Loading credentials alone does not start a research run.

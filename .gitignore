@@ -33,3 +33,8 @@ dev/
 /.swarm_worktrees/
 run.log
 runs/
+
+# Local credentials
+.env
+.env.*
+!.env.example
