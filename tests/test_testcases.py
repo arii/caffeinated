@@ -678,6 +678,24 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertIn("group of people", graded["rejected"])
 
 
+class IgnobelJudgeModeTests(unittest.TestCase):
+    def test_committee_only_for_real_tinker_runs(self):
+        cases = (
+            ({"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "tinker"}, "committee"),
+            ({"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "fake"}, "frozen"),
+            ({"TINKER_API_KEY": "k"}, "frozen"),
+            ({"AUTORESEARCH_LLM": "tinker"}, "frozen"),
+            ({"IGNOBEL_JUDGE": "committee"}, "committee"),
+            (
+                {"TINKER_API_KEY": "k", "AUTORESEARCH_LLM": "tinker", "IGNOBEL_JUDGE": "frozen"},
+                "frozen",
+            ),
+        )
+        for env, expected in cases:
+            with self.subTest(env=env), patch.dict(os.environ, env, clear=True):
+                self.assertEqual(ignobel.committee.mode(), expected)
+
+
 class IgnobelTaskTests(unittest.TestCase):
     def test_committee_prompts_come_from_ignobel_project(self):
         committee = ignobel.committee

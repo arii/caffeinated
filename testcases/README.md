@@ -63,8 +63,10 @@ models on Tinker (`IGNOBEL_JUDGE_A_MODEL`, `IGNOBEL_JUDGE_B_MODEL`; defaults
 Kimi K3.1 Pro and Qwen3.5-397B) rate a host-written abstract of the confirmed
 registration for laugh and think (1–10). Each judge counts min(laugh, think),
 the lower judge wins, a joke at a group's expense scores 0, and verdicts are
-cached per abstract. Without `TINKER_API_KEY` (or with `IGNOBEL_JUDGE=frozen`)
-the offline fallback is the frozen classifier in `judge.json` (logistic
+cached per abstract. The committee runs in real Tinker swarm runs
+(`--llm tinker` with `TINKER_API_KEY`) or with `IGNOBEL_JUDGE=committee`;
+otherwise (manual scoring, tests, `--llm fake`, `IGNOBEL_JUDGE=frozen`) the
+offline fallback is the frozen classifier in `judge.json` (logistic
 regression on real Ig Nobel rationales and winning-paper titles from Wikipedia
 revision 1385733309 vs OpenAlex titles; rebuild with
 `python3 testcases/_reference/build_ignobel_judge.py`), which scores the

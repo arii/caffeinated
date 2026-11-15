@@ -9,8 +9,10 @@ are read from ignobel/committee.py (not imported) so both projects share one
 committee. Verdicts are cached by (model, prompt), so a run grades the same
 abstract the same way every time.
 
-IGNOBEL_JUDGE=committee needs TINKER_API_KEY; IGNOBEL_JUDGE=frozen uses the
-offline text classifier instead (the default when no key is set).
+IGNOBEL_JUDGE=committee|frozen picks the judge; otherwise the committee is used
+only in real Tinker swarm runs (swarm.py sets AUTORESEARCH_LLM=tinker) with
+TINKER_API_KEY set, and the offline text classifier everywhere else (manual
+scoring, tests, --llm fake).
 """
 
 import ast
@@ -38,7 +40,8 @@ def mode():
     choice = os.environ.get("IGNOBEL_JUDGE", "").strip().casefold()
     if choice in ("committee", "frozen"):
         return choice
-    return "committee" if os.environ.get("TINKER_API_KEY") else "frozen"
+    live = os.environ.get("AUTORESEARCH_LLM") == "tinker" and os.environ.get("TINKER_API_KEY")
+    return "committee" if live else "frozen"
 
 
 def judge_prompts(path=ROOT / "ignobel" / "committee.py"):
