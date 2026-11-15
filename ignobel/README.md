@@ -36,6 +36,11 @@ first use). `--roster flat` and its CSVs in `data/` are a small synthetic fixtur
   daughter in a subfield none of them covers (one LLM call; at most `max_daughters`, one per
   `spawn_cooldown` rounds). The newborn seeds its library and proposes an idea that round, then acts
   like the others. Founding and later births are both `spawn` events (`reason` founded or bored).
+- Daughters use their own boredom formula (`boredom.daughter_components`):
+  `B = .35 repetition + .25 stall + .20 unsurprise + .20 known - .30 engagement`. Failure is not
+  subtracted; it is reported as frustration. Each daughter's weights and threshold are shifted by up
+  to 0.1 (her temperament). Triggers override B: `stuck` (repeating and failing), `stall` (3 rounds
+  without progress) and `no_data` send her wandering; `cooldown` and `satisfied` keep her at the bench.
 - Meetings are chance encounters. Each round a daughter wanders with probability `wander_prob`
   (always, if she is bored) and bumps into a random free colleague from any department. Nothing
   matches them by field, and the conversation has no set topic.

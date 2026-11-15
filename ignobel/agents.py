@@ -135,6 +135,7 @@ class Agent:
         self.budget_left: int = spec.budget_per_round
         self.datasets: list[dict] = []  # real public datasets this lab loaded (sources.fetch_dataset)
         self.leads: list[dict] = []     # dataset candidates it found but has not loaded; D1, D2, ...
+        self.meter: dict = {}           # private boredom-meter state (boredom.daughter_components)
 
     # ------------------------------------------------------------ helpers
     @property
@@ -292,6 +293,8 @@ class Agent:
                 '- {"do": "datasets", "query": "..."}: look for a real public dataset (Zenodo, Hugging Face); '
                 "short queries of 2-4 plain words work best\n"
                 '- {"do": "load", "lead": "D1"}: load a dataset lead so you can analyse it\n'
+                + ("Your dataset searches have not worked so far: try different, simpler words, or load a lead "
+                   "a colleague gave you.\n" if self.meter.get("trigger") == "no_data" else "") +
                 "You need a loaded dataset before you can run a study. Reply with plain JSON text only, exactly "
                 'in this shape: {"steps": [{"do": "openalex", "query": "..."}, {"do": "load", "lead": "D1"}], "why": "..."}')
         res = self._call("research_plan", user, round=round, leads=len(self.leads),
@@ -371,7 +374,7 @@ class Agent:
         return {"ideas": [i.model_dump() for i in self.ideas],
                 "studies": [s.model_dump() for s in self.studies],
                 "lessons": self.lessons, "budget_left": self.budget_left,
-                "datasets": self.datasets, "leads": self.leads}
+                "datasets": self.datasets, "leads": self.leads, "meter": self.meter}
 
     def load_state(self, st: dict) -> None:
         self.ideas = [Idea(**i) for i in st["ideas"]]
@@ -380,3 +383,4 @@ class Agent:
         self.budget_left = st["budget_left"]
         self.datasets = st.get("datasets", [])
         self.leads = st.get("leads", [])
+        self.meter = st.get("meter", {})

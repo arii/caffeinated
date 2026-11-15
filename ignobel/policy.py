@@ -16,7 +16,14 @@ def _work(agent) -> Action:
 
 
 def boredom_policy(agent, B: float, rng: random.Random, threshold: float = 0.7) -> Action:
-    return Action.SNAP if B >= threshold else _work(agent)
+    """Daughter labs carry a temperament (threshold shift) and a trigger set by boredom.daughter_components."""
+    meter = getattr(agent, "meter", None) or {}
+    trigger = meter.get("trigger")
+    if trigger in ("cooldown", "satisfied"):
+        return _work(agent)
+    if trigger in ("stuck", "stall", "no_data"):
+        return Action.SNAP
+    return Action.SNAP if B >= threshold + meter.get("threshold", 0.0) else _work(agent)
 
 
 def random_policy(agent, B: float, rng: random.Random, snap_prob: float = 0.3) -> Action:

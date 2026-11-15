@@ -153,3 +153,63 @@ def test_studies_run_on_the_real_dataset_and_carry_evidence(tmp_path):
         assert ev["datasets"][0]["url"].startswith("https://huggingface.co/datasets/")
         assert ev["supported"] == (e.payload["ok"] and e.payload["replicated"])
         assert "rows(" in e.payload["code"] and "instrument(" not in e.payload["code"]
+
+
+def _daughter(name="onsager"):
+    import agents
+    from memory import LocalMemory
+    a = agents.Agent(agents.AgentSpec(name=name, field="physics", family="physics", seed_queries=[]), LocalMemory(), {})
+    a.meter["born"] = 0
+    return a
+
+
+def _study(a, i, ok=True, replicated=True, effect=0.3):
+    import agents
+    a.studies.append(agents.StudyRecord(study_id=f"s{i}", idea_id=f"i{i}", round=i, ok=ok, replicated=replicated,
+                                        predicted=agents.Prediction(direction="+", effect_size=0.3),
+                                        actual_effect=effect, actual_direction="+"))
+
+
+def test_stuck_daughter_is_bored_and_sent_wandering():
+    import boredom
+    import policy
+    a = _daughter()
+    for i in range(3):  # the same idea three times, every study failing
+        a._new_idea({"idea": "does the bacterial order parameter hesitate"}, "refine", i, [])
+        _study(a, i, ok=False, replicated=False)
+    comp = boredom.daughter_components(a, 4)
+    assert comp["trigger"] == "stuck" and comp["frustration"] == 1.0 and comp["similarity"] > 0.9
+    assert comp["B"] > 0.4  # failure no longer cancels repetition (the old formula gave 0.0 here)
+    assert boredom.components(a)["B"] == 0.0
+    assert policy.boredom_policy(a, comp["B"], None, threshold=0.99) == policy.Action.SNAP
+
+
+def test_engagement_lowers_boredom_and_cooldown_keeps_her_at_the_bench():
+    import boredom
+    import policy
+    a = _daughter("kaupp")
+    for i in range(3):
+        a._new_idea({"idea": "does the ball mill scream before the diffractometer"}, "refine", i, [])
+    bored = boredom.daughter_components(a, 3)["B"]
+    a.meter["fresh"] = 3  # she just loaded a new dataset
+    fresh = boredom.daughter_components(a, 3)
+    assert fresh["engagement"] == 1.0 and fresh["B"] < bored
+    assert boredom.daughter_components(a, 5)["engagement"] == 0.0  # faded after two rounds
+    a.meter["snap"] = 4
+    assert boredom.daughter_components(a, 5)["trigger"] == "cooldown"
+    assert policy.boredom_policy(a, 1.0, None, threshold=0.5) != policy.Action.SNAP
+
+
+def test_triggers_and_temperament():
+    import boredom
+    a = _daughter("miller")
+    assert boredom.daughter_components(a, 1)["trigger"] is None
+    assert boredom.daughter_components(a, 2)["trigger"] == "no_data"
+    assert boredom.daughter_components(a, 3)["trigger"] == "stall"
+    b = _daughter("aschoff")
+    for i in range(2):
+        _study(b, i, effect=0.9)  # replicated and far from the predicted 0.3
+    assert boredom.daughter_components(b, 2)["trigger"] == "satisfied"
+    t1, t2 = boredom.temperament(0, "miller"), boredom.temperament(0, "aschoff")
+    assert t1 == boredom.temperament(0, "miller") and t1 != t2
+    assert all(abs(t1["weights"][k] - w) <= 0.1 for k, w in boredom.WEIGHTS.items()) and abs(t1["threshold"]) <= 0.1

@@ -54,10 +54,11 @@ def body(e: dict, run: Path, agents: dict) -> str:
     if t == "prediction":
         return f"predicts direction <b>{esc(p.get('direction'))}</b>, effect size {esc(p.get('effect_size'))}"
     if t == "boredom":
-        return (f"B = <b>{esc(p.get('B'))}</b> → <b>{esc(p.get('action'))}</b> "
-                f"<span class=tag>similarity {esc(p.get('similarity'))}</span>"
-                f"<span class=tag>unsurprise {esc(p.get('unsurprise'))}</span>"
-                f"<span class=tag>failure {esc(p.get('failure'))}</span>")
+        keys = [k for k in ("repetition", "stall", "unsurprise", "known", "engagement", "frustration")
+                if k in p] if "repetition" in p else ["similarity", "unsurprise", "failure"]
+        trig = f" <span class=bad>trigger: {esc(p['trigger'])}</span>" if p.get("trigger") else ""
+        return (f"B = <b>{esc(p.get('B'))}</b> → <b>{esc(p.get('action'))}</b>{trig} "
+                + "".join(f"<span class=tag>{k} {esc(p.get(k))}</span>" for k in keys))
     if t == "talk":
         return f"→ <b>{esc(p.get('partner'))}</b> (turn {esc(p.get('turn'))})<div>{esc(p.get('text', ''))}</div>"
     if t == "snap":

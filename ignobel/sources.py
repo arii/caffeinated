@@ -395,7 +395,7 @@ def fetch_dataset(lead: dict, dest: Path) -> dict:
         w.writerow([c["name"] for c in cols])
         w.writerows(clean)
     return {"id": lead["id"], "title": lead["title"], "url": lead["url"], "license": lead.get("license", ""),
-            "rows": len(clean), "truncated": truncated, "columns": cols,
+            "file_url": lead["file_url"], "bytes": lead.get("bytes", 0), "rows": len(clean), "truncated": truncated, "columns": cols,
             "sha256": hashlib.sha256(dest.read_bytes()).hexdigest()[:16]}
 
 

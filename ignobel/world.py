@@ -184,6 +184,11 @@ class World:
                           replicated=verdict["replicated"], predicted=idea.prediction,
                           actual_effect=verdict["effect_size"], actual_direction=verdict["direction"], abstract=abstract)
         a.studies.append(rec)
+        a.meter["known"] = boredom.round_(1.0 - float(novelty.get("score", 1.0)))
+        if rec.replicated:
+            a.meter["progress"] = round
+            if boredom.surprising(rec):
+                a.meter["fresh"] = round
         a.memory.write(Item(id=f"{a.name}-{study_id}", kind="result" if verdict["replicated"] else "failure",
                             text=abstract or f"{study_id}: {verdict['reason']}", source_agent=a.name,
                             meta={"study_id": study_id, **info}))
@@ -217,7 +222,10 @@ class World:
         for a, (steps, res) in zip(who, plans):  # executed in agent order so S ids are reproducible
             tokens, latency = res.tokens, res.latency_ms
             for step in steps or [{"tool": "none"}]:
-                self.log.append(r, a.name, "research", self._do_step(a, step), tokens=tokens, latency_ms=latency)
+                done = self._do_step(a, step)
+                if done.get("tool") == "load" and "error" not in done:
+                    a.meter["fresh"] = a.meter["progress"] = r  # new real data is progress
+                self.log.append(r, a.name, "research", done, tokens=tokens, latency_ms=latency)
                 tokens = latency = 0
 
     def _do_step(self, a, step: dict) -> dict:
@@ -304,6 +312,7 @@ class World:
         taken.add(d.name)
         spec = families_mod.to_spec(d, m)
         a = self._add_agent(spec)
+        a.meter["born"] = r
         m.daughters.append(a.name)
         m.spawned += 1
         self.spawned_specs.append(spec.model_dump())
@@ -329,7 +338,7 @@ class World:
         Bs = {}
         for a in self.agents:
             a.reset_budget()
-            comp = boredom.components(a)
+            comp = boredom.daughter_components(a, r) if a.spec.family else boredom.components(a)
             act = self.policy(a, comp["B"], self.rng)
             actions[a.name] = act
             Bs[a] = comp["B"]
@@ -346,6 +355,17 @@ class World:
         for x, y in pairs:
             partner_of[x.name], partner_of[y.name] = y.name, x.name
 
+        for a in snappers:
+            a.meter["snap"] = r  # one round back at the bench after wandering
+        for x, y in pairs:
+            for me, other in ((x, y), (y, x)):
+                me.meter["fresh"] = r  # a chance meeting is something new
+                if me.spec.family and not me.datasets:  # no data yet: ask what the colleague uses
+                    have = {l["id"] for l in me.leads}
+                    me.leads += [{"id": d["id"], "title": d["title"], "url": d["url"], "license": d.get("license", ""),
+                                  "file_url": d["file_url"], "bytes": d.get("bytes", 0),
+                                  "preview": [c["label"] for c in d["columns"]][:25]}
+                                 for d in other.datasets if d["id"] not in have and "file_url" in d][:2]
         convs = await self._gather([(lambda p=p: self._converse(*p)) for p in pairs])
         for turns in convs:
             for speaker, other, i, text, res in turns:
