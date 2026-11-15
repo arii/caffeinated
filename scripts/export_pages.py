@@ -1,9 +1,11 @@
 """Export directory recordings exactly as the Lab server serves them, for the static Pages site."""
 
 import gzip
+import hashlib
 import json
 import shutil
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,13 +31,32 @@ def export(viewer_dir, out_dir):
             m.update(live=False, stale=False, sample=False)
             if m.get("status") in {"running", "live"}:
                 m["status"] = "snapshot"
-        payload = json.dumps(recording, separators=(",", ":")).encode()
-        (out / f"{rid}.json.gz").write_bytes(gzip.compress(payload, compresslevel=9, mtime=0))
+        content = deepcopy(recording)
+        for key in ("contentVersion", "lastUpdateTs", "staleAfterSeconds"):
+            content["manifest"].pop(key, None)
+        version = (
+            hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()[:16]
+            + "-v4"
+        )
+        for m in (manifest, recording["manifest"]):
+            m["contentVersion"] = version
+        payload = json.dumps(recording, sort_keys=True, separators=(",", ":")).encode()
+        with (
+            (out / f"{rid}.json.gz").open("wb") as stream,
+            gzip.GzipFile(
+                filename="", mode="wb", fileobj=stream, compresslevel=9, mtime=0
+            ) as archive,
+        ):
+            archive.write(payload)
         artifacts = Path(viewer_dir) / rid / "artifacts"
         if artifacts.is_dir():
             shutil.copytree(artifacts, out / rid / "artifacts", dirs_exist_ok=True)
         items.append(manifest)
-    (out / "index.json").write_text(json.dumps(items, separators=(",", ":")))
+    (out / "index.json").write_text(
+        json.dumps(items, sort_keys=True, separators=(",", ":")), encoding="utf-8"
+    )
     return items
 
 
