@@ -459,6 +459,24 @@ class ResearchFindingsTest(unittest.TestCase):
         self.assertIn("stuck: cell baseline/none failed 2/3 recent attempts", gate["reasons"])
 
 
+    def test_depth1_stuck_rule_marks_children_in_suggest(self):
+        profile = dict(self.profile, stuck={"window": 3, "min_fails": 2, "depth": 1})
+        events = self.stuck_annealing()
+        cells = meter.suggest(profile, events, n=len(meter.all_cells(profile, 2)))
+        stuck = [c["cell"] for c in cells if c["stuck"]]
+        self.assertTrue(stuck)
+        self.assertTrue(all(c.startswith("search/") for c in stuck))
+        self.assertEqual([c["cell"] for c in cells[-len(stuck):]], stuck)
+        for c in cells:
+            reasons = meter.gate(profile, events, dict(zip(profile["levels"], c["cell"].split("/"))))["reasons"]
+            self.assertEqual(c["stuck"], any(x.startswith("stuck") for x in reasons))
+
+    def test_profile_without_patience_unit_keeps_hash(self):
+        profile = meter.load_profile(BIO)
+        self.assertNotIn("patience_unit", profile)
+        self.assertEqual(profile["_hash"], meter.sha({k: v for k, v in profile.items() if not k.startswith("_")}))
+
+
 
 if __name__ == "__main__":
     unittest.main()

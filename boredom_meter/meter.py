@@ -37,8 +37,7 @@ def load_profile(path):
     profile.setdefault("patience", 5)
     profile.setdefault("frontier_statuses", ["keep"])
     profile.setdefault("trivial_statuses", ["duplicate"])
-    profile.setdefault("patience_unit", "attempt")
-    if profile["patience_unit"] not in ("attempt", "round"):
+    if profile.get("patience_unit", "attempt") not in ("attempt", "round"):
         raise ValueError("patience_unit must be 'attempt' or 'round'")
     stuck = profile.get("stuck")
     if stuck is not None:
@@ -176,7 +175,7 @@ def patience_key(profile, e):
 
     An event without an integer `round` is its own round.
     """
-    if profile["patience_unit"] == "round" and isinstance(e.get("round"), int):
+    if profile.get("patience_unit") == "round" and isinstance(e.get("round"), int):
         return ("round", e["round"])
     return ("seq", e["seq"])
 
@@ -205,7 +204,7 @@ def fold(profile, events, agent=None):
     th = profile["thresholds"]
     w1, w2, w3 = profile["weights"]
     head = profile["levels"][0]
-    by_round = profile["patience_unit"] == "round"
+    by_round = profile.get("patience_unit") == "round"
     archive = []
     best = best_sig = None
     best_seq = None
@@ -341,7 +340,7 @@ def suggest(profile, events, n=5, depth=None):
     depth = depth or min(2, len(profile["levels"]))
     visits, fails, best = {}, {}, {}
     rule = profile.get("stuck")
-    stuck = set(stuck_cells(profile, events)) if rule and rule["depth"] == depth else set()
+    stuck_prefixes = set(stuck_cells(profile, events)) if rule and rule["depth"] <= depth else set()
     for e in attempt_events(profile, events):
         c = cell_key(profile, e["descriptor"], depth)
         visits[c] = visits.get(c, 0) + 1
@@ -350,6 +349,7 @@ def suggest(profile, events, n=5, depth=None):
         if score_ok(profile, e) and (c not in best or is_better(profile, e["score"], best[c])):
             best[c] = e["score"]
     cells = sorted(set(all_cells(profile, depth)) | set(visits))
+    stuck = {c for c in cells if rule and "/".join(c.split("/")[:rule["depth"]]) in stuck_prefixes}
     ranked = sorted(cells, key=lambda c: (c in stuck, visits.get(c, 0), fails.get(c, 0), c))
     return [{"cell": c, "visits": visits.get(c, 0), "fails": fails.get(c, 0), "best": best.get(c),
              "stuck": c in stuck} for c in ranked[:n]]
