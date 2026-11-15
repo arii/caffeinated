@@ -25,23 +25,94 @@
    "restarts",
    2
   ],
-   [
-    "SEED",
-    "search",
-    "seed",
-    3
+  [
+   "SEED",
+   "search",
+   "seed",
+   3
   ],
   [
-    "CONSTRUCTION",
-    "construction",
-    "circulant",
-    1
+   "CONSTRUCTION",
+   "construction",
+   "circulant",
+   1
   ],
   [
-    "OBJECTIVE",
-    "objective",
-    "surrogate",
-    1
+   "OBJECTIVE",
+   "objective",
+   "surrogate",
+   1
   ]
+ ],
+ "fake_edits": [
+  {
+   "idea": "Polish each greedy optimum with an 80-step tabu search",
+   "descriptor": {
+    "mechanism": "search",
+    "method": "tabu"
+   },
+   "edits": [
+    {
+     "old": "OBJECTIVE = 0\n",
+     "new": "OBJECTIVE = 0\nTABU_ITERS = 80\nTABU_TENURE = 20\n"
+    },
+    {
+     "old": "\n\nfor _ in range(RESTARTS):\n",
+     "new": "\n\ndef tabu_search(a, iters):\n    \"\"\"Best-improvement single flips with a tabu list; det ratios come from the inverse.\"\"\"\n    a = a.astype(float)\n    inv = np.linalg.inv(a)\n    logdet = np.linalg.slogdet(a)[1]\n    top, top_logdet = a.copy(), logdet\n    tabu = np.zeros((N, N), dtype=int)\n    for it in range(1, iters + 1):\n        gains = np.log(np.abs(1.0 - 2.0 * a * inv.T) + 1e-300)\n        allowed = (tabu < it) | (logdet + gains > top_logdet + 1e-9)\n        gains = np.where(allowed, gains, -np.inf)\n        i, j = np.unravel_index(np.argmax(gains), gains.shape)\n        ratio = 1.0 - 2.0 * a[i, j] * inv[j, i]\n        inv -= np.outer(inv[:, i], inv[j, :]) * (-2.0 * a[i, j]) / ratio\n        a[i, j] *= -1\n        logdet += gains[i, j]\n        tabu[i, j] = it + TABU_TENURE\n        if logdet > top_logdet + 1e-9:\n            top, top_logdet = a.copy(), logdet\n    return top.astype(int)\n\n\nfor _ in range(RESTARTS):\n"
+    },
+    {
+     "old": "    if cur > best_det:\n",
+     "new": "    a = tabu_search(a, TABU_ITERS)\n    cur = objective(a)\n    if cur > best_det:\n"
+    }
+   ]
+  },
+  {
+   "idea": "Raise the tabu budget from 80 to 150 steps",
+   "descriptor": {
+    "mechanism": "search",
+    "method": "budget",
+    "params": {
+     "value": 150
+    }
+   },
+   "old": "TABU_ITERS = 80\nTABU_TENURE = 20\n",
+   "new": "TABU_ITERS = 150\nTABU_TENURE = 20\n"
+  },
+  {
+   "idea": "Raise the tabu budget from 150 to 500 steps",
+   "descriptor": {
+    "mechanism": "search",
+    "method": "budget",
+    "params": {
+     "value": 500
+    }
+   },
+   "old": "TABU_ITERS = 150\nTABU_TENURE = 20\n",
+   "new": "TABU_ITERS = 500\nTABU_TENURE = 20\n"
+  },
+  {
+   "idea": "Halve the tabu tenure to 10 and spend 300 steps",
+   "descriptor": {
+    "mechanism": "search",
+    "method": "tabu",
+    "params": {
+     "value": 10
+    }
+   },
+   "old": "TABU_ITERS = 500\nTABU_TENURE = 20\n",
+   "new": "TABU_ITERS = 300\nTABU_TENURE = 10\n"
+  },
+  {
+   "idea": "Raise the tenure-10 tabu budget from 300 to 500 steps",
+   "descriptor": {
+    "mechanism": "search",
+    "method": "budget",
+    "params": {
+     "value": 500
+    }
+   },
+   "old": "TABU_ITERS = 300\nTABU_TENURE = 10\n",
+   "new": "TABU_ITERS = 500\nTABU_TENURE = 10\n"
+  }
  ]
 }

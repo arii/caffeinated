@@ -47,6 +47,55 @@ class FakeLLMTests(unittest.TestCase):
             len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1
         )
 
+    def test_fake_edit_pairs_support_chained_multi_and_whole_file_edits(self):
+        source = "A = 1\nB = 2\n"
+        self.assertEqual(
+            llm.fake_edit_pairs({"old": "A = 1", "new": "A = 3"}, source),
+            [{"old": "A = 1", "new": "A = 3"}],
+        )
+        both = {"edits": [{"old": "A = 1", "new": "A = 3"}, {"old": "B = 2", "new": "B = 4"}]}
+        self.assertEqual(len(llm.fake_edit_pairs(both, source)), 2)
+        self.assertIsNone(llm.fake_edit_pairs({"old": "C = 1", "new": "C = 2"}, source))
+        missing = {"edits": [both["edits"][0], {"old": "C = 1", "new": "C = 2"}]}
+        self.assertIsNone(llm.fake_edit_pairs(missing, source))
+        whole = {"replace_with": {"x": 1}}
+        [pair] = llm.fake_edit_pairs(whole, source)
+        self.assertEqual((pair["old"], json.loads(pair["new"])), (source, {"x": 1}))
+        self.assertIsNone(llm.fake_edit_pairs(whole, pair["new"]))
+        with self.assertRaises(ValueError):
+            llm.fake_edit_pairs({"old": "A = 1", "new": 3}, source)
+
+    def test_fake_worker_follows_task_trajectory_then_rejects(self):
+        edits = [
+            {
+                "descriptor": {"mechanism": "search", "method": "tabu"},
+                "old": "A = 1",
+                "new": "A = 2",
+            },
+            {
+                "descriptor": {"mechanism": "search", "method": "budget"},
+                "old": "A = 2",
+                "new": "A = 3",
+            },
+        ]
+        source = "A = 1\n"
+        for expected in ("A = 2", "A = 3"):
+            proposal = llm.fake_response(
+                "WORKER_PROPOSE",
+                {"agent": "worker-2", "candidate_source": source, "fake_edits": edits},
+            )
+            [edit] = proposal["edits"]
+            self.assertEqual(edit["new"], expected)
+            source = source.replace(edit["old"], edit["new"])
+        proposal = llm.fake_response(
+            "WORKER_PROPOSE",
+            {"agent": "worker-1", "candidate_source": source, "fake_edits": edits},
+        )
+        self.assertEqual(proposal["status"], "reject")
+        chained = [{**edits[0], "old": "A = 9"}, edits[0]]
+        assigned = llm.fake_assigned_proposal("search/tabu", "A = 1\n", fake_edits=chained)
+        self.assertEqual(assigned["edits"], [{"old": "A = 1", "new": "A = 2"}])
+
     def test_assigned_cell_uses_task_knob(self):
         task = swarm.load_task("hadamard19")
         source = (ROOT / "testcases/hadamard19/construct.py").read_text()

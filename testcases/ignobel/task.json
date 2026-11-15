@@ -5,35 +5,55 @@
  "brief": "a pre-registered study by a domain expert (`prereg.json`, a JSON object; no code runs). Each agent is an expert in one field (descriptor mechanism = field, method = study_type) and must do real research first: read papers via the swarm's Exa leads, then register BEFORE seeing data: {field, study_type, question, hypothesis, mechanism (why the effect should exist), citations (>= 2 Exa source ids S<k> or URLs from this run's research, or sources.json), dataset: {url of a real public CSV/TSV (open-data host such as raw.githubusercontent.com, zenodo, figshare, OSF, Dryad, data.gov, Rdatasets, or a URL in the Exa results), x, x_level, y, y_level (exact column header text; level = the answer compared vs everyone else, omit for numeric columns)}, direction (positive|negative), predicted_rho (expected |Spearman rho|)}. The host verifies citations, downloads the data once, and runs the registered test ONCE on all rows (Spearman, p < 0.005, matching sign; one test per dataset per run, so a second registration on a used dataset scores 0). Trivial pairs (same column, near-identical wording, two demographics) score 0. loss = 1 - (replicated and significant): significant = the registered test gives p < 0.005 on all rows with the registered sign; replicated = the same sign with p < 0.05 in each of the two fixed hash halves of the rows. Every study is logged for a post-run Ig Nobel committee (two LLM judges, laugh and think), which does not affect the loss. If a column name is wrong the run fails and lists the dataset's usable columns. The baseline registration (rare-steak eaters smoke more) is a real hypothesis that fails (loss 1); aim for a real, odd, everyday effect that makes people laugh, then think Labs are open-ended: field may be any snake_case field or subfield you found (myrmecology, psychoacoustics, ...), not only the listed ones; a new subfield is logged as descriptor other/<subfield>. Each round the task inputs add the lab notebook (every study registered so far this run and its result: build on other labs' ideas and nulls, never repeat a tested dataset) and real downloadable datasets found on Zenodo and Hugging Face with their column names. When two labs report the same finding (same dataset, same column pair), only the earliest counts. Derived rates: dataset.x_per / dataset.y_per may name a numeric denominator column, so a numeric variable is tested per unit of another (e.g. \"Bites\" per \"Minutes observed\"); the host computes the rate itself.",
  "fake_edits": [
   {
-   "old": "\"predicted_rho\": 0.15",
-   "new": "\"predicted_rho\": 0.25",
+   "idea": "Register fruity candies lose FiveThirtyEight candy matchups",
    "descriptor": {
-    "mechanism": "behavioral_economics",
-    "method": "replicate_published"
-   }
-  },
-  {
-   "old": "\"y\": \"Do you ever smoke cigarettes?\"",
-   "new": "\"y\": \"Do you ever drink alcohol?\"",
-   "descriptor": {
-    "mechanism": "medicine",
-    "method": "untested_prediction"
-   }
-  },
-  {
-   "old": "\"y\": \"Do you ever smoke cigarettes?\"",
-   "new": "\"y\": \"Have you ever been skydiving?\"",
-   "descriptor": {
-    "mechanism": "sports_science",
+    "mechanism": "food_science",
     "method": "new_population"
+   },
+   "replace_with": {
+    "field": "food_science",
+    "study_type": "new_population",
+    "question": "Do fruity candies lose head-to-head popularity contests against non-fruity candies?",
+    "hypothesis": "Candies flagged fruity win a smaller share of FiveThirtyEight's pairwise candy matchups.",
+    "mechanism": "Chocolate is the most craved and liked sweet (Rozin et al. 1991; trait chocolate craving predicts implicit chocolate preference), and fruity candies are mostly non-chocolate, so they should lose most pairwise votes.",
+    "citations": [
+     "https://doi.org/10.1016/0195-6663(91)90022-k",
+     "https://doi.org/10.1016/j.appet.2017.11.064"
+    ],
+    "dataset": {
+     "url": "https://raw.githubusercontent.com/fivethirtyeight/data/4c1ff5e3aef1816ae04af63218015066e186c147/candy-power-ranking/candy-data.csv",
+     "x": "fruity",
+     "y": "winpercent"
+    },
+    "direction": "negative",
+    "predicted_rho": 0.3
    }
   },
   {
-   "old": "\"direction\": \"positive\"",
-   "new": "\"direction\": \"negative\"",
+   "idea": "Register parents find babies on planes less rude",
    "descriptor": {
     "mechanism": "psychology",
-    "method": "resolve_conflict"
+    "method": "new_population"
+   },
+   "replace_with": {
+    "field": "psychology",
+    "study_type": "new_population",
+    "question": "Do parents of minors judge bringing a baby on a plane as less rude than non-parents?",
+    "hypothesis": "Respondents with children under 18 more often answer that bringing a baby on a plane is not at all rude.",
+    "mechanism": "Parents perceive infant cries as less aversive and more interpretable than non-parents do (Boukydis & Burgess 1986; Zeskind & Marshall 1987), so a crying baby in the cabin should seem less of a breach of etiquette to them.",
+    "citations": [
+     "https://doi.org/10.1016/s0163-6383(86)80153-9",
+     "https://doi.org/10.1037/0012-1649.23.3.370"
+    ],
+    "dataset": {
+     "url": "https://raw.githubusercontent.com/fivethirtyeight/data/4c1ff5e3aef1816ae04af63218015066e186c147/flying-etiquette-survey/flying-etiquette.csv",
+     "x": "Do you have any children under 18?",
+     "x_level": "Yes",
+     "y": "In general, is itrude to bring a baby on a plane?",
+     "y_level": "No, not at all rude"
+    },
+    "direction": "positive",
+    "predicted_rho": 0.15
    }
   }
  ],
