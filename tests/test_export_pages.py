@@ -85,7 +85,9 @@ class ExportPagesTests(unittest.TestCase):
             verdict = {"schema": "igjudge/v1", "winner": "study:1"}
             (root / "igjudge" / "run-1.json").write_text(json.dumps(verdict))
             judged = export(viewer, root / "judged-out")
-            shipped = json.loads(gzip.decompress((root / "judged-out" / "run-1.json.gz").read_bytes()))
+            shipped = json.loads(
+                gzip.decompress((root / "judged-out" / "run-1.json.gz").read_bytes())
+            )
             self.assertEqual(shipped["igjudge"], verdict)
             self.assertNotEqual(plain, judged[0]["contentVersion"])
 
