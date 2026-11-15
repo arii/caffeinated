@@ -178,7 +178,11 @@ def run_rollbacks():
         rollbacks = json.loads(os.environ.get("AUTORESEARCH_RUN_ROLLBACKS") or "[]")
     except ValueError:
         return []
-    return [item for item in rollbacks if isinstance(item, dict) and item.get("after")]
+    return (
+        [item for item in rollbacks if isinstance(item, dict)]
+        if isinstance(rollbacks, list)
+        else []
+    )
 
 
 def rolled_back(metadata, rollbacks):
@@ -187,10 +191,11 @@ def rolled_back(metadata, rollbacks):
     if written is None:
         return False
     epoch = metadata.get("run_epoch") or 0
-    return any(
-        int(item["epoch"]) > epoch and written > (timestamp_value(item["after"]) or written)
-        for item in rollbacks or ()
-    )
+    for item in rollbacks or ():
+        after = timestamp_value(item.get("after"))
+        if after is not None and int(item.get("epoch", 0)) > epoch and written > after:
+            return True
+    return False
 
 
 def append_jsonl(path, record):

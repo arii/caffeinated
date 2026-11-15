@@ -773,6 +773,13 @@ class MemoryCliTests(unittest.TestCase):
         }
         with patch.dict(os.environ, env):
             self.assertEqual(memory.arm_run_scope()["rollbacks"], rollbacks)
+        legacy = [{"epoch": 1, "after": None}, *[{**item, "epoch": 2} for item in rollbacks]]
+        with patch.dict(os.environ, {**env, "AUTORESEARCH_RUN_ROLLBACKS": json.dumps(legacy)}):
+            scope = memory.arm_run_scope()
+        self.assertEqual(len(scope["rollbacks"]), 2)
+        claim = {"arm": "A", "run_id": "pair-1", "type": "claim", "run_epoch": 2}
+        later = {**claim, "written_at": "2026-01-01T00:20:00Z"}
+        self.assertEqual(memory.scope_decision(later, scope), "same_run")
         with patch.dict(os.environ, {**env, "AUTORESEARCH_RUN_ROLLBACKS": "not json"}):
             self.assertNotIn("rollbacks", memory.arm_run_scope())
 

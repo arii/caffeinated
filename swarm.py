@@ -2594,9 +2594,8 @@ def _orchestrate(args, publish_state, cleanup):
         )
         _write_run_artifact(out_dir, resumed)
         memory_rollbacks = [
-            {"epoch": epoch, "after": entry["checkpoint_ts"]}
+            {"epoch": epoch, "after": entry.get("checkpoint_ts")}
             for epoch, entry in enumerate(resumed["resumes"], 1)
-            if entry.get("checkpoint_ts")
         ]
     else:
         _write_run_artifact(
