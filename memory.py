@@ -24,7 +24,7 @@ from research import read_log
 DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
-RESULT_COLUMNS = {"commit", "loss", "memory_gb", "status", "description"}
+RESULT_COLUMNS = {"commit", "loss", "status", "description"}
 MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
 _ENSURED_AUDIENCES = set()
 
@@ -246,7 +246,6 @@ def run_data_point(arm, row, repo, research_log):
     description = str(row.get("description") or "")
     status = str(row.get("status") or "")
     value = parse_float(row.get("loss"))
-    memory_gb = row.get("memory_gb")
     regime = regime_for(description)
     timestamp = commit_timestamp(commit, repo)
     cited_ids, _ = source_trailers(commit_message(commit, repo))
@@ -255,8 +254,7 @@ def run_data_point(arm, row, repo, research_log):
     content_lines = [
         f"autoresearch {arm} run {commit}, {timestamp}",
         f"Idea: {description}",
-        f"Outcome: {status} (loss {row.get('loss')}, "
-        f"memory {memory_gb if memory_gb not in (None, '') else 'n/a'} GB)",
+        f"Outcome: {status} (loss {row.get('loss')})",
     ]
     if regime:
         content_lines.append(f"Regime: {regime}")
@@ -456,7 +454,6 @@ def remember(args):
     row = {
         "commit": args.commit,
         "loss": args.loss,
-        "memory_gb": args.memory_gb,
         "status": args.status,
         "description": args.description,
     }
@@ -810,6 +807,8 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
     audience = None
     recall_identity = agent
     dropped_count = 0
+    dropped_source_ids = []
+    dropped_tags = []
     if backend == "none":
         results = []
         used_tokens = 0
@@ -832,7 +831,31 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
             api_key=api_key,
         )
         if scope:
+            raw_sources = [
+                source
+                for result in response.get("results", [])
+                for source in result.get("sources", [])
+            ]
             response, dropped_count = scoped_pastdev_response(response, mirror_path, scope)
+            retained_ids = {
+                source.get("sourceId")
+                for result in response.get("results", [])
+                for source in result.get("sources", [])
+                if source.get("sourceId")
+            }
+            for source in raw_sources:
+                source_id = source.get("sourceId")
+                if source_id and source_id not in retained_ids:
+                    dropped_source_ids.append(str(source_id))
+                    tags = source.get("tags") or []
+                    for tag in tags if isinstance(tags, list) else [tags]:
+                        tag_id = (
+                            tag.get("id") or tag.get("tagId")
+                            if isinstance(tag, dict)
+                            else tag
+                        )
+                        if isinstance(tag_id, str):
+                            dropped_tags.append(tag_id)
         raw_response = response
         results = normalize_pastdev_results(response, mirror_path)
         if cutoff is not None:
@@ -868,6 +891,8 @@ def _recall(query, agent, limit=8, query_timestamp=None, *, backend=None,
         "authors": authors,
         "pending": pending,
         "dropped_count": dropped_count,
+        "dropped_source_ids": list(dict.fromkeys(dropped_source_ids))[:20],
+        "dropped_tags": list(dict.fromkeys(dropped_tags))[:20],
     }
     if audience:
         log_record["audience"] = audience
@@ -994,7 +1019,6 @@ def build_parser():
     remember_parser.add_argument("--loss", required=True)
     remember_parser.add_argument("--status", required=True)
     remember_parser.add_argument("--description", required=True)
-    remember_parser.add_argument("--memory-gb", type=float)
     remember_parser.add_argument("--arm")
     remember_parser.add_argument("--repo", default=".")
     remember_parser.add_argument("--research-log", default="research_log.jsonl")

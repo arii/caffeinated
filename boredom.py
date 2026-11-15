@@ -396,7 +396,7 @@ def read_results(path):
         return []
     with path.open(newline="", encoding="utf-8") as results_file:
         reader = csv.DictReader(results_file, delimiter="\t")
-        required = {"commit", "loss", "memory_gb", "status", "description"}
+        required = {"commit", "loss", "status", "description"}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("results.tsv is missing required columns")
         return list(reader)

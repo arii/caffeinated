@@ -67,7 +67,7 @@ def episode(seed):
     }
 
 
-if __name__ == "__main__" and sys.argv[1:] == ["--make-train"]:
+if __name__ == "__main__" and sys.argv[1:] == ["--make-public-data"]:
     with open("data/train.jsonl", "w") as f:
         for seed in range(500):
             f.write(json.dumps(episode(seed)) + "\n")

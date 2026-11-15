@@ -193,6 +193,7 @@ def fake_assigned_proposal(
     cell, candidate_source, descriptor=None, fake_edits=(), fake_targets=()
 ):
     mechanism, method = cell.split("/")
+    value = (descriptor or {}).get("params", {}).get("value")
     target = next(
         (
             item
@@ -202,8 +203,6 @@ def fake_assigned_proposal(
         ),
         None,
     )
-    if target is None and fake_edits:
-        target = fake_edits[sum(map(ord, cell)) % len(fake_edits)]
     if target is None and fake_targets:
         target = next(
             (
@@ -211,8 +210,10 @@ def fake_assigned_proposal(
                 for item in fake_targets
                 if item[1] == mechanism and item[2] == method
             ),
-            fake_targets[sum(map(ord, cell)) % len(fake_targets)],
+            None,
         )
+        if target is None:
+            return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
         name, _, _, increment = target
         match = re.search(
             rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
@@ -227,24 +228,10 @@ def fake_assigned_proposal(
         new = f"{match.group('prefix')}{number:g}"
     elif target is not None:
         old, new = target["old"], target["new"]
-        value = (descriptor or {}).get("params", {}).get("value")
         if not old or candidate_source.count(old) != 1 or old == new:
-            target = next(
-                (
-                    item
-                    for item in fake_edits
-                    if item.get("old")
-                    and candidate_source.count(item["old"]) == 1
-                    and item["old"] != item.get("new")
-                ),
-                None,
-            )
-            if target is None:
-                raise ValueError(f"fake assigned edit unavailable for {cell}")
-            old, new = target["old"], target["new"]
+            return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
     else:
-        raise ValueError(f"fake worker has no task edits for assigned cell {cell}")
-        value = (descriptor or {}).get("params", {}).get("value")
+        return {"status": "reject", "reason": f"unbuildable assignment: {cell}"}
     assigned_value = value or (descriptor or {}).get("params", {}).get("value")
     return {
         "descriptor": {"mechanism": mechanism, "method": method,

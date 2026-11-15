@@ -23,7 +23,7 @@ NS_CAFFEINATED = uuid.UUID("6f1c3d2e-5b7a-4c1e-9a43-0c0ffee00001")
 KEYFRAME_EVERY = 250
 RECENT_EVENTS = 20
 PHASES = {
-    "autoresearch": ("assign", "research", "propose", "gate", "train", "critic", "status", "finish"),
+    "autoresearch": ("assign", "research", "propose", "gate", "evaluate", "critic", "status", "finish"),
     "ignobel": ("seed", "boredom", "talk", "share", "snap", "propose", "study", "diary"),
 }
 ENTITY_KINDS = (
@@ -32,14 +32,14 @@ ENTITY_KINDS = (
 )
 STATIONS = {
     "assigned": "notebook", "searching": "explorer", "recalling": "notebook",
-    "proposing": "notebook", "gating": "analyzer", "training": "culture",
+    "proposing": "notebook", "gating": "analyzer", "evaluating": "culture",
     "reviewing": "analyzer", "talking": "partner", "sharing": "partner",
     "snapping": "explorer", "writing": "notebook", "idle": "home",
 }
 EVENT_ACTIVITY = {
     "agent.assigned": "assigned", "question.asked": "searching",
     "observation.received": "searching", "hypothesis.proposed": "proposing",
-    "gate.checked": "gating", "experiment.started": "training",
+    "gate.checked": "gating", "experiment.started": "evaluating",
     "experiment.finished": "reviewing", "verdict.issued": "reviewing",
     "message.sent": "talking", "items.shared": "sharing",
     "diary.written": "writing", "memory.written": "writing",
@@ -312,7 +312,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                      file="boredom_log.jsonl", line=line, native_type="status",
                      payload={"scope": "swarm", "B": record.get("B"), "regime": record.get("regime"),
                               "frontier_stall": record.get("frontier_stall"),
-                              "best_metric": record.get("best_loss", record.get("best_val_bpb")),
+                              "best_metric": record.get("best_loss"),
                               "directive": record.get("directive"), "shadow": arm == "A"})
         elif record.get("type") == "gate":
             commit = record.get("candidate_commit")
@@ -476,7 +476,15 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             eid = f"experiment:{commit or 'seq-' + str(row.get('seq'))}"
             experiments_by_commit[commit] = eid
             metric = number(row.get("score"))
-            status = row.get("status")
+            ledger_status = row.get("status")
+            status = "discard" if ledger_status == "duplicate" else ledger_status
+            gate_reasons = list(row.get("gate_reasons") or [])
+            if ledger_status == "duplicate" and not any(
+                "duplicate" in reason.lower() for reason in gate_reasons
+            ):
+                gate_reasons.append(
+                    f"duplicate: duplicate of {row.get('duplicate_of') or 'unknown'}"
+                )
             started = row.get("ts") or gate_ts.get(commit)
             finished_ts = row.get("ts")
             if not finished_ts and started:
@@ -496,7 +504,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 "regime_label": row.get("regime_label"), "status": status, "metric_value": metric,
                 "replicate_score": row.get("replicate_score"), "predicted_delta": row.get("predicted_delta"),
                 "lead": row.get("lead"), "source_ids": [f"source:{s}" for s in row.get("sources") or []],
-                "hypothesis_id": hid, "gate": {"reasons": row.get("gate_reasons", []),
+                "hypothesis_id": hid, "gate": {"reasons": gate_reasons,
                                                "attempts": len(row.get("gate_attempts") or [])},
                 "verdict": None, "reward_id": rid,
                 "artifacts": {"log": f"runs/{commit}.log"} if commit else {},
@@ -505,7 +513,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             for source in row.get("sources") or []:
                 if f"source:{source}" in run.entities["sources"]:
                     run.entities["sources"][f"source:{source}"]["cited_by"].append(eid)
-            common = dict(round_=round_, phase="train", agent=agent, file="ledger.jsonl", line=line,
+            common = dict(round_=round_, phase="evaluate", agent=agent, file="ledger.jsonl", line=line,
                           native_type=kind)
             run.emit("experiment.started", **common, ts=started,
                      refs={"experiment_id": eid, **({"hypothesis_id": hid} if hid else {})},
@@ -569,7 +577,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "regimes":
                     ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"]},
         "provenance": {"llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
-                       "gpu": "none (CPU only)", "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
+                       "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
                        "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
                        "command": run_artifact.get("command", ""),
                        "swarm_commit": run_artifact.get("swarm_commit", ""),
@@ -578,6 +586,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "profile": profile,
         "status": final_status if final else "running",
         "live": not final,
+        "converged": bool(run_artifact.get("converged", False)),
     }
     return run, manifest_extra
 
@@ -716,7 +725,7 @@ def export_ignobel(out_dir, title=None):
         "metric": {"name": "replicated_findings", "unit": "", "direction": "maximize"},
         "boredom": {"scale": [0, 1], "thresholds": {}, "regimes":
                     ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "FRUSTRATED", "CONVERGED"]},
-        "provenance": {"llm": "see prompts/", "gpu": "none (CPU only)", "exa": "see events",
+        "provenance": {"llm": "see prompts/", "exa": "see events",
                        "memory_backend": "ignobel memory", "command": "", "swarm_commit": ""},
         "baseline": None,
     }
@@ -842,7 +851,11 @@ def apply(world, event, entities):
 
 
 def snapshot(world):
-    return json.loads(json.dumps({**world, "agents": list(world["agents"].values())}))
+    result = json.loads(json.dumps({**world, "agents": list(world["agents"].values())}))
+    for agent in result["agents"]:
+        if agent["activity"] == "evaluating":
+            agent["activity"] = "training"
+    return result
 
 
 # ---------------------------------------------------------------- output
@@ -862,6 +875,7 @@ def build(run, extra):
     manifest = {
         "schema": SCHEMA, "run_id": run.run_id, "swarm": run.swarm, "title": extra["title"],
         "status": extra.get("status", "finished"), "live": extra.get("live", False),
+        "converged": bool(extra.get("converged", False)),
         "arm": extra["arm"], "metric": extra["metric"],
         "boredom": extra["boredom"],
         "time": {"ticks": len(events), "rounds": max((e["round"] for e in events), default=0),
@@ -926,7 +940,7 @@ def world_at(events, run_manifest, entities, tick, keyframes=None):
         class Shim:
             run_id = run_manifest["run_id"]
             agents = {a["native_id"]: a for a in run_manifest["agents"]}
-        world = initial_world(Shim, {"baseline": None})
+        world = initial_world(Shim, {"baseline": run_manifest.get("baseline")})
         start = 0
     else:
         frame = json.loads(json.dumps(keyframes[base]))

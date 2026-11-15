@@ -16,7 +16,6 @@ from boredom import (
     jaccard_distance,
     ledger_events,
     parse_candidate_diff,
-    read_results,
     representation_from_diff,
 )
 
@@ -150,6 +149,17 @@ class DescriptorTests(unittest.TestCase):
 
 
 class CliIntegrationTests(unittest.TestCase):
+    def profile_args_for_test(self, directory):
+        profile = json.loads(
+            (SCRIPT.parent / "testcases/hadamard19/boredom_profile.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        profile["patience"] = 5
+        path = Path(directory) / "test-profile.json"
+        path.write_text(json.dumps(profile), encoding="utf-8")
+        return ["--profile", str(path)]
+
     def test_invalid_proposal_reject_is_safe_in_ledger_and_results_modes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -168,7 +178,7 @@ class CliIntegrationTests(unittest.TestCase):
             }
             ledger.write_text(json.dumps(event) + "\n")
             with results.open("w", newline="") as stream:
-                writer = csv.DictWriter(stream, fieldnames=["commit", "loss", "memory_gb", "status", "description", "descriptor"], delimiter="\t")
+                writer = csv.DictWriter(stream, fieldnames=["commit", "loss", "status", "description", "descriptor"], delimiter="\t")
                 writer.writeheader()
                 writer.writerow({"commit": "", "status": "reject", "description": event["description"], "descriptor": json.dumps(event["descriptor"])})
             for extra in ((), ("--ledger", str(ledger))):
@@ -179,7 +189,7 @@ class CliIntegrationTests(unittest.TestCase):
                 self.assertNotIn("Traceback", gate.stderr)
                 gate_record = json.loads((root / "log").read_text().splitlines()[-1])
                 self.assertEqual(gate_record["ledger_sha256"], json.loads(status.stdout)["ledger_sha256"])
-            results.write_text("commit\tloss\tmemory_gb\tstatus\tdescription\n\t\t\treject\t[EXPLOIT] proposal rejected after repair\n")
+            results.write_text("commit\tloss\tstatus\tdescription\n\t\treject\t[EXPLOIT] proposal rejected after repair\n")
             status = self.run_cli(root, results, root / "log", "status", "--json")
             self.assertEqual(status.returncode, 0, status.stderr)
             gate = self.run_cli(root, results, root / "log", "gate")
@@ -220,7 +230,7 @@ class CliIntegrationTests(unittest.TestCase):
     def write_results(self, path, rows):
         with path.open("w", newline="", encoding="utf-8") as results_file:
             writer = csv.writer(results_file, delimiter="\t")
-            writer.writerow(["commit", "loss", "memory_gb", "status", "description"])
+            writer.writerow(["commit", "loss", "status", "description"])
             writer.writerows(rows)
 
     def test_status_and_gate_regimes_in_temporary_git_repo(self):
@@ -228,8 +238,8 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "candidate.py"
-            train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
+            editable_file = repo / "candidate.py"
+            editable_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
 
             def commit(message):
                 subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
@@ -273,24 +283,27 @@ class CliIntegrationTests(unittest.TestCase):
 
             commits = []
             for block in range(5):
-                lines = train_file.read_text(encoding="utf-8").splitlines()
+                lines = editable_file.read_text(encoding="utf-8").splitlines()
                 lines[block * 4 : block * 4 + 4] = ["VALUE = 1"] * 4
-                train_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                editable_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
                 commits.append(
                     commit("experiment\n\nDescriptor: search/restarts")
                 )
 
             results = Path(directory) / "results.tsv"
             log = Path(directory) / "boredom_log.jsonl"
+            profile_args = self.profile_args_for_test(directory)
             self.write_results(
                 results,
                 [
-                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    (sha, "1.000000", "keep", "experiment")
                     for sha in commits
                 ],
             )
 
-            status = self.run_cli(repo, results, log, "status", "--json")
+            status = self.run_cli(
+                repo, results, log, "status", "--json", *profile_args
+            )
             self.assertEqual(status.returncode, 0, status.stderr)
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
@@ -305,7 +318,7 @@ class CliIntegrationTests(unittest.TestCase):
             print("integration fixture status --json:", status.stdout.strip())
 
             rejected = self.run_cli(
-                repo, results, log, "gate", "--commit", commits[4]
+                repo, results, log, "gate", "--commit", commits[4], *profile_args
             )
             self.assertEqual(rejected.returncode, 1, rejected.stdout)
             self.assertIn("REJECT", rejected.stdout)
@@ -313,11 +326,13 @@ class CliIntegrationTests(unittest.TestCase):
             self.write_results(
                 results,
                 [
-                    (sha, f"{0.5 - index * 0.01:.6f}", "1.0", "keep", "experiment")
+                    (sha, f"{0.5 - index * 0.01:.6f}", "keep", "experiment")
                     for index, sha in enumerate(commits[:3])
                 ],
             )
-            accepted = self.run_cli(repo, results, log, "gate", "--commit", commits[4])
+            accepted = self.run_cli(
+                repo, results, log, "gate", "--commit", commits[4], *profile_args
+            )
             self.assertEqual(accepted.returncode, 0, accepted.stdout)
             self.assertIn("PASS", accepted.stdout)
 
@@ -337,13 +352,13 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "candidate.py"
-            train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
+            editable_file = repo / "candidate.py"
+            editable_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n", encoding="utf-8")
 
             def commit(message, value, descriptor=None):
                 if descriptor is not None:
                     message = f"{message}\n\nDescriptor: {descriptor}"
-                train_file.write_text(
+                editable_file.write_text(
                     "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
                 )
                 subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
@@ -405,10 +420,18 @@ class CliIntegrationTests(unittest.TestCase):
 
             results = Path(directory) / "results.tsv"
             results.write_text("", encoding="utf-8")
+            profile_args = self.profile_args_for_test(directory)
+            profile_path = Path(profile_args[1])
+            profile = json.loads(profile_path.read_text(encoding="utf-8"))
+            profile["thresholds"] = profile.get(
+                "thresholds", {"snap": 0.70, "breakout": 0.85, "exit": 0.55}
+            )
+            profile["thresholds"]["breakout"] = 0.0
+            profile_path.write_text(json.dumps(profile), encoding="utf-8")
             self.write_results(
                 results,
                 [
-                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    (sha, "1.000000", "keep", "experiment")
                     for sha in history_commits
                 ],
             )
@@ -436,6 +459,7 @@ class CliIntegrationTests(unittest.TestCase):
                     "0",
                     "--failed-delta",
                     "0",
+                    *profile_args,
                     *extra,
                     env=env,
                 )
@@ -461,7 +485,7 @@ class CliIntegrationTests(unittest.TestCase):
             self.write_results(
                 results,
                 [
-                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    (sha, "1.000000", "keep", "experiment")
                     for sha in history_commits
                 ],
             )
@@ -473,7 +497,7 @@ class CliIntegrationTests(unittest.TestCase):
             self.write_results(
                 results,
                 [
-                    (sha, f"{1.0 - index * 0.1:.6f}", "1.0", "keep", "experiment")
+                    (sha, f"{1.0 - index * 0.1:.6f}", "keep", "experiment")
                     for index, sha in enumerate(history_commits)
                 ],
             )
@@ -484,7 +508,7 @@ class CliIntegrationTests(unittest.TestCase):
             self.write_results(
                 results,
                 [
-                    (sha, "1.000000", "1.0", "keep", "experiment")
+                    (sha, "1.000000", "keep", "experiment")
                     for sha in history_commits
                 ],
             )
@@ -509,10 +533,10 @@ class CliIntegrationTests(unittest.TestCase):
             repo = Path(directory) / "repo"
             repo.mkdir()
             subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            train_file = repo / "candidate.py"
+            editable_file = repo / "candidate.py"
 
             def commit(message, value):
-                train_file.write_text(
+                editable_file.write_text(
                     "\n".join([f"VALUE = {value}"] * 20) + "\n", encoding="utf-8"
                 )
                 subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
@@ -536,7 +560,7 @@ class CliIntegrationTests(unittest.TestCase):
                     ["git", "rev-parse", "--short", "HEAD"], cwd=repo, text=True
                 ).strip()
 
-            train_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n")
+            editable_file.write_text("\n".join(["VALUE = 0"] * 20) + "\n")
             subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
             subprocess.run(
                 [
@@ -582,7 +606,7 @@ class CliIntegrationTests(unittest.TestCase):
             self.write_results(
                 results,
                 [
-                    (sha, "1.000000", "1.0", "keep", "history")
+                    (sha, "1.000000", "keep", "history")
                     for sha in history
                 ],
             )
@@ -719,44 +743,6 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertEqual(source_record["lead"], "lead-1")
             self.assertEqual(source_record["agent"], "worker-1")
             self.assertEqual(query_record["prior_art"], ["Q1"])
-
-
-class ControlReplayTests(unittest.TestCase):
-    def test_control_replay_reaches_snap(self):
-        self.skipTest("training-era control replay fixture was removed")
-        rows = read_results(CONTROL_REPLAY / "results.tsv")
-        profile = descriptor_meter.load_profile(
-            Path(__file__).resolve().parents[1]
-            / "testcases/hadamard19/boredom_profile.json"
-        )
-        events = ledger_events(rows, None, profile)
-        trajectory = []
-        first_snap = None
-        for run_index in range(1, len(rows)):
-            metrics = descriptor_meter.status(profile, events[: run_index + 1])
-            trajectory.append((run_index, metrics["B"], metrics["regime"]))
-            if first_snap is None and metrics["regime"] != "EXPLOIT":
-                first_snap = run_index
-
-        print("control replay B/regime (post-baseline run index):")
-        for run_index, score, regime in trajectory:
-            print(f"{run_index:>2} {score:.6f} {regime}")
-
-        self.assertEqual(len(rows), 26)
-        self.assertIsNotNone(first_snap)
-        self.assertGreaterEqual(first_snap, 5)
-        self.assertLessEqual(first_snap, 12)
-        self.assertTrue(
-            all(
-                regime != "EXPLOIT"
-                for run_index, _, regime in trajectory
-                if 11 <= run_index <= 14
-            )
-        )
-        self.assertEqual(
-            next(regime for run_index, _, regime in trajectory if run_index == 16),
-            "EXPLOIT",
-        )
 
 
 if __name__ == "__main__":

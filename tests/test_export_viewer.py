@@ -106,7 +106,18 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(workers["critic"]["type"], "critic")
             self.assertEqual([e["tick"] for e in events], list(range(len(events))))
             self.assertEqual(len({e["event_id"] for e in events}), len(events))
-            self.assertEqual(manifest["provenance"]["gpu"], "none (CPU only)")
+            self.assertEqual(
+                set(manifest["provenance"]),
+                {
+                    "llm",
+                    "exa",
+                    "native_run_id",
+                    "memory_backend",
+                    "swarm_commit",
+                    "command",
+                    "artifacts",
+                },
+            )
 
             ids = {key for table in entities.values() for key in table}
             for event in events:
@@ -117,6 +128,21 @@ class ExportViewerTests(unittest.TestCase):
             ledger_events = [e for e in events if e["source"]["file"] == "ledger.jsonl"]
             baseline = next(e for e in ledger_events if e["type"] == "experiment.started")
             self.assertIsNone(baseline["ts"])  # no invented timestamps
+            started_by_agent = next(
+                e
+                for e in ledger_events
+                if e["type"] == "experiment.started" and e["agent_id"]
+            )
+            world = export_viewer.world_at(
+                events, manifest, entities, started_by_agent["tick"]
+            )
+            agent_state = next(
+                agent
+                for agent in world["agents"]
+                if agent["agent_id"] == started_by_agent["agent_id"]
+            )
+            self.assertEqual(agent_state["activity"], "training")
+            self.assertEqual(agent_state["station"], "culture")
             started = next(e for e in ledger_events if e["refs"].get("experiment_id") == "experiment:c1")
             self.assertEqual(started["ts"], "2026-11-14T10:04:00Z")  # borrowed from the gate record
 
@@ -141,6 +167,34 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["boredom"]["B"], expected_b)
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
+
+    def test_duplicate_experiment_maps_to_discard_with_reason(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            reason = "duplicate: blob already scored as c1"
+            ledger = [
+                json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()
+            ]
+            ledger.append({
+                "seq": 4, "round": 2, "kind": "candidate", "agent": "worker-2",
+                "status": "duplicate", "score": 0.5, "commit": "c2",
+                "duplicate_of": "c1", "gate_reasons": [reason],
+                "descriptor": {"mechanism": "search", "method": "tabu"},
+            })
+            write_jsonl(out / "ledger.jsonl", ledger)
+
+            _, events, _, _, entities = self.export(out, root / "dest")
+            experiment = entities["experiments"]["experiment:c2"]
+            self.assertEqual(experiment["status"], "discard")
+            self.assertIn(reason, experiment["gate"]["reasons"])
+            self.assertEqual(entities["rewards"]["reward:4"]["status"], "discard")
+            finished = next(
+                event for event in events
+                if event["type"] == "experiment.finished"
+                and event["refs"].get("experiment_id") == "experiment:c2"
+            )
+            self.assertEqual(finished["payload"]["status"], "discard")
 
     def test_export_is_deterministic_and_seek_matches_keyframes(self):
         with tempfile.TemporaryDirectory() as tmp:

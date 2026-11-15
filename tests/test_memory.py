@@ -131,8 +131,8 @@ class MemoryCliTests(unittest.TestCase):
         repo = Path(directory) / "repo"
         repo.mkdir()
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        train_file = repo / "candidate.py"
-        train_file.write_text("WIDTH = 8\n", encoding="utf-8")
+        editable_file = repo / "candidate.py"
+        editable_file.write_text("WIDTH = 8\n", encoding="utf-8")
 
         def commit(message):
             subprocess.run(["git", "add", "candidate.py"], cwd=repo, check=True)
@@ -157,7 +157,7 @@ class MemoryCliTests(unittest.TestCase):
             ).strip()
 
         first = commit("baseline")
-        train_file.write_text("WIDTH = 10\n", encoding="utf-8")
+        editable_file.write_text("WIDTH = 10\n", encoding="utf-8")
         message = candidate_message or "[SNAP] increase width based on paper\n\nSource: S1"
         second = commit(message)
         return repo, first, second
@@ -166,7 +166,7 @@ class MemoryCliTests(unittest.TestCase):
         with path.open("w", newline="", encoding="utf-8") as results_file:
             writer = csv.writer(results_file, delimiter="\t")
             writer.writerow(
-                ["commit", "loss", "memory_gb", "status", "description"]
+                ["commit", "loss", "status", "description"]
             )
             writer.writerows(rows)
 
@@ -194,8 +194,6 @@ class MemoryCliTests(unittest.TestCase):
                 commit,
                 "--loss",
                 "0.98",
-                "--memory-gb",
-                "44",
                 "--status",
                 "keep",
                 "--description",
@@ -628,16 +626,19 @@ class MemoryCliTests(unittest.TestCase):
                 ):
                     memory.append_jsonl(mirror, {"sourceId": source_id, "metadata": metadata})
 
-                def item(content, source_id=None, metadata=None):
+                def item(content, source_id=None, metadata=None, tags=None):
                     return {
                         "content": content, "artifact": {"kind": "memory"},
-                        "sources": [] if source_id is None else [{"sourceId": source_id, "metadata": metadata or {}}],
+                        "sources": [] if source_id is None else [{
+                            "sourceId": source_id, "metadata": metadata or {},
+                            "tags": tags or [],
+                        }],
                     }
 
                 server.recall_response = {"results": [
-                    item("hadamard19 determinant", "foreign-source", {"arm": "B", "run_id": "current-run"}),
-                    item("old livecheck exhausted directions", "livecheck"),
-                    item("other arm", "other-arm"),
+                    item("hadamard19 determinant", "foreign-source", {"arm": "B", "run_id": "current-run"}, ["tag-foreign"]),
+                    item("old livecheck exhausted directions", "livecheck", tags=["tag-livecheck"]),
+                    item("other arm", "other-arm", tags=["tag-other-arm"]),
                     item("no source"),
                     item("stale metadata", own_source, {"arm": "B", "run_id": "old-run"}),
                     item("validation loss experiment", own_source),
@@ -647,6 +648,14 @@ class MemoryCliTests(unittest.TestCase):
                 records = [json.loads(line) for line in log.read_text().splitlines()]
                 self.assertEqual(records[-1]["dropped_count"], 5)
                 self.assertEqual(records[-1]["source_ids"], [own_source])
+                self.assertEqual(
+                    records[-1]["dropped_source_ids"],
+                    ["foreign-source", "livecheck", "other-arm"],
+                )
+                self.assertEqual(
+                    records[-1]["dropped_tags"],
+                    ["tag-foreign", "tag-livecheck", "tag-other-arm"],
+                )
                 payload = next(request["body"] for request in server.requests if request["path"].endswith("/ingest"))
                 self.assertEqual(payload["metadata"]["arm"], "B")
                 self.assertEqual(payload["metadata"]["run_id"], "current-run")

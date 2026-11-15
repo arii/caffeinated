@@ -99,6 +99,40 @@ class ViewerApiTests(unittest.TestCase):
         self.assertEqual(cached.status_code, 304)
         self.assertEqual(finished_dir, self.run_dir)
 
+    def test_world_timestamp_selector_compares_instants(self):
+        events_path = self.run_dir / "events.ndjson"
+        events = _read_events(events_path)
+        events[0]["ts"] = "2025-01-02T03:04:05.123456Z"
+        events[1]["ts"] = "2025-01-01T22:04:05.123456-05:00"
+        events_path.write_text("".join(json.dumps(event) + "\n" for event in events))
+        response = self.client.get(
+            f"/api/v1/runs/{self.run_id}/world",
+            params={"at": "ts=2025-01-01T22:04:05.123456-05:00"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["tick"], 1)
+        self.assertEqual(
+            self.client.get(
+                f"/api/v1/runs/{self.run_id}/world",
+                params={"at": "ts=not-a-date"},
+            ).status_code,
+            416,
+        )
+
+    def test_world_at_zero_without_keyframe_uses_manifest_baseline(self):
+        manifest = json.loads((self.run_dir / "manifest.json").read_text())
+        manifest["baseline"] = 0.058514
+        events = _read_events(self.run_dir / "events.ndjson")
+        world = export_viewer.world_at(
+            events, manifest, {}, 0, keyframes={}
+        )
+        self.assertEqual(world["tick"], 0)
+        self.assertEqual(world["swarm"]["baseline"], 0.058514)
+        self.assertEqual(
+            export_viewer.world_at(events, manifest, {}, 0, keyframes={0: world}),
+            world,
+        )
+
     def test_stream_appends_partial_line_and_resumes_without_duplicates(self):
         base = f"/api/v1/runs/{self.run_id}"
         events_path = self.run_dir / "events.ndjson"

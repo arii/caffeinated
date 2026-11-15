@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
 import mimetypes
@@ -28,6 +29,18 @@ ENTITY_ALIASES = {
     "experiment": "experiments", "reward": "rewards", "llm_call": "llm_calls",
     "discovery": "discoveries", "source": "sources",
 }
+
+
+def _parse_instant(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value.endswith("Z") else value)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
 
 
 def _read_events(path):
@@ -150,9 +163,13 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
             tick = round_.get("tick_end", -1) if round_ else -1
         elif selector.startswith("ts="):
             target = selector[3:]
+            target_instant = _parse_instant(target)
+            if target_instant is None:
+                raise HTTPException(416, {"error": "tick_out_of_range", "ticks": ticks})
             events = _read_events(run_dir / "events.ndjson")
             tick = max((event["tick"] for event in events
-                        if event.get("ts") and event["ts"] <= target), default=-1)
+                        if _parse_instant(event.get("ts")) is not None
+                        and _parse_instant(event.get("ts")) <= target_instant), default=-1)
         else:
             tick = -1
         if tick < 0 or tick >= ticks:
@@ -378,13 +395,39 @@ def create_app(data_dir=None, *, poll_interval=0.1, heartbeat_interval=15):
         async def generate():
             cursor = last_tick
             heartbeat = time.monotonic()
+            event_path = run_dir / "events.ndjson"
+            offset = 0
+            pending = b""
+            inode = None
+            last_size = 0
             while not await request.is_disconnected():
-                for event in _read_events(run_dir / "events.ndjson"):
-                    if event["tick"] <= cursor:
-                        continue
-                    cursor = event["tick"]
-                    data = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
-                    yield f"event: swarm-event\nid: {cursor}\ndata: {data}\n\n"
+                try:
+                    stat = event_path.stat()
+                    if stat.st_size < last_size or (inode is not None and stat.st_ino != inode):
+                        offset, pending = 0, b""
+                    inode = stat.st_ino
+                    last_size = stat.st_size
+                    if stat.st_size > offset:
+                        with event_path.open("rb") as stream:
+                            stream.seek(offset)
+                            chunk = stream.read()
+                        offset += len(chunk)
+                        lines = (pending + chunk).split(b"\n")
+                        pending = lines.pop()
+                        for line in lines:
+                            if not line:
+                                continue
+                            try:
+                                event = json.loads(line)
+                            except (UnicodeDecodeError, json.JSONDecodeError):
+                                continue
+                            if event["tick"] <= cursor:
+                                continue
+                            cursor = event["tick"]
+                            data = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+                            yield f"event: swarm-event\nid: {cursor}\ndata: {data}\n\n"
+                except FileNotFoundError:
+                    pass
                 manifest = manifest_for(run_dir)
                 if manifest.get("status") in {"finished", "stopped"}:
                     yield "event: run.status\ndata: " + json.dumps({"status": manifest["status"]}) + "\n\n"
