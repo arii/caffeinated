@@ -17,7 +17,9 @@ MOCK = os.environ.get("MOCK") == "1"
 MODEL_CHEAP = os.environ.get("MODEL_CHEAP", "gpt-5-mini")
 MODEL_STRONG = os.environ.get("MODEL_STRONG", "gpt-5")
 MODEL_JUDGE_B = os.environ.get("MODEL_JUDGE_B", "gpt-5-mini")
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
+EMBED_BACKEND = os.environ.get("EMBED_BACKEND", "openai")  # "local" = fastembed on CPU, no key
+EMBED_MODEL = os.environ.get("EMBED_MODEL") or (
+    "BAAI/bge-small-en-v1.5" if EMBED_BACKEND == "local" else "text-embedding-3-small")
 CACHE_DIR = Path(os.environ.get("LLM_CACHE_DIR", Path(__file__).parent / ".cache"))
 TOKEN_CAP = int(os.environ.get("TOKEN_CAP", "0") or 0)  # 0 = unlimited
 MOCK_EMBED_DIM = 64
@@ -128,16 +130,33 @@ def embed(texts: list[str]) -> np.ndarray:
         else:
             missing.append(i)
     if missing:
-        resp = _openai().embeddings.create(model=EMBED_MODEL, input=[texts[i] for i in missing])
-        _charge(resp.usage.total_tokens if resp.usage else 0)
-        for i, item in zip(missing, resp.data):
-            v = np.array(item.embedding)
+        for i, raw in zip(missing, _embed_remote([texts[i] for i in missing])):
+            v = np.array(raw)
             v = v / (np.linalg.norm(v) or 1.0)
             out[i] = v
             f = CACHE_DIR / "embed" / f"{_hash(EMBED_MODEL, texts[i])}.json"
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(json.dumps(v.tolist()))
     return np.vstack(out)  # type: ignore[arg-type]
+
+
+def _embed_remote(texts: list[str]) -> list:
+    if EMBED_BACKEND == "local":
+        return list(_local_embedder().embed(texts))
+    resp = _openai().embeddings.create(model=EMBED_MODEL, input=texts)
+    _charge(resp.usage.total_tokens if resp.usage else 0)
+    return [item.embedding for item in resp.data]
+
+
+_local_model = None
+
+
+def _local_embedder():
+    global _local_model
+    if _local_model is None:
+        from fastembed import TextEmbedding
+        _local_model = TextEmbedding(EMBED_MODEL)
+    return _local_model
 
 
 def _mock_embed(text: str) -> np.ndarray:

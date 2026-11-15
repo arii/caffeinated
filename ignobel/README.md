@@ -26,6 +26,10 @@ study's files and a copy of its dataset), real mode in a Modal sandbox. Docker m
 mock runs and tests that run studies; if no sandbox is available the run stops with
 `lab.SandboxUnavailable`. Real runs read keys from the environment; see `.env.example`.
 
+Any OpenAI-compatible chat provider works: set `OPENAI_BASE_URL`, `OPENAI_API_KEY` and the `MODEL_*`
+names. If it has no embeddings model (e.g. Tinker), set `EMBED_BACKEND=local` to embed on CPU with
+`fastembed` (`BAAI/bge-small-en-v1.5`, downloaded on first use).
+
 ## Layout
 
 | file | job |

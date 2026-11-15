@@ -51,3 +51,20 @@ def test_prompt_log(tmp_path):
     llm.set_prompt_log(None)
     rec = json.loads((tmp_path / "p.jsonl").read_text().splitlines()[0])
     assert rec["system"] == "SYS" and rec["user"] == "USR"
+
+
+def test_local_embed_backend_needs_no_key(monkeypatch, tmp_path):
+    import llm
+
+    class FakeEmbedder:
+        def embed(self, texts):
+            return [[float(len(t)), 1.0] for t in texts]
+
+    monkeypatch.setattr(llm, "MOCK", False)
+    monkeypatch.setattr(llm, "EMBED_BACKEND", "local")
+    monkeypatch.setattr(llm, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(llm, "_local_model", FakeEmbedder())
+    monkeypatch.setattr(llm, "_openai", lambda: (_ for _ in ()).throw(AssertionError("called OpenAI")))
+    v = llm.embed(["ab", "abcd"])
+    assert v.shape == (2, 2) and abs(float((v[0] ** 2).sum()) - 1) < 1e-9
+    assert (llm.embed(["ab"]) == v[:1]).all()  # second call comes from the cache
