@@ -331,7 +331,10 @@ interface Study {           // ignobel_studies.jsonl: one per candidate study (c
                             // but did not replicate", "Rejected: <reason>", "Not run")
   citations: string[];
   replications: { rho; p; n; halves; significant; replicated; confirmed }[];  // critic re-runs
-  committee: { score: number | null; rejected: string | null; verdicts: unknown } | null;
+  committee: { available: boolean; score: number | null; rejected: boolean;
+               judges: { [judge: string]: { laugh: number; think: number; reason: string } };
+               prior_work: { title: string; url: string; snippet: string }[];
+               prior_work_available: boolean } | null;
 }
 
 interface Reward {

@@ -1493,7 +1493,7 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
                 "outcome": study_outcome(result),
                 "citations": result.get("citations") or prereg.get("citations") or [],
                 "replications": [],
-                "committee": None,
+                "committee": result.get("committee"),
                 "tick": None,
             },
         )
@@ -1533,6 +1533,7 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
                 "confirmed": bool(result.get("confirmed")),
                 "rejected": result.get("rejected"),
                 "headline": result.get("headline"),
+                "committee": result.get("committee"),
                 "text": study_outcome(result),
             },
         )
@@ -1550,9 +1551,13 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
         if sid is None:
             continue
         committee = {
+            "available": score.get("available", True),
             "score": score.get("committee"),
             "rejected": score.get("rejected"),
             "verdicts": score.get("verdicts"),
+            "judges": score.get("judges") or {},
+            "prior_work": score.get("prior_work") or [],
+            "prior_work_available": score.get("prior_work_available", False),
         }
         studies[sid]["committee"] = committee
         study = studies[sid]

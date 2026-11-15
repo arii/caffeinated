@@ -15,11 +15,14 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
    |rho| >= 0.1, and p < REPLICATION_ALPHA in each fixed hash half; trivial
    pairs fail.
 
-loss = 1 - (replicated and significant)
+Unconfirmed studies score 0. Confirmed studies score 0.25 + 0.75 times the
+committee score (the lower judge's minimum of LAUGH and THINK, divided by 10);
+targeting a group scores 0. When the committee is unavailable, confirmed
+studies retain score 1.
 
 Every graded study is appended to <run>/ignobel_studies.jsonl; the Ig Nobel
-committee (committee.py) scores the replicated ones after the run with
-score_run.py.
+committee judges confirmed studies during evaluation; score_run.py reports
+the cached verdicts after the run.
 """
 
 import contextlib
@@ -38,6 +41,7 @@ for path in (ROOT, HERE):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+import committee
 import external
 from judge_text import tokens
 from stats import spearman
@@ -378,6 +382,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
         "replicated": replicated,
         "confirmed": confirmed,
         "predicted_rho": predicted,
+        "committee": None,
         "columns": sorted(
             "/".join(filter(None, (claim[axis], claim[f"{axis}_per"]))) for axis in ("x", "y")
         ),
@@ -388,7 +393,7 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None):
 
 
 def record_study(research_log, prereg, graded):
-    """Append the full study record for post-run analysis (score_run.py runs the committee)."""
+    """Append the graded study, including the in-run committee result."""
     if not research_log:
         return
     record = {"ts": time.time(), "prereg": prereg, "result": graded}
@@ -409,6 +414,23 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     try:
         prereg = parse_prereg(source, load_fields(task_dir))
         graded = grade_prereg(prereg, task_dir, research_log)
+        if graded["confirmed"]:
+            if committee.available():
+                context = {}
+                with contextlib.suppress(TypeError, json.JSONDecodeError):
+                    context = json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}")
+                verdict = committee.score_study(
+                    committee.abstract(prereg, graded),
+                    graded["headline"],
+                    task_dir,
+                    exa_enabled=context.get("exa_enabled"),
+                )
+                graded["committee"] = {"available": True, **verdict}
+                score = 0.0 if verdict["rejected"] else 0.25 + 0.75 * verdict["score"]
+            else:
+                graded["committee"] = committee.unavailable_result()
+                score = 1.0
+            graded["score"] = score
         record_study(research_log, prereg, graded)
         status = "ok"
     except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
@@ -438,6 +460,27 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
                 f"replicated: {str(graded['replicated']).lower()}",
                 f"confirmed: {str(graded['confirmed']).lower()}",
             ]
+            if graded["confirmed"]:
+                verdict = graded["committee"]
+                if verdict["available"]:
+                    judges = verdict["judges"]
+                    out += [
+                        f"committee: {verdict['score']:.3f} "
+                        f"(judge a laugh/think {judges['a']['laugh']}/{judges['a']['think']}, "
+                        f"judge b {judges['b']['laugh']}/{judges['b']['think']})",
+                        "judge reason: "
+                        + "; ".join(
+                            f"{judge}: {judges[judge]['reason'].replace(chr(10), ' ').replace(chr(13), ' ')}"
+                            for judge in ("a", "b")
+                        ),
+                        (
+                            f"prior_work: {len(verdict['prior_work'])} results"
+                            if verdict["prior_work_available"]
+                            else "prior_work: unavailable"
+                        ),
+                    ]
+                else:
+                    out += ["committee: unavailable", "prior_work: unavailable"]
         out.append(f"rejected: {graded['rejected'] or 'no'}")
     out += [
         f"score: {score:.6f}",

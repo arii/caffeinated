@@ -11,7 +11,7 @@ on the host.
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | dev accuracy ≈ 0.1 (10 questions) | published full-BixBench accuracy 0.523 |
 | `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | dev score ≈ 0.149 | dev-only `RECORD` 0.3598 from the original commit; source unavailable |
-| `ignobel` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
+| `ignobel` | Pre-registered expert study on real public data, graded for replication and committee-rated interest | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
@@ -85,16 +85,21 @@ all rows with the registered sign; replicated = the same sign with p < 0.05 in
 each of the two fixed hash halves. Each dataset gets one registered test per
 run, so the swarm cannot fish through a dataset's columns, and a test's
 predicted effect size is frozen at its first registration. Trivial pairs fail.
-Loss = 1 − (replicated and significant). Every graded study (registration,
-citations, dataset sha256, rho/p/n overall and per half) is appended to
+Unconfirmed studies score 0. For a confirmed study, the host calls the
+two-judge committee during evaluation: score = `0.25 + 0.75 * committee_score`,
+where the committee score is the lower judge's `min(LAUGH, THINK)/10`; a
+targets-group flag sets score to 0. The swarm loss is `1 - score`, so replicated
+findings that are funny, thoughtful and not already well known score higher.
+When the committee is unavailable (fake LLM or no `TINKER_API_KEY`), confirmed
+studies keep score 1.0, preserving offline evaluation. Before judging, one Exa
+search on the host-written headline supplies up to five title/URL/snippet
+results as prior-work data; established or textbook results must receive THINK
+≤ 3. Judges receive only a host-written abstract and search results, never the
+preregistration's question, hypothesis or mechanism. Every graded study,
+including per-judge scores and prior-work evidence, is appended to
 `<run>/ignobel_studies.jsonl`; after the run,
-`python3 testcases/ignobel/score_run.py --run <out>` sends the replicated
-studies to a two-judge committee (`committee.py`, which holds both judge
-prompts; nothing on the run side imports it; Tinker models `IGNOBEL_JUDGE_A_MODEL`,
-`IGNOBEL_JUDGE_B_MODEL`, defaults Kimi K3.1 Pro and Qwen3.5-397B) and writes
-`scores.jsonl`: laugh and think 1–10 on a grader-written abstract, each judge
-counts min(laugh, think), the lower judge wins, and a joke at a group's expense
-scores 0. The swarm is open-ended: `field` may be any snake_case field or subfield a lab
+`python3 testcases/ignobel/score_run.py --run <out>` reports cached verdicts in
+`scores.jsonl` without re-judging them. The swarm is open-ended: `field` may be any snake_case field or subfield a lab
 founds (logged as descriptor `other/<subfield>`), and each round `swarm.py` runs
 the task's `round_context.py` (task.json `round_context`) and appends its output
 to the task inputs: the lab notebook (every study registered so far this run

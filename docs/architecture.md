@@ -61,6 +61,10 @@ flowchart TB
   and profile; responses carry `ledger_sha256` / `profile_sha256`.
 - **Claims are checked twice.** A new best must survive a second-seed critic
   run; SNAP/BREAKOUT ideas must cite a source.
+- **Ig Nobel optimizes for interesting findings.** Confirmed studies are judged
+  in-loop by two committee judges using only a host-written abstract and
+  optional Exa prior-work evidence; an established or textbook result is
+  capped at THINK 3, while targeting a group scores zero.
 - **The viewer side is read-only.** The API reads exported files, holds no
   credentials and cannot start runs.
 
@@ -104,7 +108,8 @@ not alter the event stream.
   [`testcases/README.md`](../testcases/README.md)).
 - **Ig Nobel:** the swarm task `swarm.py --task ignobel`: expert labs
   pre-register one Spearman test per real public dataset, the host grades
-  significance and split-half replication, and a separate LAUGH/THINK
-  committee (`testcases/ignobel/score_run.py`) judges replicated studies only
-  after the run. It uses the same Boredom Meter with its own profile
-  (`testcases/ignobel/boredom_profile.json`).
+  significance and split-half replication, then a two-judge LAUGH/THINK
+  committee scores each confirmed study during evaluation. Its score contributes
+  `0.25 + 0.75 * committee_score` to swarm reward (zero for targeting a group);
+  `score_run.py` reports the cached verdicts after the run. It uses the same
+  Boredom Meter with its own profile (`testcases/ignobel/boredom_profile.json`).

@@ -87,6 +87,28 @@ test('study cards follow registration, result, replication and award',()=>{
  for(const text of ['Ig Nobel Prize in Gastronomy','Half 2: rho 0.300','significant','replicated','Rare-steak eaters smoke','Funny and true','d.csv','0.150','0.200'])assert.ok(html.includes(text),text);
 });
 
+test('study cards show committee scores, judge reasons and linked prior work',()=>{
+ const r={entities:{studies:[{id:'study:committee',field:'everyday_physics',dataset:{url:'https://example.org/data.csv',x:'x',y:'y'}}]},events:[
+  {tick:1,type:'study.registered',refs:{study_id:'study:committee'},payload:{question:'Does X go with Y?'}},
+  {tick:2,type:'study.result',refs:{study_id:'study:committee'},payload:{confirmed:true,headline:'X goes with Y',committee:{available:true,score:0.6,rejected:false,
+   judges:{a:{laugh:8,think:6,reason:'Odd and thoughtful'},b:{laugh:7,think:6,reason:'Not textbook'}},
+   prior_work:[{title:'Related study',url:'https://example.org/paper',snippet:'A short prior-work snippet.'}],prior_work_available:true}}}
+ ]};
+ const [card]=studyCards(r,2),html=studyCardHtml(card,ctx);
+ assert.equal(card.committee.score,0.6);assert.equal(card.committee.judges.a.think,6);
+ for(const text of ['Committee · score 0.60','Judge a · laugh 8 / think 6: Odd and thoughtful','Prior work','Related study','A short prior-work snippet.','href="https://example.org/paper"'])assert.ok(html.includes(text),text);
+});
+
+test('legacy committee records keep the award verdict renderer',()=>{
+ const r={entities:{studies:[{id:'study:legacy',committee:{available:true,score:0.8,rejected:false,verdicts:{a:{reason:'A legacy judge reason'}},judges:{},prior_work:[],prior_work_available:false}}]},events:[
+  {tick:1,type:'study.registered',refs:{study_id:'study:legacy'},payload:{question:'Does X go with Y?'}},
+  {tick:2,type:'study.result',refs:{study_id:'study:legacy'},payload:{confirmed:true,committee:null}},
+  {tick:3,type:'award.issued',refs:{study_id:'study:legacy'},payload:{award:'Ig Nobel Prize',score:0.8,verdicts:['A legacy judge reason']}}
+ ]};
+ const [card]=studyCards(r,3),html=studyCardHtml(card,ctx);
+ assert.equal(card.committee,null);assert.ok(html.includes('A legacy judge reason'));
+});
+
 test('dialogue history keeps reached message.sent lines with recipients',()=>{
  assert.deepEqual(dialogueThrough(recording.events,4),[]);
  const all=dialogueThrough(recording.events,9);
