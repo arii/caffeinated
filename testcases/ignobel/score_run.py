@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Score a finished ignobel_mini swarm run with the Ig Nobel committee.
+"""Score a finished ignobel swarm run with the Ig Nobel committee.
 
 Reads <run>/ignobel_studies.jsonl (written by evaluate.py), keeps each distinct
 registered test once, sends the replicated and significant ones to the two
 judges (committee.py) and writes <run>/scores.jsonl, best first.
 
-  TINKER_API_KEY=... python3 testcases/ignobel_mini/score_run.py --run /path/to/swarm_out
+  TINKER_API_KEY=... python3 testcases/ignobel/score_run.py --run /path/to/swarm_out
 """
 
 import argparse

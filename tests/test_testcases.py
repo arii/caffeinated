@@ -15,8 +15,8 @@ import swarm
 from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
-from testcases.ignobel_mini import evaluate as ignobel
-from testcases.ignobel_mini import score_run as ignobel_score_run
+from testcases.ignobel import evaluate as ignobel
+from testcases.ignobel import score_run as ignobel_score_run
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -302,7 +302,7 @@ class SwarmTaskModeTests(unittest.TestCase):
     def test_task_scout_settings_reach_prompts(self):
         from llm import render_prompt
 
-        task = swarm.load_task("ignobel_mini")
+        task = swarm.load_task("ignobel")
         extra = {"recalled": "", "suggested_cells": "", "target_cell": "none", "sources": ""}
         prompt = render_prompt("SCOUT_QUERY", {**task["prompt_values"], **extra})
         self.assertIn("downloadable", prompt)
@@ -415,7 +415,7 @@ class IgnobelPreregTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.task_dir = Path(self.tmp.name)
         for name in ("boredom_profile.json", "sources.json"):
-            shutil.copy(TESTCASES / "ignobel_mini" / name, self.task_dir / name)
+            shutil.copy(TESTCASES / "ignobel" / name, self.task_dir / name)
         rows = ["rownames,Socks lost per month,Dryer age (years),Favourite colour"]
         for i in range(200):
             rows.append(f"{i},{i % 7 + i % 3},{i % 7},{'red' if i % 2 else 'blue'}")
@@ -674,11 +674,11 @@ class IgnobelTaskTests(unittest.TestCase):
     def test_fields_match_profile(self):
         fields = ignobel.load_fields()
         self.assertIn("food_science", fields)
-        prereg = json.loads((TESTCASES / "ignobel_mini" / "prereg.json").read_text())
+        prereg = json.loads((TESTCASES / "ignobel" / "prereg.json").read_text())
         self.assertIn(prereg["study_type"], fields[prereg["field"]])
 
     def test_ignobel_baseline_registration_is_a_real_null(self):
-        result = evaluate("ignobel_mini")
+        result = evaluate("ignobel")
         values = dict(re.findall(r"^([\w_ ]+): (.+)$", result.stdout, re.M))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(float(values["loss"]), 1.0)

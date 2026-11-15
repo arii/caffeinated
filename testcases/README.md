@@ -11,7 +11,7 @@ on the host.
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
 | `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
-| `ignobel_mini` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
+| `ignobel` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
@@ -60,7 +60,7 @@ predicted effect size is frozen at its first registration. Trivial pairs fail.
 Loss = 1 − (replicated and significant). Every graded study (registration,
 citations, dataset sha256, rho/p/n overall and per half) is appended to
 `<run>/ignobel_studies.jsonl`; after the run,
-`python3 testcases/ignobel_mini/score_run.py --run <out>` sends the replicated
+`python3 testcases/ignobel/score_run.py --run <out>` sends the replicated
 studies to the same two-judge committee as `ignobel/` (`committee.py` reads the
 prompts from `ignobel/committee.py`; Tinker models `IGNOBEL_JUDGE_A_MODEL`,
 `IGNOBEL_JUDGE_B_MODEL`, defaults Kimi K3.1 Pro and Qwen3.5-397B) and writes
@@ -77,7 +77,7 @@ datasets instead of small-GPT training.
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --llm fake --no-push
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task ignobel_mini --rounds 1 --llm fake --no-push
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task ignobel --rounds 1 --llm fake --no-push
 ```
 
 `--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
