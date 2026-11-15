@@ -24,7 +24,7 @@ dev = [
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-extend-exclude = ["worktrees", ".swarm_worktrees", "runs", "results", "backend", "node_modules", "docs/backend-integration.md"]
+extend-exclude = ["worktrees", ".swarm_worktrees", "runs", "results", "node_modules", "docs/backend-integration.md"]
 
 [tool.ruff.lint]
 select = [
