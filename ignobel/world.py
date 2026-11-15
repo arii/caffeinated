@@ -279,7 +279,7 @@ class World:
             for m, _ in ready])
         born = []
         for (m, field_B), (d, res) in zip(ready, defs):
-            if d.name in taken:  # two mothers picked the same name this round
+            while d.name in taken:  # two mothers picked the same name this round
                 d.name = f"{d.name}{m.name[:3]}"
             taken.add(d.name)
             spec = families_mod.to_spec(d, m, self.out / "data", self.seed)

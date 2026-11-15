@@ -40,6 +40,21 @@ def test_unusable_spawn_reply_falls_back_to_a_working_lab():
     m = families.load()[0]
     d = families._to_daughter({"name": "Watson!", "instruments": [{"name": ""}, "junk"]}, m, {"watson"})
     assert d.name != "watson" and len(d.instruments) >= 2 and d.seed_queries
+    d = families._to_daughter({"instruments": 3, "seed_queries": 7, "methods": 1.5, "name": 2}, m, set())
+    assert len(d.instruments) == 3 and d.seed_queries and d.methods == []
+    assert families._to_daughter(["not", "a", "dict"], m, set()).instruments
+
+
+def test_simultaneous_spawns_get_unique_names(tmp_path, monkeypatch):
+    w = run_arm.build_world("full", 3, 0, tmp_path, cfg=_cfg(spawn_threshold=0.0), roster="families")
+    picks = iter(["curiephy", "curie", "curie"])
+    real = families._to_daughter
+    monkeypatch.setattr(families, "_to_daughter",
+                        lambda data, m, taken: real({**data, "name": next(picks)}, m, taken))
+    asyncio.run(w._spawn(1, {a.name: 1.0 for a in w.agents}))
+    names = [a.name for a in w.agents]
+    assert len(names) == len(set(names)) == 6
+    assert len({a.spec.dataset for a in w.agents}) == 6
 
 
 def test_pairing_prefers_other_departments(tmp_path):
