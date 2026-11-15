@@ -1,6 +1,8 @@
 {
  "editable": "construct.py",
  "brief": "a construction script (`construct.py`) that outputs a 19x19 matrix of +1/-1 entries; the score is log10|det| computed exactly (EinsteinArena hadamard-det rules), and the loss is log10(known maximum 2^18*3411968) minus the score. Loss 0 means the known optimum was matched",
+ "context_files": [],
+ "proxy_note": "exact; known optimum",
  "fake_targets": [
   [
    "RESTARTS",

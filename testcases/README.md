@@ -1,39 +1,60 @@
-# Mini benchmarks for the swarm
+# CPU mini-benchmark proxies
 
-Three small tasks modelled on the hackathon dashboard records. Each one scores in
-about a second on a CPU, so the full conductor → scout → worker → critic loop
-(Boredom Meter, Exa, past.dev memory) can be checked end to end in minutes,
-with no `train.py` and no Modal.
+These are local, CPU-sized proxies, not full versions of the benchmarks named
+below. The trusted host grader never imports or executes candidate code. It
+passes only the editable file, declared public inputs, and any task harness to a
+disposable Docker container, then parses bounded output and computes the score
+on the host.
 
-| task | modelled on | editable file | baseline | record to beat |
+| task | scope | editable file | baseline | reference |
 |---|---|---|---|---|
-| `hadamard19` | EinsteinArena `hadamard-det-51` (same exact ±1 check and determinant score), order 19 | `construct.py` | loss ≈ 0.0585 | loss 0 = known order-19 optimum, det = 2^18·3411968 |
-| `bixbench_mini` | BixBench: 17 real questions from capsules bix-18, bix-19, bix-51 (`futurehouse/BixBench`) | `analysis.py` | accuracy 0.118 | 0.523 (BixBench best) |
-| `playworld_mini` | PlayWorld stand-in: 9×9 gridworld, predict 20 future 5×5 frames when revisiting places | `world_model.py` | score 0.149 (copy last frame, the Matrix-Game role) | 0.360 (8-frame-memory model, the Genie 3 role); full memory reaches ≈ 0.72 |
+| `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
+| `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
+| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
 
-For every task, `evaluate.py` prints `score`, `loss`, `record` and `beats_record`.
-Lower loss is better. An invalid or crashing submission prints `error:` and scores 0.
-`playworld_mini` is a synthetic stand-in, not PlayWorld itself.
+The exact task notes are stored in each `task.json`: Hadamard is exact with a
+known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
+is a synthetic proxy, not PlayWorld, and uses the 8-frame-memory reference.
+Evaluators print `score`, `loss`, `record`, and `beats_reference`. Lower loss is
+better. A malformed or crashing candidate is scored as a crash.
+
+## Build the candidate image
+
+Build the pinned image once before running an evaluator or task swarm:
+
+```sh
+docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+```
+
+The image pins Python 3.11.12 and the CPU dependencies used by these tasks:
+NumPy, pandas, openpyxl, and SciPy. Candidate containers have no network, a
+read-only root filesystem, dropped Linux capabilities, no-new-privileges,
+resource limits, and only the task's editable file/public inputs plus a
+separate writable output mount. They receive no host environment secrets,
+grader, hidden answers, simulator, reference implementations, repository, or
+home directory. Docker being unavailable is a crash; candidates are never run
+on the host as a fallback.
+
+For BixBench, `prepare.py` downloads the public question/data files and keeps
+the answer key under `.cache/` on the host. The candidate receives only
+`questions.json` and the declared public `data/` files. For Playworld, the host
+generates context frames/actions and future actions for evaluation; hidden
+future frames stay in the trusted grader, while `run_candidate.py` supplies
+only public inputs to `world_model.py`.
 
 ## Run the swarm on a task
 
 ```sh
 # offline plumbing check (fake LLM, local memory, no Exa)
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 3 --llm fake --no-push
-
-# real check: LLM workers, Exa scouts, past.dev shared memory
-python3 swarm.py --task playworld_mini --arm B --rounds 6 --memory-backend pastdev
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --llm fake --no-push
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push
 ```
 
-`--task` edits `testcases/<task>/<editable>`, scores each commit with the task's
-frozen `evaluate.py` on this machine (`--gpu local`), loads
-`testcases/<task>/boredom_profile.json` and uses the generic prompts in
-`testcases/prompts/`. The task's loss goes in the `val_bpb` column, so the
-artifacts have the same format as a Modal run.
-
-The fake LLM only nudges `RESTARTS`/`SEED` in `hadamard19`, so with it the
-swarm should go from EXPLOIT to a boredom regime without improving. Use a real
-LLM to see actual progress.
+`--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
+Docker sandbox, loads `testcases/<task>/boredom_profile.json`, and uses the
+generic prompts in `testcases/prompts/`. The task loss goes in the `val_bpb`
+column, so the artifacts retain the autoresearch format.
 
 ## Score by hand
 
@@ -41,6 +62,7 @@ LLM to see actual progress.
 python3 testcases/run_task.py hadamard19 --results results.tsv --desc "anneal" --status auto
 ```
 
-`bixbench_mini/prepare.py` downloads its data from Hugging Face the first time the
-evaluator runs. `_reference/` holds reference solutions that were used to set the
-records. They are kept out of every editable file, so keep them out of agent prompts.
+Build the Docker image before running this command. BixBench public inputs are
+downloaded on the first evaluation. `_reference/` contains trusted reference
+implementations and is never mounted into a candidate container or included in
+candidate context.

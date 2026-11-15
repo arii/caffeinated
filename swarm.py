@@ -24,6 +24,7 @@ from boredom import descriptor_meter as meter
 import llm
 import memory
 import research
+from testcases import sandbox
 
 
 ROOT = Path(__file__).resolve().parent
@@ -850,6 +851,7 @@ def worker_attempts(
             "claims": "\n".join(claims) if claims else "No claims yet.",
             "train_py": train_py,
             "fake_targets": (TASK or {}).get("fake_targets"),
+            "fake_edits": (TASK or {}).get("fake_edits"),
             "vocab": json.dumps(profile.get("vocab", {}), sort_keys=True),
         },
     )
@@ -1205,16 +1207,7 @@ def modal_gpu_burst(repo, commits, seed, out_dir):
 
 
 def prepare_task(task_dir, context_files):
-    prepare = task_dir / "prepare.py"
-    if prepare.exists() and not all((task_dir / name).exists() for name in context_files):
-        subprocess.run(
-            [sys.executable, "prepare.py"],
-            cwd=task_dir,
-            env=evaluator_env(),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+    sandbox.prepare_task(task_dir, context_files)
 
 
 def preview_file(path, max_chars=6000):
@@ -1281,37 +1274,19 @@ def local_task_result(repo, commit, out_dir):
     log_path = Path(out_dir) / f"{commit}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     source = git(repo, "show", f"{commit}:{TARGET_FILE}", check=False)
-    loss, log = None, source.stderr
+    result = None
+    log = source.stderr
     if source.returncode == 0:
-        with tempfile.TemporaryDirectory() as directory:
-            work = Path(directory) / TASK["name"]
-            shutil.copytree(
-                TASK["dir"], work, ignore=shutil.ignore_patterns("__pycache__")
-            )
-            (work / TASK["editable"]).write_text(source.stdout, encoding="utf-8")
-            try:
-                result = subprocess.run(
-                    [sys.executable, "evaluate.py"],
-                    cwd=work,
-                    env=evaluator_env(),
-                    capture_output=True,
-                    text=True,
-                    timeout=LOCAL_EVAL_TIMEOUT,
-                    check=False,
-                )
-            except subprocess.TimeoutExpired as error:
-                log = f"{error.stdout or ''}{error.stderr or ''}\nerror: evaluation timed out"
-            else:
-                log = result.stdout + result.stderr
-                match = re.search(r"^loss: ([0-9.eE+-]+)$", result.stdout, re.M)
-                if match and "error:" not in result.stderr:
-                    loss = float(match.group(1))
+        result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        log = result.get("stdout", "") + result.get("stderr", "")
     log_path.write_text(log, encoding="utf-8")
+    loss = result.get("loss") if result and result.get("status") == "ok" else None
     return {
         "commit": commit,
         "val_bpb": loss,
         "memory_gb": 0.0,
-        "status": "ok" if loss is not None else "crash",
+        "status": result.get("status", "crash") if result else "crash",
+        "reason": result.get("reason") if result else "candidate_source_unavailable",
     }
 
 

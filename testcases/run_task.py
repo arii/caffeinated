@@ -8,20 +8,32 @@ with the task's loss (lower is better) in the val_bpb column, so boredom.py,
 analyze.py and the trace exporter work unchanged. --status auto keeps the run only
 if it beats the best kept loss so far.
 """
-import argparse, csv, re, subprocess, sys
+import argparse
+import csv
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from testcases import sandbox
+
 TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
 HEADER = ["commit", "val_bpb", "memory_gb", "status", "description"]
 
 
 def score(task):
-    out = subprocess.run([sys.executable, "evaluate.py"], cwd=HERE / task, capture_output=True, text=True)
-    sys.stdout.write(out.stdout)
-    sys.stderr.write(out.stderr)
-    m = re.search(r"^loss: ([0-9.eE+-]+)$", out.stdout, re.M)
-    return float(m.group(1)) if m else None, "error:" in out.stderr
+    task_dir = HERE / task
+    config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+    source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+    result = sandbox.evaluate_task(task_dir, source)
+    sys.stdout.write(result["stdout"])
+    sys.stderr.write(result["stderr"])
+    return result.get("loss"), result.get("status") != "ok"
 
 
 def best_kept(path):
@@ -49,7 +61,12 @@ def main():
     elif status == "auto":
         best = best_kept(path)
         status = "keep" if best is None or loss < best else "discard"
-    commit = subprocess.run(["git", "rev-parse", "--short=7", "HEAD"], capture_output=True, text=True).stdout.strip() or "nogit"
+    commit = subprocess.run(
+        ["git", "rev-parse", "--short=7", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    ).stdout.strip() or "nogit"
     new = not path.exists()
     with path.open("a", newline="") as f:
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
