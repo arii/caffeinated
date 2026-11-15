@@ -21,7 +21,7 @@ if (!psychologyCitation || !formulaMatch || !eventSummary) {
   throw new Error('The embedded intro.json is missing required demo copy.');
 }
 
-export const hookParts = chunks(intro.replay.title, [9, 9]);
+export const hookParts = chunks(intro.replay.title, [7, 7, 4]);
 export const hookTag = 'tongue-in-cheek headline — real results follow';
 export const eventLine = `${intro.event.title} · ${intro.event.dates} · hosted by ${intro.event.host}`;
 export const eventSummaryParts = chunks(

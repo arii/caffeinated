@@ -98,30 +98,6 @@ async function walkUntilNearScientist() {
     await walk('KeyW', 520);
     if (await proximityVisible()) return true;
   }
-  for (const [key, milliseconds] of [
-    ['ArrowLeft', 600],
-    ['KeyW', 1800],
-    ['KeyA', 1100],
-    ['KeyW', 1800],
-    ['ArrowRight', 900],
-    ['KeyW', 1800]
-  ]) {
-    await walk(key, milliseconds);
-    if (await proximityVisible()) return true;
-  }
-  if (await proximityVisible()) return true;
-
-  await page.locator('[data-drawer="team-drawer"]').click();
-  const scientist = page.locator('#agent-list .agent-row:not([disabled])').nth(1);
-  await scientist.waitFor({state: 'visible', timeout: 10_000});
-  await scientist.click();
-  await page.locator('#conversation[open]').waitFor({state: 'visible', timeout: 10_000});
-  await page.locator('#close-conversation').click();
-  await page.locator('#conversation[open]').waitFor({state: 'detached', timeout: 10_000});
-  for (let index = 0; index < 12; index += 1) {
-    await walk('KeyW', 520);
-    if (await proximityVisible()) return true;
-  }
   return proximityVisible();
 }
 
@@ -196,6 +172,24 @@ try {
   await waitUntil(walkAtSeconds);
   await page.locator('#play').click();
   events.pausedForWalkAt = elapsed();
+  await scrubTo(100);
+  await page.waitForFunction(
+    () =>
+      Array.from(document.querySelectorAll('#status-strip .status-role'))
+        .map((element) => element.textContent ?? '')
+        .some((label) => label.includes('Critic')),
+    {timeout: 10_000}
+  );
+  const statusTiles = page.locator('#status-strip .status-tile[data-agent]');
+  const statusTileTexts = await statusTiles.allInnerTexts();
+  const scientistIndex = statusTileTexts.findIndex(
+    (text) => /Lab/i.test(text) && !/(Conductor|Critic)/i.test(text)
+  );
+  if (scientistIndex < 0) {
+    throw new Error(`No scientist role tile was available: ${statusTileTexts.join(' · ')}`);
+  }
+  events.scientistTile = statusTileTexts[scientistIndex].replace(/\s+/g, ' ').trim();
+  await statusTiles.nth(scientistIndex).click();
   await page.locator('#camera-mode').click();
   events.walkStartedAt = elapsed();
   const foundScientist = await walkUntilNearScientist();
@@ -203,17 +197,15 @@ try {
     throw new Error('The real Lab capture did not show a scientist proximity bubble.');
   }
   events.proximityShownAt = elapsed();
-  await page.locator('#proximity [data-bubble-expand]').click();
-  await page.locator('#proximity [data-bubble-more]').click();
-  await page.locator('#conversation[open]').waitFor({state: 'visible', timeout: 10_000});
-  events.cardOpenedAt = elapsed();
-  await page.waitForTimeout(2500);
-  await page.locator('#close-conversation').click();
-  await page.locator('#conversation[open]').waitFor({state: 'detached', timeout: 10_000});
-  events.cardClosedAt = elapsed();
-  await page.locator('#play').click();
-  events.playbackResumedAt = elapsed();
-  await page.waitForTimeout(1500);
+  const cameraMode = await page.locator('#camera-mode').innerText();
+  if (!cameraMode.includes('Lab view')) {
+    throw new Error(`Scientist framing left walking mode: ${cameraMode}`);
+  }
+  const proximityText = (await page.locator('#proximity').innerText()).replace(/\s+/g, ' ').trim();
+  if (/(Program Office|Conductor)/i.test(proximityText)) {
+    throw new Error(`The proximity bubble targeted the conductor, not a scientist: ${proximityText}`);
+  }
+  events.proximityText = proximityText;
 
   const maxTick = Number(await page.locator('#timeline').getAttribute('max'));
   const snapTick = Math.min(477, maxTick);
@@ -240,6 +232,74 @@ try {
     await rename(rawPath, rawOutput);
   }
   rawPath = rawOutput;
+
+  const evidenceContext = await browser.newContext({
+    viewport: {width, height},
+    deviceScaleFactor: 1
+  });
+  try {
+    const evidencePage = await evidenceContext.newPage();
+    const evidenceUrl = new URL(serverUrl);
+    evidenceUrl.searchParams.set('recording', recording.id);
+    await evidencePage.goto(evidenceUrl.toString(), {waitUntil: 'domcontentloaded'});
+    await evidencePage.locator('#intro-start').waitFor({state: 'visible', timeout: 90_000});
+    await evidencePage.locator('#intro-start').click();
+    const evidenceInitialTick = Number(await evidencePage.locator('#timeline').inputValue());
+    await evidencePage.waitForFunction(
+      (tick) => Number(document.querySelector('#timeline')?.value ?? 0) > tick,
+      evidenceInitialTick,
+      {timeout: 15_000}
+    );
+    await evidencePage.locator('#play').click();
+    await evidencePage.locator('#timeline').evaluate((element) => {
+      const slider = element;
+      slider.value = '100';
+      slider.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    await evidencePage.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('#status-strip .status-role'))
+          .map((element) => element.textContent ?? '')
+          .some((label) => label.includes('Critic')),
+      undefined,
+      {timeout: 15_000}
+    );
+    const uiEvidence = await evidencePage.evaluate(() => ({
+      provenance:
+        document.querySelector('#provenance-badge')?.textContent?.trim() ?? '',
+      runMeta: document.querySelector('#run-meta')?.textContent?.trim() ?? '',
+      roleChips: Array.from(
+        document.querySelectorAll('#status-strip .status-role')
+      ).map((element) => element.textContent?.trim() ?? ''),
+      scientistTiles: Array.from(
+        document.querySelectorAll('#status-strip .status-tile-name')
+      ).map((element) => element.textContent?.trim() ?? '')
+    }));
+    if (!uiEvidence.provenance.startsWith('Stopped real run (13/15 rounds)')) {
+      throw new Error(`Unexpected Lab provenance badge: ${uiEvidence.provenance}`);
+    }
+    if (
+      !uiEvidence.runMeta.includes('Pre-committee run:') ||
+      uiEvidence.runMeta.includes('committee-scored in-run')
+    ) {
+      throw new Error(`Unexpected Lab run note: ${uiEvidence.runMeta}`);
+    }
+    if (
+      !uiEvidence.roleChips.some((label) => label.includes('Conductor')) ||
+      !uiEvidence.roleChips.some((label) => label.includes('Critic')) ||
+      uiEvidence.scientistTiles.some((name) => name === 'Program Office')
+    ) {
+      throw new Error(`Unexpected Lab role chips: ${uiEvidence.roleChips.join(' | ')}`);
+    }
+    await evidencePage.screenshot({
+      path: path.join(captures, 'lab-ui-evidence.png')
+    });
+    events.uiEvidenceTick = 100;
+    events.uiEvidence = uiEvidence;
+    console.log(`Lab UI evidence screenshot: ${path.join(captures, 'lab-ui-evidence.png')}`);
+  } finally {
+    await evidenceContext.close();
+  }
 } catch (error) {
   await context.close().catch(() => {});
   await browser.close().catch(() => {});
@@ -308,6 +368,7 @@ const metadata = {
   sceneDurationSeconds: sceneSeconds,
   speedFactor,
   events,
+  uiEvidencePath: 'public/captures/lab-ui-evidence.png',
   captions
 };
 await writeFile(

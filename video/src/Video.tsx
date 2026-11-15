@@ -35,7 +35,7 @@ const COLORS = {
 };
 
 type Caption = {text: string; fromSeconds: number; toSeconds: number};
-type VideoProps = {speedFactor: number; captions: Caption[]};
+type VideoProps = {speedFactor: number; captions: Caption[]; labVideoPath: string};
 
 function FadeBeat({
   from,
@@ -224,32 +224,48 @@ function ContentCard({
 function Hook() {
   return (
     <SceneShell duration={240}>
-      <FadeBeat from={0} to={72} fontSize={76}>
+      <FadeBeat from={0} to={64} fontSize={76}>
         {hookParts[0]}
       </FadeBeat>
-      <FadeBeat from={72} to={150} fontSize={76}>
+      <FadeBeat from={64} to={132} fontSize={76}>
         {hookParts[1]}
       </FadeBeat>
-      <FadeBeat from={150} to={201} fontSize={73}>
+      <FadeBeat from={132} to={174} fontSize={73}>
+        {hookParts[2]}
+      </FadeBeat>
+      <FadeBeat from={174} to={240} fontSize={73}>
         The secret: making AI less boring.
       </FadeBeat>
-      <FadeBeat from={201} to={240} fontSize={29} color={COLORS.muted}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '63%',
+          left: 112,
+          right: 112,
+          color: COLORS.muted,
+          fontFamily: 'DejaVu Sans, sans-serif',
+          fontSize: 36,
+          fontWeight: 400,
+          letterSpacing: '-0.01em',
+          textAlign: 'center'
+        }}
+      >
         {hookTag}
-      </FadeBeat>
+      </div>
     </SceneShell>
   );
 }
 
 function Hackathon() {
   return (
-    <SceneShell duration={240}>
-      <FadeBeat from={0} to={90} fontSize={61}>
+    <SceneShell duration={210}>
+      <FadeBeat from={0} to={80} fontSize={61}>
         {eventLine}
       </FadeBeat>
-      <FadeBeat from={90} to={162} fontSize={70}>
+      <FadeBeat from={80} to={145} fontSize={70}>
         {eventSummaryParts[0]}
       </FadeBeat>
-      <FadeBeat from={162} to={240} fontSize={70}>
+      <FadeBeat from={145} to={210} fontSize={70}>
         {eventSummaryParts[1]}
       </FadeBeat>
     </SceneShell>
@@ -296,15 +312,15 @@ function ToolCard({text, from, to}: {text: string; from: number; to: number}) {
 }
 
 function Tools() {
-  const cardStarts = [0, 68, 136, 204];
+  const cardStarts = [0, 61, 122, 183];
   return (
-    <SceneShell duration={300}>
+    <SceneShell duration={270}>
       {toolCards.map((text, index) => (
         <ToolCard
           key={text}
           text={text}
           from={cardStarts[index]}
-          to={index === toolCards.length - 1 ? 300 : cardStarts[index] + 80}
+          to={index === toolCards.length - 1 ? 270 : cardStarts[index] + 73}
         />
       ))}
     </SceneShell>
@@ -313,8 +329,8 @@ function Tools() {
 
 function Authors() {
   return (
-    <SceneShell duration={150}>
-      <FadeBeat from={0} to={150} fontSize={76} italic>
+    <SceneShell duration={120}>
+      <FadeBeat from={0} to={120} fontSize={76} italic>
         {authorNames.join(' · ')}
       </FadeBeat>
     </SceneShell>
@@ -323,30 +339,30 @@ function Authors() {
 
 function Boredom() {
   return (
-    <SceneShell duration={390}>
-      <FadeBeat from={0} to={69} fontSize={60}>
+    <SceneShell duration={360}>
+      <FadeBeat from={0} to={60} fontSize={60}>
         {psychologyParts[0]}
       </FadeBeat>
-      <FadeBeat from={69} to={147} fontSize={60}>
+      <FadeBeat from={60} to={132} fontSize={60}>
         {psychologyParts[1]}
       </FadeBeat>
-      <FadeBeat from={147} to={207} fontSize={34} color={COLORS.muted}>
+      <FadeBeat from={132} to={180} fontSize={34} color={COLORS.muted}>
         {psychologyParts[2]}
       </FadeBeat>
-      <FadeBeat from={207} to={285} fontSize={57}>
+      <FadeBeat from={180} to={252} fontSize={57}>
         {boredomLead}
       </FadeBeat>
-      <FadeBeat from={285} to={339} fontSize={50} color={COLORS.cream}>
+      <FadeBeat from={252} to={306} fontSize={50} color={COLORS.cream}>
         {boredomFormula}
       </FadeBeat>
-      <FadeBeat from={339} to={390} fontSize={55}>
+      <FadeBeat from={306} to={360} fontSize={55}>
         {boredomConclusion}
       </FadeBeat>
     </SceneShell>
   );
 }
 
-function RealLab({speedFactor, captions}: VideoProps) {
+function RealLab({speedFactor, captions, labVideoPath}: VideoProps) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const seconds = frame / fps;
@@ -360,7 +376,7 @@ function RealLab({speedFactor, captions}: VideoProps) {
   return (
     <AbsoluteFill style={{backgroundColor: COLORS.dark, opacity: alpha}}>
       <OffthreadVideo
-        src={staticFile('captures/lab-speedup.mp4')}
+        src={staticFile(labVideoPath)}
         muted
         style={{width: '100%', height: '100%', objectFit: 'cover'}}
       />
@@ -423,39 +439,65 @@ const RESULTS = {
   bixbenchCaveat: 'one run; 95% CI 0.49–0.97',
   track3Intro: 'Track 3 check — single agent vs swarm, 18 held-out questions:',
   track3Results: 'single agent 0.30 · swarm without meter 0.09 · boredom swarm 0.06',
-  track3Caveat: '3 seeds, not significance-tested — the single agent won',
+  track3Caveat:
+    '3 seeds, not significance-tested; ordering depends on a grader fix made after winners were known — exploratory',
+  track3CaveatParts: [
+    '3 seeds, not significance-tested; ordering depends on a grader fix',
+    'made after winners were known — exploratory'
+  ],
   playworld: 'Playworld proxy: loss 0.87 → 0.25 on 200 held-out episodes',
-  playworldCaveat: 'synthetic proxy, not official PlayWorld'
+  playworldCaveat: 'synthetic proxy, not official PlayWorld',
+  memoryComparison:
+    'past.dev vs local memory, same 419 real memories: right memory ranked first 65% vs 30%',
+  memoryComparisonParts: [
+    'past.dev vs local memory, same 419 real memories:',
+    'right memory ranked first 65% vs 30%'
+  ],
+  memoryComparisonCaveat: '40 hand-written probes; median 562 ms vs 15 ms'
 };
 
 function Results() {
   return (
-    <SceneShell duration={540}>
-      <ContentCard from={0} to={180}>
-        <FadeBeat from={0} to={105} fontSize={58}>
+    <SceneShell duration={660}>
+      <ContentCard from={0} to={150}>
+        <FadeBeat from={0} to={90} fontSize={58}>
           {RESULTS.bixbench}
         </FadeBeat>
-        <FadeBeat from={105} to={180} fontSize={41} color={COLORS.muted}>
+        <FadeBeat from={90} to={150} fontSize={41} color={COLORS.muted}>
           {RESULTS.bixbenchCaveat}
         </FadeBeat>
       </ContentCard>
-      <ContentCard from={180} to={360}>
-        <FadeBeat from={180} to={225} fontSize={47}>
+      <ContentCard from={150} to={390}>
+        <FadeBeat from={150} to={198} fontSize={47}>
           {RESULTS.track3Intro}
         </FadeBeat>
-        <FadeBeat from={225} to={300} fontSize={45}>
+        <FadeBeat from={198} to={252} fontSize={45}>
           {RESULTS.track3Results}
         </FadeBeat>
-        <FadeBeat from={300} to={360} fontSize={34} color={COLORS.muted}>
-          {RESULTS.track3Caveat}
+        <FadeBeat from={252} to={321} fontSize={38} color={COLORS.muted}>
+          {RESULTS.track3CaveatParts[0]}
+        </FadeBeat>
+        <FadeBeat from={321} to={390} fontSize={38} color={COLORS.muted}>
+          {RESULTS.track3CaveatParts[1]}
         </FadeBeat>
       </ContentCard>
-      <ContentCard from={360} to={540}>
-        <FadeBeat from={360} to={450} fontSize={56}>
+      <ContentCard from={390} to={510}>
+        <FadeBeat from={390} to={459} fontSize={56}>
           {RESULTS.playworld}
         </FadeBeat>
-        <FadeBeat from={450} to={540} fontSize={39} color={COLORS.muted}>
+        <FadeBeat from={459} to={510} fontSize={39} color={COLORS.muted}>
           {RESULTS.playworldCaveat}
+        </FadeBeat>
+      </ContentCard>
+      <ContentCard from={510} to={660}>
+        <FadeBeat from={510} to={561} fontSize={46}>
+          {RESULTS.memoryComparisonParts[0]}
+        </FadeBeat>
+        <FadeBeat from={561} to={612} fontSize={46}>
+          {RESULTS.memoryComparisonParts[1]}
+        </FadeBeat>
+        <FadeBeat from={612} to={660} fontSize={37} color={COLORS.muted}>
+          {RESULTS.memoryComparisonCaveat}
         </FadeBeat>
       </ContentCard>
     </SceneShell>
@@ -472,29 +514,29 @@ const STUDIES = [
 function IgNobel() {
   return (
     <SceneShell duration={420}>
-      <FadeBeat from={0} to={45} fontSize={47}>
-        Pre-committee run: 22 studies registered, 13 run,
+      <FadeBeat from={0} to={48} fontSize={40} maxWidth={1650}>
+        Pre-committee real run (stopped at round 13/15): 21 studies registered, 13 run,
       </FadeBeat>
-      <FadeBeat from={45} to={90} fontSize={49}>
-        12 passed preregistered gates (11 unique)
+      <FadeBeat from={48} to={96} fontSize={40} maxWidth={1650}>
+        11 passed preregistered gates; 10 hold under today's |ρ| ≥ 0.1 rule
       </FadeBeat>
       {STUDIES.map((study, index) => (
-        <ContentCard key={study} from={90 + index * 45} to={135 + index * 45}>
-          <FadeBeat from={90 + index * 45} to={135 + index * 45} fontSize={48} maxWidth={1500}>
+        <ContentCard key={study} from={96 + index * 45} to={141 + index * 45}>
+          <FadeBeat from={96 + index * 45} to={141 + index * 45} fontSize={48} maxWidth={1500}>
             {study}
           </FadeBeat>
         </ContentCard>
       ))}
-      <FadeBeat from={270} to={310} fontSize={47}>
+      <FadeBeat from={276} to={313} fontSize={47}>
         Mostly true — but not surprising.
       </FadeBeat>
-      <FadeBeat from={310} to={350} fontSize={45}>
+      <FadeBeat from={313} to={349} fontSize={45}>
         So we added an Ig Nobel committee score
       </FadeBeat>
-      <FadeBeat from={350} to={390} fontSize={42}>
+      <FadeBeat from={349} to={388} fontSize={42}>
         (laugh × think, two non-Kimi judges).
       </FadeBeat>
-      <FadeBeat from={390} to={420} fontSize={31} color={COLORS.muted}>
+      <FadeBeat from={388} to={420} fontSize={31} color={COLORS.muted}>
         committee-scored rerun pending Tinker credit
       </FadeBeat>
     </SceneShell>
@@ -517,28 +559,28 @@ function Close() {
   );
 }
 
-function Demo({speedFactor, captions}: VideoProps) {
+function Demo({speedFactor, captions, labVideoPath}: VideoProps) {
   return (
     <AbsoluteFill style={{backgroundColor: COLORS.background}}>
       <Sequence from={0} durationInFrames={240}>
         <Hook />
       </Sequence>
-      <Sequence from={240} durationInFrames={240}>
+      <Sequence from={240} durationInFrames={210}>
         <Hackathon />
       </Sequence>
-      <Sequence from={480} durationInFrames={300}>
+      <Sequence from={450} durationInFrames={270}>
         <Tools />
       </Sequence>
-      <Sequence from={780} durationInFrames={150}>
+      <Sequence from={720} durationInFrames={120}>
         <Authors />
       </Sequence>
-      <Sequence from={930} durationInFrames={390}>
+      <Sequence from={840} durationInFrames={360}>
         <Boredom />
       </Sequence>
-      <Sequence from={1320} durationInFrames={1140}>
-        <RealLab speedFactor={speedFactor} captions={captions} />
+      <Sequence from={1200} durationInFrames={1140}>
+        <RealLab speedFactor={speedFactor} captions={captions} labVideoPath={labVideoPath} />
       </Sequence>
-      <Sequence from={2460} durationInFrames={540}>
+      <Sequence from={2340} durationInFrames={660}>
         <Results />
       </Sequence>
       <Sequence from={3000} durationInFrames={420}>
@@ -559,6 +601,6 @@ export const DemoVideo = () => (
     height={HEIGHT}
     fps={FPS}
     durationInFrames={3600}
-    defaultProps={{speedFactor: 1, captions: []}}
+    defaultProps={{speedFactor: 1, captions: [], labVideoPath: 'captures/lab-speedup.mp4'}}
   />
 );

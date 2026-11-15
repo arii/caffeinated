@@ -30,8 +30,11 @@ npm run render
 ```
 
 `npm run capture` records for 270 real-time seconds at the Lab's 1× pace,
-walks to a researcher, opens and closes the real conversation card, scrubs to
-the recorded `BOREDOM_SNAP` moment, and then scrubs near the end of the run.
+checks the stopped-run provenance badge, pre-committee note and staff role
+chips, selects a worker from the role strip to aim the camera, then walks
+toward a worker until the real proximity bubble appears. The capture
+holds that view, scrubs to the recorded `BOREDOM_SNAP` moment, and then scrubs
+near the end of the run.
 It keeps the raw browser recording under `public/captures/` and uses ffmpeg's
 `setpts` filter to fit the capture into the 38-second Lab scene. The speed
 factor is computed as `ffprobe(capture duration) / 38`; the persistent overlay
@@ -41,5 +44,7 @@ real capture duration is required.
 
 `npm run render` creates `out/demo.mp4` as H.264 with no audio. `npm run stills`
 extracts PNGs at the midpoint of each of the nine scenes into
-`/home/ubuntu/video-assets/stills/`. The MP4, raw capture, speed-adjusted
-capture, and generated metadata are ignored by Git.
+`/home/ubuntu/video-assets/stills/`, plus a real-browser still at tick 100
+showing the provenance badge, pre-committee note and role chips. The MP4, raw
+capture, speed-adjusted capture, evidence screenshot and generated metadata are
+ignored by Git.
