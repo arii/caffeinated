@@ -1,10 +1,21 @@
 # Paired meter A/B experiments
 
-`ab.py` compares the fixed four-worker arm A (three refine, one scout when Exa
-is on) against meter-driven arm B. The scout in A is always worker-1. A logs
-meter scores in shadow mode; those scores and cell suggestions are excluded
-from its prompts and recalled assignments. Both arms keep ordinary results
-and research memory. Neither arm pushes its generated commits.
+`ab.py` compares the fixed four-worker arm A against meter-driven arm B.
+Neither arm pushes its generated commits.
+
+## Control definition
+
+Arm A is meter-free in its decisions: three refine workers and one divergent
+worker, always worker-1, which scouts when Exa is on. It never uses
+`suggest_cells`, meter-based gating, meter-driven repair, or meter scores to
+choose the scout. Meter scores are logged only in shadow artifacts; B values
+and cell suggestions are excluded from prompts and recalled assignments.
+Ordinary results and research memory remain available in both arms.
+
+A retains the existing numeric acceptance checks and omits the critic LLM;
+B retains the critic LLM and meter-driven allocation/gating. The comparison
+therefore measures these configured arm policies, including their different
+call counts, rather than isolating the numerical meter score alone.
 
 ## Offline validation
 
@@ -51,6 +62,11 @@ round budget for AUC, and `rounds_completed` records its actual allocations.
 Equal opportunity budgets do not imply identical realized dollar spend. The driver
 clears inherited replay and ablation switches and sets `PYTHONHASHSEED`.
 The manifest records settings and randomized within-pair execution order.
+
+The installed `tinker==0.39.0` SDK was checked without a live call:
+`SamplingParams` has an explicit `seed: Optional[int] = None` signature
+parameter and model field, and `SamplingParams(seed=42).model_dump()` preserves
+the seed. The swarm therefore passes it to Tinker sampling.
 
 The swarm's `--seed` sets Tinker/OpenAI sampling seeds keyed by
 seed/role/worker/round. Thus extra B calls do not shift later matching calls.

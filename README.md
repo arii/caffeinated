@@ -10,27 +10,23 @@ Mini is a synthetic proxy, not PlayWorld, using an 8-frame-memory reference.
 
 ## Quickstart
 
-Create the host venv (Python 3.12 recommended; Tinker requires at least 3.11):
+Create the host venv using the project lock (Python 3.12 recommended;
+Tinker requires at least 3.11):
 
 ```sh
-python3.12 -m venv .venv
+uv sync --locked --python 3.12 --extra tinker --extra viewer
 . .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-python -m pip check
+uv pip check
 ```
 
-`requirements.txt` installs the host runtime and pinned Tinker SDKs;
-`requirements-dev.txt` adds the test runner and existing read-only viewer API
-dependencies. `pyproject.toml` defines the same dependency groups, with
-`uv.lock` for locked installs (`uv sync --locked --extra tinker --extra viewer
---extra dev`). Fake-only orchestration and paired statistics use the standard
-library; pandas/openpyxl support spreadsheet previews for live BixBench
-prompts. Candidate NumPy/pandas/SciPy dependencies live separately in the
-Docker image and are not executed on the host. No CUDA or GPU setup is needed.
-
-Both requirements files are exported from `uv.lock` with transitive versions
-pinned. After changing `pyproject.toml`, run `uv lock` and the `uv export`
-commands recorded at the top of each requirements file to refresh them.
+`pyproject.toml` defines dependencies and `uv.lock` pins their resolved versions.
+The `tinker` extra installs the pinned SDKs; `viewer` supplies the existing
+read-only API and its tests. Tests use the standard-library `unittest` runner.
+The host needs pandas and its openpyxl engine because `swarm.preview_file()`
+reads BixBench XLSX inputs to include spreadsheet previews in worker prompts.
+Candidate evaluation dependencies live separately in the Docker image.
+No CUDA or GPU setup is needed. Refresh `uv.lock` with `uv lock` after changing
+dependencies.
 
 Build the isolated candidate image once:
 
@@ -53,8 +49,14 @@ checks:
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --arm B --rounds 1 --llm fake --no-push
 ```
 
-Run tests with `python -m pytest -q tests boredom_meter/tests` after building
-the image. BixBench public data downloads on first use; no API credentials
+Run both suites after building the image:
+
+```sh
+python -m unittest discover -s tests -v
+python -m unittest discover -s boredom_meter/tests -v
+```
+
+BixBench public data downloads on first use; no API credentials
 are needed for fake runs. See [`experiments/README.md`](experiments/README.md)
 for the isolated paired A/B harness, CSV definitions, and offline validation.
 
