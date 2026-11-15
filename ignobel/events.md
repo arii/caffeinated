@@ -1,32 +1,62 @@
-# events.jsonl schema
+# Artificial Scientist Swarms: Ig Nobel event schema
 
-One JSON object per line. Every line has exactly these keys:
+The native `events.jsonl` log is written by `events.EventLog` and `world.World`.
+It is distinct from the normalized viewer events described in the
+[viewer contract](../docs/swarm-viewer-api.md).
 
-| key | type | meaning |
-|---|---|---|
-| round | int | 0 = seeding and first proposals, then 1..N |
-| arm | str | full, random_snap, single, shared_memory, no_exchange |
-| seed | int | run seed; same seed and arm gives the same file in mock mode |
-| agent | str | agent name from agents.yaml ("world" for nothing; every event has an agent) |
-| type | str | one of the types below |
-| payload | object | type-specific, see below |
-| tokens | int | LLM tokens spent by this action (0 if none) |
-| latency_ms | int | wall time of the LLM/search/sandbox call (0 in mock) |
+One JSON object is emitted per logged action. The writer emits these eight keys:
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| round | int | 0 for seeding/first proposals, then 1..N |
+| arm | str | full, random_snap, single, shared_memory or no_exchange |
+| seed | int | Run seed; identical mock inputs/configuration produce identical events |
+| agent | str | Acting agent's name from agents.yaml; measurement requests use the instrument owner |
+| type | str | One of the ten event types below |
+| payload | object | Event-specific fields |
+| tokens | int | Chat token usage charged to the action; zero for actions without a chat charge |
+| latency_ms | int | Logged chat/search latency, zero in mock mode; not a complete action or sandbox duration |
+
+There is no native timestamp or global tick. The reader validates event types but does
+not enforce payload shapes; the fields below describe the producer's current writes.
 
 ## Types and payloads
 
-- `seed` {query, sources:[{title,url,snippet}]} library seeding before round 0
-- `idea` {idea_id, text, kind: "propose"|"refine", source_urls:[...]} a proposed or refined study
-- `prediction` {idea_id, direction:"+"|"-", effect_size: float} numeric prediction for that idea
-- `boredom` {B, similarity, unsurprise, failure, regime:"EXPLOIT"|"BOREDOM_SNAP", action} private meter, logged for analysis only
-- `snap` {partner: str|null, source:{title,url,snippet}} boredom-driven exploration; partner null when unpaired
-- `talk` {partner, turn:int, text} one turn of a 3-turn conversation
-- `share` {receiver, offered:[item_id], kept:[item_id]} at most 3 items per conversation direction
-- `measurement_request` {requester, instrument, args, n, budget_left} owner ran an instrument for another agent
-- `study_result` {study_id, idea_id, ok, replicated, stats:{...}, prediction, abstract, plot_path, stderr, novelty:{score, sources:[...]}} one study
-- `lesson` {text} the agent's rewritten private lessons note
+- `seed`: {query, sources:[{title,url,snippet}]}, library seeding before first proposals.
+- `idea`: {idea_id, kind:"propose"|"refine", title, text, hypothesis, method, source_urls}.
+- `prediction`: {idea_id, direction:"+"|"-", effect_size}, separate numeric prediction.
+- `boredom`: {B, similarity, unsurprise, failure, regime:"EXPLOIT"|"BOREDOM_SNAP", action}.
+  The meter is private; the action is REFINE, SNAP or RUN_STUDY, selected by the arm's policy.
+  Under random/never policies the logged B-derived regime need not describe the chosen action.
+- `snap`: {partner: str|null, source:{title,url,snippet}}. Logged for every agent selected
+  to explore, including random-policy snaps; partner is null when no partner is available.
+- `talk`: {partner, turn, text}, one turn of a conversation (three turns by default).
+- `share`: {receiver, offered:[item_id], kept:[item_id]}, bounded by max_share_items
+  (default three) in each conversation direction when exchange is enabled.
+- `measurement_request`: {requester, instrument, args, n, budget_left} when successful.
+  Failures instead carry {requester, instrument, error}. The owner is the event agent;
+  requested data is passed to the study, not included in this event.
+- `study_result`: {study_id, idea_id, title, ok, replicated, stats, prediction, abstract,
+  plot_path, stderr, calls, code, measurements, novelty:{score,novel,sources}}.
+  stats contains the replication verdict, effect_size, direction, p, alpha_eff, halves,
+  n and reason. code is truncated to 4000 characters; measurements is a count, calls is
+  the instrument-call charge, and plot_path is relative to the run directory or null.
+  Novelty sources contain title, url and similarity. Logged tokens/latency combine
+  study-code and abstract chat calls, not sandbox runtime.
+- `lesson`: {text}, the rewritten private lesson note after each round.
 
-Search-backed events (seed, snap, study_result.novelty) always carry source URLs in `payload`.
+Successful search-backed seed, snap and study_result.novelty records carry source URLs.
+Mock results use example.org URLs. Budget or service failures can stop an action before
+an event is emitted. Search seeding has no chat-token charge.
 
-A sample from the mock run (`--arm full --agents 4 --rounds 3 --seed 0`) is in `examples/mock_events.jsonl`,
-with its committee output in `examples/mock_scores.jsonl`. Dashboards can develop against those files.
+## Checkpoints and examples
+
+The run writes state.json after round 0 and every completed round. Resume truncates
+events.jsonl to that checkpoint's saved byte offset before continuing; consumers should
+not treat lines from an interrupted, uncheckpointed round as permanent.
+
+[Mock events](examples/mock_events.jsonl) and [committee scores](examples/mock_scores.jsonl)
+are bundled examples. Recreate a current fixture with
+`MOCK=1 python run_arm.py --arm full --agents 4 --rounds 3 --seed 0`.
+Post-run scoring writes a separate scores.jsonl and does not append committee decisions
+to native events or feed them back into agents.
