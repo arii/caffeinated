@@ -125,6 +125,7 @@ class Queue:
             except llm.LLMError as error:
                 if "budget exhausted" in str(error):
                     self.reason = "budget_limit"
+                budget_rejection = isinstance(error, llm.WorkerCallBudgetError)
                 candidate = {
                     "agent": kwargs["agent"],
                     "role": kwargs["role"],
@@ -134,9 +135,11 @@ class Queue:
                     "descriptor": {"mechanism": "baseline", "method": "none"},
                     "sources": [],
                     "lead": None,
-                    "idea": "Model request failed",
-                    "reasons": [str(error)],
-                    "llm_error": str(error),
+                    "idea": "worker call budget reached"
+                    if budget_rejection
+                    else "Model request failed",
+                    "reasons": [f"worker_call_budget: {error}" if budget_rejection else str(error)],
+                    "llm_error": not isinstance(error, llm.WorkerCallBudgetError),
                     "llm_call_ids": kwargs["llm_client"].call_ids,
                 }
             return candidate, context

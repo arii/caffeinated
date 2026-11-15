@@ -50,6 +50,21 @@ class ContinuousQueueTests(unittest.TestCase):
             self.assertEqual(len(queue.agents), 20)
             queue.active.clear()
 
+    def test_worker_call_ceiling_is_rejection_not_provider_crash(self):
+        import llm
+
+        class Client(SlowClient):
+            def call(self, **_kwargs):
+                raise llm.WorkerCallBudgetError("worker call budget exceeded")
+
+        with tempfile.TemporaryDirectory() as tmp, Queue(Path(tmp)) as queue:
+            queue.enqueue(work, {"agent": "worker-1", "role": "worker"}, {}, Client())
+            candidate, _ = queue.next()
+            self.assertEqual(candidate["status"], "reject")
+            self.assertFalse(candidate["llm_error"])
+            self.assertTrue(candidate["reasons"][0].startswith("worker_call_budget:"))
+            self.assertIsNone(queue.reason)
+
     def test_stop_budget_and_time_cancel_queued_work(self):
         for cause in ("user_stop", "budget_limit", "time_limit"):
             with (
