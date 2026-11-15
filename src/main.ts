@@ -30,9 +30,9 @@ import {experimentHtml,sourceCardsHtml,studyCardsHtml,dialogueHtml,type ViewCont
 import {bubbleContent,bubbleHtml,pickNear,staffStripLabel,tileBestLabel,tileGateCounts,tileGateLabel,tileMetrics} from './engine/glance';
 import {hasCreditError,provenanceBadge} from './engine/provenanceBadge';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './engine/proxyNote';
-import {finaleReached,finaleSummary} from './engine/finale';
+import {finaleReached,finaleSummary,improvementText} from './engine/finale';
 import {podium} from './engine/podium';
-import {lanes,turns} from './engine/orchestration';
+import {compactMarks,lanes,turns} from './engine/orchestration';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const rawEsc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const esc=(v:unknown)=>rawEsc(aliasText(String(v??'')));
@@ -68,7 +68,7 @@ function announce(){if(!recording)return;if(tick>announcedTick){const moments=mo
 function people(){return replayPeople(snapshot?.agents as ArchivedAgent[]||[],tick,presence);}
 function toast(message:string){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4000);}
 function unlock(){document.exitPointerLock?.();pressed.clear();}
-function modal(){return evidence.open||guide.open||inspector.open||resultsDialog.open||currentDrawer!==null;}
+function modal(){return document.querySelector('dialog[open]')!==null||currentDrawer!==null;}
 function closeDrawer(){if(currentDrawer)$(currentDrawer).hidden=true;currentDrawer=null;document.querySelectorAll('[data-drawer]').forEach(b=>b.setAttribute('aria-expanded','false'));}
 for(const button of document.querySelectorAll<HTMLElement>('[data-drawer]'))button.onclick=()=>{const id=button.dataset.drawer!,open=currentDrawer!==id;unlock();closeDrawer();if(open){currentDrawer=id;$(id).hidden=false;button.setAttribute('aria-expanded','true');if(id==='orchestration-drawer')renderOrchestration();}};
 for(const button of document.querySelectorAll<HTMLElement>('[data-close-drawer]'))button.onclick=closeDrawer;
@@ -115,9 +115,18 @@ function renderStatusStrip(){
 }
 function renderOrchestration(){
  const host=$('orchestration-content');if(!recording){host.innerHTML='<p>No run loaded.</p>';return;}
- const view=lanes(recording,tick),width=760,rowHeight=38,top=30,height=top+view.lanes.length*rowHeight+12,left=94,span=width-left-24,total=Math.max(1,recording.manifest.totalTicks),x=(t:number)=>left+Math.max(0,Math.min(total,t))/total*span;
+ const view=lanes(recording,tick),width=860,rowHeight=40,top=30,height=top+view.lanes.length*rowHeight+12,left=158,span=width-left-24,total=Math.max(1,recording.manifest.totalTicks),x=(t:number)=>left+Math.max(0,Math.min(total,t))/total*span;
  const colors:Record<string,string>={idea:'#e4c986',critic:'#91b4d4',veto:'#e77872',scout:'#82c5ae',memory:'#b39bdb',boredom:'#dd9b59',evaluation:'#a8b6b7',keep:'#e3cf84',gate:'#e77872'};
- const lines=view.lanes.map((lane,i)=>{const y=top+i*rowHeight;return `<text x="8" y="${y+4}" class="orch-name">${esc(lane.name)}</text><line x1="${left}" y1="${y}" x2="${width-12}" y2="${y}" class="orch-lane"/>${lane.marks.map(mark=>`<g class="orch-mark" role="button" tabindex="0" data-orch-tick="${mark.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${esc(mark.label)} by ${esc(lane.name)} at tick ${mark.tick}"><title>${esc(mark.label)}${mark.why?`: ${esc(mark.why)}`:''} · tick ${mark.tick}</title><circle cx="${x(mark.tick)}" cy="${y}" r="${mark.kind==='veto'?7:5}" fill="${colors[mark.kind]}" class="orch-dot ${mark.kind}"/></g>`).join('')}`;}).join('');
+ const lines=view.lanes.map((lane,i)=>{
+  const y=top+i*rowHeight,cellWidth=span/Math.max(1,view.rounds.length),marks=compactMarks(lane.marks).map(group=>{
+   const roundIndex=Math.max(0,view.rounds.indexOf(group.round)),cellLeft=left+roundIndex*cellWidth+4,cellRight=left+(roundIndex+1)*cellWidth-4,positions=group.visible.map(mark=>x(mark.tick));
+   for(let j=1;j<positions.length;j++)positions[j]=Math.max(positions[j],positions[j-1]+8.5);
+   if(positions.length){const rightOverflow=positions.at(-1)!-cellRight;if(rightOverflow>0)for(let j=0;j<positions.length;j++)positions[j]-=rightOverflow;const leftOverflow=cellLeft-positions[0];if(leftOverflow>0)for(let j=0;j<positions.length;j++)positions[j]+=leftOverflow;}
+   const visible=group.visible.map((mark,index)=>`<g class="orch-mark" role="button" tabindex="0" data-orch-tick="${mark.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${esc(mark.label)} by ${esc(lane.name)} at tick ${mark.tick}"><title>${esc(mark.label)}${mark.why?`: ${esc(mark.why)}`:''} · tick ${mark.tick}</title><circle cx="${positions[index]}" cy="${y}" r="${mark.kind==='veto'?5:4}" fill="${colors[mark.kind]}" class="orch-dot ${mark.kind}"/></g>`).join(''),firstHidden=group.hidden[0],overflowX=firstHidden?Math.max(cellLeft+10,Math.min(cellRight-10,x(firstHidden.tick))):0,overflow=firstHidden?`<g class="orch-overflow" role="button" tabindex="0" data-orch-tick="${firstHidden.tick}" data-orch-agent="${esc(lane.id)}" aria-label="${group.hidden.length} more events in round ${group.round}; jump to ${esc(firstHidden.label)} at tick ${firstHidden.tick}"><title>${group.hidden.length} more events in round ${group.round}</title><rect x="${overflowX-10}" y="${y+14}" width="20" height="14" rx="7"/><text x="${overflowX}" y="${y+24}" text-anchor="middle">+${group.hidden.length}</text></g>`:'';
+   return `${visible}${overflow}`;
+  }).join('');
+  return `<text x="8" y="${y+4}" class="orch-name">${esc(lane.name)}</text><line x1="${left}" y1="${y}" x2="${width-12}" y2="${y}" class="orch-lane"/>${marks}`;
+ }).join('');
  const closes=view.roundCloses.filter(c=>c.tick>0).map(c=>`<line x1="${x(c.tick)}" y1="${top-20}" x2="${x(c.tick)}" y2="${height}" class="orch-close"><title>Round ${c.round} closed</title></line>`).join('');
  const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*span/Math.max(1,view.rounds.length)}" y="13" class="orch-round">Round ${r}</text>`).join('');
  const playhead=`<line x1="${x(tick)}" y1="${top-20}" x2="${x(tick)}" y2="${height}" class="orch-playhead"/>`;
@@ -139,10 +148,11 @@ function renderResultsPanel(){
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}
  const value=(v:number|null)=>v==null?'—':formatValue(v),interval=(v:{low:number;high:number}|null)=>v?`${v.low.toFixed(2)}–${v.high.toFixed(2)}`:'';
- const held=summary.heldOut?`<section class="held-out"><h3>Held-out test</h3><p>Baseline ${summary.heldOut.baseline.fraction||value(summary.heldOut.baseline.loss)} → best ${summary.heldOut.best.fraction||value(summary.heldOut.best.loss)}</p>${summary.heldOut.best.wilson?`<p>95% Wilson CI: ${interval(summary.heldOut.best.wilson)} (baseline ${interval(summary.heldOut.baseline.wilson)})</p>`:''}${summary.heldOut.proxyNote?`<p>${esc(summary.heldOut.proxyNote)}</p>`:''}${summary.heldOut.referenceNote?`<p>${esc(summary.heldOut.referenceNote)}</p>`:''}</section>`:'<p class="no-held-out">no held-out split for this task</p>';
- const delta=summary.delta==null?'':` · Δ ${summary.delta>=0?'+':''}${value(summary.delta)}`;
+ const heldValue=(score:{fraction:string|null;score:number|null;loss:number|null})=>score.fraction||value(score.score??score.loss);
+ const held=summary.heldOut?`<section class="held-out"><h3>Held-out test</h3><p>Baseline ${heldValue(summary.heldOut.baseline)} → best ${heldValue(summary.heldOut.best)}</p>${summary.heldOut.best.wilson?`<p>95% Wilson CI: ${interval(summary.heldOut.best.wilson)} (baseline ${interval(summary.heldOut.baseline.wilson)})</p>`:''}${summary.heldOut.proxyNote?`<p>${esc(summary.heldOut.proxyNote)}</p>`:''}${summary.heldOut.referenceNote?`<p>${esc(summary.heldOut.referenceNote)}</p>`:''}</section>`:'<p class="no-held-out">no held-out split for this task</p>';
+ const delta=summary.delta==null?'':` · ${improvementText(summary.delta,value)}`;
  $('results-title').textContent=`RUN RESULTS · ${summary.status.toUpperCase()}`;
- $('results-content').innerHTML=`${badgeHtml}<h2>${esc(recording.manifest.title)}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p>${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
+ $('results-content').innerHTML=`${badgeHtml}<h2>${esc(recording.manifest.title)}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p class="result-winner-description">${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote&&!summary.heldOut?.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote&&!summary.heldOut?.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
 }
 function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-52)}px`;strip.style.bottom='auto';strip.style.transform='none';}
 const replayBar=document.querySelector<HTMLElement>('.replay-bar');if(replayBar)new ResizeObserver(alignStatusStrip).observe(replayBar);
@@ -176,6 +186,7 @@ function positionBubble(){
 function pinBubble(id:string){bubbleAgent=id;bubblePinned=true;bubbleExpanded=false;bubbleDismissedAgent='';bubbleRenderKey='';finishCoach('scientist');}
 function seenCoaches(){try{return ['scientist','scrub'].filter(id=>localStorage.getItem(`lab.coach.${id}`));}catch{return [];}}
 function showNextCoach(){
+ if(modal()){$('coach-mark').hidden=true;return;}
  const next=nextCoach(seenCoaches());
  if(next==='scientist'&&innerHeight<=500&&!document.body.classList.contains('bar-collapsed')){coachId='done';$('coach-mark').hidden=true;return;}
  if(!next){coachId='done';$('coach-mark').hidden=true;return;}
@@ -275,7 +286,8 @@ try{
   if(!walking&&!modal()&&!conversation.open)labControls.update(dt,pressed);
   if(walking&&!modal()){({yaw,pitch}=keyboardLook(yaw,pitch,dt,pressed));const forward=Number(pressed.has('KeyW'))-Number(pressed.has('KeyS')),side=Number(pressed.has('KeyD'))-Number(pressed.has('KeyA'));if(forward||side){const speed=((pressed.has('ShiftLeft')||pressed.has('ShiftRight'))?5.6:3.5)*dt/Math.hypot(forward,side),dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;if(!blocked(camera.position.x+dx,camera.position.z))camera.position.x+=dx;if(!blocked(camera.position.x,camera.position.z+dz))camera.position.z+=dz;}camera.rotation.set(pitch,yaw,0,'YXZ');}
   const positions=posesAt(),present=people(),captions=discussionAt(recording?.events||[],tick,present,aliasText,100);world.update(tick*(recording?.manifest.tickDurationMs||700)/1000,{progress:snapshot?.progress||0,boredom:0,running:playing,replay:true,finale:finaleReached(recording,tick),reducedMotion:reducedMotion,agents:present.map(a=>({...a,boredom:a.boredom==null?null:boredomPercent(a.boredom),regime:a.boredomSpectrum?.regime,state:positions.get(a.id)?.atLab?'working':a.state,stationId:positions.get(a.id)?.atTable?'culture':replayStation({...a,state:'working',activity:'experimenting'}),discussionBrief:positions.get(a.id)?.atTable?captions.get(a.id)?.brief:undefined,discussionPeers:captions.get(a.id)?.peers,ideaBrief:ideaBrief(aliasText(a.lastIdea||a.lastQuestion||a.lastObservation||'')),position:finaleReached(recording,tick)?undefined:positions.get(a.id)}))});
-  if(experienceStarted&&!coachId&&present.length)showNextCoach();
+  if(experienceStarted&&!coachId&&present.length&&!modal())showNextCoach();
+  $('coach-mark').hidden=modal()||!coachId||coachId==='done';
   if(growActive){const progress=(now-growStarted)/(reducedMotion?300:2200);world.grow?.(Math.min(1,progress));if(progress>=1){growActive=false;document.body.classList.remove('world-growing');}}
   const previousNear=nearAgent;if(walking&&!modal()){camera.getWorldDirection(direction);direction.y=0;direction.normalize();const candidates=(world.agentPositions?.()||[]).map(a=>{const delta=a.position.clone().sub(camera.position);delta.y=0;const distance=delta.length();return {id:a.id,distance,facing:distance?delta.normalize().dot(direction):1};});nearAgent=pickNear(candidates,nearAgent);}else nearAgent='';
   if(bubbleDismissedAgent&&nearAgent!==bubbleDismissedAgent)bubbleDismissedAgent='';

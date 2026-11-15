@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {finaleReached,finaleSummary,wilson} from '../src/engine/finale.ts';
+import {finaleReached,finaleSummary,improvementText,wilson} from '../src/engine/finale.ts';
 
 const run=(direction,baseline,best,held_out_test=null)=>({
  manifest:{id:'r',title:'run',totalTicks:10,status:'finished',metric:{name:'loss',label:'loss',direction},held_out_test},
@@ -23,6 +23,10 @@ test('Wilson score interval reports the BixBench 6/7 range',()=>{
 test('finale summary computes direction-aware improvement and winner details',()=>{
  const min=finaleSummary(run('minimize',.7,.2),10),max=finaleSummary(run('maximize',.2,.7),10);
  assert.ok(Math.abs((min?.delta??0)-.5)<1e-9);assert.ok(Math.abs((max?.delta??0)-.5)<1e-9);
+ assert.equal(improvementText(min?.delta??null,value=>value.toFixed(1)),'improved by 0.5');
+ assert.equal(improvementText(-.2,value=>value.toFixed(1)),'worsened by 0.2');
+ assert.equal(improvementText(0),'no change');
+ assert.equal(improvementText(null),'');
  assert.deepEqual(min?.winner,{commit:'1234567',description:'Change seed',agent:'Worker 1'});
  assert.deepEqual(min?.totals,{kept:1,discarded:1,crashed:1});
 });
@@ -34,6 +38,13 @@ test('held-out accuracy shows fractions and Wilson intervals',()=>{
  assert.equal(summary?.heldOut?.best.fraction,'6/7');
  assert.equal(summary?.heldOut?.proxyNote,'subset only');
  assert.equal(summary?.heldOut?.referenceNote,'full benchmark');
+});
+
+test('non-fraction held-out scores do not imply item counts or Wilson intervals',()=>{
+ const held={n_items:200,baseline:{score:.6234},best:{score:.6234}};
+ const summary=finaleSummary(run('maximize',.8,.9,held),10);
+ assert.equal(summary?.heldOut?.best.fraction,null);
+ assert.equal(summary?.heldOut?.best.wilson,null);
 });
 
 test('no-keeps uses baseline as best and absent held-out data stays absent',()=>{

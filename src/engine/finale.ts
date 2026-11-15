@@ -26,8 +26,13 @@ export interface FinaleSummary{
 
 const finite=(value:unknown):value is number=>typeof value==='number'&&Number.isFinite(value);
 const shortCommit=(value:unknown)=>typeof value==='string'&&value?value.slice(0,7):null;
+export function improvementText(delta:number|null,format:(value:number)=>string=String){
+ if(delta==null)return '';
+ if(delta===0)return 'no change';
+ return `${delta>0?'improved by':'worsened by'} ${format(Math.abs(delta))}`;
+}
 function heldScore(value:Record<string,unknown>|undefined,n:number):HeldOutScore{
- const score=finite(value?.score)?value.score:null,k=score==null?null:Math.round(score*n);
+ const score=finite(value?.score)?value.score:null,items=score==null?null:score*n,k=items!=null&&Math.abs(items-Math.round(items))<=1e-6?Math.round(items):null;
  return {score,k,fraction:k==null?null:`${k}/${n}`,wilson:k==null?null:wilson(k,n),loss:finite(value?.loss)?value.loss:null,commit:shortCommit(value?.commit)};
 }
 
