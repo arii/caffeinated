@@ -253,3 +253,25 @@ def test_yoked_snappers_picks_exact_count():
     for k in range(5):
         assert len(policy.yoked_snappers(names, k, random.Random(k))) == k
     assert policy.yoked_snappers(names, 2, random.Random(7)) == policy.yoked_snappers(names, 2, random.Random(7))
+
+
+def test_untested_new_idea_does_not_converge():
+    a = _agent()
+    i = _idea(a, "x", eff=0.5)
+    _study(a, i, actual=0.5)
+    _study(a, i, actual=0.5)
+    _idea(a, "brand new idea")
+    assert policy.decide(a, _comp(B=0.1, ext_familiar=0.1), 3)[0] != "CONVERGED"
+
+
+def test_baseline_ignores_other_agents_library():
+    from memory import Item
+    a = _agent()
+    _idea(a, "idea zero")
+    a.memory.write(Item(id="l1", kind="library", text="coffee field study", source_agent="quill"))
+    a.memory.write(Item(id="l2", kind="library", text="weekday nudges", source_agent="quill"))
+    boredom.set_baseline(a)
+    own = (a.meter["base_mu"], a.meter["base_sd"])
+    a.memory.write(Item(id="o1", kind="library", text="idea zero", source_agent="ikeda"))
+    boredom.set_baseline(a)
+    assert (a.meter["base_mu"], a.meter["base_sd"]) == own

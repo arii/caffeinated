@@ -50,8 +50,9 @@ def _work(agent) -> Action:
 
 def converged(agent, comp: dict, cfg: dict | None = None) -> bool:
     th = _th(cfg)
-    if agent.unrun_idea() is not None:  # the newest idea must be tested before the agent can hold
-        return False
+    cur = agent.current_idea()
+    if cur is None or not any(s.idea_id == cur.idea_id for s in agent.studies):
+        return False  # the newest idea must be tested before the agent can hold
     last = agent.studies[-2:]
     if len(last) < 2 or not all(s.replicated for s in last):
         return False

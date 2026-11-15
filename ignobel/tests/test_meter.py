@@ -128,3 +128,42 @@ def test_meter_stays_private(tmp_path):
         text = (rec.get("system", "") + rec["user"]).lower()
         for word in ("self_repeat", "ext_familiar", "unsurprise", "frustration", "regime", "jitter", "b="):
             assert word not in text, word
+
+
+def test_all_failed_ledger_never_converges():
+    meter = meter_profile.shared_meter()
+    prof = meter.load_profile(meter_profile.DEFAULT_PROFILE)
+    cells = sorted(set(prof["vocab"]) - {"baseline"})
+    head = prof["levels"][0]
+    led = [{"seq": n + 1, "agent": "quill", "status": "crash", "score": None,
+            "descriptor": {head: cells[n % len(cells)], "method": "none", "params": {}}}
+           for n in range(3 * prof["patience"] * len(cells) + 3)]
+    meter.validate_descriptor(prof, led[0]["descriptor"])
+    assert all(t["regime"] != "CONVERGED" for t in meter.fold(prof, led))
+
+
+def _review_round(tmp_path, n_agents, monkeypatch):
+    world = run_arm.build_world("full", n_agents, 0, tmp_path / f"rev{n_agents}")
+    asyncio.run(world.round0())
+    import policy
+    world.policy = lambda a, comp, r, rng: (("FRUSTRATED", policy.Action.REVIEW) if a.name == "quill"
+                                            else ("EXPLOIT", policy._work(a)))
+    seen = {}
+    orig = agents.Agent.refine
+    def refine(self, r, advice=""):
+        seen[self.name] = advice
+        return orig(self, r, advice)
+    monkeypatch.setattr(agents.Agent, "refine", refine)
+    asyncio.run(world.round(1))
+    acts = {e.agent: e.payload["action"] for e in events.read(world.log.path) if e.type == "boredom"}
+    return seen, acts
+
+
+def test_design_review_advice_reaches_refine(tmp_path, monkeypatch):
+    seen, _ = _review_round(tmp_path, 4, monkeypatch)
+    assert seen.get("quill")
+
+
+def test_review_without_statistician_falls_back_to_work(tmp_path, monkeypatch):
+    seen, _ = _review_round(tmp_path, 3, monkeypatch)
+    assert "quill" not in seen or not seen["quill"]
