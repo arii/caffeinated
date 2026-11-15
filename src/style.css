@@ -322,3 +322,6 @@ body.bar-collapsed #tick-label{font-size:12px}
  body.bar-collapsed .replay-controls label{display:flex!important}
  body.bar-collapsed .replay-controls label:has(#replay-mode){display:flex!important}
 }
+
+/* Keep the lab header clear; recording details remain in the run panels. */
+header .top-right{display:none}
