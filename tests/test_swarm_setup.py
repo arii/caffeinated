@@ -255,6 +255,15 @@ class ResumeStateTests(unittest.TestCase):
         conflicting = swarm.build_parser().parse_args(["--resume", str(self.out), "--arm", "B"])
         with self.assertRaisesRegex(ValueError, "--arm B conflicts"):
             swarm.resolve_run_args(conflicting)
+        self.assertFalse(args.no_push)
+        unseeded = {**run, "seed": None, "no_push": True}
+        (self.out / "run.json").write_text(json.dumps(unseeded), encoding="utf-8")
+        reseeded = swarm.build_parser().parse_args(["--resume", str(self.out), "--seed", "3"])
+        with self.assertRaisesRegex(ValueError, "--seed 3 conflicts"):
+            swarm.resolve_run_args(reseeded)
+        local = swarm.build_parser().parse_args(["--resume", str(self.out)])
+        swarm.resolve_run_args(local)
+        self.assertTrue(local.no_push)
         run["status"] = "finished"
         (self.out / "run.json").write_text(json.dumps(run), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "already finished"):

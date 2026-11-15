@@ -2445,7 +2445,7 @@ def resolve_run_args(args):
         raise ValueError(f"cannot resume {out_dir}: the run already finished")
     for key in RESUMED_SETTINGS:
         stored, given = run_artifact.get(key), getattr(args, key, None)
-        if given is not None and stored is not None and given != stored:
+        if given is not None and key in run_artifact and given != stored:
             raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
         if given is None:
             setattr(args, key, stored)
@@ -2455,6 +2455,8 @@ def resolve_run_args(args):
         args.viewer_dest = run_artifact["viewer_dest"]
     if run_artifact.get("viewer") is False:
         args.no_viewer = True
+    if run_artifact.get("no_push"):
+        args.no_push = True
     args.out = str(out_dir)
     args.repo = run_artifact["repo"]
     return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
@@ -2495,10 +2497,10 @@ def _orchestrate(args, publish_state, cleanup):
                 "cannot resume: the task's boredom profile changed since the run began"
             )
         start_commit = resume["run"]["swarm_commit"]
-        if resume["checkpoint"]["round"] >= args.rounds:
+        if resume["checkpoint"]["round"] > args.rounds:
             raise ValueError(
-                f"cannot resume: round {resume['checkpoint']['round']} of {args.rounds} is "
-                "already complete; pass a larger --rounds to extend the run"
+                f"cannot resume: round {resume['checkpoint']['round']} is already complete, "
+                f"past --rounds {args.rounds}; pass a larger --rounds to extend the run"
             )
     else:
         start_commit = git_text(repo, "rev-parse", "HEAD")
@@ -2604,6 +2606,7 @@ def _orchestrate(args, publish_state, cleanup):
                 "repo": str(repo),
                 "branch": branch,
                 "viewer": not args.no_viewer,
+                "no_push": bool(args.no_push),
                 "viewer_dest": str(Path(args.viewer_dest).resolve()) if args.viewer_dest else None,
                 **provenance,
             },
@@ -2674,6 +2677,8 @@ def _orchestrate(args, publish_state, cleanup):
         best_metric_commit = baseline_commit
         latest_candidate = None
         tags_this_run = []
+        if resume is not None and not effective_no_push:
+            tags_this_run = git_text(repo, "tag", "--list", f"{tag_prefix}/*").split()
         if resume is not None:
             first_round = resume["checkpoint"]["round"] + 1
             best_val = resume["checkpoint"]["best_val"]
