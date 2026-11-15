@@ -41,6 +41,14 @@ def test_run_study_crash_reports_stderr():
     assert not out["ok"] and "boom" in out["stderr"] and out["stats"] is None
 
 
+def test_run_study_timeout_with_output_is_a_failed_study(monkeypatch):
+    monkeypatch.setattr(lab, "TIMEOUT_S", 1)
+    a = _agent("quill")
+    code = "import sys, time\nprint('@@CALLS 1', flush=True)\nprint('err', file=sys.stderr, flush=True)\ntime.sleep(30)"
+    out = lab.run_study(code, a)
+    assert not out["ok"] and out["calls"] == 1 and "timeout" in out["stderr"] and a.budget_left == 5
+
+
 def test_sandbox_env_has_no_keys(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret")
     a = _agent("quill")

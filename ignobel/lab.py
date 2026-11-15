@@ -61,7 +61,14 @@ def _run_subprocess(workdir: Path) -> tuple[str, str, int]:
                            capture_output=True, text=True, timeout=TIMEOUT_S)
         return p.stdout, p.stderr, p.returncode
     except subprocess.TimeoutExpired as e:
-        return (e.stdout or ""), (e.stderr or "") + "\ntimeout", 124
+        return _text(e.stdout), _text(e.stderr) + "\ntimeout", 124
+
+
+def _text(out: str | bytes | None) -> str:
+    """TimeoutExpired carries bytes even with text=True."""
+    if isinstance(out, bytes):
+        return out.decode("utf-8", errors="replace")
+    return out or ""
 
 
 def _run_modal(workdir: Path) -> tuple[str, str, int]:
