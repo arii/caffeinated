@@ -1,6 +1,7 @@
 """The round loop. No judge is called here; nothing from committee/score is imported."""
 import asyncio
 import json
+import os
 import random
 from pathlib import Path
 
@@ -40,20 +41,30 @@ class World:
 
     # ------------------------------------------------------------- state
     def save_state(self) -> None:
+        """Checkpoint after a completed round. Records how many bytes of events.jsonl belong to it
+        and writes atomically, so a crash mid-round or mid-save cannot corrupt the checkpoint."""
         st = {"round_done": self.round_done, "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
+              "events_bytes": self.log.path.stat().st_size if self.log.path.exists() else 0,
               "agents": {a.name: a.to_state() for a in self.agents}}
         if self.shared is not None:
             st["shared_memory"] = self.shared.to_state()
         else:
             st["memories"] = {a.name: a.memory.to_state() for a in self.agents}
-        (self.out / "state.json").write_text(json.dumps(st), encoding="utf-8")
+        tmp = self.out / "state.json.tmp"
+        tmp.write_text(json.dumps(st), encoding="utf-8")
+        os.replace(tmp, self.out / "state.json")
 
     def load_state(self) -> bool:
+        """Restore the last checkpoint and drop any events a half-finished round wrote after it."""
         f = self.out / "state.json"
         if not f.exists():
             return False
         st = json.loads(f.read_text(encoding="utf-8"))
         self.round_done = st["round_done"]
+        keep = st.get("events_bytes")
+        if keep is not None and self.log.path.exists() and self.log.path.stat().st_size > keep:
+            with open(self.log.path, "r+b") as fh:
+                fh.truncate(keep)
         self.rng.setstate((3, tuple(st["rng"]), st["rng_gauss"]))
         for a in self.agents:
             a.load_state(st["agents"][a.name])

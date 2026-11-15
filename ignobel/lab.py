@@ -54,14 +54,21 @@ def _parse(stdout: str) -> tuple[dict | None, int]:
     return result, calls
 
 
+def _text(v) -> str:
+    """TimeoutExpired carries bytes even with text=True; normalise either way."""
+    if v is None:
+        return ""
+    return v.decode("utf-8", errors="replace") if isinstance(v, bytes) else str(v)
+
+
 def _run_subprocess(workdir: Path) -> tuple[str, str, int]:
     env = {"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}  # no keys leak in
     try:
         p = subprocess.run([sys.executable, "-E", "-s", "study.py"], cwd=workdir, env=env,
                            capture_output=True, text=True, timeout=TIMEOUT_S)
-        return p.stdout, p.stderr, p.returncode
+        return _text(p.stdout), _text(p.stderr), p.returncode
     except subprocess.TimeoutExpired as e:
-        return (e.stdout or ""), (e.stderr or "") + "\ntimeout", 124
+        return _text(e.stdout), _text(e.stderr) + f"\ntimeout after {TIMEOUT_S}s", 124
 
 
 def _run_modal(workdir: Path) -> tuple[str, str, int]:
@@ -72,7 +79,7 @@ def _run_modal(workdir: Path) -> tuple[str, str, int]:
     sb = modal.Sandbox.create("python", "-E", "-s", "/work/study.py", image=image, app=app,
                               timeout=TIMEOUT_S, block_network=True, workdir="/work")
     sb.wait()
-    return sb.stdout.read(), sb.stderr.read(), sb.returncode or 0
+    return _text(sb.stdout.read()), _text(sb.stderr.read()), sb.returncode or 0
 
 
 def _svg_plot(result: dict, path: Path) -> None:

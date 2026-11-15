@@ -65,3 +65,15 @@ def test_every_event_has_fixed_keys_and_search_events_have_urls(tmp_path):
             assert d["payload"]["source"]["url"]
         if d["type"] == "study_result":
             assert d["payload"]["novelty"]["sources"] and d["payload"]["novelty"]["sources"][0]["url"]
+
+
+def test_resume_drops_events_from_a_half_finished_round(tmp_path):
+    """A crash after some round-2 events were logged must not leave duplicates after --resume."""
+    full = _run(tmp_path, rounds=3, out=tmp_path / "full")
+    part = _run(tmp_path, rounds=1, out=tmp_path / "part")
+    with open(part, "a") as f:  # pretend round 2 got this far and then died
+        f.write(json.dumps({"round": 2, "arm": "full", "seed": 0, "agent": "quill", "type": "boredom",
+                            "payload": {"B": 0.0}, "tokens": 0, "latency_ms": 0}) + "\n")
+    _run(tmp_path, rounds=3, resume=True, out=tmp_path / "part")
+    assert filecmp.cmp(full, part, shallow=False)
+    assert not (tmp_path / "part" / "state.json.tmp").exists()
