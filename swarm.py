@@ -1451,6 +1451,10 @@ def worker_attempts(
                 {
                     "arm": arm,
                     "round": round_num,
+                    "idea": value["idea"],
+                    "rationale": value.get("rationale", ""),
+                    "predicted_delta": value["predicted_delta"],
+                    "lead_id": value.get("lead_id"),
                     "descriptor": value["descriptor"],
                     "source_ids": value.get("source_ids", []),
                 },
@@ -1717,6 +1721,37 @@ def set_task_context(task_context):
     )
 
 
+def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
+    """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
+
+    on_start is called just before the scorer starts. Returns True when the scorer ran
+    successfully (its output should be recorded).
+    """
+    hook = (TASK or {}).get("post_run")
+    if not hook:
+        return False
+    if replay or llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
+        print(
+            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
+            "not --replay)",
+            flush=True,
+        )
+        return False
+    if on_start:
+        on_start()
+    command = [sys.executable, str(TASK["dir"] / hook), "--run", str(out_dir)]
+    try:
+        proc = subprocess.run(
+            command, cwd=TASK["dir"], capture_output=True, text=True, timeout=1800, check=False
+        )
+    except subprocess.TimeoutExpired:
+        print(f"[post_run] {hook} timed out", flush=True)
+        return False
+    output = (proc.stdout if proc.returncode == 0 else proc.stderr).strip()
+    print(f"[post_run] {hook} exit {proc.returncode}: {output[-2000:]}", flush=True)
+    return proc.returncode == 0
+
+
 def refresh_round_context(out_dir, round_num, cells):
     """Append the output of the task's round_context script (if any) to the task inputs."""
     hook = (TASK or {}).get("round_context")
@@ -1797,7 +1832,21 @@ def load_task(name):
     }
 
 
-def local_task_result(repo, commit, out_dir):
+CANDIDATE_DIFF_MAX_CHARS = 20000
+
+
+def write_candidate_diff(repo, commit, out_dir):
+    """Save the candidate's diff (capped) next to its log for the viewer."""
+    diff = git(repo, "show", "--format=%s%n", "--stat", "--patch", commit, check=False)
+    if diff.returncode != 0:
+        return
+    text = diff.stdout
+    if len(text) > CANDIDATE_DIFF_MAX_CHARS:
+        text = text[:CANDIDATE_DIFF_MAX_CHARS] + "\n... [diff truncated]\n"
+    (Path(out_dir) / f"{commit}.diff").write_text(text, encoding="utf-8")
+
+
+def local_task_result(repo, commit, out_dir, role="candidate"):
     """Score a commit's version of the task's editable file with the frozen evaluator."""
     log_path = Path(out_dir) / f"{commit}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1805,8 +1854,21 @@ def local_task_result(repo, commit, out_dir):
     result = None
     log = source.stderr
     if source.returncode == 0:
-        result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        if role == "candidate":
+            write_candidate_diff(repo, commit, out_dir)
+        # Evaluators that log their own records (ignobel studies) tag them with this.
+        previous = os.environ.get("TASK_EVAL_CONTEXT")
+        os.environ["TASK_EVAL_CONTEXT"] = json.dumps({"commit": commit, "role": role})
+        try:
+            result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        finally:
+            if previous is None:
+                os.environ.pop("TASK_EVAL_CONTEXT", None)
+            else:
+                os.environ["TASK_EVAL_CONTEXT"] = previous
         log = result.get("stdout", "") + result.get("stderr", "")
+        if role == "critic" and log_path.exists():
+            log_path = Path(out_dir) / f"{commit}.critic.log"
     log_path.write_text(log, encoding="utf-8")
     loss = result.get("loss") if result and result.get("status") == "ok" else None
     return {
@@ -1817,10 +1879,10 @@ def local_task_result(repo, commit, out_dir):
     }
 
 
-def run_evaluations(repo, commits, out_dir):
+def run_evaluations(repo, commits, out_dir, role="candidate"):
     if not commits:
         return {}, ""
-    results = {commit: local_task_result(repo, commit, out_dir) for commit in commits}
+    results = {commit: local_task_result(repo, commit, out_dir, role) for commit in commits}
     for commit, result in results.items():
         score = result["loss"]
         print(f"{commit}\t{score if score is None else f'{score:.6f}'}\t{result['status']}")
@@ -1834,7 +1896,7 @@ def critic_confirmation_result(repo, commit, first_score, out_dir):
             "status": "ok",
             "critic_rerun": "skipped (deterministic)",
         }
-    results, _ = run_evaluations(repo, [commit], out_dir)
+    results, _ = run_evaluations(repo, [commit], out_dir, role="critic")
     return results[commit]
 
 
@@ -2125,25 +2187,33 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
     if not dest:
         return
     out_dir = Path(out_dir)
-    try:
-        import export_viewer
+    import export_viewer
 
+    try:
         export_viewer.publish(out_dir, dest, final=final, status=status)
     except Exception as error:
+        print(
+            f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True
+        )
         try:
-            append_jsonl(
-                out_dir / "viewer_publish_log.jsonl",
-                {
-                    "ts": timestamp(),
-                    "status": status,
-                    "final": final,
-                    "error": type(error).__name__,
-                    "message": str(error),
-                },
+            export_viewer.log_publish_issue(
+                out_dir,
+                kind=type(error).__name__,
+                message=str(error),
+                final=final,
+                status=status,
             )
         except Exception as log_error:
             print(f"viewer publish log failed: {type(log_error).__name__}", file=sys.stderr)
-        print(f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr)
+        if final:
+            # The final publish must not fail silently: retry once so the manifest
+            # carries publish_errors, then re-raise for the caller to report.
+            try:
+                export_viewer.publish(out_dir, dest, final=final, status=status)
+                return
+            except Exception:
+                pass
+            raise
 
 
 def _orchestrate(args, publish_state, cleanup):
@@ -2183,7 +2253,12 @@ def _orchestrate(args, publish_state, cleanup):
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
     publisher = live_publish.Publisher(
-        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs), settle=2.0
+        lambda **kwargs: publish_viewer_state(
+            out_dir,
+            viewer_dest,
+            **{"status": publish_state.get("live_status", "running"), **kwargs},
+        ),
+        settle=2.0,
     )
     publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"
@@ -2227,6 +2302,7 @@ def _orchestrate(args, publish_state, cleanup):
         prompt_dir=prompt_dir,
         replay=args.replay,
         seed=args.seed,
+        fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
     )
     provenance.update({"seed": args.seed, "model": llm_client.model})
     run_artifact = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
@@ -2612,6 +2688,20 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
 
+    # The rounds are done: an interrupted or failed committee must not mark the run stopped.
+    publish_state["completed"] = True
+
+    def start_scoring():
+        publish_state["live_status"] = "scoring"
+        publisher.flush(final=False, status="scoring")
+
+    try:
+        if run_post_run_hook(out_dir, args.llm, replay=args.replay, on_start=start_scoring):
+            record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
+            if not effective_no_push:
+                git(conductor, "push", "origin", branch)
+    except Exception as error:
+        print(f"[post_run] failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
     return {
         "arm": args.arm,
         "branch": branch,
@@ -2629,7 +2719,8 @@ def orchestrate(args):
         try:
             return _orchestrate(args, publish_state, cleanup)
         except BaseException:
-            terminal_status = "stopped"
+            if not publish_state.get("completed"):
+                terminal_status = "stopped"
             raise
         finally:
             _finish_publish(publish_state, terminal_status)
@@ -2650,7 +2741,17 @@ def _finish_publish(publish_state, terminal_status):
                 _write_run_artifact(out_dir, run_artifact)
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
-        publish_viewer_state(out_dir, publish_state.get("dest"), final=True, status=terminal_status)
+        try:
+            publish_viewer_state(
+                out_dir, publish_state.get("dest"), final=True, status=terminal_status
+            )
+        except Exception as error:
+            print(
+                f"FINAL viewer publish failed (see {out_dir}/viewer_publish_log.jsonl): "
+                f"{type(error).__name__}: {error}",
+                file=sys.stderr,
+                flush=True,
+            )
 
 
 def viewer_frontier(out_dir, round_num, phase):
@@ -2688,6 +2789,12 @@ def build_parser():
     parser.add_argument("--exa", choices=("on", "off"), default="on")
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
+    parser.add_argument(
+        "--fake-delay",
+        type=float,
+        default=0.0,
+        help="seconds each --llm fake call sleeps, so offline runs can be watched live",
+    )
     parser.add_argument(
         "--viewer-dest", help="directory for live viewer exports (default: <out>/viewer)"
     )

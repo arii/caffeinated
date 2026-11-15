@@ -740,7 +740,11 @@ class IgnobelTaskTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 self.assertFalse(names & post_run, f"{path.name} imports a judge module")
         task = json.loads((TESTCASES / "ignobel" / "task.json").read_text(encoding="utf-8"))
-        hooks = [value for value in task.values() if str(value).endswith(".py")]
+        # post_run runs as a separate process after the last round, never during a run.
+        self.assertIn(task.get("post_run"), {None, "score_run.py"})
+        hooks = [
+            value for key, value in task.items() if key != "post_run" and str(value).endswith(".py")
+        ]
         self.assertIn("round_context.py", hooks)
         self.assertFalse({Path(hook).stem for hook in hooks} & post_run)
 
