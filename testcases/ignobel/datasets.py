@@ -1,4 +1,4 @@
-"""Find real public CSV datasets on Zenodo and Hugging Face (ported from ignobel/sources.py).
+"""Find real public CSV datasets on Zenodo and Hugging Face.
 
 Each hit carries a direct https file URL that external.py can download and the
 first row of the file (its column names), so a lab can name exact columns in
@@ -18,7 +18,25 @@ import prepare
 
 MIN_FILE_BYTES = 2_000
 UA = {"User-Agent": "caffeinated-ignobel/1"}
-STOP = frozenset("and the for with from into that this are was were its new study data".split())
+STOP = frozenset(
+    [
+        "and",
+        "the",
+        "for",
+        "with",
+        "from",
+        "into",
+        "that",
+        "this",
+        "are",
+        "was",
+        "were",
+        "its",
+        "new",
+        "study",
+        "data",
+    ]
+)
 
 
 class _Redirect(urllib.request.HTTPRedirectHandler):
@@ -49,7 +67,12 @@ def _fits(size):
 
 def zenodo(query, n):
     url = "https://zenodo.org/api/records?" + urlencode(
-        {"q": f"({words(query)}) AND filetype:csv", "type": "dataset", "access_right": "open", "size": n * 3}
+        {
+            "q": f"({words(query)}) AND filetype:csv",
+            "type": "dataset",
+            "access_right": "open",
+            "size": n * 3,
+        }
     )
     out = []
     for hit in (_json(url).get("hits") or {}).get("hits", []):
@@ -79,7 +102,13 @@ def zenodo(query, n):
 
 def huggingface(query, n):
     url = "https://huggingface.co/api/datasets?" + urlencode(
-        {"search": words(query, 3), "filter": "format:csv", "sort": "downloads", "direction": -1, "limit": n * 2}
+        {
+            "search": words(query, 3),
+            "filter": "format:csv",
+            "sort": "downloads",
+            "direction": -1,
+            "limit": n * 2,
+        }
     )
     hits = _json(url)
     out = []
@@ -99,7 +128,9 @@ def huggingface(query, n):
                 "title": hit["id"],
                 "page": f"https://huggingface.co/datasets/{hit['id']}",
                 "license": str(card.get("license") or ""),
-                "about": prepare.clean(info.get("description") or card.get("pretty_name") or "")[:240],
+                "about": prepare.clean(info.get("description") or card.get("pretty_name") or "")[
+                    :240
+                ],
                 "url": f"https://huggingface.co/datasets/{hit['id']}/resolve/main/{quote(chosen['rfilename'])}",
             }
         )
@@ -111,7 +142,10 @@ def huggingface(query, n):
 def columns(url):
     head = _get(url, max_bytes=20_000).decode("utf-8-sig", errors="replace")
     first = head.replace("\r", "\n").split("\n", 1)[0]
-    return [prepare.clean(c) for c in next(csv.reader(io.StringIO(first), delimiter=prepare.delimiter(first)))][:30]
+    return [
+        prepare.clean(c)
+        for c in next(csv.reader(io.StringIO(first), delimiter=prepare.delimiter(first)))
+    ][:30]
 
 
 def find(query, n=3, skip=()):
@@ -122,7 +156,9 @@ def find(query, n=3, skip=()):
             groups.append(provider(query, n))
         except Exception:
             groups.append([])
-    found = [hit for group in zip_longest(*groups) for hit in group if hit and hit["url"] not in skip]
+    found = [
+        hit for group in zip_longest(*groups) for hit in group if hit and hit["url"] not in skip
+    ]
     for hit in found[:n]:
         try:
             hit["columns"] = columns(hit["url"])

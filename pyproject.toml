@@ -24,7 +24,7 @@ dev = [
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-extend-exclude = ["worktrees", ".swarm_worktrees", "runs", "results", "backend", "ignobel", "node_modules", "docs/backend-integration.md"]
+extend-exclude = ["worktrees", ".swarm_worktrees", "runs", "results", "backend", "node_modules", "docs/backend-integration.md"]
 
 [tool.ruff.lint]
 select = [
@@ -57,14 +57,14 @@ known-first-party = ["boredom", "experiments", "export_viewer", "llm", "memory",
 
 [tool.vulture]
 paths = [".", "vulture_whitelist.py"]
-exclude = ["worktrees/", ".swarm_worktrees/", "runs/", "results/", ".venv/", "backend/", "ignobel/", "node_modules/"]
+exclude = ["worktrees/", ".swarm_worktrees/", "runs/", "results/", ".venv/", "backend/", "node_modules/"]
 min_confidence = 60
 ignore_decorators = ["@app.get", "@app.exception_handler", "@app.middleware"]
 
 [tool.deptry]
 known_first_party = ["meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
 # testcases/ candidate and evaluator code runs inside the Docker sandbox image, whose deps live in testcases/Dockerfile.
-exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees", "backend", "ignobel", "node_modules", "docs/backend-integration.md"]
+exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees", "backend", "node_modules", "docs/backend-integration.md"]
 optional_dependencies_dev_groups = ["dev"]
 
 [tool.deptry.per_rule_ignores]

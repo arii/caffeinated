@@ -1,3 +1,4 @@
+import ast
 import csv
 import io
 import json
@@ -436,7 +437,6 @@ class IgnobelPreregTests(unittest.TestCase):
             )
         )
         for patcher in (
-            patch.dict(os.environ, {"IGNOBEL_JUDGE": "frozen"}),
             patch.object(prepare, "fetch", return_value=self.csv),
             patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 443))]),
         ):
@@ -577,6 +577,20 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertIn("REPLICATED", text)
         self.assertIn("Datasets already tested this run", text)
 
+    def test_committee_verdicts_never_reach_the_labs(self):
+        self.run_prereg()
+        canary = "CANARY-JUDGE-7f3a9"
+        (self.log.parent / "scores.jsonl").write_text(
+            json.dumps({"committee": 0.9, "verdicts": {"a": {"reason": canary}}}) + "\n"
+        )
+        out = io.StringIO()
+        with patch.dict(os.environ, {"EXA": "off"}), redirect_stdout(out):
+            ignobel_round_context.main(["--out-dir", str(self.log.parent)])
+        self.assertIn("REPLICATED", out.getvalue())
+        self.assertNotIn(canary, out.getvalue())
+        for word in ("laugh", "committee", "judge"):
+            self.assertNotIn(word, out.getvalue().lower())
+
     def test_derived_rate_variables(self):
         dataset = {"x": "Dryer age (years)", "x_per": "Socks lost per month"}
         graded = self.run_prereg(dataset=dataset)["graded"]
@@ -700,12 +714,35 @@ class IgnobelPreregTests(unittest.TestCase):
 
 
 class IgnobelTaskTests(unittest.TestCase):
-    def test_committee_prompts_come_from_ignobel_project(self):
-        committee = ignobel_score_run.committee
-
-        prompts = committee.judge_prompts()
+    def test_committee_prompts_are_the_two_judges(self):
+        prompts = ignobel_score_run.committee.judge_prompts()
+        self.assertEqual(set(prompts), {"a", "b"})
         self.assertIn("LAUGH", prompts["a"])
         self.assertIn("science journalist", prompts["b"])
+        for prompt in prompts.values():
+            self.assertIn("targets_group", prompt)
+
+    def test_run_side_never_imports_the_committee(self):
+        post_run = {"committee", "score_run"}
+        run_side = [REPO_ROOT / "swarm.py"] + [
+            path
+            for path in sorted((TESTCASES / "ignobel").glob("*.py"))
+            if path.stem not in post_run
+        ]
+        for path in run_side:
+            names = set()
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Import):
+                    names |= {alias.name.rsplit(".", 1)[-1] for alias in node.names}
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    names.add(node.module.rsplit(".", 1)[-1])
+                    names |= {alias.name for alias in node.names}
+            with self.subTest(path=path.name):
+                self.assertFalse(names & post_run, f"{path.name} imports a judge module")
+        task = json.loads((TESTCASES / "ignobel" / "task.json").read_text(encoding="utf-8"))
+        hooks = [value for value in task.values() if str(value).endswith(".py")]
+        self.assertIn("round_context.py", hooks)
+        self.assertFalse({Path(hook).stem for hook in hooks} & post_run)
 
     def test_fields_match_profile(self):
         fields = ignobel.load_fields()

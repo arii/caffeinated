@@ -1,7 +1,7 @@
 """Export a finished swarm run to the swarm-viewer/v1 static layout.
 
-See docs/swarm-viewer-api.md. Reads autoresearch output dirs (ledger.jsonl,
-assignments.jsonl, ...) or an ignobel run dir (events.jsonl) and writes
+See docs/swarm-viewer-api.md. Reads a swarm.py --out dir (ledger.jsonl,
+assignments.jsonl, ...) and writes
 manifest.json, timeline.json, events.ndjson, keyframes/ and entities/.
 Read-only on the source dir; output is deterministic for the same input.
 """
@@ -35,7 +35,6 @@ PHASES = {
         "status",
         "finish",
     ),
-    "ignobel": ("seed", "boredom", "talk", "share", "snap", "propose", "study", "diary"),
 }
 ENTITY_KINDS = (
     "questions",
@@ -1076,354 +1075,6 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     return run, manifest_extra
 
 
-# ---------------------------------------------------------------- ignobel
-
-
-def export_ignobel(out_dir, title=None):
-    out_dir = Path(out_dir)
-    rows = read_jsonl(out_dir / "events.jsonl")
-    if not rows:
-        raise SystemExit(f"no events.jsonl in {out_dir}")
-    first = rows[0][1]
-    arm, seed = first.get("arm", "full"), first.get("seed", 0)
-    run_id = uid(NS_CAFFEINATED, f"ignobel:{arm}:{out_dir.name}:{seed}")
-    run = Run("ignobel", run_id)
-    statisticians = {
-        r["payload"].get("requester") for _, r in rows if r.get("type") == "measurement_request"
-    }
-    names = (
-        {r["agent"] for _, r in rows if r.get("agent")}
-        | statisticians
-        | {
-            r["payload"].get(key)
-            for _, r in rows
-            for key in ("partner", "receiver")
-            if r.get("type") in {"talk", "share"}
-        }
-    )
-    for name in sorted(n for n in names if isinstance(n, str) and n and n != "world"):
-        run.agent(name, "statistician" if name in statisticians else "researcher", name.title())
-    run.agent("world", "world", "World")
-    phase_for = {
-        "seed": "seed",
-        "boredom": "boredom",
-        "talk": "talk",
-        "share": "share",
-        "snap": "snap",
-        "idea": "propose",
-        "prediction": "propose",
-        "measurement_request": "study",
-        "study_result": "study",
-        "lesson": "diary",
-    }
-    best = {}
-    for line, event in rows:
-        kind, agent, round_ = event.get("type"), event.get("agent"), event.get("round", 0)
-        agent = agent if agent in run.agents else "world"
-        payload = event.get("payload") or {}
-        common = {
-            "round_": round_,
-            "phase": phase_for.get(kind, "diary"),
-            "ts": None,
-            "agent": agent,
-            "file": "events.jsonl",
-            "line": line,
-            "native_type": kind,
-        }
-        if kind in {"seed", "snap"}:
-            qid, oid = f"question:{line}", f"observation:{line}"
-            urls = payload.get("source_urls") or payload.get("urls") or []
-            sources = []
-            for url in urls:
-                sid = f"source:{url}"
-                sources.append(sid)
-                run.entities["sources"].setdefault(
-                    sid, {"id": sid, "title": url, "url": url, "query_id": qid, "cited_by": []}
-                )
-            text = payload.get("query") or payload.get("text") or payload.get("topic") or kind
-            run.put(
-                "questions",
-                qid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "kind": "search",
-                    "text": text,
-                    "round": round_,
-                    "tick": None,
-                    "answered_by": [oid],
-                },
-            )
-            run.put(
-                "observations",
-                oid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "kind": "snap" if kind == "snap" else "sources",
-                    "summary": text,
-                    "refs": sources,
-                    "question_id": qid,
-                    "round": round_,
-                    "tick": None,
-                },
-            )
-            run.emit(
-                "question.asked",
-                **common,
-                refs={"question_id": qid},
-                payload={"kind": "search", "text": text},
-            )
-            run.emit(
-                "observation.received",
-                **common,
-                sub=1,
-                refs={"observation_id": oid},
-                payload={
-                    "kind": "snap" if kind == "snap" else "sources",
-                    "summary": text,
-                    "partner": payload.get("partner"),
-                },
-            )
-        elif kind == "idea":
-            hid = f"hypothesis:{payload.get('idea_id', line)}"
-            run.put(
-                "hypotheses",
-                hid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "round": round_,
-                    "text": payload.get("text"),
-                    "kind": payload.get("kind"),
-                    "descriptor": payload.get("descriptor"),
-                    "source_ids": [f"source:{u}" for u in payload.get("source_urls", [])],
-                    "novelty": payload.get("novelty"),
-                    "partner": payload.get("partner"),
-                    "prediction": None,
-                    "tick": None,
-                },
-            )
-            run.emit(
-                "hypothesis.proposed",
-                **common,
-                refs={"hypothesis_id": hid},
-                payload={"text": payload.get("text"), "kind": payload.get("kind")},
-            )
-        elif kind == "prediction":
-            hid = f"hypothesis:{payload.get('idea_id')}"
-            if hid in run.entities["hypotheses"]:
-                run.entities["hypotheses"][hid]["prediction"] = {
-                    "direction": payload.get("direction"),
-                    "effect_size": payload.get("effect_size"),
-                }
-        elif kind == "boredom":
-            components = {
-                k: payload[k]
-                for k in (
-                    "similarity",
-                    "self_repeat",
-                    "ext_familiar",
-                    "unsurprise",
-                    "stall",
-                    "frustration",
-                )
-                if k in payload
-            }
-            run.emit(
-                "agent.assigned", **common, payload={"role": payload.get("action"), "scout": False}
-            )
-            run.emit(
-                "boredom.measured",
-                **common,
-                sub=1,
-                payload={
-                    "B": payload.get("B"),
-                    "regime": payload.get("regime"),
-                    "components": components,
-                    "shadow": arm != "full",
-                },
-            )
-        elif kind == "talk":
-            partner = payload.get("partner")
-            run.emit(
-                "message.sent",
-                **common,
-                refs={"to_agent_id": run.agent_id(partner)} if partner in run.agents else {},
-                payload={"turn": payload.get("turn"), "text": payload.get("text")},
-            )
-        elif kind == "share":
-            receiver = payload.get("receiver")
-            run.emit(
-                "items.shared",
-                **common,
-                refs={"to_agent_id": run.agent_id(receiver)} if receiver in run.agents else {},
-                payload={"offered": payload.get("offered"), "kept": payload.get("kept")},
-            )
-        elif kind == "measurement_request":
-            oid = f"observation:{line}"
-            run.put(
-                "observations",
-                oid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "kind": "measurement",
-                    "summary": f"{payload.get('instrument')} n={payload.get('n')}",
-                    "refs": [],
-                    "round": round_,
-                    "tick": None,
-                    "requester": payload.get("requester"),
-                },
-            )
-            run.emit(
-                "observation.received",
-                **common,
-                refs={"observation_id": oid},
-                payload={
-                    "kind": "measurement",
-                    "instrument": payload.get("instrument"),
-                    "n": payload.get("n"),
-                    "budget_left": payload.get("budget_left"),
-                },
-            )
-        elif kind == "study_result":
-            eid = f"experiment:{payload.get('study_id', line)}"
-            hid = f"hypothesis:{payload.get('idea_id')}"
-            stats = payload.get("stats") or {}
-            prediction = payload.get("prediction") or {}
-            gap = study_gap(prediction, stats.get("effect_size"), stats.get("direction"))
-            replicated = bool(payload.get("replicated"))
-            status = (
-                "failed"
-                if not payload.get("ok")
-                else ("replicated" if replicated else "not_replicated")
-            )
-            value = round(1 - gap, 6) if replicated else 0.0
-            rid = f"reward:{payload.get('study_id', line)}"
-            run.put(
-                "rewards",
-                rid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "experiment_id": eid,
-                    "value": value,
-                    "metric_value": stats.get("p"),
-                    "reference": None,
-                    "status": status,
-                    "gap": gap,
-                    "round": round_,
-                    "tick": None,
-                },
-            )
-            run.put(
-                "experiments",
-                eid,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "kind": "study",
-                    "round": round_,
-                    "status": status,
-                    "hypothesis_id": hid if hid in run.entities["hypotheses"] else None,
-                    "description": payload.get("title") or payload.get("abstract"),
-                    "abstract": payload.get("abstract"),
-                    "stats": stats,
-                    "prediction": prediction,
-                    "novelty": payload.get("novelty"),
-                    "metric_value": stats.get("p"),
-                    "reward_id": rid,
-                    "verdict": None,
-                    "artifacts": {"plot": payload["plot_path"]} if payload.get("plot_path") else {},
-                    "stderr": payload.get("stderr"),
-                    "tick": None,
-                },
-            )
-            run.emit(
-                "experiment.started",
-                **common,
-                refs={"experiment_id": eid},
-                payload={"title": payload.get("title")},
-            )
-            run.emit(
-                "experiment.finished",
-                **common,
-                sub=1,
-                refs={"experiment_id": eid, "reward_id": rid},
-                payload={
-                    "status": status,
-                    "p": stats.get("p"),
-                    "effect_size": stats.get("effect_size"),
-                    "reward": value,
-                },
-            )
-            if replicated and value > best.get(agent, -1):
-                best[agent] = value
-                xid = f"discovery:{payload.get('study_id', line)}"
-                run.put(
-                    "discoveries",
-                    xid,
-                    {
-                        "agent_id": run.agent_id(agent),
-                        "experiment_id": eid,
-                        "round": round_,
-                        "metric_value": value,
-                        "title": payload.get("title"),
-                        "lineage": {"hypothesis_id": hid},
-                        "tick": None,
-                    },
-                )
-                run.emit(
-                    "discovery.made",
-                    **common,
-                    sub=2,
-                    refs={"discovery_id": xid, "experiment_id": eid},
-                    payload={"title": payload.get("title"), "reward": value},
-                )
-        elif kind == "lesson":
-            did = f"diary:{line}"
-            run.put(
-                "diary",
-                did,
-                {
-                    "agent_id": run.agent_id(agent),
-                    "kind": "lesson",
-                    "round": round_,
-                    "text": payload.get("text"),
-                    "refs": [],
-                    "tick": None,
-                },
-            )
-            run.emit(
-                "diary.written",
-                **common,
-                refs={"diary_id": did},
-                payload={"kind": "lesson", "excerpt": (payload.get("text") or "")[:240]},
-            )
-    manifest_extra = {
-        "title": title or f"ignobel · {arm} · seed {seed}",
-        "arm": {"id": arm, "label": arm, "boredom_enabled": arm == "full", "policy": arm},
-        "metric": {"name": "replicated_findings", "unit": "", "direction": "maximize"},
-        "boredom": {
-            "scale": [0, 1],
-            "thresholds": {},
-            "regimes": ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "FRUSTRATED", "CONVERGED"],
-        },
-        "provenance": {
-            "llm": "see prompts/",
-            "exa": "see events",
-            "memory_backend": "ignobel memory",
-            "command": "",
-            "swarm_commit": "",
-        },
-        "baseline": None,
-    }
-    return run, manifest_extra
-
-
-def study_gap(prediction, effect, direction):
-    """Same as ignobel.boredom.gap: 0 = prediction exact, 1 = wrong direction."""
-    if effect is None or direction is None or direction != prediction.get("direction"):
-        return 1.0
-    p, a = abs(prediction.get("effect_size") or 0), abs(effect)
-    return 0.0 if p + a == 0 else float(min(abs(p - a) / (p + a), 1.0))
-
-
 # ---------------------------------------------------------------- reducer
 
 
@@ -1790,13 +1441,9 @@ def _copy_artifacts(out_dir, run_dir, entities):
             shutil.copyfile(source, target)
 
 
-def export(out_dir, dest, swarm=None, arm=None, title=None, final=True, status=None):
+def export(out_dir, dest, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
-    swarm = swarm or ("ignobel" if (out_dir / "events.jsonl").exists() else "autoresearch")
-    if swarm == "ignobel":
-        run, extra = export_ignobel(out_dir, title)
-    else:
-        run, extra = export_autoresearch(out_dir, arm, title, final, status)
+    run, extra = export_autoresearch(out_dir, arm, title, final, status)
     manifest, timeline, events, keyframes = build(run, extra)
     run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
     _copy_artifacts(out_dir, run_dir, run.entities)
@@ -1891,14 +1538,13 @@ def publish(out_dir, dest, *, final=False, status=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("run_dirs", nargs="+", type=Path, help="swarm --out dir or ignobel run dir")
+    parser.add_argument("run_dirs", nargs="+", type=Path, help="swarm.py --out dir")
     parser.add_argument("--dest", type=Path, default=Path("lab/data/runs"))
-    parser.add_argument("--swarm", choices=("autoresearch", "ignobel"))
     parser.add_argument("--arm", help="autoresearch arm label (default: from memory.jsonl, else B)")
     parser.add_argument("--title")
     args = parser.parse_args(argv)
     for run_dir in args.run_dirs:
-        path = export(run_dir, args.dest, args.swarm, args.arm, args.title)
+        path = export(run_dir, args.dest, args.arm, args.title)
         print(path)
 
 

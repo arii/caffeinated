@@ -123,7 +123,7 @@ This produces C1, a “Mixing speed” lightbulb caption at tick 2, experiment a
 
 For an autoresearch-style scalar objective, supply a baseline experiment entity with `kind: "baseline"`. Its finished value becomes the reference. A candidate marked `keep` is provisional until its accepted verdict or confirmed discovery event; keep this distinction in the exporter.
 
-The current Ig Nobel special case is `swarm: "ignobel"` with metric `replicated_findings`: unique experiments finishing with status `replicated` increase the count. Effect size, p-value, reward, and replicated-findings count are distinct fields. A new aggregate objective needs an explicit reducer rule in `backend/replay.py`; changing a metric label alone is insufficient. Scalar best comparisons already honor `minimize`/`maximize`.
+The legacy Ig Nobel special case is `swarm: "ignobel"` with metric `replicated_findings` (only the bundled sample recording and the example above use it; `swarm.py --task ignobel` exports as `swarm: "autoresearch"` with metric `loss`, minimize): unique experiments finishing with status `replicated` increase the count. Effect size, p-value, reward, and replicated-findings count are distinct fields. A new aggregate objective needs an explicit reducer rule in `backend/replay.py`; changing a metric label alone is insufficient. Scalar best comparisons already honor `minimize`/`maximize`.
 
 ## 5. Identity, clocks, and evidence
 
