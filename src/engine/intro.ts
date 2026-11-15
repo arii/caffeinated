@@ -13,7 +13,7 @@ export interface IntroConfig{
  replay:{title:string;subline:string;button:string;qualifier:string;resultsButton:string};
  sections:{about:string;event:string;tools:string;authors:string;boredom:string;trail:string;results:string};
  labels:{source:string;missingExa:string;recording:string;searches:string;sources:string;recalls:string;pastdev:string;localMemory:string;noCitations:string};
- results:{studyCount:string;passedCount:string;awardCount:string;awardFallback:string;creditErrorSuffix:string;proxyNote:string;noStudies:string;noAwards:string;noProxy:string;factualLine:string;noCommitteeSuffix:string;countLine:string;track3Line:string;memoryComparisonLine:string;memoryComparisonUrl:string;bixbenchLine:string};
+ results:{studyCount:string;passedCount:string;awardCount:string;awardFallback:string;creditErrorSuffix:string;proxyNote:string;noStudies:string;noAwards:string;noPrizeDisclaimer:string;noProxy:string;factualLine:string;noCommitteeSuffix:string;countLine:string;track3Line:string;memoryComparisonLine:string;memoryComparisonUrl:string;bixbenchLine:string};
 }
 type Row=Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v as Row[]:v&&typeof v==='object'?Object.values(v as Row) as Row[]:[];
@@ -21,18 +21,20 @@ const str=(v:unknown)=>typeof v==='string'?v:'';
 /** Match study citations to Exa source cards by URL when available, plus count past.dev memory traffic. */
 export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
  const sources=rows(r?.entities?.sources),byUrl=new Map(sources.map(s=>[str(s.url),s]).filter(([u])=>u) as [string,Row][]);
- const citations=rows(r?.entities?.studies).flatMap(st=>(Array.isArray(st.citations)?st.citations:[]).map(c=>{const url=str(c),s=byUrl.get(url);return {study:str(st.question)||str(st.headline)||str(st.id),url,sourceId:s?String(s.id??s.source_id??''):'',title:s?str(s.title):''};}));
+ const citations=rows(r?.entities?.studies).flatMap(st=>(Array.isArray(st.citations)?st.citations:[]).map(c=>{const url=str(c),s=byUrl.get(url);return {study:str(st.question)||str(st.headline)||str(st.id),url,sourceId:s?String(s.id??s.source_id??''):'',title:s?str(s.title):''};})).sort((a,b)=>Number(Boolean(b.sourceId))-Number(Boolean(a.sourceId)));
  const ev=r?.events||[],memory=ev.filter(e=>e.type==='question.asked'&&(e.payload as Row|undefined)?.kind==='recall').length,pastdev=ev.some(e=>/past/i.test(str((e.payload as Row|undefined)?.backend)));
  return {citations,sources:sources.length,exaSearches:ev.filter(e=>e.type==='question.asked'&&/search|exa/.test(str((e.payload as Row|undefined)?.kind))).length,memoryRecalls:memory,pastdev};
 }
 
-export function researchResults(r:Recording|null){
- const cards=studyCards(r,Number.MAX_SAFE_INTEGER),awards=momentsBetween(r?.events||[],-1,Number.MAX_SAFE_INTEGER).filter(m=>m.kind==='award');
+export function researchResults(r:Recording|null,tick=Number.MAX_SAFE_INTEGER){
+ const cards=studyCards(r,tick),awards=momentsBetween(r?.events||[],-1,tick).filter(m=>m.kind==='award');
+ const ran=cards.filter(s=>s.result&&s.result.rejected==null&&s.result.p!=null&&Number.isFinite(s.result.p)).length;
  const confirmed=cards.filter(s=>s.result?.confirmed===true||s.result?.replicated===true||s.replications.some(x=>x.confirmed===true||x.replicated===true));
  const underCurrentRules=confirmed.filter(s=>currentRules(s.result?{...s.result,direction:s.direction||undefined}:null,currentRuleThresholds(r?.manifest?.judging)).pass).length;
  const proxyNote=recordingProxyNote(r?.manifest,r)||'';
- return {studies:cards.length,registered:cards.length,confirmed:confirmed.length,underCurrentRules,passed:confirmed.length,awards:awards.map(a=>[a.title,a.detail].filter(Boolean).join(' · ')),proxyNote,isIgnobel:isIgnobelRecording(r?.manifest,r),preCommittee:isPreCommitteeIgnobel(r?.manifest,r)};
+ return {studies:cards.length,registered:cards.length,ran,confirmed:confirmed.length,underCurrentRules,passed:confirmed.length,awards:awards.map(a=>[a.title,a.detail].filter(Boolean).join(' · ')),proxyNote,isIgnobel:isIgnobelRecording(r?.manifest,r),preCommittee:isPreCommitteeIgnobel(r?.manifest,r)};
 }
+export function introResults(r:Recording|null){return researchResults(r,Number.MAX_SAFE_INTEGER);}
 
 export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,esc:(v:unknown)=>string,results=researchResults(null),manifest:Recording['manifest']|null=null,recording:Recording|null=null){
  const provenance=manifest?.provenance,badge=provenanceBadge(manifest,recording||undefined);
@@ -55,11 +57,12 @@ export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,e
  const cites=trail.citations.slice(0,12).map(x=>`<li><span>${esc(x.study)}</span> ${x.sourceId?`<button class="chip" data-source="${esc(x.sourceId)}">${esc(c.labels.source)} ${esc(x.title||x.url)}</button>`:`${/^https?:\/\//i.test(x.url)?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.url)}</a>`:`<code>${esc(x.url)}</code>`} <em>${esc(c.labels.missingExa)}</em>`}</li>`).join('');
  const fill=(template:string,values:Record<string,string|number>)=>template.replace(/\{([^}]+)\}/g,(_,key:string)=>String(values[key]??''));
  const studySummary=results.studies?`<p>${esc(fill(c.results.countLine,{N:results.registered,M:results.confirmed,K:results.underCurrentRules}))}</p>`:`<p>${esc(c.results.noStudies)}</p>`;
- const factualLine=results.isIgnobel&&results.studies?`<p class="intro-result-line">${esc(fill(c.results.factualLine,{N:results.registered,K:results.underCurrentRules,committeeSuffix:results.preCommittee?c.results.noCommitteeSuffix:''}))}</p>`:'';
- const awardSection=results.awards.length?`<p>${esc(fill(c.results.awardCount,{N:results.awards.length}))}</p><ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}${manifest&&hasCreditError(manifest,recording)?esc(c.results.creditErrorSuffix):''}</p>`;
+ const factualLine=results.isIgnobel&&results.studies?`<p class="intro-result-line">${esc(fill(c.results.factualLine,{N:results.registered,R:results.ran,K:results.underCurrentRules,committeeSuffix:results.preCommittee?c.results.noCommitteeSuffix:''}))}</p>`:'';
+ const noPrizeDisclaimer=results.isIgnobel&&!results.awards.length?`<p class="intro-prize-disclaimer">${esc(c.results.noPrizeDisclaimer)}</p>`:'';
+ const awardSection=results.isIgnobel?(results.awards.length?`<p>${esc(fill(c.results.awardCount,{N:results.awards.length}))}</p><ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}${manifest&&hasCreditError(manifest,recording)?esc(c.results.creditErrorSuffix):''}</p>`):'';
  const memoryComparison=`<p class="track3-note"><a href="${esc(c.results.memoryComparisonUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.results.memoryComparisonLine)}</a></p>`;
  const bixbenchLine=`<p class="track3-note">${esc(c.results.bixbenchLine)}</p>`;
- return `<div class="intro-card">${badgeHtml}<h1>${esc(c.replay.title)}</h1><p class="intro-subline">${esc(c.replay.subline)}</p>${factualLine}<button id="intro-start" class="intro-start">${esc(c.replay.button)}</button><a id="intro-results-link" class="intro-results-button" href="#intro-real-results">${esc(c.replay.resultsButton)}</a><a id="intro-qualifier" class="intro-qualifier" href="#intro-real-results">${esc(c.replay.qualifier)}</a>
+ return `<div class="intro-card">${badgeHtml}<h1><span class="satire-badge">Satire</span> ${esc(c.replay.title)}</h1>${noPrizeDisclaimer}<p class="intro-subline">${esc(c.replay.subline)}</p>${factualLine}<button id="intro-start" class="intro-start">${esc(c.replay.button)}</button><a id="intro-results-link" class="intro-results-button" href="#intro-real-results">${esc(c.replay.resultsButton)}</a><a id="intro-qualifier" class="intro-qualifier" href="#intro-real-results">${esc(c.replay.qualifier)}</a>
 <details id="intro-about" class="intro-about"><summary>${esc(c.sections.about)}</summary><div class="intro-sections"><details class="intro-section"><summary>${esc(c.sections.event)}</summary><p class="eyebrow">${esc(c.event.title)} · ${esc(c.event.dates)} · ${esc(c.event.host)}</p><p>${esc(c.event.summary)}</p></details>
 <details class="intro-section"><summary>${esc(c.sections.tools)}</summary><ul class="intro-tools">${toolItems}</ul></details>
 <details class="intro-section"><summary>${esc(c.sections.authors)}</summary><p class="${c.authors.placeholder?'placeholder':''}">${esc(c.authors.names.join(', '))}</p></details>

@@ -1,6 +1,6 @@
 import {recordingPrefix,type RecordingManifest} from './replay.ts';
 export type RunStatus='live'|'stale'|'stopped'|'finished'|'sample';
-const TASK_TITLES:Record<string,string>={hadamard19:'Hadamard 19×19 max determinant',bixbench_mini:'BixBench mini · bioinformatics Q&A',playworld_mini:'PlayWorld mini · world model',ignobel:'Ig Nobel prize hunt'};
+const TASK_TITLES:Record<string,string>={hadamard19:'Hadamard 19×19 max determinant',bixbench_mini:'BixBench mini · bioinformatics Q&A',playworld_mini:'PlayWorld mini · world model',ignobel:'Ig Nobel Prize hunt'};
 /** Seconds/minutes/hours wording for "last update" copy. */
 export function ago(ms:number){const s=Math.max(0,Math.round(ms/1000));return s<90?`${s}s`:s<5400?`${Math.round(s/60)}m`:`${Math.round(s/3600)}h`;}
 export function taskId(m:RecordingManifest){
@@ -14,7 +14,10 @@ export function taskId(m:RecordingManifest){
  return '';
 }
 export function taskTitle(m:RecordingManifest){return m.task_title||TASK_TITLES[taskId(m)]||m.title;}
+export function compactDock(width:number,height:number){return width<=700||height<=500;}
 export function metricLabel(metric?:{name?:string;direction?:string;unit?:string}){if(!metric?.name)return '';const name=metric.name.replaceAll('_',' ');return metric.direction==='maximize'?`${name} ↑ higher is better`:`${name} ↓ lower is better`;}
+export function evidenceMetricLabel(metric?:{name?:string;direction?:string}){if(metric?.direction==='minimize')return 'Loss';if(!metric?.name)return 'Metric';return metric.name.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());}
+export function metricValueLabel(value:unknown,reward:unknown,metricName:string,format:(value:number)=>string){if(typeof value==='number'&&Number.isFinite(value))return `${metricName} ${format(value)}`;if(value===null&&typeof reward==='number'&&Number.isFinite(reward))return `Reward ${format(reward)}`;return '';}
 /** Live recordings degrade to "stale" when the producer stops publishing (heartbeat or server flag). */
 export function runStatus(m:RecordingManifest,now=Date.now(),staleMs=90_000):{status:RunStatus;label:string;detail:string}{
  if(m.sample!==false)return {status:'sample',label:'RECORDED SAMPLE',detail:'Bundled recording'};

@@ -110,4 +110,4 @@ export function dialogueThrough(events:InspectEvent[],tick:number,agentId?:strin
 }
 
 export const signed=(v:number|null,d=3)=>v==null?'—':(v>0?'+':'')+v.toFixed(d);
-export const pValue=(v:number|null)=>v==null?'—':v<0.001?'<0.001':v.toFixed(3);
+export const pValue=(v:number|null)=>v==null?'—':v<1e-300?'<1e-300':String(Number(v.toPrecision(2)));

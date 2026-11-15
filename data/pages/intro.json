@@ -34,7 +34,7 @@
   },
   "labels": {
     "source": "Exa result:",
-    "missingExa": "no Exa result in this recording",
+    "missingExa": "results not kept as source cards",
     "recording": "This recording",
     "searches": "literature searches",
     "sources": "Exa source cards",
@@ -53,10 +53,11 @@
     "noStudies": "No Ig Nobel study registrations appear in this recording.",
     "noAwards": "No prizes awarded yet — this run stopped before committee judging.",
     "noProxy": "No proxy note is present in this recording.",
-    "factualLine": "Real result so far: {K} of {N} preregistered tests held up{committeeSuffix}",
+    "factualLine": "Real result so far: {K} of {R} preregistered tests that ran held up ({N} registered){committeeSuffix}",
+    "noPrizeDisclaimer": "No prize has been awarded. The swarm found known relationships in public teaching datasets, not discoveries.",
     "noCommitteeSuffix": "; no committee score yet",
     "countLine": "{N} registered · {M} confirmed ({K} under current rules)",
-    "track3Line": "Track 3 check: a single agent scored higher on held-out than the boredom swarm, but the ordering depends on a grader fix made after the winners were known; exploratory.",
+    "track3Line": "Track 3 check (exploratory, 3 runs each): the preregistered set, stopped early, ranks boredom swarm 0.26 > single agent 0.24 > no meter 0.11; the complete set, picked after it finished, ranks single agent 0.30 > no meter 0.09 > boredom swarm 0.06. Neither ordering is significant.",
     "memoryComparisonLine": "past.dev vs local memory on 419 real memories: hit@1 0.65 vs 0.30, 562 ms vs 15 ms (hand-written probes)",
     "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/main/experiments/memory-comparison/README.md",
     "bixbenchLine": "BixBench held-out: baseline 1/7 → swarm best 6/7 (one run; 95% CI 0.49–0.97)"

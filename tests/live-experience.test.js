@@ -106,8 +106,8 @@ test('team roster adds the critic and conductor on standby until they act',()=>{
  assert.deepEqual(teamRoster(all,[all[1]]).map(a=>a.id),['c','k']);
 });
 test('boredom regime chip and component bars degrade when fields are missing',()=>{
- assert.deepEqual(regimeLabel('PARADIGM_BREAKOUT'),{label:'Paradigm breakout',tone:'breakout'});
- assert.deepEqual(regimeLabel('SOMETHING_NEW'),{label:'Something new',tone:'calm'});
+ assert.deepEqual(regimeLabel('PARADIGM_BREAKOUT'),{label:'Paradigm breakout',tone:'breakout',description:'4 divergent slots; the gate requires a top-level mechanism not used recently.'});
+ assert.deepEqual(regimeLabel('SOMETHING_NEW'),{label:'Something new',tone:'calm',description:''});
  assert.equal(regimeLabel(undefined).label,'');
  assert.deepEqual(boredomComponents({stagnation:0.5,repetition:2,bad:'x'}),[{key:'repetition',label:'repetition',value:100},{key:'stagnation',label:'stagnation',value:50}]);
  assert.deepEqual(boredomComponents(undefined),[]);
@@ -115,7 +115,7 @@ test('boredom regime chip and component bars degrade when fields are missing',()
 test('run header shows task title, metric direction, and live/stale/stopped status',()=>{
  const now=Date.parse('2026-01-01T00:10:00Z');
  assert.equal(taskTitle({title:'autoresearch · hadamard19 · fake'}),'Hadamard 19×19 max determinant');
- assert.equal(taskTitle({title:'x',provenance:{command:['swarm.py','--task','ignobel']}}),'Ig Nobel prize hunt');
+ assert.equal(taskTitle({title:'x',provenance:{command:['swarm.py','--task','ignobel']}}),'Ig Nobel Prize hunt');
  assert.equal(taskTitle({title:'Custom'}),'Custom');
  assert.equal(metricLabel({name:'det_ratio',direction:'maximize'}),'det ratio ↑ higher is better');
  assert.equal(metricLabel({name:'loss',direction:'minimize'}),'loss ↓ lower is better');
