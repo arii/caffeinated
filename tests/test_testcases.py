@@ -7,8 +7,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from boredom import descriptor_meter as meter
 import swarm
@@ -317,13 +318,12 @@ class SwarmTaskModeTests(unittest.TestCase):
             self.assertNotIn("missing.csv", context)
 
     def test_spreadsheet_preview_survives_missing_excel_engine(self):
-        pandas = __import__("pandas")
+        pandas = types.ModuleType("pandas")
+        pandas.read_excel = Mock(side_effect=ImportError("Missing openpyxl"))
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "data.xlsx"
             path.write_bytes(b"")
-            with patch.object(
-                pandas, "read_excel", side_effect=ImportError("Missing openpyxl")
-            ):
+            with patch.dict(sys.modules, {"pandas": pandas}):
                 preview = swarm.preview_file(path)
             self.assertIn("preview unavailable", preview)
 
