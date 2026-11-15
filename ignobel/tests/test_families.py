@@ -421,6 +421,8 @@ def test_simulated_measurements_follow_the_prediction_and_sample_sizes():
     dry = [float(r["walk_time"]) for r in cells if r["group"] == "dry"]
     assert len(wet) == len(dry) == 200 and -1.1 < stats.two_group(wet, dry)[0] < -0.5
     assert bench.clean_request({**STEP, "n": "lots", "design": "magic"})["n"] == 60
+    odd = bench.simulate({**req, "n": 61}, 0, out)
+    assert odd["rows"] == 61
 
 
 def test_a_salvaged_experiment_step_keeps_its_sample_size():

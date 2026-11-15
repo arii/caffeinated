@@ -88,7 +88,7 @@ def simulate(req: dict, seed: int, dest: Path) -> dict:
     else:
         half = req["n"] // 2
         rows = [[labels[0], round(rng.gauss(eff, 1), 4)] for _ in range(half)]
-        rows += [[labels[1], round(rng.gauss(0, 1), 4)] for _ in range(half)]
+        rows += [[labels[1], round(rng.gauss(0, 1), 4)] for _ in range(req["n"] - half)]
         header = [other, measure]
     return _record(req, dest, header, rows, provenance="simulated")
 
