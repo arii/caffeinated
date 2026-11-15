@@ -13,12 +13,13 @@ import shutil
 import subprocess
 import sys
 import uuid
-from contextlib import ExitStack, contextmanager, redirect_stdout
+from contextlib import ExitStack, contextmanager, redirect_stdout, suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
+import live_publish
 import llm
 import memory
 import research
@@ -80,6 +81,8 @@ def append_jsonl(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+    if path.name != "viewer_publish_log.jsonl":
+        live_publish.changed(path)
 
 
 def read_jsonl(path):
@@ -415,6 +418,7 @@ def common_values(agent, round_num, role, status, agent_b, best_commit, best_val
         "role": role,
         "task_brief": (TASK or {}).get("brief", ""),
         "editable": (TASK or {}).get("editable", ""),
+        "agent_brief": ((TASK or {}).get("agents") or {}).get(agent, {}).get("brief", ""),
         **(TASK or {}).get("prompt_values", {}),
     }
 
@@ -536,6 +540,8 @@ def research_call(
     n=3,
     since=None,
     cell=None,
+    category="publication",
+    domains=None,
 ):
     log_path = Path(out_dir) / "research_log.jsonl"
     cache_dir = Path(out_dir) / "exa_cache"
@@ -553,8 +559,9 @@ def research_call(
         log=str(log_path),
         cache_dir=str(cache_dir),
         replay=replay,
-        category="publication",
         cell=cell,
+        category=category,
+        domains=domains,
     )
     if os.environ.get("EXA", "").casefold() == "off":
         research.run_disabled(args)
@@ -836,6 +843,7 @@ def run_scouts(
     replay,
 ):
     leads = {}
+    scout = (TASK or {}).get("scout", {})
     cells = [] if arm == "A" else suggest_cells(profile, events)
     targets = direction_cells(cells) or ["none"]
     for scout_number, agent in enumerate(scouts):
@@ -880,6 +888,8 @@ def run_scouts(
             kind="paper",
             n=3,
             cell=target_cell,
+            since=scout.get("since"),
+            category=scout.get("paper_category", "publication"),
         )
         code_records = research_call(
             "scout",
@@ -891,6 +901,8 @@ def run_scouts(
             kind="code",
             n=3,
             cell=target_cell,
+            since=scout.get("since"),
+            domains=scout.get("code_domains"),
         )
         sources = source_records(paper_records) + source_records(code_records)
         if not sources:
@@ -917,9 +929,10 @@ def run_scouts(
             regime=status["regime"],
             replay=replay,
             source=source_id,
-            question=(
+            question=scout.get(
+                "extract_question",
                 f"What exact method, settings, and measured result could be "
-                f"implemented in {TARGET_FILE} for this task?"
+                f"implemented in {TARGET_FILE} for this task?",
             ),
         )
         extract = next(
@@ -1697,9 +1710,47 @@ def preview_file(path, max_chars=6000):
     return text if len(text) <= max_chars else text[:max_chars] + "\n...(truncated)"
 
 
-def build_task_context(task_dir, context_files):
+def set_task_context(task_context):
+    TASK["prompt_values"]["task_context"] = task_context
+    TASK["prompt_values"]["task_inputs_brief"] = (
+        task_context if len(task_context) <= 1500 else task_context[:1500] + "\n...(truncated)"
+    )
+
+
+def refresh_round_context(out_dir, round_num, cells):
+    """Append the output of the task's round_context script (if any) to the task inputs."""
+    hook = (TASK or {}).get("round_context")
+    if not hook:
+        return
+    command = [
+        sys.executable,
+        str(TASK["dir"] / hook),
+        "--out-dir",
+        str(out_dir),
+        "--round",
+        str(round_num),
+        "--cells",
+        json.dumps(cells, default=str),
+    ]
+    try:
+        proc = subprocess.run(
+            command, cwd=TASK["dir"], capture_output=True, text=True, timeout=240, check=False
+        )
+        extra = proc.stdout.strip() if proc.returncode == 0 else ""
+        if proc.returncode:
+            print(f"[round_context] {hook} failed: {proc.stderr.strip()[-300:]}", flush=True)
+    except subprocess.TimeoutExpired:
+        extra = ""
+        print(f"[round_context] {hook} timed out", flush=True)
+    limit = TASK.get("round_context_max_chars", 8000)
+    set_task_context(
+        TASK["base_task_context"] + (f"\n--- this round\n{extra[:limit]}" if extra else "")
+    )
+
+
+def build_task_context(task_dir, context_files, max_chars=6000):
     parts = [
-        f"--- {name}\n{preview_file(task_dir / name)}"
+        f"--- {name}\n{preview_file(task_dir / name, max_chars)}"
         for name in context_files
         if (task_dir / name).exists()
     ]
@@ -1712,13 +1763,17 @@ def load_task(name):
     target = f"testcases/{name}/{config['editable']}"
     context_files = config.get("context_files", [])
     prepare_task(task_dir, context_files)
-    task_context = build_task_context(task_dir, context_files)
+    task_context = build_task_context(
+        task_dir, context_files, config.get("context_max_chars", 6000)
+    )
+    scout = config.get("scout", {})
     return {
         **config,
         "name": name,
         "dir": task_dir,
         "target": target,
         "profile": task_dir / "boredom_profile.json",
+        "base_task_context": task_context,
         "prompt_values": {
             "task_brief": config["brief"],
             "target_file": target,
@@ -1727,6 +1782,16 @@ def load_task(name):
                 task_context
                 if len(task_context) <= 1500
                 else task_context[:1500] + "\n...(truncated)"
+            ),
+            "scout_focus": (
+                f"Task-specific search focus: {scout['goal']}. {scout.get('channels', '')}"
+                if scout.get("goal")
+                else ""
+            ),
+            "scout_pick_focus": (
+                f"For this task, prefer a source that {scout['pick_criterion']}."
+                if scout.get("pick_criterion")
+                else ""
             ),
         },
     }
@@ -1807,7 +1872,9 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score):
     ):
         if candidate.get(key) is not None:
             event[key] = candidate[key]
-    return meter.submit(profile, ledger_path, event)
+    submitted = meter.submit(profile, ledger_path, event)
+    live_publish.changed(ledger_path)
+    return submitted
 
 
 def write_result_memory(
@@ -1892,6 +1959,12 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(out_dir, target, dirs_exist_ok=True)
     return target
+
+
+def record_round_artifacts(publisher, out_dir, conductor, arm, round_num):
+    with publisher.publish_lock:
+        target = copy_artifacts_to_arm_branch(out_dir, conductor, arm)
+        return commit_arm_artifacts(conductor, target, round_num)
 
 
 def commit_arm_artifacts(conductor, target, round_num):
@@ -2109,6 +2182,10 @@ def _orchestrate(args, publish_state, cleanup):
         else (Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer")
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
+    publisher = live_publish.Publisher(
+        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs), settle=2.0
+    )
+    publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"
     if not run_id_path.exists():
         run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
@@ -2137,6 +2214,7 @@ def _orchestrate(args, publish_state, cleanup):
             **provenance,
         },
     )
+    os.environ["TASK_RESEARCH_LOG"] = str(out_dir / "research_log.jsonl")
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
     critic_path = out_dir / "critic.tsv"
@@ -2219,6 +2297,7 @@ def _orchestrate(args, publish_state, cleanup):
             cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
+            refresh_round_context(out_dir, round_num, cell_suggestions)
             append_assignment(
                 allocation,
                 out_dir=out_dir,
@@ -2230,6 +2309,10 @@ def _orchestrate(args, publish_state, cleanup):
                 provenance=provenance,
             )
             status["per_agent_B"] = allocation["per_agent_B"]
+            viewer_frontier(out_dir, round_num, "assign")
+            if viewer_dest:
+                live_publish.watch(out_dir, publisher.request)
+                publisher.request()
             leads = run_scouts(
                 allocation["scouts"],
                 profile=profile,
@@ -2286,6 +2369,8 @@ def _orchestrate(args, publish_state, cleanup):
                 }.get(allocation["regime"], "EXPLOIT")
                 candidate_records.append(candidate)
 
+            viewer_frontier(out_dir, round_num, "research")
+            publisher.request()
             judge_novelty(
                 candidate_records,
                 llm_client=llm_client,
@@ -2299,6 +2384,8 @@ def _orchestrate(args, publish_state, cleanup):
             pending_candidates = [
                 candidate for candidate in candidate_records if candidate.get("status") == "pending"
             ]
+            viewer_frontier(out_dir, round_num, "propose")
+            publisher.request()
             run_candidates = deduplicate_round_candidates(repo, pending_candidates, out_dir)
             commits = [candidate["commit"] for candidate in run_candidates]
             evaluation_results, _ = run_evaluations(repo, commits, out_dir / "runs")
@@ -2481,8 +2568,7 @@ def _orchestrate(args, publish_state, cleanup):
 
             events = write_results(ledger_path, results_path)
             _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
-            copy_target = copy_artifacts_to_arm_branch(out_dir, conductor, args.arm)
-            commit_arm_artifacts(conductor, copy_target, round_num)
+            record_round_artifacts(publisher, out_dir, conductor, args.arm, round_num)
             for candidate in candidate_records:
                 if candidate.get("commit"):
                     tag = unique_tag(
@@ -2504,7 +2590,8 @@ def _orchestrate(args, publish_state, cleanup):
                 if event.get("kind") == "candidate" and event.get("round", 0) > 0
             )
             write_round_summary(events, candidates_done)
-            publish_viewer_state(out_dir, viewer_dest, final=False, status="running")
+            viewer_frontier(out_dir, round_num, "finish")
+            publisher.flush(final=False, status="running")
             if latest_candidate is not None and accepted:
                 print(
                     f"round {round_num}: accepted {latest_candidate['commit']} "
@@ -2550,6 +2637,10 @@ def orchestrate(args):
 
 def _finish_publish(publish_state, terminal_status):
     out_dir = publish_state.get("out_dir")
+    publisher = publish_state.get("publisher")
+    if publisher:
+        live_publish.unwatch(out_dir)
+        publisher.close()
     if out_dir:
         run_path = Path(out_dir) / "run.json"
         if run_path.exists():
@@ -2560,6 +2651,22 @@ def _finish_publish(publish_state, terminal_status):
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
         publish_viewer_state(out_dir, publish_state.get("dest"), final=True, status=terminal_status)
+
+
+def viewer_frontier(out_dir, round_num, phase):
+    import export_viewer
+
+    try:
+        export_viewer._atomic_write(
+            Path(out_dir) / "viewer_frontier.json",
+            json.dumps({"round": round_num, "phase": phase}).encode(),
+        )
+    except Exception as error:
+        with suppress(Exception):
+            append_jsonl(
+                Path(out_dir) / "viewer_publish_log.jsonl",
+                {"ts": timestamp(), "error": type(error).__name__, "message": str(error)},
+            )
 
 
 def build_parser():

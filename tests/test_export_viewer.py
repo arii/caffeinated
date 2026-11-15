@@ -205,6 +205,18 @@ def autoresearch_run(root):
     return out
 
 
+class TaskTitleTests(unittest.TestCase):
+    def test_task_title_names_the_task(self):
+        self.assertEqual(export_viewer.task_title("ignobel"), "Ig Nobel Prize hunt")
+        self.assertEqual(export_viewer.task_title("hadamard19"), "autoresearch · hadamard19")
+        self.assertEqual(export_viewer.task_title(None), "autoresearch")
+
+    def test_ignobel_agents_are_named_labs(self):
+        agents = export_viewer.task_config("ignobel")["agents"]
+        self.assertEqual(agents["worker-1"]["label"], "Kitchen Physics Lab")
+        self.assertEqual(export_viewer.task_config("no-such-task"), {})
+
+
 class ExportViewerTests(unittest.TestCase):
     def export(self, out, dest):
         run_dir = export_viewer.export(out, dest)

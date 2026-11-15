@@ -1,0 +1,112 @@
+{
+  "domain": "testcase-ignobel-mini",
+  "version": 2,
+  "direction": "min",
+  "objective": "loss",
+  "eps": 0.02,
+  "eps_note": "loss is 1 - (replicated and significant), 0 or 1; any confirmed study beats an unconfirmed one",
+  "k": 5,
+  "knn": 3,
+  "patience": 5,
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "params_weight": 0.25,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "food_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "sleep_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "animal_behavior": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "acoustics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "behavioral_economics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "transport": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "medicine": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "sports_science": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "psychology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "everyday_physics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "linguistics": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ],
+    "ecology": [
+      "replicate_published",
+      "untested_prediction",
+      "resolve_conflict",
+      "new_population"
+    ]
+  },
+  "params": {
+    "value": {
+      "scale": "ratio",
+      "ratio": 4
+    }
+  },
+  "fail_statuses": [
+    "crash"
+  ],
+  "directives": {
+    "EXPLOIT": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
+    "BOREDOM_SNAP": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
+    "PARADIGM_BREAKOUT": "Pick a study type nobody has used (resolve two conflicting published findings, or test a published effect in a new population) and find a dataset that can answer it.",
+    "CONVERGED": "Re-register the best finding's mechanism on an independent real dataset to check that it holds elsewhere."
+  }
+}

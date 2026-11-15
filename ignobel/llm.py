@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
 from pathlib import Path
 
@@ -17,9 +18,14 @@ MOCK = os.environ.get("MOCK") == "1"
 MODEL_CHEAP = os.environ.get("MODEL_CHEAP", "gpt-5-mini")
 MODEL_STRONG = os.environ.get("MODEL_STRONG", "gpt-5")
 MODEL_JUDGE_B = os.environ.get("MODEL_JUDGE_B", "gpt-5-mini")
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
+EMBED_BACKEND = os.environ.get("EMBED_BACKEND", "openai")  # "local" = fastembed on CPU, no key
+EMBED_MODEL = os.environ.get("EMBED_MODEL") or (
+    "BAAI/bge-small-en-v1.5" if EMBED_BACKEND == "local" else "text-embedding-3-small")
 CACHE_DIR = Path(os.environ.get("LLM_CACHE_DIR", Path(__file__).parent / ".cache"))
 TOKEN_CAP = int(os.environ.get("TOKEN_CAP", "0") or 0)  # 0 = unlimited
+# Reasoning models spend completion tokens thinking before they answer; this is added to every
+# call's max_tokens so the answer isn't cut off (Tinker's Inkling needs ~2000).
+REASONING_TOKENS = int(os.environ.get("REASONING_TOKENS", "0") or 0)
 MOCK_EMBED_DIM = 64
 
 
@@ -37,7 +43,9 @@ class LLMResult(BaseModel):
 
 usage = {"tokens": 0}
 _prompt_log: Path | None = None
-_client = None
+_clients = None
+_clients_lock = threading.Lock()
+_turn = 0
 
 
 def set_prompt_log(path: str | Path | None) -> None:
@@ -83,39 +91,100 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
         _charge(tokens)
         return LLMResult(data=data, tokens=tokens, latency_ms=0, model=f"mock-{model}")
 
+    max_tokens += REASONING_TOKENS
     key = _hash("chat", model, system, user, str(seed), str(max_tokens))
     cache_file = CACHE_DIR / "llm" / f"{key}.json"
     if cache_file.exists():
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        if isinstance(cached["data"], dict) and cached["data"].get("_parse_error"):
+            cached["data"] = parse_reply(cached["data"].get("_raw", ""))
         return LLMResult(**cached, cached=True)
 
-    client = _openai()
     t0 = time.monotonic()
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        response_format={"type": "json_object"},
-        max_completion_tokens=max_tokens,
-        seed=seed,
-    )
+    tokens = 0
+    budget = max_tokens
+    import openai
+    for attempt in range(2):  # a cut-off reply is retried once with double the budget
+        try:
+            resp = _openai_call(lambda client: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                response_format={"type": "json_object"},
+                max_completion_tokens=budget,
+                seed=seed,
+            ))
+        except openai.UnprocessableEntityError as e:
+            # the provider could not turn the model's output into a reply (seen with Tinker when the
+            # model answers in function-call syntax). One retry, then an unusable, uncached reply.
+            if attempt == 0:
+                continue
+            return LLMResult(data={"_raw": "", "_parse_error": True, "_error": f"HTTP 422: {str(e)[:200]}"},
+                             tokens=tokens, latency_ms=int((time.monotonic() - t0) * 1000), model=model)
+        used = resp.usage.total_tokens if resp.usage else 0
+        tokens += used
+        _charge(used)
+        choice = resp.choices[0]
+        truncated = choice.finish_reason == "length"
+        if not truncated:
+            break
+        budget *= 2
     latency_ms = int((time.monotonic() - t0) * 1000)
-    text = resp.choices[0].message.content or "{}"
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        data = {"_raw": text, "_parse_error": True}
-    tokens = resp.usage.total_tokens if resp.usage else 0
-    _charge(tokens)
+    data = parse_reply(choice.message.content or "")
+    if truncated:
+        data["_truncated"] = True
     result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
+    if truncated:  # don't cache a cut-off reply; a rerun with more REASONING_TOKENS should retry it
+        return result
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     cache_file.write_text(json.dumps(result.model_dump(exclude={"cached"})), encoding="utf-8")
     return result
 
 
+def _quote_bare_keys(s: str) -> str:
+    """{code: "x", requests: []} -> {"code": "x", "requests": []}; string contents are left alone."""
+    out, i, in_str, esc, expect_key = [], 0, False, False, False
+    while i < len(s):
+        c = s[i]
+        if in_str:
+            esc, in_str = (False, True) if esc else (c == "\\", c != '"')
+        elif c == '"':
+            in_str = True
+        elif c in "{,":
+            expect_key = True
+        elif expect_key and (c.isalpha() or c == "_"):
+            j = i
+            while j < len(s) and (s[j].isalnum() or s[j] == "_"):
+                j += 1
+            k = j
+            while k < len(s) and s[k].isspace():
+                k += 1
+            expect_key = False
+            if k < len(s) and s[k] == ":":
+                out.append(f'"{s[i:j]}"')
+                i = j
+                continue
+        elif not c.isspace():
+            expect_key = False
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def parse_reply(text: str) -> dict:
+    """JSON object from a model reply. Some models (Tinker Inkling) leave object keys unquoted."""
+    for candidate in (text, _quote_bare_keys(text)):
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        return data if isinstance(data, dict) else {"_raw": text, "_parse_error": True}
+    return {"_raw": text, "_parse_error": True}
+
+
 def embed(texts: list[str]) -> np.ndarray:
     """Return unit-norm embeddings, shape (len(texts), dim). Cached per text."""
     if not texts:
-        return np.zeros((0, MOCK_EMBED_DIM))
+        return np.zeros((0, embed_dim()))
     if MOCK:
         return np.vstack([_mock_embed(t) for t in texts])
 
@@ -128,16 +197,45 @@ def embed(texts: list[str]) -> np.ndarray:
         else:
             missing.append(i)
     if missing:
-        resp = _openai().embeddings.create(model=EMBED_MODEL, input=[texts[i] for i in missing])
-        _charge(resp.usage.total_tokens if resp.usage else 0)
-        for i, item in zip(missing, resp.data):
-            v = np.array(item.embedding)
+        for i, raw in zip(missing, _embed_remote([texts[i] for i in missing])):
+            v = np.array(raw)
             v = v / (np.linalg.norm(v) or 1.0)
             out[i] = v
             f = CACHE_DIR / "embed" / f"{_hash(EMBED_MODEL, texts[i])}.json"
             f.parent.mkdir(parents=True, exist_ok=True)
             f.write_text(json.dumps(v.tolist()))
     return np.vstack(out)  # type: ignore[arg-type]
+
+
+_embed_dim = None
+
+
+def embed_dim() -> int:
+    global _embed_dim
+    if MOCK:
+        return MOCK_EMBED_DIM
+    if _embed_dim is None:
+        _embed_dim = len(embed(["dimension probe"])[0])
+    return _embed_dim
+
+
+def _embed_remote(texts: list[str]) -> list:
+    if EMBED_BACKEND == "local":
+        return list(_local_embedder().embed(texts))
+    resp = _openai_call(lambda client: client.embeddings.create(model=EMBED_MODEL, input=texts))
+    _charge(resp.usage.total_tokens if resp.usage else 0)
+    return [item.embedding for item in resp.data]
+
+
+_local_model = None
+
+
+def _local_embedder():
+    global _local_model
+    if _local_model is None:
+        from fastembed import TextEmbedding
+        _local_model = TextEmbedding(EMBED_MODEL)
+    return _local_model
 
 
 def _mock_embed(text: str) -> np.ndarray:
@@ -157,12 +255,35 @@ def cosine(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (na * nb))
 
 
-def _openai():
-    global _client
-    if _client is None:
-        from openai import OpenAI
-        _client = OpenAI()  # reads OPENAI_API_KEY (and OPENAI_BASE_URL) from env
-    return _client
+def _openai_call(fn):
+    """Run fn(client), taking turns across the comma-separated keys in OPENAI_API_KEY.
+
+    A key that is rejected or out of credit (401/402/403, or 429 insufficient_quota) is dropped
+    for the rest of the process and the call is retried with the next one.
+    """
+    import openai
+    global _clients, _turn
+    while True:
+        with _clients_lock:  # World._gather calls this from several threads
+            if _clients is None:
+                keys = [k.strip() for k in os.environ.get("OPENAI_API_KEY", "").split(",") if k.strip()]
+                if not keys:
+                    raise RuntimeError("set OPENAI_API_KEY (comma-separated for several keys), or run with MOCK=1")
+                _clients = [openai.OpenAI(api_key=k) for k in keys]  # base URL from OPENAI_BASE_URL
+            if not _clients:
+                raise RuntimeError("every OPENAI_API_KEY was rejected or is out of credit")
+            client = _clients[_turn % len(_clients)]
+            _turn += 1
+        try:
+            return fn(client)
+        except openai.APIStatusError as e:
+            body = e.body if isinstance(e.body, dict) else {}
+            quota = e.status_code == 429 and "insufficient_quota" in json.dumps(body)
+            if e.status_code not in (401, 402, 403) and not quota:
+                raise
+            with _clients_lock:  # by identity: another thread may have removed it already
+                if client in _clients:
+                    _clients.remove(client)
 
 
 # ----------------------------------------------------------------- mock data
@@ -195,6 +316,9 @@ _LESSONS = [
 ]
 
 
+_SUBFIELDS = ["kitchen", "office", "bathroom", "playground", "commuter", "garden", "hospital", "nightclub"]
+
+
 def _pick(seq, h: str, offset: int = 0):
     return seq[(int(h[offset:offset + 8], 16)) % len(seq)]
 
@@ -212,6 +336,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
             "method": method,
             "prediction": {"direction": "+" if n % 2 == 0 else "-",
                            "effect_size": round(0.1 + (n % 80) / 100, 2)},
+            **({"citations": ctx["sources"][:2]} if ctx.get("sources") else {}),
         }
     if kind == "refine":
         # A sensible scientist keeps the idea, sharpens the hypothesis, and predicts what it saw last time.
@@ -238,6 +363,31 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
                             f"{verdict} We discuss what this says about {noun} and about us."}
     if kind == "lesson":
         return {"lesson": _pick(_LESSONS, h)}
+    if kind == "research_plan":
+        query = _pick(ctx.get("queries") or [noun], h)
+        paper = {"tool": _pick(("openalex", "arxiv", "pubmed", "exa"), h, 8), "query": query}
+        if not ctx.get("datasets"):
+            first = {"tool": "load", "lead": "D1"} if ctx.get("leads") else {"tool": "datasets", "query": query}
+            return {"steps": [first, paper], "why": "mock: a study needs real data"}
+        if ctx.get("can_ask_experiment") and n % 3 == 0:
+            return {"steps": [{"tool": "experiment", "question": f"Do {noun} respond to a manipulation nobody has recorded?",
+                               "protocol": f"Assign {noun} at random to two conditions and measure the response.",
+                               "materials": "a bench, a stopwatch and patience", "design": ("two_group", "corr")[n % 2],
+                               "measure": "response", "compare": "treated vs untreated" if n % 2 == 0 else "dose",
+                               "n": 60 + n % 40, "refuted_if": "the two conditions do not differ"}, paper],
+                    "why": "mock: no public dataset covers this"}
+        steps = [paper]
+        if ctx.get("sources"):
+            steps.append({"tool": "read", "source": ctx["sources"][n % len(ctx["sources"])],
+                          "question": "What was the main result, in numbers?"})
+        return {"steps": steps, "why": "mock: read more"}
+    if kind == "spawn":
+        field = ctx.get("field", "science")
+        k = int(ctx.get("spawned", 0)) + 1
+        topic = _pick(_SUBFIELDS, h)
+        return {"name": f"{field[:4]}{topic.split()[0]}{k}", "field": f"{topic} {field}",
+                "seed_queries": [f"{topic} {field} odd findings", f"everyday {field} experiments"],
+                "methods": [method, "randomised trials"]}
     if kind in ("judge_a", "judge_b"):
         base = 3 + (n % 7)
         return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),
@@ -264,7 +414,27 @@ def _mock_requests(n: int, ctx: dict) -> list[dict]:
 
 def _mock_study_code(n: int, ctx: dict) -> str:
     variant = n % 10
-    if ctx.get("instruments"):
+    if ctx.get("rehearsal"):
+        d = ctx["rehearsal"]
+        num = [c["name"] for c in d["columns"] if c["kind"] == "numeric"]
+        cat = [c for c in d["columns"] if c["kind"] == "categorical"]
+        if cat:
+            g = cat[0]
+            return ("from lab_runtime import rows, report\n"
+                    f"a = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][0]!r}}})]\n"
+                    f"b = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][1]!r}}})]\n"
+                    "report(a, b, direction='+', effect_size=0.5)\n")
+        return ("from lab_runtime import rows, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{num[0]!r}, {num[1]!r}]))\n"
+                "report_corr(x, y, direction='+', effect_size=0.5)\n")
+    real = [d for d in ctx.get("datasets") or [] if len(d["numeric"]) >= 2]
+    if real:
+        d = real[n % len(real)]
+        a, b = d["numeric"][n % len(d["numeric"])], d["numeric"][(n // 3 + 1) % len(d["numeric"])]
+        b = b if b != a else d["numeric"][(d["numeric"].index(a) + 1) % len(d["numeric"])]
+        head = ("from lab_runtime import rows, report, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{a!r}, {b!r}]))\n")
+    elif ctx.get("instruments"):
         head = ("from lab_runtime import instruments, instrument, report, report_corr\n"
                 "names = instruments()\n"
                 "x = instrument(names[0])\n"

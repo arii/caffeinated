@@ -17,6 +17,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+import live_publish
 from boredom import commit_message, source_trailers
 from research import read_log
 
@@ -169,10 +170,7 @@ def arm_run_scope(arm=None, run_id=None):
 
 
 def append_jsonl(path, record):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as log_file:
-        log_file.write(json.dumps(record, sort_keys=True) + "\n")
+    live_publish.append_records(path, [record], "ts" if "ts" in record else "logged_at")
 
 
 def memory_payload(mem_type, memory_id, content, author, metadata, timestamp):
@@ -591,10 +589,7 @@ def sync(args):
 
 
 def append_recall_log(path, record):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as log_file:
-        log_file.write(json.dumps(record, sort_keys=True) + "\n")
+    live_publish.append_records(path, [record])
 
 
 def pending_count(value):

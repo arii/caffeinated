@@ -1,6 +1,18 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
+import {sortedRecordings,recordingCopy,frameAt,advanceTick,eventsThrough,recordingChanged,playbackContinues} from '../src/engine/replay.ts';
+test('recording preference uses live, completed swarm, then sample, newest first',()=>{
+ const rows=[{id:'sample',sample:true},{id:'old',sample:false,time:{ts_start:'2025-01-01'}},{id:'new',sample:false,time:{ts_start:'2026-01-01'}},{id:'live',sample:false,live:true}];
+ assert.deepEqual(sortedRecordings(rows).map(m=>m.id),['live','new','old','sample']);
+ assert.deepEqual(sortedRecordings([]),[]);
+ assert.deepEqual(sortedRecordings(rows.slice(0,3)).map(m=>m.id),['new','old','sample']);
+});
+test('live and completed swarm copy does not claim supplied recordings or no calls',()=>{
+ for(const live of [true,false]){const copy=recordingCopy({sample:false,live});assert.doesNotMatch(JSON.stringify(copy),/temporary|no model calls|RECORDED REPLAY/);}
+ assert.match(recordingCopy({sample:false,live:true}).callout,/Following a live swarm run/);
+ assert.match(recordingCopy({sample:true}).callout,/temporary replay/);
+ assert.equal(recordingCopy({sample:true}).kicker,'● RECORDED REPLAY');
+});
 test('live playback waits at the current end while finished recordings stop',()=>{
  assert.equal(playbackContinues({live:true,totalTicks:10},10),true);
  assert.equal(playbackContinues({live:true,totalTicks:0},0),true);

@@ -23,6 +23,7 @@ MAX_OUTPUT_BYTES = 8_000_000
 TASK_TIMEOUTS = {
     "bixbench_mini": 120,
     "hadamard19": 60,
+    "ignobel": 120,
     "playworld_mini": 120,
 }
 SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")

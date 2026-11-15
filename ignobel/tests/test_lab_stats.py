@@ -157,3 +157,81 @@ def test_check_noise_fails_and_alpha_divides():
 def test_check_too_small():
     v = stats.check({"kind": "corr", "x": [1, 2, 3], "y": [1, 2, 3]}, 1)
     assert not v["replicated"] and "too few" in v["reason"]
+
+
+class _FakeStream:
+    def __init__(self, text):
+        self.text = text
+
+    def read(self):
+        return self.text
+
+
+def _fake_modal(monkeypatch, timeout=False, returncode=0):
+    import sys
+    import types
+    calls = {"terminated": False}
+
+    class Sandbox:
+        stdout, stderr = _FakeStream("out"), _FakeStream("err")
+
+        @classmethod
+        def create(cls, *args, **kw):
+            calls["create"] = (args, kw)
+            return cls()
+
+        def wait(self):
+            if timeout:
+                raise SandboxTimeoutError()
+
+        @property
+        def returncode(self):
+            return returncode
+
+        def terminate(self):
+            calls["terminated"] = True
+
+    class SandboxTimeoutError(TimeoutError):
+        pass
+
+    image = types.SimpleNamespace(add_local_dir=lambda *a, **k: "image")
+    image.pip_install = lambda *a, **k: image
+    modal = types.SimpleNamespace(
+        App=types.SimpleNamespace(lookup=lambda *a, **k: "app"),
+        Image=types.SimpleNamespace(debian_slim=lambda **k: image),
+        Sandbox=Sandbox)
+    exc = types.SimpleNamespace(SandboxTimeoutError=SandboxTimeoutError)
+    monkeypatch.setitem(sys.modules, "modal", modal)
+    monkeypatch.setitem(sys.modules, "modal.exception", exc)
+    return calls
+
+
+def test_modal_sandbox_has_no_network_and_is_terminated(monkeypatch, tmp_path):
+    calls = _fake_modal(monkeypatch, returncode=3)
+    assert lab._run_modal(tmp_path) == ("out", "err", 3)
+    assert calls["create"][1]["block_network"] is True and calls["terminated"]
+
+
+def test_modal_timeout_is_a_failed_study(monkeypatch, tmp_path):
+    calls = _fake_modal(monkeypatch, timeout=True)
+    out, err, rc = lab._run_modal(tmp_path)
+    assert rc == 124 and err.endswith("timeout") and calls["terminated"]
+
+
+def test_sandbox_choice(monkeypatch):
+    monkeypatch.delenv("IGNOBEL_SANDBOX", raising=False)
+    assert lab._sandbox() == "docker"  # MOCK=1 in tests
+    monkeypatch.setattr(lab.llm, "MOCK", False)
+    assert lab._sandbox() == "modal"
+    monkeypatch.setenv("IGNOBEL_SANDBOX", "docker")
+    assert lab._sandbox() == "docker"
+    monkeypatch.setenv("IGNOBEL_SANDBOX", "host")
+    with pytest.raises(lab.SandboxUnavailable):
+        lab._sandbox()
+
+
+def test_a_hand_printed_malformed_result_is_a_failed_study():
+    assert lab._parse('@@RESULT [1, 2]')[0] is None
+    assert lab._parse('@@RESULT {"kind": "corr", "x": [1, 2], "y": "abc"}')[0] is None
+    assert lab._parse('@@RESULT {"kind": "two_group", "group_a": [1, "2"], "group_b": [3]}')[0] is None
+    assert lab._parse('@@RESULT {"kind": "corr", "x": [1, 2.5], "y": [3, 4]}')[0]["x"] == [1, 2.5]
