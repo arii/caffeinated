@@ -101,14 +101,21 @@ def _text(out: str | bytes | None) -> str:
 
 
 def _run_modal(workdir: Path) -> tuple[str, str, int]:
-    # TODO(modal docs): verify Sandbox.create kwargs, add_local_dir, and stdout/stderr reads.
     import modal
+    from modal.exception import SandboxTimeoutError
     app = modal.App.lookup("ignobel-lab", create_if_missing=True)
     image = modal.Image.debian_slim(python_version="3.11").add_local_dir(str(workdir), remote_path="/work")
     sb = modal.Sandbox.create("python", "-E", "-s", "/work/study.py", image=image, app=app,
                               timeout=TIMEOUT_S, block_network=True, workdir="/work")
-    sb.wait()
-    return sb.stdout.read(), sb.stderr.read(), sb.returncode or 0
+    try:
+        try:
+            sb.wait()
+        except SandboxTimeoutError:
+            return sb.stdout.read(), sb.stderr.read() + "\ntimeout", 124
+        rc = sb.returncode
+        return sb.stdout.read(), sb.stderr.read(), 1 if rc is None else rc
+    finally:  # also on Ctrl-C: don't leave a sandbox running (and billing) on Modal
+        sb.terminate()
 
 
 def _svg_plot(result: dict, path: Path) -> None:
