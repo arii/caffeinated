@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {bubbleContent,pickNear,sparklinePath,tileMetrics} from '../src/engine/glance.ts';
+import {bubbleContent,bubbleHtml,pickNear,sparklinePath,tileBestLabel,tileMetrics} from '../src/engine/glance.ts';
 
 test('pickNear holds the current candidate through its wider exit band',()=>{
  const candidates=[{id:'a',distance:3.4,facing:.25},{id:'b',distance:2,facing:.8}];
@@ -21,6 +21,18 @@ test('bubbleContent summarizes affect, current experiment and a newer blocking g
  assert.equal(blocked.idea,null);assert.match(blocked.activity,/too close to prior work/);
  const current=bubbleContent({agent,recording,tick:2,metric:{name:'score',direction:'maximize'}});
  assert.equal(current.idea,'A tiny hypothesis');assert.equal(current.predicted,.2);
+});
+
+test('bubble controls have labels and predicted values are formatted',()=>{
+ const html=bubbleHtml({name:'Wren',role:'Scientist',mood:{level:'engaged',label:'Engaged',boredomPct:20},activity:'testing',idea:'Try a variation',predicted:.014136217422224159},true,String);
+ assert.match(html,/predicted Δ \+0\.01414/);
+ assert.match(html,/<button class="bubble-close"[^>]*>×<\/button>/);
+ assert.match(html,/<button class="bubble-more"[^>]*>More…<\/button>/);
+});
+
+test('tile score labels format long floating point values',()=>{
+ assert.equal(tileBestLabel(.014136217422224159),'best 0.01414');
+ assert.equal(tileBestLabel(null),'best —');
 });
 
 test('tileMetrics handles minimum and maximum metrics, baselines, counts, IDs and names',()=>{

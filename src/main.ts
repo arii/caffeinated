@@ -24,7 +24,7 @@ import {discussionAt} from './engine/discussion';
 import {agentNow,nowCardHtml,eventWhy} from './engine/nowCard';
 import {experimentDetail,sourceCards,studyCards,dialogueThrough,type InspectEvent} from './engine/inspect';
 import {experimentHtml,sourceCardsHtml,studyCardsHtml,dialogueHtml,type ViewContext} from './engine/inspectView';
-import {bubbleContent,bubbleHtml,pickNear,sparklinePath,tileMetrics} from './engine/glance';
+import {bubbleContent,bubbleHtml,pickNear,sparklinePath,tileBestLabel,tileMetrics} from './engine/glance';
 import {provenanceBadge} from './engine/provenanceBadge';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const rawEsc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -90,11 +90,15 @@ function renderStatusStrip(){
  const direction=metric.name==='replicated_findings'?'maximize':metric.direction;
  const runBest=candidates.length?(direction==='maximize'?Math.max(...candidates.map(r=>r.value!)):Math.min(...candidates.map(r=>r.value!))):snapshot.value;
  const baseline=results.find(r=>outcomeOf(r.status,r.kind)==='baseline'&&typeof r.value==='number')?.value??null;
- strip.innerHTML=roster.map(a=>{const m=tileMetrics(results,a.id,a.name,metric,runBest,baseline),pct=m.progress==null?0:Math.round(m.progress*100),activity=humanizeActivity(a.activity||a.state)||'waiting';
-  return `<button class="status-tile" data-agent="${esc(a.id)}" aria-label="Focus ${esc(a.name)}: ${m.best==null?'no score':`best ${esc(m.best)}`}, ${m.kept} kept, ${m.discarded} discarded, ${m.crashed} crashed"><span class="status-tile-head"><strong>${esc(a.name)}</strong><span class="tile-activity">${esc(activity)}</span></span>${rowMeter(a)}<span class="tile-progress" role="meter" aria-label="${esc(a.name)} progress toward run best" aria-valuemin="0" aria-valuemax="100"${m.progress==null?'':` aria-valuenow="${pct}"`}><i style="width:${pct}%"></i></span><span class="tile-results"><b>${m.best==null?'best —':`best ${esc(m.best)}`}</b><span class="kept" title="Kept">✓ ${m.kept}</span><span class="discarded" title="Discarded">○ ${m.discarded}</span><span class="crashed" title="Crashed">× ${m.crashed}</span></span><svg class="tile-spark" viewBox="0 0 80 24" aria-label="Recent results"><path d="${sparklinePath(m.spark,80,20)}"/></svg></button>`;
+ strip.innerHTML=roster.map(a=>{const m=tileMetrics(results,a.id,a.name,metric,runBest,baseline),pct=m.progress==null?0:Math.round(m.progress*100),activity=humanizeActivity(a.activity||a.state)||'waiting',best=tileBestLabel(m.best);
+  return `<button class="status-tile" data-agent="${esc(a.id)}" aria-label="Focus ${esc(a.name)}: ${esc(best)}, ${m.kept} kept, ${m.discarded} discarded, ${m.crashed} crashed"><span class="status-tile-head"><strong>${esc(a.name)}</strong><span class="tile-activity">${esc(activity)}</span></span>${rowMeter(a)}<span class="tile-progress" role="meter" aria-label="${esc(a.name)} progress toward run best" aria-valuemin="0" aria-valuemax="100"${m.progress==null?'':` aria-valuenow="${pct}"`}><i style="width:${pct}%"></i></span><span class="tile-results"><b>${esc(best)}</b><span class="kept" title="Kept">✓ ${m.kept}</span><span class="discarded" title="Discarded">○ ${m.discarded}</span><span class="crashed" title="Crashed">× ${m.crashed}</span></span><svg class="tile-spark" viewBox="0 0 80 24" aria-label="Recent results"><path d="${sparklinePath(m.spark,80,20)}"/></svg></button>`;
  }).join('');
  strip.hidden=!roster.length;
+ alignStatusStrip();
 }
+function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar');if(bar)document.documentElement.style.setProperty('--status-strip-bottom',`${Math.max(0,innerHeight-bar.getBoundingClientRect().top+8)}px`);}
+const replayBar=document.querySelector<HTMLElement>('.replay-bar');if(replayBar)new ResizeObserver(alignStatusStrip).observe(replayBar);
+window.addEventListener('resize',alignStatusStrip);
 function renderBubble(){
  const element=$('proximity');
  if(!bubbleAgent){element.hidden=true;return;}

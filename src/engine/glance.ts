@@ -2,6 +2,7 @@ import {affect} from './affect.ts';
 import {boredomPercent} from './boredom.ts';
 import {agentDescriptor,descriptorText,humanizeActivity,humanizeRole} from './agentIdentity.ts';
 import {agentNow,eventWhy,type WhyContext} from './nowCard.ts';
+import {formatValue} from './moments.ts';
 import {outcomeOf,type ResultRow} from './scoreChart.ts';
 import type {Recording,ReplayEvent} from './replay.ts';
 
@@ -36,7 +37,7 @@ export function bubbleContent(input:{agent:BubbleAgent;recording:Recording|null;
 
 export function bubbleHtml(content:BubbleContent,expanded:boolean,esc:(v:unknown)=>string):string{
  const mood=[content.mood.label,content.mood.boredomPct==null?null:`bored ${Math.round(content.mood.boredomPct)}%`].filter(Boolean).join(' · ');
- const idea=content.idea?`<p class="bubble-idea">${esc(content.idea)}${content.predicted==null?'':` <span class="pill">predicted Δ ${content.predicted>0?'+':''}${esc(content.predicted)}</span>`}</p>`:'';
+ const idea=content.idea?`<p class="bubble-idea">${esc(content.idea)}${content.predicted==null?'':` <span class="pill">predicted Δ ${content.predicted>0?'+':''}${esc(formatValue(content.predicted))}</span>`}</p>`:'';
  return `<div class="bubble-card"><div class="bubble-heading"><span>SCIENTIST</span><button class="bubble-close" data-bubble-close aria-label="Close scientist card">×</button></div><strong class="bubble-name">${esc(content.name)}</strong><span class="bubble-role">${esc(content.role)}</span>${mood?`<span class="bubble-mood">${esc(mood)}</span>`:''}<p class="bubble-activity">${esc(content.activity)}</p>${idea}${expanded?'<div class="bubble-now" data-bubble-now></div><button class="bubble-more" data-bubble-more>More…</button>':'<button class="bubble-expand" data-bubble-expand><kbd>E</kbd> Meet this scientist</button>'}</div>`;
 }
 
@@ -44,6 +45,7 @@ export interface GlanceResult extends ResultRow{agentId?:string}
 const finite=(value:unknown):value is number=>typeof value==='number'&&Number.isFinite(value);
 const clamp=(value:number)=>Math.max(0,Math.min(1,value));
 export interface TileMetric{best:number|null;progress:number|null;kept:number;discarded:number;crashed:number;spark:number[]}
+export function tileBestLabel(best:number|null){return best==null?'best —':`best ${formatValue(best)}`;}
 export function tileMetrics(results:readonly GlanceResult[],agentId:string,agentName:string,metric:{name:string;direction:string},runBest:number|null,baseline:number|null):TileMetric{
  const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;
  const rows=results.filter(r=>matching(r)&&outcomeOf(r.status,r.kind)!=='baseline').slice().sort((a,b)=>(a.tick??0)-(b.tick??0));

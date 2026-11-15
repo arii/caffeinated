@@ -8,6 +8,7 @@ test('intro follows the requested order and keeps its secondary sections collaps
  const manifest={id:'live',title:'Live run',totalTicks:0,live:true,provenance:{llm:'moonshot/Kimi-K2',llm_mode:'tinker',exa:'live',memory_backend:'pastdev'}};
  const html=introHtml(config,researchTrail(null),esc,researchResults(null),manifest);
  const at=s=>html.indexOf(s);
+ assert.ok(at('<summary>About this project ▾</summary>')<at('<summary>Hack</summary>'));
  assert.ok(at('<summary>Hack</summary>')<at('<summary>Tools</summary>')&&at('<summary>Tools</summary>')<at('<summary>Authors</summary>')&&at('<summary>Authors</summary>')<at('<summary>Boredom</summary>')&&at('<summary>Boredom</summary>')<at('<summary>Exa</summary>'));
  for(const t of ['Tinker','Exa','past.dev','Devin'])assert.match(html,new RegExp(t));
  assert.match(html,/class="placeholder"/);

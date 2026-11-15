@@ -9,7 +9,7 @@ export interface IntroConfig{
  authors:{placeholder?:boolean;names:string[]};
  boredom:{title:string;paragraphs:string[];source:string};
  replay:{title:string;subline:string;button:string;qualifier:string};
- sections:{event:string;tools:string;authors:string;boredom:string;trail:string;results:string};
+ sections:{about:string;event:string;tools:string;authors:string;boredom:string;trail:string;results:string};
  labels:{source:string;missingExa:string;recording:string;searches:string;sources:string;recalls:string;pastdev:string;localMemory:string;noCitations:string};
  results:{studyCount:string;passedCount:string;awardCount:string;awardFallback:string;proxyNote:string;noStudies:string;noAwards:string;noProxy:string};
 }
@@ -55,10 +55,10 @@ export function introHtml(c:IntroConfig,trail:ReturnType<typeof researchTrail>,e
  const studySummary=`<p>${studyTotal} · ${passed}</p>${results.studies?'':`<p>${esc(c.results.noStudies)}</p>`}`;
  const awards=results.awards.length?`<ul>${results.awards.map(a=>`<li>${esc(a==='Award issued'?c.results.awardFallback:a)}</li>`).join('')}</ul>`:`<p>${esc(c.results.noAwards)}</p>`;
  return `<div class="intro-card">${badgeHtml}<h1>${esc(c.replay.title)}</h1><p class="intro-subline">${esc(c.replay.subline)}</p><button id="intro-start" class="intro-start">${esc(c.replay.button)}</button><a id="intro-results-link" class="intro-qualifier" href="#intro-real-results">${esc(c.replay.qualifier)}</a>
-<div class="intro-sections"><details class="intro-section"><summary>${esc(c.sections.event)}</summary><p class="eyebrow">${esc(c.event.title)} · ${esc(c.event.dates)} · ${esc(c.event.host)}</p><p>${esc(c.event.summary)}</p></details>
+<details class="intro-about"><summary>${esc(c.sections.about)}</summary><div class="intro-sections"><details class="intro-section"><summary>${esc(c.sections.event)}</summary><p class="eyebrow">${esc(c.event.title)} · ${esc(c.event.dates)} · ${esc(c.event.host)}</p><p>${esc(c.event.summary)}</p></details>
 <details class="intro-section"><summary>${esc(c.sections.tools)}</summary><ul class="intro-tools">${toolItems}</ul></details>
 <details class="intro-section"><summary>${esc(c.sections.authors)}</summary><p class="${c.authors.placeholder?'placeholder':''}">${esc(c.authors.names.join(', '))}</p></details>
 <details class="intro-section"><summary>${esc(c.sections.boredom)}</summary><h2>${esc(c.boredom.title)}</h2>${c.boredom.paragraphs.map(p=>`<p>${esc(p)}</p>`).join('')}<p class="muted">${esc(c.boredom.source)}</p></details>
-<details class="intro-section intro-trail"><summary>${esc(c.sections.trail)}</summary><p>${esc(c.labels.recording)}: ${trail.exaSearches} ${esc(c.labels.searches)}, ${trail.sources} ${esc(c.labels.sources)}, ${trail.memoryRecalls} ${esc(c.labels.recalls)} ${esc(trail.pastdev?c.labels.pastdev:c.labels.localMemory)}.</p>${cites?`<ul class="intro-cites">${cites}</ul>`:`<p class="muted">${esc(c.labels.noCitations)}</p>`}</details></div>
+<details class="intro-section intro-trail"><summary>${esc(c.sections.trail)}</summary><p>${esc(c.labels.recording)}: ${trail.exaSearches} ${esc(c.labels.searches)}, ${trail.sources} ${esc(c.labels.sources)}, ${trail.memoryRecalls} ${esc(c.labels.recalls)} ${esc(trail.pastdev?c.labels.pastdev:c.labels.localMemory)}.</p>${cites?`<ul class="intro-cites">${cites}</ul>`:`<p class="muted">${esc(c.labels.noCitations)}</p>`}</details></div></details>
 <details id="intro-real-results" class="intro-real-results" hidden><summary>${esc(c.sections.results)}</summary>${studySummary}<p><strong>${results.awards.length}</strong> ${esc(c.results.awardCount)}</p>${awards}${results.proxyNote?`<p><b>${esc(c.results.proxyNote)}:</b> ${esc(results.proxyNote)}</p>`:`<p class="muted">${esc(c.results.noProxy)}</p>`}</details></div>`;
 }
