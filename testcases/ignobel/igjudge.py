@@ -148,8 +148,8 @@ def load_ideas(directory):
             if row["type"] != "study.registered":
                 continue
             sid = row["refs"]["study_id"]
-            study = {**row["payload"], **entities.get(sid, {})}
-            study.update(results.get(sid, {}))
+            # Entities are exported last (post-run awards included), so they win over event payloads.
+            study = {**row["payload"], **results.get(sid, {}), **entities.get(sid, {})}
             study["agent_id"] = row.get("agent_id") or study.get("agent_id") or ""
             studies.setdefault(sid, study)
     else:
