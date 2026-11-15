@@ -10,6 +10,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 - **Experiment producer:** the Ig Nobel prize hunt is the swarm task `swarm.py --task ignobel` ([`testcases/README.md`](testcases/README.md), task files in `testcases/ignobel/`).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
+- **Backend architecture and results:** [how Exa and past.dev are used](docs/architecture.md#how-we-use-exa-and-pastdev) and [results so far (honest)](docs/results.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run

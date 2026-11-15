@@ -4,6 +4,10 @@
 is plain, deterministic code; only scouts, workers and the critic call an LLM.
 One run = one arm on one task for up to 10 rounds.
 
+Rounds are synchronous: scouts finish first, then workers take turns. Candidate
+evaluations and any critic decision are recorded in the ledger and
+`results.tsv`, and round artifacts are written before the next round begins.
+
 ```sh
 python3 swarm.py --task bixbench_mini --arm B --rounds 4 --llm tinker --out out/bix
 ```
@@ -15,7 +19,7 @@ python3 swarm.py --task bixbench_mini --arm B --rounds 4 --llm tinker --out out/
 | conductor | code (`orchestrate`) | measures boredom, assigns roles, runs evaluations, keeps or discards |
 | `worker-1`…`worker-4` | LLM | one role each: `exploit` (refine the best) or `divergent` (structurally different idea); some also scout |
 | scout | a worker with the scout flag | Exa query → pick a source → write a lead to memory |
-| critic | LLM + evaluator | re-scores the provisional best on a second seed, writes a verdict and a lesson |
+| critic | LLM + evaluator (arms A–D) | reviews the provisional best; arm S has no critic |
 
 The viewer keeps identity (`type`: worker, critic, …) separate from the
 round's assignment (`role`: exploit, divergent, scout).
@@ -26,16 +30,18 @@ round's assignment (`role`: exploit, divergent, scout).
 1. measure   meter.status(ledger) → swarm B, regime; per-agent B and components
 2. assign    allocate_roles() → roles + scouts            → assignments.jsonl
 3. scout     for each scout: recall lessons → query Exa → pick source → lead   → research_log, memory
-4. propose   each worker: recall results/leads/claims → LLM JSON proposal
+4. propose   each worker in turn: recall results/leads/claims → LLM JSON proposal
              {descriptor, idea, rationale, source_ids, predicted_delta, edits}
              invalid JSON or edit → one repair attempt
 5. gate      boredom gate (regime rules) + prior-art check (Exa) → rejected proposals are logged
 6. commit    one git commit per candidate with Descriptor/Source/Prior-art trailers
 7. evaluate  task evaluator in a network-less Docker sandbox → dev loss
-8. critic    each arm's LLM critic reviews a provisional improvement; evaluator
-             confirmation run; accept iff the numeric rule passes and verdict
-             is not "contradicted" → verdict + lesson
-9. record    ledger.jsonl, results.tsv, critic.tsv, memory writes, round tags
+8. critic    arms A–D: evaluator confirmation and LLM review of the provisional
+             best; deterministic tasks reuse the first score, not an independent
+             replicate; "contradicted" vetoes acceptance → verdict + lesson
+             arm S skips the critic and accepts a numeric provisional best
+9. record    round results → ledger.jsonl, results.tsv, critic.tsv, memory,
+             round tags and checkpoint before the next round
 ```
 
 Rejected, crashed and discarded attempts stay in the ledger; they are what
