@@ -3,7 +3,7 @@ import search
 from memory import Item
 
 
-def seed_libraries(agents, log, cfg: dict) -> None:
+def seed_libraries(agents, log, cfg: dict, round: int = 0) -> None:
     n = int(cfg.get("seed_results_per_query", 5))
     for a in agents:
         k = 0
@@ -13,5 +13,5 @@ def seed_libraries(agents, log, cfg: dict) -> None:
                 k += 1
                 a.memory.write(Item(id=f"{a.name}-lib{k}", kind="library", text=f"{s.title}. {s.snippet}",
                                     source_agent=a.name, meta={"url": s.url, "query": q}))
-            log.append(0, a.name, "seed", {"query": q, "sources": [s.model_dump() for s in sources]},
+            log.append(round, a.name, "seed", {"query": q, "sources": [s.model_dump() for s in sources]},
                        latency_ms=search.last_latency_ms())

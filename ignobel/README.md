@@ -6,6 +6,21 @@ The only thing steering an agent during a run is its own private boredom meter. 
 committee scores every study after the run. Control arms test whether boredom-timed
 exploration beats randomly timed exploration.
 
+## Agents: mothers and daughters
+
+Agents come in families (`families.yaml`, `families.py`). A **mother** is a department (biology,
+chemistry, physics). It does no research. It starts the run with its **daughter** labs: molecular,
+cellular and plant biology; organic and physical chemistry; quantum physics and mechanics. Each
+daughter is an individual expert with its own methods, search queries, private dataset (generated
+from a hidden recipe in the yaml) and private boredom meter.
+
+- When a mother's daughters' mean boredom reaches `spawn_threshold`, the mother spawns a new
+  daughter in a subfield none of them covers (one LLM call; at most `max_daughters`, one per
+  `spawn_cooldown` rounds). The newborn seeds its library and proposes an idea that round, then acts
+  like the others. Logged as a `spawn` event.
+- Bored daughters meet: pairing prefers daughters from different mothers (`cross_family_bonus`).
+- `roster: flat` in `config.yaml` (or `--roster flat`) uses the old flat list in `agents.yaml`.
+
 ## Quick start (no keys)
 
 ```bash

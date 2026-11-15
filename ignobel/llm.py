@@ -268,6 +268,9 @@ _LESSONS = [
 ]
 
 
+_SUBFIELDS = ["kitchen", "office", "bathroom", "playground", "commuter", "garden", "hospital", "nightclub"]
+
+
 def _pick(seq, h: str, offset: int = 0):
     return seq[(int(h[offset:offset + 8], 16)) % len(seq)]
 
@@ -311,6 +314,18 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
                             f"{verdict} We discuss what this says about {noun} and about us."}
     if kind == "lesson":
         return {"lesson": _pick(_LESSONS, h)}
+    if kind == "spawn":
+        field = ctx.get("field", "science")
+        k = int(ctx.get("spawned", 0)) + 1
+        topic = _pick(_SUBFIELDS, h)
+        return {"name": f"{field[:4]}{topic.split()[0]}{k}", "field": f"{topic} {field}",
+                "seed_queries": [f"{topic} {field} odd findings", f"everyday {field} experiments"],
+                "methods": [method, "randomised trials"],
+                "instruments": [
+                    {"name": "dose", "description": "strength of the everyday manipulation", "mean": 5, "sd": 2},
+                    {"name": "response", "description": "measured response", "mean": 20, "sd": 4,
+                     "depends_on": {"dose": round(0.2 + (n % 50) / 100, 2)}},
+                    {"name": "mood", "description": "experimenter mood 1-7", "mean": 4, "sd": 1}]}
     if kind in ("judge_a", "judge_b"):
         base = 3 + (n % 7)
         return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),

@@ -25,6 +25,7 @@ One JSON object per line. Every line has exactly these keys:
 - `measurement_request` {requester, instrument, args, n, budget_left} owner ran an instrument for another agent
 - `study_result` {study_id, idea_id, ok, replicated, stats:{...}, prediction, abstract, plot_path, stderr, novelty:{score, sources:[...]}} one study
 - `lesson` {text} the agent's rewritten private lessons note
+- `spawn` {daughter, field, field_B, instruments:[name]} a mother (agent = mother name) started a new daughter lab because its daughters' mean boredom reached `spawn_threshold`
 
 Search-backed events (seed, snap, study_result.novelty) always carry source URLs in `payload`.
 

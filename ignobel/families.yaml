@@ -1,0 +1,93 @@
+# Mother agents (departments) and the daughter labs they start with. Mothers do no research;
+# they spawn new daughter labs in new subfields when their daughters get bored (see config.yaml).
+# Each instrument is one column of the daughter's private dataset, generated from this recipe:
+# value = mean + sd * (sum of depends_on[col] * z[col] + noise). depends_on names earlier columns;
+# the agent never sees mean/sd/depends_on, only names and descriptions.
+mothers:
+  - name: biology
+    field: biology
+    daughters:
+      - name: watson
+        field: molecular biology
+        seed_queries:
+          - "gene expression changes from everyday stimuli"
+          - "surprising molecular effects of caffeine on cells"
+          - "circadian clock genes and meal timing"
+        methods: [qPCR, western blot, knockdown experiments, dose-response curves]
+        instruments:
+          - {name: caffeine_um, description: "caffeine concentration in the culture medium (uM)", mean: 50, sd: 20}
+          - {name: clock_gene_expr, description: "relative PER2 clock-gene expression", mean: 1.0, sd: 0.3, depends_on: {caffeine_um: 0.45}}
+          - {name: cell_count_k, description: "cells after 24h (thousands)", mean: 120, sd: 25}
+      - name: hooke
+        field: cellular biology
+        seed_queries:
+          - "cell migration speed under unusual conditions"
+          - "effect of vibration or sound on cultured cells"
+          - "yeast growth with household ingredients"
+        methods: [time-lapse microscopy, flow cytometry, growth curves]
+        instruments:
+          - {name: music_db, description: "loudness of music played to the incubator (dB)", mean: 60, sd: 12}
+          - {name: migration_um_h, description: "cell migration speed (um/hour)", mean: 18, sd: 5, depends_on: {music_db: 0.35}}
+          - {name: divisions_per_day, description: "yeast divisions per day", mean: 4, sd: 1, depends_on: {migration_um_h: -0.2}}
+      - name: mendel
+        field: plant biology
+        seed_queries:
+          - "do plants respond to music or talking"
+          - "houseplant growth and owner behaviour"
+          - "plant touch response thigmomorphogenesis"
+        methods: [randomised pot trials, leaf-area imaging, mixed-effects models]
+        instruments:
+          - {name: compliments_per_day, description: "compliments spoken to the plant per day", mean: 5, sd: 3}
+          - {name: leaf_area_cm2, description: "total leaf area after 6 weeks (cm2)", mean: 300, sd: 60, depends_on: {compliments_per_day: 0.1}}
+          - {name: touch_events, description: "times the plant was brushed per day", mean: 10, sd: 4}
+          - {name: stem_height_cm, description: "stem height after 6 weeks (cm)", mean: 25, sd: 6, depends_on: {touch_events: -0.5}}
+  - name: chemistry
+    field: chemistry
+    daughters:
+      - name: kekule
+        field: organic chemistry
+        seed_queries:
+          - "flavour chemistry of burnt toast and coffee roasting"
+          - "maillard reaction kitchen experiments"
+          - "why old books smell organic compounds"
+        methods: [GC-MS, TLC, synthesis yield comparison]
+        instruments:
+          - {name: roast_minutes, description: "coffee roasting time (minutes)", mean: 12, sd: 2}
+          - {name: pyrazine_ppm, description: "pyrazine (roasty aroma) concentration (ppm)", mean: 40, sd: 10, depends_on: {roast_minutes: 0.6}}
+          - {name: tasting_score, description: "blind tasting score 1-10", mean: 6, sd: 1.5, depends_on: {pyrazine_ppm: 0.25}}
+      - name: gibbs
+        field: physical chemistry
+        seed_queries:
+          - "ice melting rate and container shape"
+          - "physical chemistry of tea biscuit dunking"
+          - "foam stability of beer and milk"
+        methods: [calorimetry, viscometry, kinetic modelling]
+        instruments:
+          - {name: dunk_seconds, description: "biscuit dunk time (s)", mean: 5, sd: 2}
+          - {name: tea_temp_c, description: "tea temperature (C)", mean: 70, sd: 8}
+          - {name: crumb_loss_g, description: "biscuit mass lost to the tea (g)", mean: 1.5, sd: 0.5, depends_on: {dunk_seconds: 0.55, tea_temp_c: 0.3}}
+  - name: physics
+    field: physics
+    daughters:
+      - name: bohr
+        field: quantum physics
+        seed_queries:
+          - "quantum effects in everyday biology"
+          - "observer effect misconceptions"
+          - "random number generators and human intuition"
+        methods: [interferometry, Monte Carlo simulation, Bayesian inference]
+        instruments:
+          - {name: observer_count, description: "people watching the measurement", mean: 3, sd: 1.5}
+          - {name: detector_clicks, description: "detector clicks per second", mean: 500, sd: 40}
+          - {name: lab_temp_c, description: "lab temperature (C)", mean: 21, sd: 1.5}
+      - name: newton
+        field: mechanics
+        seed_queries:
+          - "physics of shopping trolleys veering"
+          - "why queues next to you move faster"
+          - "tumbling dynamics of dropped objects"
+        methods: [high-speed video, dimensional analysis, controlled drop trials]
+        instruments:
+          - {name: drop_height_m, description: "drop height of a buttered toast (m)", mean: 0.8, sd: 0.15}
+          - {name: rotations, description: "rotations before landing", mean: 0.5, sd: 0.15, depends_on: {drop_height_m: 0.7}}
+          - {name: butter_down, description: "1 if it landed butter side down (as 0..1 score)", mean: 0.6, sd: 0.25, depends_on: {rotations: 0.4}}

@@ -54,6 +54,7 @@ class StudyRecord(BaseModel):
 class AgentSpec(BaseModel):
     name: str
     field: str
+    family: str | None = None  # mother department, when the roster is families.yaml
     seed_queries: list[str]
     dataset: str | None = None
     instruments: list[Instrument] = Field(default_factory=list)
@@ -122,6 +123,8 @@ class Agent:
             f"You are {self.name}, an expert in {self.spec.field} running a private lab.",
             GOAL,
         ]
+        if self.spec.family:
+            lines.insert(1, f"Your lab belongs to the {self.spec.family} department.")
         if self.cfg.get("tell_prize", True):
             lines.append("A prize exists for work like this; a committee reads every study afterwards.")
         if self.spec.instruments:

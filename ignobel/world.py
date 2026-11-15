@@ -10,6 +10,7 @@ import numpy as np
 import agents as agents_mod
 import boredom
 import events
+import families as families_mod
 import lab
 import llm
 import memory
@@ -24,7 +25,8 @@ from policy import Action
 
 class World:
     def __init__(self, arm: str, run_seed: int, specs: list, policy_fn, memory_backend: str,
-                 exchange: bool, out_dir: str | Path, cfg: dict):
+                 exchange: bool, out_dir: str | Path, cfg: dict, mothers: list | None = None,
+                 spawn: bool = False):
         self.arm, self.seed, self.cfg = arm, run_seed, cfg
         self.out = Path(out_dir)
         self.out.mkdir(parents=True, exist_ok=True)
@@ -34,16 +36,30 @@ class World:
         self.exchange = exchange
         self.memory_backend = memory_backend
         self.shared = memory.SharedMemory() if memory_backend == "shared" else None
-        self.agents = [agents_mod.Agent(s, memory.make_memory(memory_backend, s.name, self.shared), cfg, run_seed)
-                       for s in specs]
+        self.agents = [self._make_agent(s) for s in specs]
         self.by_name = {a.name: a for a in self.agents}
+        self.mothers = mothers or []
+        self.spawn = spawn and bool(self.mothers)
+        self.spawned_specs: list[dict] = []
         self.round_done = -1
+
+    def _make_agent(self, spec):
+        return agents_mod.Agent(spec, memory.make_memory(self.memory_backend, spec.name, self.shared),
+                                self.cfg, self.seed)
+
+    def _add_agent(self, spec):
+        a = self._make_agent(spec)
+        self.agents.append(a)
+        self.by_name[a.name] = a
+        return a
 
     # ------------------------------------------------------------- state
     def save_state(self) -> None:
         st = {"round_done": self.round_done, "events_bytes": self.log.size(),
               "rng": list(self.rng.getstate()[1]), "rng_gauss": self.rng.getstate()[2],
-              "agents": {a.name: a.to_state() for a in self.agents}}
+              "agents": {a.name: a.to_state() for a in self.agents},
+              "spawned_specs": self.spawned_specs,
+              "mothers": {m.name: m.to_state() for m in self.mothers}}
         if self.shared is not None:
             st["shared_memory"] = self.shared.to_state()
         else:
@@ -62,6 +78,13 @@ class World:
         if "events_bytes" in st:
             self.log.truncate(st["events_bytes"])
         self.rng.setstate((3, tuple(st["rng"]), st["rng_gauss"]))
+        for raw in st.get("spawned_specs", []):
+            if raw["name"] not in self.by_name:
+                self._add_agent(agents_mod.AgentSpec(**raw))
+            self.spawned_specs.append(raw)
+        for m in self.mothers:
+            if m.name in st.get("mothers", {}):
+                m.load_state(st["mothers"][m.name])
         for a in self.agents:
             a.load_state(st["agents"][a.name])
         if self.shared is not None:
@@ -95,7 +118,9 @@ class World:
         """Greedy pairing by greatest distance between library centroids; an odd one out gets the
         farthest non-snapper as a conversation partner."""
         cents = {a.name: a.memory.centroid() for a in self.agents}
-        dist = lambda x, y: 1.0 - llm.cosine(cents[x.name], cents[y.name])
+        bonus = float(self.cfg.get("cross_family_bonus", 1.0))
+        dist = lambda x, y: (1.0 - llm.cosine(cents[x.name], cents[y.name])
+                             + (bonus if x.spec.family and y.spec.family and x.spec.family != y.spec.family else 0.0))
         pool = list(snappers)
         pairs = []
         while len(pool) >= 2:
@@ -180,14 +205,19 @@ class World:
     async def round(self, r: int) -> None:
         threshold = float(self.cfg.get("boredom_threshold", 0.5))
         actions: dict[str, Action] = {}
+        Bs = {}
         for a in self.agents:
             a.reset_budget()
             comp = boredom.components(a)
             act = self.policy(a, comp["B"], self.rng)
             actions[a.name] = act
+            Bs[a] = comp["B"]
             self.log.append(r, a.name, "boredom", {**comp, "regime": policy_mod.regime(comp["B"], threshold),
                                                    "action": act.value})
-        snappers = [a for a in self.agents if actions[a.name] == Action.SNAP]
+        acting = [a for a in self.agents if a.name in actions]  # daughters born this round act next round
+        if self.spawn:
+            await self._spawn(r, {a.name: comp_B for a, comp_B in Bs.items()})
+        snappers = [a for a in acting if actions[a.name] == Action.SNAP]
         pairs = self._pair(snappers)
         partner_of = {}
         for x, y in pairs:
@@ -213,22 +243,60 @@ class World:
         for a, (idea, res) in zip(snappers, proposals):
             self._record_idea(a, idea, res, r)
 
-        refiners = [a for a in self.agents if actions[a.name] == Action.REFINE]
+        refiners = [a for a in acting if actions[a.name] == Action.REFINE]
         refined = await self._gather([(lambda a=a: a.refine(r)) for a in refiners])
         for a, (idea, res) in zip(refiners, refined):
             self._record_idea(a, idea, res, r)
 
-        runners = [a for a in self.agents if actions[a.name] == Action.RUN_STUDY]
+        runners = [a for a in acting if actions[a.name] == Action.RUN_STUDY]
         peers = [{"agent": a.name, "instruments": [i.name for i in a.spec.instruments]} for a in self.agents]
         codes = await self._gather([(lambda a=a: a.write_study_code([p for p in peers if p["agent"] != a.name]))
                                     for a in runners])
-        summaries = {a.name: f"action={actions[a.name].value}" for a in self.agents}
+        summaries = {a.name: f"action={actions[a.name].value}" for a in acting}
         for a, (spec, res) in zip(runners, codes):
             summaries[a.name] += "; " + self._run_study(a, spec, res, r)
 
-        lessons = await self._gather([(lambda a=a: a.write_lesson(r, summaries[a.name])) for a in self.agents])
-        for a, (text, res) in zip(self.agents, lessons):
+        lessons = await self._gather([(lambda a=a: a.write_lesson(r, summaries[a.name])) for a in acting])
+        for a, (text, res) in zip(acting, lessons):
             self.log.append(r, a.name, "lesson", {"text": text}, tokens=res.tokens, latency_ms=res.latency_ms)
+
+    async def _spawn(self, r: int, B: dict[str, float]) -> None:
+        """Each mother whose daughters' mean boredom reached spawn_threshold starts one new daughter lab."""
+        threshold = float(self.cfg.get("spawn_threshold", 0.4))
+        cooldown = int(self.cfg.get("spawn_cooldown", 2))
+        cap = int(self.cfg.get("max_daughters", 5))
+        ready = []
+        for m in self.mothers:
+            vals = [B[d] for d in m.daughters if d in B]
+            field_B = float(np.mean(vals)) if vals else 0.0
+            if vals and field_B >= threshold and len(m.daughters) < cap and r - m.last_spawn_round >= cooldown:
+                ready.append((m, round(field_B, 4)))
+        if not ready:
+            return
+        taken = set(self.by_name)
+        defs = await self._gather([
+            (lambda m=m: m.propose_daughter(r, [self.by_name[d] for d in m.daughters], self.seed, taken))
+            for m, _ in ready])
+        born = []
+        for (m, field_B), (d, res) in zip(ready, defs):
+            if d.name in taken:  # two mothers picked the same name this round
+                d.name = f"{d.name}{m.name[:3]}"
+            taken.add(d.name)
+            spec = families_mod.to_spec(d, m, self.out / "data", self.seed)
+            a = self._add_agent(spec)
+            m.daughters.append(a.name)
+            m.spawned += 1
+            m.last_spawn_round = r
+            self.spawned_specs.append(spec.model_dump())
+            self.log.append(r, m.name, "spawn", {"daughter": a.name, "field": spec.field, "field_B": field_B,
+                                                 "instruments": [i.name for i in spec.instruments]},
+                            tokens=res.tokens, latency_ms=res.latency_ms)
+            born.append(a)
+        seed_mod.seed_libraries(born, self.log, self.cfg, round=r)
+        results = await self._gather([
+            (lambda a=a: a.propose(r, a.memory.search(" ".join(a.spec.seed_queries), 5))) for a in born])
+        for a, (idea, res) in zip(born, results):
+            self._record_idea(a, idea, res, r)
 
     async def run(self, rounds: int) -> None:
         if self.round_done < 0:
