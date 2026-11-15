@@ -1,0 +1,44 @@
+node_modules/
+dist/
+.DS_Store
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+worktrees/
+results/
+queue/
+
+# Agent prompt files (generated per-session by launchers)
+CLAUDE.md
+AGENTS.md
+
+# Experimental code/artifacts
+dev/
+
+# Results file
+/results.tsv
+/boredom_log.jsonl
+/research_log.jsonl
+/memory_log.jsonl
+/memory.jsonl
+/exa_cache/
+/.swarm_worktrees/
+run.log
+runs/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Local run database, workspaces, and service environments
+.lab_data/
+.venv*/
