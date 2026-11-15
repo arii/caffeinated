@@ -1,5 +1,6 @@
 import os
 import asyncio
+import csv
 import json
 import filecmp
 from pathlib import Path
@@ -192,11 +193,15 @@ def test_made_up_or_unread_results_are_not_supported(tmp_path):
     real = ("from lab_runtime import rows, report_corr\n"
             "d = rows('d1', ['sepallengthcm', 'petallengthcm'])\n"
             "report_corr([r[0] for r in d], [r[1] for r in d], '+', 0.9)\n")
-    for code in (fake, half, real):
+    # values copied out of a dataset the code never opened do not count either
+    cells = [float(r["petallengthcm"]) for r in csv.DictReader(open(tmp_path / a.datasets[0]["file"], encoding="utf-8"))]
+    unread = f"from lab_runtime import report_corr\nx = {cells}\nreport_corr(x, x, '+', 0.9)\n"
+    for code in (fake, half, real, unread):
         w._run_study(a, {"code": code}, res, 1)
     ev = [e.payload for e in events.read(tmp_path / "events.jsonl") if e.type == "study_result"]
     assert all(p["ok"] and p["replicated"] for p in ev)
-    made_up, derived, measured = (p["evidence"] for p in ev)
+    made_up, derived, measured, copied = (p["evidence"] for p in ev)
+    assert copied["read"] == [] and copied["traceable"] == 0.0 and not copied["supported"]
     assert made_up["read"] == [] and made_up["traceable"] == 0.0 and not made_up["supported"]
     assert derived["read"] == ["d1"] and derived["traceable"] > 0.5 and not derived["supported"]
     assert measured["traceable"] == 1.0 and measured["supported"]

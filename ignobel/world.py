@@ -195,7 +195,7 @@ class World:
         evidence = {}
         if a.spec.family:  # what this result rests on: real datasets (with DOI/URL) and sources the agent really has
             known = a.known_sources()
-            trace = lab.trace_values(out["stats"] if out["ok"] else None, real)
+            trace = lab.trace_values(out["stats"] if out["ok"] else None, [d for d in real if d[0] in out["read"]])
             cited = dict.fromkeys((idea.citations if idea else []) + re.findall(r"S\d+", abstract))
             evidence = {"evidence": {
                 "datasets": [{k: d[k] for k in ("name", "id", "title", "url", "license", "rows", "sha256")} for d in a.datasets],
