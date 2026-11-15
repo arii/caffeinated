@@ -248,7 +248,7 @@ class World:
             line, since = a.idea_line()
             for exp in a.experiments:
                 # the lab is only for an idea its lab has stuck with: same line of thought for lab_after_rounds
-                if exp["status"] == "returned" or exp.get("line") != line or r - since < int(self.cfg.get("lab_after_rounds", 5)):
+                if exp["status"] == "returned" or exp["line"] != line or r - since < int(self.cfg.get("lab_after_rounds", 5)):
                     continue
                 name = f"x{exp['id'].rsplit('-x', 1)[1]}"
                 rel = Path("data") / a.name / f"{name}.csv"

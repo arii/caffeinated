@@ -173,10 +173,11 @@ class Agent:
             return bool(self.datasets)
         return self.budget_left > 0 or self.spec.is_statistician
 
-    def idea_line(self) -> tuple[str | None, int]:
-        """(id, round) of the proposal the current idea descends from; refinements keep the line,
-        a new proposal starts another."""
-        for idea in reversed(self.ideas):
+    def idea_line(self, idea_id: str | None = None) -> tuple[str | None, int]:
+        """(id, round) of the proposal an idea (the current one by default) descends from; refinements
+        keep the line, a new proposal starts another."""
+        upto = next((k for k, i in enumerate(self.ideas) if i.idea_id == idea_id), len(self.ideas) - 1)
+        for idea in reversed(self.ideas[:upto + 1]):
             if idea.kind == "propose":
                 return idea.idea_id, idea.round
         return (self.ideas[0].idea_id, self.ideas[0].round) if self.ideas else (None, 0)
@@ -428,3 +429,5 @@ class Agent:
         self.leads = st.get("leads", [])
         self.meter = st.get("meter", {})
         self.experiments = st.get("experiments", [])
+        for exp in self.experiments:  # a checkpoint from before requests recorded their line
+            exp.setdefault("line", self.idea_line(exp.get("idea_id"))[0])

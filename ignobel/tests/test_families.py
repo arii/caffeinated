@@ -443,6 +443,11 @@ def test_the_bench_only_takes_an_idea_that_survived_five_rounds(tmp_path):
     assert a.experiments[0]["line"] == a.idea_line()[0] == a.ideas[0].idea_id
     a.refine(2)  # a refinement keeps the line alive
     b.propose(3, [])  # b dropped her idea for a new one, so her request's idea did not survive
+    for x in (a, b):  # a checkpoint written before requests recorded their line resumes with it worked out
+        st = x.to_state()
+        del st["experiments"][0]["line"]
+        x.load_state(st)
+        assert x.experiments[0]["line"] == x.ideas[0].idea_id
     asyncio.run(w._bench([a, b], 4))
     assert [x.experiments[0]["status"] for x in (a, b)] == ["requested", "requested"]
     asyncio.run(w._bench([a, b], 5))
