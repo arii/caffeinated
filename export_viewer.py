@@ -245,7 +245,9 @@ class Run:
         return relabelled
 
 
-STUDY_LINE = re.compile(r"^(field|question|registered test|rho|replicated|rejected|error): (.*)$")
+STUDY_LINE = re.compile(
+    r"^(field|question|registered test|rho|replicated|split-half consistency|rejected|error): (.*)$"
+)
 STUDY_RHO = re.compile(r"^(-?[\d.]+) \(p=([^,]+), n=(\d+)\)")
 
 
@@ -267,7 +269,7 @@ def study_from_log(path):
         "rho": None,
         "p": None,
         "n": None,
-        "replicated": fields.get("replicated") == "true",
+        "replicated": fields.get("replicated", fields.get("split-half consistency")) == "true",
         "rejected": None if fields.get("rejected") in (None, "no") else fields["rejected"],
         "error": fields.get("error"),
     }

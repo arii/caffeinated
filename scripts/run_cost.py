@@ -8,7 +8,7 @@ import statistics
 from pathlib import Path
 
 EXA_ENDPOINTS = frozenset({"/search", "/contents", "/findSimilar", "/answer"})
-WASTED_OUTCOMES = frozenset({"rejected", "duplicate", "invalid", "edit_error"})
+WASTED_OUTCOMES = frozenset({"rejected", "duplicate", "invalid", "edit_error", "pi_no_steer"})
 TOKEN_FIELDS = ("input_tokens", "cached_tokens", "output_tokens", "reasoning_tokens")
 
 
@@ -158,6 +158,66 @@ def _wasted_usage(records, outcomes):
     return wasted
 
 
+def _transport_attempt_count(records):
+    return sum(
+        1
+        for record in records
+        for attempt in (record.get("attempts") if isinstance(record.get("attempts"), list) else [])
+        if isinstance(attempt, dict) and attempt.get("transport_error")
+    )
+
+
+def _error_records_without_logged_calls(llm_records, error_records, field=None):
+    logged_calls = set()
+    for record in llm_records:
+        call_id = record.get("call_id")
+        if isinstance(call_id, str) and call_id:
+            group = None
+            if field:
+                raw_key = record.get(field)
+                group = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+            logged_calls.add((group, call_id))
+
+    unmatched = []
+    for record in error_records:
+        call_id = record.get("call_id")
+        if not isinstance(call_id, str) or not call_id:
+            unmatched.append(record)
+            continue
+        group = None
+        if field:
+            raw_key = record.get(field)
+            group = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+        if (group, call_id) not in logged_calls:
+            unmatched.append(record)
+    return unmatched
+
+
+def _group_attempt_counts(groups, llm_records, error_records, field):
+    def group_for(record):
+        raw_key = record.get(field)
+        key = str(raw_key) if raw_key is not None and str(raw_key) else "unknown"
+        return groups.setdefault(key, {"calls": 0, **dict.fromkeys(TOKEN_FIELDS, 0)})
+
+    for record in llm_records:
+        group = group_for(record)
+        group["transport_retries"] = group.get("transport_retries", 0) + _transport_attempt_count(
+            [record]
+        )
+    for record in error_records:
+        group = group_for(record)
+        group["failed_calls"] = group.get("failed_calls", 0) + 1
+    for record in _error_records_without_logged_calls(llm_records, error_records, field):
+        group = group_for(record)
+        group["transport_retries"] = group.get("transport_retries", 0) + _transport_attempt_count(
+            [record]
+        )
+    for group in groups.values():
+        group.setdefault("failed_calls", 0)
+        group.setdefault("transport_retries", 0)
+    return dict(sorted(groups.items(), key=lambda item: _group_sort_key(field, item[0])))
+
+
 def _tool_counts(research_records, memory_records):
     exa_searches = sum(
         1
@@ -196,7 +256,7 @@ def _pi_steer_followed_by_accepted_attempt(pi_records, ledger_records):
         for record in pi_records
         if record.get("type") == "pi_steer"
         and record.get("steer")
-        and (record.get("agent"), record.get("round", 0) + 1) in accepted_attempts
+        and (record.get("agent"), record.get("round", 0)) in accepted_attempts
     )
 
 
@@ -265,6 +325,7 @@ def build_report(run_dir, prices=None):
     prices = prices or {}
     calls_by_model = {}
     llm_records = read_jsonl(run_dir / "llm_log.jsonl")
+    llm_errors = read_jsonl(run_dir / "llm_errors.jsonl")
     for record in llm_records:
         model = record.get("model") or "unknown"
         values = _usage_values(record)
@@ -308,6 +369,13 @@ def build_report(run_dir, prices=None):
     by_role = _group_usage(llm_records, "role")
     if "PI" in by_role:
         by_role["PI"]["steer_followed_by_accepted_attempt"] = pi_followed
+    by_role = _group_attempt_counts(by_role, llm_records, llm_errors, "role")
+    by_round = _group_attempt_counts(
+        _group_usage(llm_records, "round"), llm_records, llm_errors, "round"
+    )
+    by_agent = _group_attempt_counts(
+        _group_usage(llm_records, "agent"), llm_records, llm_errors, "agent"
+    )
     return {
         "run_dir": str(run_dir),
         "llm": {
@@ -318,9 +386,13 @@ def build_report(run_dir, prices=None):
             "cached_tokens": usage_totals["cached_tokens"],
             "output_tokens": usage_totals["output_tokens"],
             "reasoning_tokens": usage_totals["reasoning_tokens"],
+            "failed_calls": len(llm_errors),
+            "transport_retries": _transport_attempt_count(
+                llm_records + _error_records_without_logged_calls(llm_records, llm_errors)
+            ),
             "by_role": by_role,
-            "by_round": _group_usage(llm_records, "round"),
-            "by_agent": _group_usage(llm_records, "agent"),
+            "by_round": by_round,
+            "by_agent": by_agent,
             "pi_steer_followed_by_accepted_attempt": pi_followed,
             "wasted": _wasted_usage(llm_records, outcomes),
             "outcomes": {
@@ -339,6 +411,28 @@ def build_report(run_dir, prices=None):
     }
 
 
+def _text_report(report, by=None):
+    llm_report = report["llm"]
+    lines = [
+        "LLM "
+        f"calls={llm_report['calls']} "
+        f"failed_calls={llm_report['failed_calls']} "
+        f"transport_retries={llm_report['transport_retries']}"
+    ]
+    dimensions = {"role": "by_role", "round": "by_round", "agent": "by_agent"}
+    for name, key in dimensions.items():
+        if by and by != name:
+            continue
+        lines.append(f"By {name}:")
+        for group_name, values in llm_report[key].items():
+            lines.append(
+                f"  {group_name}: calls={values['calls']} "
+                f"failed_calls={values['failed_calls']} "
+                f"transport_retries={values['transport_retries']}"
+            )
+    return "\n".join(lines)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dir", type=Path)
@@ -349,11 +443,13 @@ def main(argv=None):
         metavar="MODEL=IN_PER_MTOK,OUT_PER_MTOK",
         help="optional input/output USD prices per million tokens; may be repeated",
     )
-    parser.add_argument(
+    output_format = parser.add_mutually_exclusive_group()
+    output_format.add_argument(
         "--json",
         action="store_true",
         help="emit JSON (the default; retained for explicit machine-readable invocations)",
     )
+    output_format.add_argument("--text", action="store_true", help="emit a human-readable summary")
     parser.add_argument("--by", choices=("role", "round", "agent"))
     args = parser.parse_args(argv)
     try:
@@ -363,7 +459,10 @@ def main(argv=None):
         parser.error(str(error))
     if args.by:
         report["selected_breakdown"] = report["llm"][f"by_{args.by}"]
-    print(json.dumps(report, indent=2, sort_keys=True))
+    if args.text:
+        print(_text_report(report, args.by))
+    else:
+        print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 
