@@ -1,10 +1,12 @@
 # BioLab / Environment studies
 
-Three distinct first-person laboratories on one shared engine. Pick a visual direction before expanding the scientific simulation adapters.
+Four distinct first-person laboratories on one shared engine. Pick a visual direction before expanding the scientific simulation adapters.
 
 - **Daylight** (`?style=realistic`): contemporary lab, believable instruments, material detail, and human research agents.
 - **Wonderworks** (`?style=cartoon`): cobalt/coral/yellow cartoon lab, rounded equipment, and expressive robot researchers.
 - **Fieldwork** (`?style=foundation`): a modular ash/ivory/ink research commons with a spatial field table and flexible experiment bays. Recommended foundation for domain-neutral research.
+
+- **Common Ground** (`?style=hybrid`): combines Daylight’s realistic instruments and human researchers with Fieldwork’s timber acoustic canopy, modular bays, shared field table, and dataset library.
 
 ## Locked stack
 
@@ -46,6 +48,6 @@ The current adapter is local and synthetic. NPC roles and experiment results are
 
 ## Validation
 
-`npm run build` checks TypeScript and builds static deployable assets. Ten tests cover the synthetic paired experiment, event validation, ordering, metric direction, state completion, and navigable access to all stations in each room. Browser QA checks rendering and style switching. All floors use continuous surfaces rather than overlapping tile geometry; runtime shadow maps are disabled to avoid floor banding.
+`npm run build` checks TypeScript and builds static deployable assets. Eleven tests cover the synthetic paired experiment, event validation, ordering, metric direction, state completion, and navigable access to all stations in each room. Browser QA checks rendering and style switching. All floors use continuous surfaces rather than overlapping tile geometry; runtime shadow maps are disabled to avoid floor banding.
 
 The three room variants were developed independently on `agent/lab-realistic`, `agent/lab-cartoon`, and `agent/lab-foundation`. The combined comparison app is on `agent/masha/lab-style-options`. The original lab remains on `agent/masha/little-sprout-lab`.

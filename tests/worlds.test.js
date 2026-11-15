@@ -2,10 +2,11 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {createWorld as realistic} from '../src/variants/realistic.ts';
 import {createWorld as cartoon} from '../src/variants/cartoon.ts';
 import {createWorld as foundation} from '../src/variants/foundation.ts';
+import {createWorld as hybrid} from '../src/variants/hybrid.ts';
 import {initialState} from '../src/engine/state.ts';
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
 globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},strokeRect(){},fillText(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){}})})};
-for(const [name,create] of Object.entries({realistic,cartoon,foundation}))test(`${name}: every station is reachable with player collision clearance`,()=>{
+for(const [name,create] of Object.entries({realistic,cartoon,foundation,hybrid}))test(`${name}: every station is reachable with player collision clearance`,()=>{
   const w=create(),r=.34,spacing=.4;
   const blocked=(x,z)=>x<w.bounds.minX+r||x>w.bounds.maxX-r||z<w.bounds.minZ+r||z>w.bounds.maxZ-r||w.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);
   assert.equal(blocked(w.camera.position.x,w.camera.position.z),false,'spawn must be walkable');

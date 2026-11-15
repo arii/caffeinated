@@ -3,6 +3,7 @@ import './style.css';
 import { createWorld as realistic } from './variants/realistic';
 import { createWorld as cartoon } from './variants/cartoon';
 import { createWorld as foundation } from './variants/foundation';
+import { createWorld as hybrid } from './variants/hybrid';
 import { DemoAdapter, demoManifest } from './engine/mock';
 import { ResearchEventSchema, type ResearchEvent } from './engine/contract';
 import { initialState, reduceEvent, type ResearchState } from './engine/state';
@@ -13,6 +14,7 @@ const styles={
   realistic:{factory:realistic,name:'Daylight',label:'REALISTIC LAB',description:'A contemporary working laboratory.\nDaylight, glass, and material detail.',notes:'A grounded, contemporary lab with daylight windows, wet-lab instruments, human research agents, and carefully proportioned work surfaces. Best when the experience should feel close to a real facility.'},
   cartoon:{factory:cartoon,name:'Wonderworks',label:'CARTOON LAB',description:'Big ideas. A little delightful chaos.\nA lab with personality.',notes:'A cobalt, coral, and yellow idea factory with rounded equipment and expressive robot researchers. Best when character and immediate visual storytelling are the priority.'},
   foundation:{factory:foundation,name:'Fieldwork',label:'MODULAR FOUNDATION',description:'A warm precision workshop.\nBuilt for the next experiment.',notes:'An architectural research commons with ash, ivory, and ink accents. Modular bays give each agent and experiment a clear home. Recommended foundation for multiple scientific domains and an expanding agent team.'},
+  hybrid:{factory:hybrid,name:'Common Ground',label:'DAYLIGHT × FIELDWORK',description:'Real instruments. Warm architecture.\nA shared home for research agents.',notes:'A blend of studies 01 and 03: contemporary scientific equipment, human researchers, continuous terrazzo flooring, an ash acoustic canopy, modular work bays, a shared field table, and a dataset library.'},
 };
 type StyleId=keyof typeof styles;
 let world:LabWorld, renderer:THREE.WebGLRenderer, currentStyle:StyleId='foundation';
@@ -43,7 +45,7 @@ function renderPanel(){
   $('console-tag').textContent=panel==='notes'?'DESIGN STUDY / '+styles[currentStyle].label:'RESEARCH / '+(panel==='research'?'CONSOLE':panel.toUpperCase());
   let html='';
   if(panel==='notes'){
-    html=`<h2>${styles[currentStyle].name}</h2><p>${styles[currentStyle].notes}</p><h3>One common engine</h3><p>All three studies share first-person controls, collision handling, station interactions, validated research events, and the same demo adapter. Switching rooms preserves research state.</p><p class="callout">Choose the environment you want to develop further. Each has a continuous floor surface, accessible station fronts, and embodied researchers working at the benches.</p>`;
+    html=`<h2>${styles[currentStyle].name}</h2><p>${styles[currentStyle].notes}</p><h3>One common engine</h3><p>All four studies share first-person controls, collision handling, station interactions, validated research events, and the same demo adapter. Switching rooms preserves research state.</p><p class="callout">Choose the environment you want to develop further. Each has a continuous floor surface, accessible station fronts, and embodied researchers working at the benches.</p>`;
   }else{
     const station=world.stations.find(s=>s.id===panel);
     html=`<h2>${station?.name||'The next experiment'}</h2><p>${panel==='notebook'?'A shared record of hypotheses, observations, and changes in direction.':panel==='analyzer'?'Inspect measurements with their original units and improvement direction.':panel==='explorer'?'Observe how repetition and stalled progress change the next research decision.':'Run the same synthetic demonstration in any environment. Every room is connected through a shared research interface.'}</p>`;
