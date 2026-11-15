@@ -323,8 +323,11 @@ class SwarmTaskModeTests(unittest.TestCase):
         with patch.object(swarm, "TASK", task):
             self.assertTrue(swarm.open_ended())
             self.assertEqual(swarm.acceptance_reference(0.0, 1.0), 1.0)
+            self.assertTrue(swarm.known_result({"prior_art_pass": False}))
+            self.assertFalse(swarm.known_result({"prior_art_pass": None}))
         with patch.object(swarm, "TASK", swarm.load_task("hadamard19")):
             self.assertEqual(swarm.acceptance_reference(0.0, 1.0), 0.0)
+            self.assertFalse(swarm.known_result({"prior_art_pass": False}))
 
     def test_task_context_previews_inputs(self):
         with tempfile.TemporaryDirectory() as directory:

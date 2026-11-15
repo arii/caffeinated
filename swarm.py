@@ -265,6 +265,11 @@ def acceptance_reference(best_val, baseline_val):
     return baseline_val if open_ended() and baseline_val is not None else best_val
 
 
+def known_result(candidate):
+    """Open-ended hunts skip findings the novelty critic matched to prior art (textbook results)."""
+    return open_ended() and candidate.get("prior_art_pass") is False
+
+
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
@@ -2417,6 +2422,7 @@ def _orchestrate(args, publish_state, cleanup):
                 if (
                     candidate["evaluation_status"] == "ok"
                     and candidate["score"] is not None
+                    and not known_result(candidate)
                     and candidate_is_provisional(
                         profile, candidate["score"], acceptance_reference(best_val, baseline_val)
                     )
