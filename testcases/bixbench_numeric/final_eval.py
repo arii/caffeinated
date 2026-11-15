@@ -45,6 +45,18 @@ def main():
     for split, answers in (("dev", evaluate.ANSWERS), ("heldout", ".cache/heldout_answers.json")):
         result = evaluate.evaluate_source(source, answers_file=answers)
         report[split] = {"accuracy": result["score"], "status": result["status"]}
+    # Agents never saw held-out answers, so a held-out literal hit is a flag, not leakage via
+    # dev feedback; report the unguarded score and the flagged questions alongside.
+    held_key = json.loads((HERE / ".cache/heldout_answers.json").read_text(encoding="utf-8"))
+    questions = (HERE / "questions.json").read_text(encoding="utf-8")
+    unguarded = evaluate.evaluate_source(
+        source, answers_file=".cache/heldout_answers.json", literal_guard=False
+    )
+    report["heldout_unguarded"] = {
+        "accuracy": unguarded["score"],
+        "status": unguarded["status"],
+        "answer_literal_qids": evaluate.answer_literal_qids(source, held_key, questions),
+    }
     text = json.dumps(report, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

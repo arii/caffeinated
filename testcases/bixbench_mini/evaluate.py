@@ -52,8 +52,8 @@ CONVENTIONAL_STATISTICAL_CONSTANTS = (
     0.995,
     0.999,
     1.0,
+    *(10.0**-k for k in range(4, 13)),
 )
-STATISTICAL_CONSTANT_TOLERANCE = 1e-12
 
 
 def grade(key, answers):
@@ -173,7 +173,7 @@ def answer_literal_qids(source, key, questions_text):
         if not math.isfinite(value) or value in public_numbers:
             continue
         if any(
-            abs(value - constant) <= STATISTICAL_CONSTANT_TOLERANCE
+            math.isclose(value, constant, rel_tol=1e-9, abs_tol=0.0)
             for constant in CONVENTIONAL_STATISTICAL_CONSTANTS
         ):
             continue

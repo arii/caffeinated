@@ -164,6 +164,17 @@ class EvaluatorTests(unittest.TestCase):
             ["answer"],
         )
 
+    def test_bixbench_power_of_ten_tolerances_are_exempt_but_other_values_are_flagged(self):
+        key = {"tolerance": {"mode": "range", "lo": 1.13e-12, "hi": 1.5e-10}}
+
+        self.assertEqual(bixbench_evaluate.answer_literal_qids("tol = 1e-10\n", key, "{}"), [])
+        self.assertEqual(
+            bixbench_evaluate.answer_literal_qids("tol = 1.13e-11\n", key, "{}"), ["tolerance"]
+        )
+        self.assertEqual(
+            bixbench_evaluate.answer_literal_qids("tol = 1.5e-10\n", key, "{}"), ["tolerance"]
+        )
+
     def test_bixbench_numeric_reuses_the_shared_literal_guard(self):
         self.assertIs(
             bixbench_numeric_evaluate.answer_literal_qids, bixbench_evaluate.answer_literal_qids

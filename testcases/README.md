@@ -44,7 +44,8 @@ Hadamard's exact optimum is task-specific, and Ig Nobel has no single
 reference score. BixBench also disables research and rejects source literals
 matching gold answers in the current split, apart from small integers, numbers
 stated in its public questions, and fixed conventional statistical constants
-(such as 0.05, 0.8 and 0.975) to avoid false positives in standard analysis code.
+(such as 0.05, 0.8, 0.975 and powers of ten from 1e-4 through 1e-12, matched
+relatively) to avoid false positives in standard analysis code.
 
 The BixBench test split has only seven questions. Held-out baseline and best
 accuracy results include a Wilson 95% confidence interval (`ci95`); report the

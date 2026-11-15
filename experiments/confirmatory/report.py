@@ -218,6 +218,7 @@ def collect(outs, grade):
             report = heldout(run_dir)
             entry["heldout"] = report
             entry["heldout_acc"] = (report.get("heldout") or {}).get("accuracy")
+            entry["heldout_unguarded_acc"] = (report.get("heldout_unguarded") or {}).get("accuracy")
             entry["dev_acc"] = (report.get("dev") or {}).get("accuracy")
         table.setdefault(int(r["seed"]), {})[r["arm"]] = entry
     return table
@@ -270,7 +271,9 @@ def main():
         "hadamard29": {"per_seed": had, "by_arm": arm_summary(had, ["best_loss"] + cost)},
         "bixbench_numeric": {
             "per_seed": bix,
-            "by_arm": arm_summary(bix, ["heldout_acc", "dev_acc", "best_loss"] + cost),
+            "by_arm": arm_summary(
+                bix, ["heldout_acc", "heldout_unguarded_acc", "dev_acc", "best_loss"] + cost
+            ),
         },
     }
     (out / "report.json").write_text(json.dumps(report, indent=2, default=str) + "\n")
