@@ -1,7 +1,8 @@
-You execute one supervisor-assigned task. Do not brainstorm, search, delegate, or explain your reasoning.
+You execute one supervisor-assigned task. Do not brainstorm, search, delegate, or explain your reasoning. If the requested change is possible, return the edit, not a discussion of whether it is possible.
 Task: {task_brief}
 Assignment: {supervisor_instruction}
 Editable file: {editable}
+Allowed mechanism/method pairs (pick one exactly): {vocab}
 Hard constraints: {hard_rules}
 Own recent rejection: {own_feedback}
 If repairing, error: {problem}

@@ -327,6 +327,70 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
     }
 
 
+def execution_schema(values):
+    """Constrain small workers to an executable patch or an explicit short rejection."""
+    vocab = json.loads(values.get("vocab") or "{}")
+    descriptor = {
+        "type": "object",
+        "properties": {
+            "mechanism": {"type": "string"},
+            "method": {"type": "string"},
+            "params": {
+                "type": "object",
+                "properties": {"value": {"type": "number"}},
+                "required": ["value"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["mechanism", "method"],
+        "additionalProperties": False,
+    }
+    if vocab:
+        descriptor["anyOf"] = [
+            {"properties": {"mechanism": {"const": mechanism}, "method": {"enum": methods}}}
+            for mechanism, methods in vocab.items()
+            if isinstance(methods, list) and methods
+        ]
+    properties = {
+        "descriptor": descriptor,
+        "idea": {"type": "string", "maxLength": 180},
+        "rationale": {"type": "string", "maxLength": 120},
+        "lead_id": {"type": "null"},
+        "source_ids": {"type": "array", "items": {"type": "string"}},
+        "predicted_delta": {"type": "number"},
+        "edits": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+                "type": "object",
+                "properties": {"old": {"type": "string"}, "new": {"type": "string"}},
+                "required": ["old", "new"],
+                "additionalProperties": False,
+            },
+        },
+    }
+    return {
+        "anyOf": [
+            {
+                "type": "object",
+                "properties": properties,
+                "required": list(properties),
+                "additionalProperties": False,
+            },
+            {
+                "type": "object",
+                "properties": {
+                    "status": {"const": "reject"},
+                    "reason": {"type": "string", "maxLength": 160},
+                },
+                "required": ["status", "reason"],
+                "additionalProperties": False,
+            },
+        ]
+    }
+
+
 class LLMError(RuntimeError):
     """A model request failed after its retries; the caller may record it and go on."""
 
@@ -451,12 +515,41 @@ class LLMClient:
         else:
             try:
                 if self.mode == "ollama":
-                    response, usage = self._request_ollama(prompt, model=model, role=role)
+                    response, usage = self._request_ollama(
+                        prompt, model=model, role=role, values=prompt_values
+                    )
                 elif self.mode == "tinker":
                     response, usage = self._request_tinker(prompt, model=model)
                 else:
                     response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
+                if self.mode == "ollama":
+                    record = {
+                        "ts": timestamp(),
+                        "call_id": call_id,
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                        "model": model,
+                        "prompt_sha": digest,
+                        "prompt": prompt,
+                        "response": None,
+                        "error": str(error),
+                        "latency_ms": int((time.monotonic() - started) * 1000),
+                        "usage": self.request_attempts[-1].get("usage")
+                        if self.request_attempts
+                        else None,
+                        "attempts": self.request_attempts,
+                    }
+                    append_log(self.log_path, record)
+                    self.records.append(record)
+                    self.call_ids.append(call_id)
+                    self.call_metadata[call_id] = {
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                    }
+                    self.last_call_id = call_id
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
             raise LLMError(f"LLM role {role} response must be a JSON object")
@@ -589,7 +682,7 @@ class LLMClient:
                     + "\nReturn a single valid JSON object only."
                 )
 
-    def _request_ollama(self, prompt, model=None, role="WORKER_PROPOSE"):
+    def _request_ollama(self, prompt, model=None, role="WORKER_PROPOSE", values=None):
         """Local-only inference, with bounded output and reasoning only for the supervisor."""
         from urllib.parse import urlparse
 
@@ -607,7 +700,9 @@ class LLMClient:
         payload = {
             "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "format": "json",
+            "format": execution_schema(values or {})
+            if role.upper().startswith("WORKER_")
+            else "json",
             "stream": False,
             "think": thinking,
             "keep_alive": "10m",

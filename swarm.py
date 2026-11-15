@@ -1825,6 +1825,7 @@ def worker_attempts(
     )
     if getattr(llm_client, "supervised", False):
         common["supervisor_instruction"] = status["supervisor_tasks"][agent]
+        common["vocab"] = json.dumps(vocab_with_extensions(profile, out_dir), sort_keys=True)
         common["problem"] = "none"
         common["proposal"] = "none"
     proposal = llm_client.call(

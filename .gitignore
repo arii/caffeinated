@@ -41,3 +41,6 @@ runs/
 # Local run database, workspaces, and service environments
 .lab_data/
 .venv*/
+
+# Local Ollama trial artifacts (export selected evidence explicitly)
+/experiments/ollama-demo*/
