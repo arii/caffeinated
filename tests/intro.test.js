@@ -12,7 +12,7 @@ test('intro follows the requested order and keeps its secondary sections collaps
  assert.ok(at('<summary>Hack</summary>')<at('<summary>Tools</summary>')&&at('<summary>Tools</summary>')<at('<summary>Authors</summary>')&&at('<summary>Authors</summary>')<at('<summary>Boredom</summary>')&&at('<summary>Boredom</summary>')<at('<summary>Exa</summary>'));
  for(const t of ['Tinker','Exa','past.dev','Devin'])assert.match(html,new RegExp(t));
  assert.match(html,/class="placeholder"/);
- assert.match(html,/This year's Ig Nobel research prize was discovered early/);
+ assert.match(html,/This year the Ig Nobel research prize was discovered early by a phenomenal breakthrough in artificial scientist swarms\./);
  assert.match(html,/The secret: making AI less boring\./);
  assert.match(html,/tongue-in-cheek headline · see the real results/);
  assert.match(html,/Live Kimi run/);
