@@ -1,7 +1,0 @@
-diff --git a/train.py b/train.py
-index 5383d0a..a7f0e25 100644
---- a/train.py
-+++ b/train.py
-@@ -445 +445 @@ ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
--WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
-+WARMUP_RATIO = 0.03      # fraction of time budget for LR warmup

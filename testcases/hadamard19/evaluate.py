@@ -2,9 +2,9 @@
 
 import json
 import math
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -24,11 +24,7 @@ def bareiss_det(matrix):
     for column in range(size - 1):
         if values[column][column] == 0:
             swap = next(
-                (
-                    index
-                    for index in range(column + 1, size)
-                    if values[index][column] != 0
-                ),
+                (index for index in range(column + 1, size) if values[index][column] != 0),
                 None,
             )
             if swap is None:
@@ -46,8 +42,10 @@ def bareiss_det(matrix):
 
 
 def validate(matrix):
-    if not isinstance(matrix, list) or len(matrix) != N or any(
-        not isinstance(row, list) or len(row) != N for row in matrix
+    if (
+        not isinstance(matrix, list)
+        or len(matrix) != N
+        or any(not isinstance(row, list) or len(row) != N for row in matrix)
     ):
         raise ValueError(f"matrix must be {N}x{N}")
     if any(type(value) is not int or value not in (-1, 1) for row in matrix for value in row):

@@ -1,5 +1,8 @@
 {
  "editable": "construct.py",
+ "deterministic": true,
+ "known_optimum_loss": 0.0,
+ "search_topic": "maximal determinant of 19x19 +1/-1 matrices (Hadamard maximal determinant problem)",
  "brief": "a construction script (`construct.py`) that outputs a 19x19 matrix of +1/-1 entries; the score is log10|det| computed exactly (EinsteinArena hadamard-det rules), and the loss is log10(known maximum 2^18*3411968) minus the score. Loss 0 means the known optimum was matched",
  "context_files": [],
  "proxy_note": "exact; known optimum",
@@ -22,11 +25,23 @@
    "restarts",
    2
   ],
+   [
+    "SEED",
+    "search",
+    "seed",
+    3
+  ],
   [
-   "SEED",
-   "search",
-   "seed",
-   3
+    "CONSTRUCTION",
+    "construction",
+    "circulant",
+    1
+  ],
+  [
+    "OBJECTIVE",
+    "objective",
+    "surrogate",
+    1
   ]
  ]
 }

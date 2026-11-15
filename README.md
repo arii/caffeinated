@@ -9,8 +9,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 - **Lab viewer:** the first-person research replay described below.
 - **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
-- **Autoresearch runner:** [swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md).
-- **Artificial Scientist Swarms backend:** [backend and judge guide](https://github.com/arii/caffeinated/blob/autoresearch/README.md) on the `autoresearch` branch, covering agent types, the orchestration loop and the boredom meter.
+- **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run
@@ -65,6 +64,6 @@ npm run test:backend
 npm run build
 ```
 
-Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The retained upstream runner tests have separate training/test dependencies; see `program_swarm.md` and `testcases/README.md` when working on those components.
+Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The research swarm has its own checks (`make setup && make check`); see [the backend guide](docs/autoresearch-backend.md) and `testcases/README.md`.
 
 The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.
