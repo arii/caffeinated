@@ -1,0 +1,77 @@
+{
+  "domain": "testcase-playworld-hard",
+  "version": 3,
+  "direction": "min",
+  "objective": "loss",
+  "eps": 0.005,
+  "eps_note": "evaluator is deterministic over 200 episodes x 20 frames; 0.005 is 20 frames",
+  "k": 5,
+  "knn": 3,
+  "patience": 3,
+  "patience_unit": "round",
+  "stuck": {
+    "window": 3,
+    "min_fails": 2,
+    "depth": 2
+  },
+  "levels": [
+    "mechanism",
+    "method"
+  ],
+  "level_weights": [
+    1.0,
+    0.5
+  ],
+  "params_weight": 0.25,
+  "vocab": {
+    "baseline": [
+      "none"
+    ],
+    "memory": [
+      "window",
+      "map",
+      "episodic"
+    ],
+    "dynamics": [
+      "movement",
+      "blocking",
+      "state_toggle"
+    ],
+    "learning": [
+      "tabular",
+      "from_public_data",
+      "neural"
+    ],
+    "rendering": [
+      "unknown_fill",
+      "oob"
+    ]
+  },
+  "params": {
+    "value": {
+      "scale": "ratio",
+      "ratio": 4
+    }
+  },
+  "attempt_statuses": [
+    "keep",
+    "discard",
+    "crash",
+    "duplicate"
+  ],
+  "trivial_statuses": [
+    "duplicate"
+  ],
+  "frontier_statuses": [
+    "keep"
+  ],
+  "fail_statuses": [
+    "crash"
+  ],
+  "directives": {
+    "EXPLOIT": "One focused change to the current world model.",
+    "BOREDOM_SNAP": "Stop tweaking the same component; try a different mechanism (memory, dynamics, learning), grounded in world-model literature (Exa) and checked against past.dev.",
+    "PARADIGM_BREAKOUT": "Change the approach family (e.g. explicit map memory or learned tabular dynamics from the public episode split).",
+    "CONVERGED": "Re-run the best model to confirm the score."
+  }
+}

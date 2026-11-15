@@ -16,7 +16,17 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ("hadamard19", "bixbench_mini", "playworld_mini", "ignobel")
+TASKS = (
+    "hadamard19",
+    "bixbench_mini",
+    "playworld_mini",
+    "ignobel",
+    "hadamard21",
+    "hadamard22",
+    "hadamard29",
+    "bixbench_numeric",
+    "playworld_hard",
+)
 DEFAULT_TASKS = TASKS[:3]
 MAX_ROUNDS = 30
 FIELDS = (
