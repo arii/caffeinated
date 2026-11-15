@@ -536,6 +536,18 @@ class IgnobelPreregTests(unittest.TestCase):
         log.write_text(json.dumps({"url": "https://lab.example.org/raw/odd.csv"}) + "\n")
         check("https://lab.example.org/raw/odd.csv", research_log=log)
 
+    def test_minimum_rows_counts_both_halves(self):
+        header = "a,b\n"
+        for n, ok in ((60, True), (59, False)):
+            body = "".join(f"{i % 5},{i % 3}\n" for i in range(n))
+            url = f"https://raw.githubusercontent.com/example/odd/main/rows{n}.csv"
+            with self.subTest(n=n), patch.object(self.prepare, "fetch", return_value=header + body):
+                if ok:
+                    self.assertEqual(self.external.ensure(url, self.task_dir)[1]["n_rows"], n)
+                else:
+                    with self.assertRaises(ValueError):
+                        self.external.ensure(url, self.task_dir)
+
     def test_redirects_and_private_resolution_are_blocked(self):
         with patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("10.0.0.5", 443))]):
             with self.assertRaises(ValueError):

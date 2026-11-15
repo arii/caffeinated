@@ -6,6 +6,7 @@ this run's Exa research log, caps it at prepare.MAX_BYTES, freezes it in
 plus a codebook entry (data/<id>.codebook.json, with the content sha256).
 """
 
+import csv
 import hashlib
 import ipaddress
 import json
@@ -104,7 +105,9 @@ def _build(url, name, entry_path):
         "delimiter": "\t" if path.endswith((".tsv", ".tab")) else ",",
     }
     entry = prepare.build(name, spec)
-    if entry["n_discovery"] < MIN_ROWS // 2 or len(entry["variables"]) < 2:
+    with (prepare.HERE / ".cache" / "replication" / f"{name}.csv").open(encoding="utf-8", newline="") as stream:
+        entry["n_rows"] = entry["n_discovery"] + sum(1 for _ in csv.reader(stream)) - 1
+    if entry["n_rows"] < MIN_ROWS or len(entry["variables"]) < 2:
         raise ValueError(f"needs at least {MIN_ROWS} rows and 2 usable columns")
     raw = prepare.fetch(url).encode("utf-8", errors="replace")
     entry["sha256"] = hashlib.sha256(raw).hexdigest()
