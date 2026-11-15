@@ -2696,7 +2696,14 @@ def _orchestrate(args, publish_state, cleanup):
             first_round = resume["checkpoint"]["round"] + 1
             best_val = resume["checkpoint"]["best_val"]
             best_metric_commit = resume["checkpoint"]["best_commit"]
-            print(f"swarm.py: resuming run {run_id} at round {first_round}", file=sys.stderr)
+            if first_round > args.rounds:
+                print(
+                    f"swarm.py: resuming run {run_id}: all {args.rounds} rounds are complete; "
+                    "rerunning post-run scoring and finalization",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"swarm.py: resuming run {run_id} at round {first_round}", file=sys.stderr)
         else:
             first_round = 1
             record_round_artifacts(
@@ -3068,10 +3075,6 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
 
-        record_final_artifacts(publisher, out_dir, conductor, args.arm)
-        if not effective_no_push:
-            git(conductor, "push", "origin", branch, *tags_this_run)
-
     # The rounds are done: an interrupted or failed committee must not mark the run stopped.
     publish_state["completed"] = True
 
@@ -3086,6 +3089,9 @@ def _orchestrate(args, publish_state, cleanup):
                 git(conductor, "push", "origin", branch)
     except Exception as error:
         print(f"[post_run] failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+    record_final_artifacts(publisher, out_dir, conductor, args.arm)
+    if not effective_no_push:
+        git(conductor, "push", "origin", branch, *tags_this_run)
     return {
         "arm": args.arm,
         "branch": branch,

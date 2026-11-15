@@ -1,3 +1,4 @@
+import gzip
 import json
 import tempfile
 import unittest
@@ -320,6 +321,25 @@ class ExportViewerTests(unittest.TestCase):
             self.assertEqual(agent["boredom"]["B"], expected_b)
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
+
+    def test_arm_branch_checkout_with_gzipped_logs_exports_the_same_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            events = self.export(out, root / "dest-raw")[1]
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                path = out / name
+                with gzip.open(out / f"{name}.gz", "wb") as archive:
+                    archive.write(path.read_bytes())
+                path.unlink()
+            archived = self.export(out, root / "dest-archived")[1]
+            self.assertEqual(len(archived), len(events))
+            self.assertEqual(
+                [event["type"] for event in archived], [event["type"] for event in events]
+            )
+            for name in ("llm_log.jsonl", "research_log.jsonl"):
+                (out / f"{name}.gz").unlink()
+            self.assertLess(len(self.export(out, root / "dest-without-logs")[1]), len(events))
 
     def test_duplicate_experiment_maps_to_discard_with_reason(self):
         with tempfile.TemporaryDirectory() as tmp:

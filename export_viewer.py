@@ -9,6 +9,7 @@ Read-only on the source dir; output is deterministic for the same input.
 import argparse
 import bisect
 import csv
+import gzip
 import json
 import os
 import re
@@ -86,10 +87,16 @@ def uid(namespace, name):
 
 
 def read_jsonl(path):
+    """Rows of a JSONL file, or of its `.gz` archive (the arm branch keeps only that)."""
     rows = []
-    if not path.exists():
+    if path.exists():
+        text = path.read_text(encoding="utf-8")
+    elif path.with_name(path.name + ".gz").exists():
+        with gzip.open(path.with_name(path.name + ".gz"), "rt", encoding="utf-8") as archive:
+            text = archive.read()
+    else:
         return rows
-    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:

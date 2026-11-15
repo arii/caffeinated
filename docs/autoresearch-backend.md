@@ -52,7 +52,11 @@ Per-round arm commits hold only the small, append-only research state
 The viewer export, `runs/`, `exa_cache/`, `llm_log.jsonl` and
 `research_log.jsonl` stay out of them; when the run ends one final commit adds
 `llm_log.jsonl.gz`, `research_log.jsonl.gz`, `runs.tar.gz` and
-`exa_cache.tar.gz`. Rebuild a viewer export with `export_viewer.py <out>`.
+`exa_cache.tar.gz` (after any `post_run` scoring commit). Rebuild a viewer
+export with `export_viewer.py <out>` from the out dir, or from the arm branch's
+`experiments/swarm_<arm>/` checkout: the exporter reads `llm_log.jsonl.gz` and
+`research_log.jsonl.gz` when the raw logs are absent (extract `runs.tar.gz`
+there too to get experiment log tails and diffs).
 
 Long runs (up to 50 rounds) survive crashes: after every committed round the
 swarm writes `resume_checkpoint.json` (round, arm commit, log byte lengths,
@@ -63,11 +67,20 @@ recording back to its checkpointed prefix so later publishes still append, and
 deletes that round's tags. past.dev memories from the abandoned round cannot be
 deleted remotely, so each write carries `run_epoch` and `written_at`, and recall
 drops same-run memories written after a checkpoint that a later resume rolled
-back to (`AUTORESEARCH_RUN_ROLLBACKS`). `--rounds N` extends the run; conflicting `--task`,
+back to (`AUTORESEARCH_RUN_ROLLBACKS`). Limits: the abandoned memories still
+exist on past.dev and still count toward its storage and search ranking; memories
+written before this change carry no `written_at` and are never filtered; and
+past.dev's own write timestamps are not used, so the filter relies on the
+swarm host's clock. `--rounds N` extends the run; conflicting `--task`,
 `--arm`, `--seed`, `--llm`, `--model`, `--exa` or `--memory-backend` values are
 rejected. A worker whose LLM call fails after retries records a `crash` row
 for that attempt and the round goes on; if every worker fails, the run stops so
-it can be resumed once the provider recovers. SIGTERM stops a run cleanly
+it can be resumed once the provider recovers. A critic review whose LLM
+call fails is not turned into a crash row: it still stops the run, which can
+then be resumed from the last checkpoint. A failed novelty-check call leaves the
+round's candidates without a novelty score and the round goes on. A run killed during
+`post_run` scoring has all its rounds checkpointed; `--resume` reruns the
+scoring and finalization (and says so). SIGTERM stops a run cleanly
 (status `stopped`).
 
 `pyproject.toml` defines dependencies and `uv.lock` pins their resolved versions.
