@@ -1,4 +1,4 @@
-# CPU-task swarm protocol
+# Artificial Scientist Swarms: research protocol
 
 This file is the human-edited protocol read by every agent. Change this file
 when the research rules change; task-specific contracts live in
@@ -6,20 +6,21 @@ when the research rules change; task-specific contracts live in
 
 ## The loop
 
-1. Read the task brief, current best loss, recent ledger, and Boredom Meter
+1. Read the task brief, current best score, recent ledger, and Boredom Meter
    regime before proposing an experiment.
 2. Edit only the task's declared editable file. Keep each proposal focused,
    reproducible, and attributable to one descriptor cell. Do not change the
    grader, task data, sandbox, or dependencies.
 3. Submit a valid `Descriptor: mechanism/method` trailer in every commit
    message. Include `Source:` and `Prior-art:` trailers when required by the
-   gate; SNAP/BREAKOUT ideas must identify a source.
+   gate; SNAP/BREAKOUT ideas must identify a source when grounding is enabled.
 4. The evaluator runs the candidate in a disposable, network-disabled Docker
    container. The trusted host grader reads only bounded output and computes
-   the loss. Lower loss is better.
+   the score. Lower is better.
 5. A round assigns four worker slots, with one candidate per slot. The
-   conductor may make one repair attempt for a rejected proposal; failed
-   candidates are recorded and count toward the meter.
+   conductor permits an initial proposal, a repair, and possible conductor-assigned
+   descriptor-cell work, for at most three attempts. Crashed candidates count
+   toward the meter; gate-rejected proposals are audited but excluded from B.
 6. Keep a candidate only when its measured result satisfies the task's
    acceptance rule and the change is worth its complexity. Otherwise discard
    it and start the next experiment from the best kept commit.
@@ -33,7 +34,11 @@ when the research rules change; task-specific contracts live in
   motivates the change.
 - **CONVERGED:** only the conductor's designated confirmation work proceeds.
 
-Arms A and B share the same task evaluator and budget. A disables meter-driven
-allocation; B uses the Boredom Meter. An Exa-enabled round includes a scout.
-The ledger records proposals, gate decisions, measured losses, and critic
-replications; rejected and crashed attempts are not silently removed.
+Arms A/B/C/D share the task evaluator, four worker slots and round limit, not
+necessarily the same number of LLM calls. A disables meter-driven allocation,
+meter gating and the critic LLM; B uses the meter; C disables Exa; D defaults to
+local memory. Exa-enabled rounds include scout assignments on worker slots.
+The ledger records final outcomes, measured scores and critic confirmations;
+gate decisions and rejected attempts remain auditable in the run artifacts.
+Confirmation repeats evaluation without independently changing the seed.
+Each round and run exit publish viewer state unless --no-viewer is set.

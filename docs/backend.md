@@ -8,14 +8,15 @@ Line numbers refer to source baseline `add9002` unless a remote ref is stated.
 
 README explains the design; this map locates the code that defines behavior.
 Line numbers below refer to source baseline `add9002`; the documentation was
-rewritten from branch head `9dd0187`. Main and PR refs are separate implementations.
+audited at branch head `cd5876a`. Ig Nobel citations use pinned main revision
+`be658b6`; PR refs describe separate implementations.
 
 | Surface | Modules and symbols | Responsibility |
 | --- | --- | --- |
 | Human protocol and roles | `program.md`, `prompts/common.md`, `llm.render_prompt` | Human instructions and scout/worker/critic templates |
 | Allocation | `swarm.py:163-258`, `allocate_roles` | Four slots, scout counts, per-agent priority |
 | Orchestration | `swarm.py:1514-1958`, `_orchestrate` | Baseline, proposals, bounded repairs, evaluations, confirmation, artifacts |
-| Model inference | `llm.py:344-445`, `_tinker_completion`, `_request_tinker` | Stateless sampling and parsing; no parameter updates |
+| Model inference | `llm.py:344-445`, `_tinker_completion`, `_request_tinker` | Stateless sampling and parsing |
 | Grounding | `research.py`, `boredom.run_gate` | Exa query/source/extract records and citation audit |
 | Memory | `memory.arm_run_scope`, `ensure_arm_audience`, `scoped_pastdev_response` | Local mirror, per-arm audience and run filtering |
 | Candidate boundary | `testcases/sandbox.py`, each task's `evaluate.py` | Docker resource/isolation settings and trusted output grading |
@@ -23,8 +24,8 @@ rewritten from branch head `9dd0187`. Main and PR refs are separate implementati
 | Round/final publish | `swarm.py:1495-1511,1942,1961-1984` | Nonfatal publish wrapper, round hook and finalization |
 | Export and publish | `export_viewer.py:173-232,968-1071` | Profile reconstruction, prefix checks, artifact copies and atomic per-file updates |
 | HTTP and SSE | `viewer/app.py:60-404`, `create_app`; `viewer/__main__.py` | Read-only routes, caching, path confinement and stream resume |
-| Main study execution | `origin/main:ignobel/lab.py:103-111`, `_run_modal` | Modal sandbox specifies timeout/network blocking and no accelerator |
-| Separate community | `origin/main:ignobel/run_arm.py:22-46` | Main arms, policy and memory selection |
+| Main study execution | `be658b6:ignobel/lab.py:103-111`, `_run_modal` | Modal CPU study sandbox with timeout and network blocking |
+| Separate community | `be658b6:ignobel/run_arm.py:22-46` | Main arms, policy and memory selection |
 | Unmerged community policy | `origin/pr7:ignobel/boredom.py`, `policy.py` | Private meter, frustration, cooldown and yoked exploration |
 | Unmerged family population | `origin/pr8:ignobel/families.py`, `world.py` | Mothers, daughters, private data and spawning |
 
@@ -50,8 +51,8 @@ worker streaks. These distinctions matter when reproducing the formulas.
 | CPU eps, k/knn/patience, level/parameter weights, ratio 4 | `testcases/hadamard19/boredom_profile.json:6-20,44-48`; `testcases/bixbench_mini/boredom_profile.json:6-20,43-47`; `testcases/playworld_mini/boredom_profile.json:6-20,44-48` |
 | Allocation cutoff and slot counts | `swarm.py:163-238` (`allocate_roles`) |
 | Accept margin, provisional inequality, confirmation mean | `swarm.py:1122-1137` (`acceptance_margin`, `candidate_is_provisional`, `critic_accepts`) |
-| Main Ig Nobel similarity/gap/unsurprise/failure/B and rounding | `origin/main:ignobel/boredom.py:15-58` |
-| Main snap threshold override / policy default | `origin/main:ignobel/config.yaml:2`; `origin/main:ignobel/run_arm.py:37-40`; `origin/main:ignobel/policy.py:18-24` |
+| Main Ig Nobel similarity/gap/unsurprise/failure/B and rounding | `be658b6:ignobel/boredom.py:15-58` |
+| Main snap threshold override / policy default | `be658b6:ignobel/config.yaml:2`; `be658b6:ignobel/run_arm.py:37-40`; `be658b6:ignobel/policy.py:18-24` |
 | #7 baseline, self_repeat, familiarity, gap, unsurprise, frustration | `origin/pr7:ignobel/boredom.py:27-97` |
 | #7 progress, stall, weighted B, rounding | `origin/pr7:ignobel/boredom.py:110-144` |
 | #7 weights and every private-policy threshold | `origin/pr7:boredom_meter/profiles/ignobel.json:24-37` |

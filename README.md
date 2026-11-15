@@ -2,16 +2,10 @@
 
 Artificial Scientist Swarms investigates a practical question: when should an automated
 researcher stop refining one approach and try another? Four worker slots propose small
-program changes, test them against fixed CPU benchmarks, and retain only measured
-improvements. A reproducible **boredom meter** shifts effort from local refinement toward
+program changes, call an LLM through Tinker, OpenAI or an offline fake adapter, run
+experiments on CPU in Docker, and retain only measured improvements. A reproducible **boredom meter** shifts effort from local refinement toward
 different methods when experiments become repetitive and progress stalls. Judges can
 follow a run from its hypotheses through evaluation, decisions, memory and read-only replay.
-
-**Nothing here trains or fine-tunes a model.** There is no GPU execution stage in the
-backend: candidate programs run on CPU in Docker, and Tinker is used only through its
-sampling API for stateless LLM inference. Fake and OpenAI inference adapters are also
-available. The separate Ig Nobel backend on main uses
-Modal **CPU** study sandboxes in real mode; its sandbox request specifies no accelerator.
 
 ```mermaid
 flowchart LR
@@ -86,7 +80,7 @@ validity of the swarm.
 
 ## Types of agents
 
-“Agent” names a responsibility, not an independently optimized model. Scouts are additional
+Agents have distinct responsibilities and share the inference adapters. Scouts are additional
 assignments on existing worker slots, so they do not create extra candidate slots.
 Conductor and gate are deterministic control components; the critic's explanation cannot
 override the numeric acceptance rule.

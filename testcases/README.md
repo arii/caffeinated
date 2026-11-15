@@ -1,68 +1,97 @@
-# CPU mini-benchmark proxies
+# Artificial Scientist Swarms: CPU benchmarks
 
-These are local, CPU-sized proxies, not full versions of the benchmarks named
-below. The trusted host grader never imports or executes candidate code. It
-passes only the editable file, declared public inputs, and any task harness to a
-disposable Docker container, then parses bounded output and computes the score
-on the host.
+These tasks evaluate candidate programs on CPU in Docker. Hadamard is an exact
+known-optimum task; BixBench Mini is a subset; Playworld Mini is synthetic.
 
-| task | scope | editable file | baseline | reference |
-|---|---|---|---|---|
-| `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
-| `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | accuracy ≈ 0.118 | published BixBench accuracy 0.523 |
-| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | score ≈ 0.149 | 8-frame-memory model, score 0.3598 |
+## Tasks and score conventions
 
-The exact task notes are stored in each `task.json`: Hadamard is exact with a
-known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
-is a synthetic proxy, not PlayWorld, and uses the 8-frame-memory reference.
-Evaluators print `score`, `loss`, `record`, and `beats_reference`. Lower loss is
-better. A malformed or crashing candidate is scored as a crash.
+The swarm minimizes an objective score. Evaluators also print a native metric named
+score, for which higher is better; their loss field is the transformed lower-is-better
+objective consumed by the swarm. The inherited results.tsv loss column stores that
+objective; memory_gb is a legacy column set to 0.0.
 
-## Build the candidate image
+| Task | Scope and editable file | Baseline and reference | Minimized objective |
+| --- | --- | --- | --- |
+| hadamard19 | Exact order-19 ±1 determinant; construct.py | Baseline objective about 0.0585; known optimum determinant 2^18 × 3411968 gives objective zero | log10(optimum determinant) minus log10(abs(det)) for nonzero determinant |
+| bixbench_mini | 17-question subset, not full BixBench; analysis.py | Baseline accuracy about 0.118; published reference accuracy 0.523 | 1 − answer accuracy |
+| playworld_mini | Synthetic 9×9 environment, not PlayWorld; world_model.py | Baseline exact-frame fraction about 0.149; 8-frame-memory reference fraction 0.3598 | 1 − exact-frame fraction |
 
-Build the pinned image once before running an evaluator or task swarm:
+Playworld uses 10 context frames and predicts 20 future 5×5 frames across 200 held-out
+episodes. Task contracts and scope notes are in each task.json. Malformed output,
+failed startup or a candidate crash produces crash status rather than a retained result.
+
+## Candidate boundary
+
+The trusted host grader never imports candidate code. It passes only declared editable
+source, public inputs and required task harness files to a disposable container, parses
+bounded output and computes the result on the host.
+
+Build the pinned image once from the repository root:
 
 ```sh
 docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
 ```
 
-The image pins Python 3.11.12 and the CPU dependencies used by these tasks:
-NumPy, pandas, openpyxl, and SciPy. Candidate containers have no network, a
-read-only root filesystem, dropped Linux capabilities, no-new-privileges,
-resource limits, and only the task's editable file/public inputs plus a
-separate writable output mount. They receive no host environment secrets,
-grader, hidden answers, simulator, reference implementations, repository, or
-home directory. Docker being unavailable is a crash; candidates are never run
-on the host as a fallback.
+The image pins Python 3.11.12 plus NumPy, pandas, openpyxl and SciPy. Candidate containers
+have no network, a read-only root, dropped capabilities, no-new-privileges, a non-root
+user and resource/output limits. Public files enter a read-only work mount and outputs
+have a separate writable mount. Credentials, home directories, the repository, hidden
+answers and reference implementations are not mounted. If Docker or the image is
+unavailable, evaluation fails closed; there is no host candidate-execution fallback.
 
-For BixBench, `prepare.py` downloads the public question/data files and keeps
-the answer key under `.cache/` on the host. The candidate receives only
-`questions.json` and the declared public `data/` files. For Playworld, the host
-generates context frames/actions and future actions for evaluation; hidden
-future frames stay in the trusted grader, while `run_candidate.py` supplies
-only public inputs to `world_model.py`.
+Hadamard returns a matrix for the host's exact integer determinant calculation.
+BixBench preparation downloads public questions/data and keeps the answer key in the
+host .cache directory; candidates receive only questions.json and declared data files.
+Playworld's run_candidate.py imports world_model.py inside Docker. The host supplies
+context frames/actions and future actions, while hidden future frames and the simulator
+stay with the grader. Containers are an execution boundary, not proof against runtime
+or kernel vulnerabilities; preparation and grading code remain trusted.
 
-## Run the swarm on a task
+## Run an experiment
 
-```sh
-# offline plumbing check (fake LLM, local memory, no Exa)
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --llm fake --no-push
-EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push
-```
-
-`--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
-Docker sandbox, loads `testcases/<task>/boredom_profile.json`, and uses the
-generic prompts in `prompts/`. The task loss goes in the `loss`
-column, so the artifacts retain the autoresearch format.
-
-## Score by hand
+Run from the repository root with Git and Docker available. Use fresh output directories
+and a checkout where local branches, worktrees, tags and artifact commits are appropriate.
 
 ```sh
-python3 testcases/run_task.py hadamard19 --results results.tsv --desc "anneal" --status auto
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task hadamard19 --rounds 1 --llm fake --no-push --out /tmp/hadamard-demo
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --llm fake --no-push --out /tmp/bixbench-demo
+EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push --out /tmp/playworld-demo
 ```
 
-Build the Docker image before running this command. BixBench public inputs are
-downloaded on the first evaluation. `_reference/` contains trusted reference
-implementations and is never mounted into a candidate container or included in
-candidate context.
+Fake inference, local memory and Exa-off avoid external inference/research/memory calls.
+The first BixBench preparation still downloads public data if its cache is empty.
+The conductor edits only the task's declared candidate file in worker worktrees,
+evaluates commits in Docker, loads the task's boredom profile and uses the common prompts.
+No-push prevents remote pushes, not local Git writes.
+
+Round-end and terminal viewer publication defaults to <out>/viewer. Use --viewer-dest
+to choose another export root or --no-viewer to disable it. See the
+[viewer and API documentation](../README.md#data-model-and-viewer) for server setup.
+
+## Evaluate the current editable file
+
+```sh
+python3 testcases/run_task.py hadamard19 --results results.tsv --desc "current construction" --status auto
+```
+
+This evaluates the file as it currently exists; it does not implement the method named
+in --desc. With --status auto it records keep only for a strict objective improvement
+over the best kept row (or the first successful result), otherwise discard. It does not
+perform the swarm's epsilon-margin and repeated-evaluation confirmation rule.
+Use a separate results file if preserving existing results.
+
+The [_reference](_reference) directory contains trusted reference programs; it is not
+mounted into candidates or included in their prompt context. Evaluators print native
+score, lower-is-better loss, record and beats_reference, plus task-specific diagnostics.
+
+## Tests
+
+Follow the [root setup](../README.md#quickstart-and-tests), including viewer dependencies
+and host pandas, then run:
+
+```sh
+EXA=off MEMORY_BACKEND=local .venv/bin/python -m unittest discover -s tests
+```
+
+Docker tests need the image above; BixBench integration can prepare public data.
+Inspect skipped tests rather than treating them as sandbox verification.
