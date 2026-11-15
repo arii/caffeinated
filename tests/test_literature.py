@@ -218,6 +218,7 @@ class ResearchSourceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "--literature off conflicts"):
                 swarm.resolve_run_args(other)
             del run["literature"]
+            run["llm"] = "tinker"
             (out / "run.json").write_text(json.dumps(run), encoding="utf-8")
             legacy = swarm.build_parser().parse_args(["--resume", str(out)])
             swarm.resolve_run_args(legacy)

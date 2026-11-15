@@ -2477,6 +2477,8 @@ def resolve_run_args(args):
             raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
         if given is None:
             setattr(args, key, stored)
+    if args.literature is None:
+        args.literature = "off"  # runs from before --literature never researched keylessly
     if args.rounds is None:
         args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
     if args.viewer_dest is None and run_artifact.get("viewer_dest"):
