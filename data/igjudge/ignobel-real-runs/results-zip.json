@@ -4102,9 +4102,5 @@
    "total": 40.0
   }
  ],
- "winner": {
-  "rank": 1,
-  "study_id": "f8fa53cc-6afd-5e98-9596-0c7b8711e718/hypothesis:bagnold-i2",
-  "total": 76.5
- }
+ "winner": "f8fa53cc-6afd-5e98-9596-0c7b8711e718/hypothesis:bagnold-i2"
 }
