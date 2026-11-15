@@ -9,6 +9,7 @@ import asyncio
 import hashlib
 import json
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
@@ -24,6 +25,15 @@ KINDS.update(diary="diary", discovery="discoveries", hypothesis="hypotheses", me
 TIMELINE_FIELDS = ("prompt", "response", "reasoning")
 HEARTBEAT_SECONDS = 15
 POLL_SECONDS = 1.0
+
+
+def instant(ts):
+    """ISO-8601 text to an aware datetime (naive = UTC), so seeks compare instants, not strings."""
+    try:
+        value = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        error(422, "invalid_ts", ts=ts)
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
 
 def error(status, code, **extra):
@@ -103,7 +113,8 @@ class RunData:
                 error(416, "tick_out_of_range", ticks=len(self.events))
             return ends[0]
         if ts is not None:
-            stamped = [e["tick"] for e in self.events if e["ts"] and e["ts"] <= ts]
+            target = instant(ts)
+            stamped = [e["tick"] for e in self.events if e["ts"] and instant(e["ts"]) <= target]
             if not stamped:
                 error(416, "tick_out_of_range", ticks=len(self.events))
             return stamped[-1]
