@@ -32,7 +32,7 @@ class OpenAILaunchTests(unittest.TestCase):
         os.environ["LAB_OPENAI_MAX_COST_USD"] = "500"
         with tempfile.TemporaryDirectory() as d, TestClient(create_app(d, runner=False)) as c:
             self.assertEqual(c.post("/api/openai-runs", json={}).status_code, 422)
-            self.assertEqual(c.post("/api/openai-runs", json={"rounds": 6}).status_code, 422)
+            self.assertEqual(c.post("/api/openai-runs", json={"minutes": 31}).status_code, 422)
             os.environ["OPENAI_API_KEY"] = "test-key-not-real"
             process = MagicMock(pid=4242)
             process.poll.return_value = None
@@ -40,17 +40,27 @@ class OpenAILaunchTests(unittest.TestCase):
                 patch.object(openai_launch.subprocess, "Popen", return_value=process) as popen,
                 patch.object(openai_launch.os, "killpg") as killpg,
             ):
-                r = c.post("/api/openai-runs", json={"rounds": 2})
+                r = c.post("/api/openai-runs", json={"minutes": 2})
                 self.assertEqual(r.status_code, 201)
                 self.assertEqual(r.json()["maxCostUsd"], 10.0)
                 env = popen.call_args.kwargs["env"]
                 self.assertEqual(env["OPENAI_MAX_COST_USD"], "10.0")
-                self.assertEqual(env["OPENAI_RUN_ROUNDS"], "2")
+                self.assertEqual(env["OPENAI_RUN_MINUTES"], "2")
                 self.assertTrue(env["OPENAI_RUN_OUT"].startswith("experiments/openai-ignobel-"))
                 self.assertEqual(c.post("/api/openai-runs", json={}).status_code, 409)
                 self.assertTrue(c.get("/api/health").json()["openaiLaunch"]["running"])
                 c.__exit__(None, None, None)
                 killpg.assert_called_once_with(4242, openai_launch.signal.SIGTERM)
+
+    def test_stop_writes_marker_only_for_current_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            launcher = openai_launch.Launcher(root / "logs", root=root)
+            launcher.current = "openai-ignobel-test"
+            launcher.process = MagicMock()
+            launcher.process.poll.return_value = None
+            self.assertTrue(launcher.stop()["stopping"])
+            self.assertTrue((root / "experiments/openai-ignobel-test/stop_requested").exists())
 
     def test_local_env_file_cannot_raise_launcher_budget(self):
         with tempfile.TemporaryDirectory() as d:

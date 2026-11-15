@@ -84,3 +84,11 @@ test('the compact first screen and static assets contain no satire intro copy',(
  const other={...recording,manifest:{...recording.manifest,id:'another-run'}};
  assert.doesNotMatch(preCommitteeResultsHtml(config,other,esc),/Research result in one sentence/);
 });
+
+
+test('continuous results show this session without unrelated historical benchmarks',()=>{
+ const live=structuredClone(recording);live.manifest.continuous=true;
+ const html=preCommitteeResultsHtml(config,live,esc);
+ assert.match(html,/This session's studies/);
+ assert.doesNotMatch(html,/BixBench held-out|Track 3|Memory retrieval|Kimi/);
+});
