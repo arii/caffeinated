@@ -6,8 +6,8 @@ export function initialRecordingId(items:RecordingManifest[],requested:string|nu
 export function sortedRecordings(items:RecordingManifest[]){const rank=(m:RecordingManifest)=>m.sample===false?(m.live?0:1):2;const started=(m:RecordingManifest)=>Date.parse(m.time?.ts_start||'')||0;return [...items].sort((a,b)=>rank(a)-rank(b)||started(b)-started(a)||a.id.localeCompare(b.id));}
 export function recordingCopy(m:RecordingManifest){if(m.sample===false&&m.status==='stopped')return {eyebrow:'RESEARCH / SWARM RUN',kicker:'● SWARM RUN · STOPPED',callout:'Swarm run · stopped. Scrub or replay everything it published; experiments and model calls are described by the run provenance.'};if(m.sample===false&&m.stale)return {eyebrow:'RESEARCH / STALLED SWARM',kicker:'◌ STALLED RUN',callout:`This swarm run stopped publishing before it finished${m.lastUpdateTs?` (last update ${clockTime(m.lastUpdateTs)})`:''}. It may have been killed; everything it published is shown below.`};return m.sample===false?{eyebrow:m.live?'RESEARCH / LIVE SWARM':'RESEARCH / SWARM RUN',kicker:m.live?'● LIVE SWARM':'● SWARM RUN · FINISHED',callout:m.live?'Following a live swarm run. Experiments and model calls run in the external swarm process; this lab shows its events as they are published.':'Swarm run · finished. Scrub or replay everything it published; experiments and model calls are described by the run provenance.'}:{eyebrow:'RESEARCH / RECORDED REPLAY',kicker:'● RECORDED REPLAY',callout:'This is a temporary replay of supplied recordings. No experiments or model calls run here.'};}
 export interface ReplayEvent{tick:number;type:string;agentId?:string;message?:string;round?:number;payload?:Record<string,unknown>;refs?:Record<string,unknown>}
-export interface Recording{manifest:RecordingManifest;frames:{tick:number;snapshot:RunSnapshot}[];events:ReplayEvent[];entities?:Record<string,unknown[]>}
-export function recordingChanged(current:RecordingManifest,updated?:RecordingManifest){return !!(current.live||current.stale)&&updated?.id===current.id&&updated.contentVersion!==current.contentVersion;}
+export interface Recording{igjudge?:unknown;manifest:RecordingManifest;frames:{tick:number;snapshot:RunSnapshot}[];events:ReplayEvent[];entities?:Record<string,unknown[]>}
+export function recordingChanged(current:RecordingManifest,updated?:RecordingManifest){return !!(current.live||current.stale||['finished','completed','stopped'].includes(current.status||''))&&updated?.id===current.id&&updated.contentVersion!==current.contentVersion;}
 export function playbackContinues(manifest:Pick<RecordingManifest,'live'|'totalTicks'>,tick:number){return !!manifest.live||tick<manifest.totalTicks;}
 /** Binary search is deliberately stateless: rewinding must discard later knowledge. */
 export function frameAt<T extends {tick:number}>(frames:readonly T[],tick:number):T|undefined{
@@ -35,7 +35,7 @@ export function swarmConnectionLabel(m:RecordingManifest){
  const errors=publishErrorCount(m);
  return errors?`${base} · ${errors} PUBLISH ERROR${errors===1?'':'S'}`:base;
 }
-export type RecordingDelta=({kind:'full'}&Recording)|{kind:'unchanged';manifest:RecordingManifest}|{kind:'delta';since:number;manifest:RecordingManifest;frames:Recording['frames'];progressScale?:number;patches?:{tick:number;snapshot:Partial<RunSnapshot>}[];events:ReplayEvent[];entities?:Record<string,unknown[]>};
+export type RecordingDelta=({kind:'full'}&Recording)|{kind:'unchanged';manifest:RecordingManifest}|{kind:'delta';igjudge?:unknown;since:number;manifest:RecordingManifest;frames:Recording['frames'];progressScale?:number;patches?:{tick:number;snapshot:Partial<RunSnapshot>}[];events:ReplayEvent[];entities?:Record<string,unknown[]>};
 const entityKey=(row:unknown)=>{if(!row||typeof row!=='object')return undefined;const r=row as Record<string,unknown>;return r.id??Object.entries(r).find(([k])=>k.endsWith('_id')&&k!=='agent_id')?.[1];};
 /** Frames from delta.since replace the client's; earlier ones are rescaled to progressScale and patched; later events append; entity rows upsert by id. */
 export function mergeRecordingDelta(current:Recording,delta:RecordingDelta):Recording{
@@ -50,7 +50,7 @@ export function mergeRecordingDelta(current:Recording,delta:RecordingDelta):Reco
  const patches=new Map((delta.patches||[]).map(p=>[p.tick,p.snapshot]));
  const scale=delta.progressScale;
  const kept=current.frames.filter(f=>f.tick<delta.since).map(f=>{const patch=patches.get(f.tick);return patch||scale?{...f,snapshot:{...f.snapshot,...(scale?{progress:Math.max(0,f.tick)/scale}:{}),...patch}}:f;});
- return {...current,manifest:delta.manifest,frames:[...kept,...delta.frames],events:[...current.events.filter(e=>e.tick<=delta.since),...delta.events],entities};
+ return {...current,...('igjudge' in delta?{igjudge:delta.igjudge}:{}),manifest:delta.manifest,frames:[...kept,...delta.frames],events:[...current.events.filter(e=>e.tick<=delta.since),...delta.events],entities};
 }
 /** A live recording already on screen fetches only what changed since its contentVersion. */
 export async function loadRecording(get:<T>(path:string)=>Promise<T>,id:string,version:string,current:Recording|null):Promise<Recording>{

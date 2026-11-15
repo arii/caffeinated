@@ -1,7 +1,7 @@
 /** IgJudge: the post-run single-agent Ig Nobel judge that scores every idea on six weighted criteria. */
 type Row=Record<string,unknown>;
 export interface IgCriterion{key:string;label:string;weight:number}
-export interface IgIdea{studyId:string;title:string;hypothesis:string;gate:string;committee:string;scores:Record<string,{final:number|null;initial:number|null;revised:number|null;reason:string}>;total:number|null;classification:string;verdict:string;safeguards:string[];priorWork:{title:string;url:string}[];error:string;rank:number|null}
+export interface IgIdea{studyId:string;agentId:string;title:string;hypothesis:string;gate:string;committee:string;scores:Record<string,{final:number|null;initial:number|null;revised:number|null;reason:string}>;total:number|null;classification:string;verdict:string;safeguards:string[];priorWork:{title:string;url:string}[];error:string;rank:number|null}
 export interface IgJudgeBoard{model:string;criteria:IgCriterion[];ideas:IgIdea[];winner:IgIdea|null}
 const row=(v:unknown):Row=>v&&typeof v==='object'&&!Array.isArray(v)?v as Row:{};
 const text=(v:unknown)=>typeof v==='string'?v:'';
@@ -16,9 +16,9 @@ export function igJudgeBoard(raw:unknown):IgJudgeBoard|null{
  const ideas=arr(data.ideas).map(row).map(i=>{
   const scores:IgIdea['scores']={};for(const [k,v] of Object.entries(row(i.scores))){const s=row(v);scores[k]={initial:num(s.initial),revised:num(s.revised),final:num(s.final),reason:text(s.reason)};}
   const id=text(i.study_id);
-  return {studyId:id,title:text(i.title)||id,hypothesis:text(i.hypothesis),gate:text(i.gate),committee:text(i.committee),scores,total:num(i.total),classification:text(i.classification),verdict:text(i.verdict),safeguards:arr(i.safeguards).map(text).filter(Boolean),priorWork:arr(i.prior_work).map(row).map(p=>({title:text(p.title),url:text(p.url)})).filter(p=>p.url),error:text(i.error),rank:ranks.get(id)??null};
+  return {studyId:id,agentId:text(i.agent_id),title:text(i.title)||id,hypothesis:text(i.hypothesis),gate:text(i.gate),committee:text(i.committee),scores,total:num(i.total),classification:text(i.classification),verdict:text(i.verdict),safeguards:arr(i.safeguards).map(text).filter(Boolean),priorWork:arr(i.prior_work).map(row).map(p=>({title:text(p.title),url:text(p.url)})).filter(p=>p.url),error:text(i.error),rank:ranks.get(id)??null};
  });
- if(!criteria.length||!ideas.length)return null;
+ if(!ideas.length)return null;
  ideas.sort((a,b)=>(a.rank??Infinity)-(b.rank??Infinity)||a.studyId.localeCompare(b.studyId));
  const winnerId=text(data.winner);
  return {model:text(data.model),criteria,ideas,winner:ideas.find(i=>i.studyId===winnerId&&i.total!=null)??null};
