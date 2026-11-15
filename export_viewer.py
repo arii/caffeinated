@@ -10,15 +10,20 @@ import argparse
 import bisect
 import csv
 import json
+import os
+import shutil
+import tempfile
 import uuid
 from pathlib import Path
+
+from boredom_meter import meter
 
 SCHEMA = "swarm-viewer/v1"
 NS_CAFFEINATED = uuid.UUID("6f1c3d2e-5b7a-4c1e-9a43-0c0ffee00001")
 KEYFRAME_EVERY = 250
 RECENT_EVENTS = 20
 PHASES = {
-    "autoresearch": ("assign", "research", "propose", "gate", "train", "critic", "status"),
+    "autoresearch": ("assign", "research", "propose", "gate", "train", "critic", "status", "finish"),
     "ignobel": ("seed", "boredom", "talk", "share", "snap", "propose", "study", "diary"),
 }
 ENTITY_KINDS = (
@@ -165,7 +170,68 @@ def reward_for(metric, reference, status, direction="minimize"):
 
 # ---------------------------------------------------------------- autoresearch
 
-def export_autoresearch(out_dir, arm=None, title=None):
+def _load_profile(out_dir, assignments, run_artifact):
+    expected_hash = run_artifact.get("profile_sha256") or next(
+        (record.get("profile_sha256") for _, record in assignments if record.get("profile_sha256")),
+        None,
+    )
+    profile_path = run_artifact.get("profile_path")
+    candidates = []
+    if profile_path:
+        profile_path = Path(profile_path)
+        if not profile_path.is_absolute():
+            profile_path = Path(out_dir) / profile_path
+        candidates.append(profile_path)
+    candidates.extend(sorted((Path(__file__).parent / "testcases").glob("*/boredom_profile.json")))
+    for path in candidates:
+        if path.is_file():
+            profile = meter.load_profile(path)
+            if expected_hash is None or profile["_hash"] == expected_hash:
+                return profile
+    if expected_hash is not None:
+        raise ValueError(f"no boredom profile matches logged profile_sha256 {expected_hash}")
+    raise ValueError(f"no boredom profile available for {out_dir}")
+
+
+def _recompute_boredom(out_dir, assignments, ledger, run_artifact):
+    profile = _load_profile(out_dir, assignments, run_artifact)
+    logged_hashes = [run_artifact.get("profile_sha256")]
+    logged_hashes.extend(record.get("profile_sha256") for _, record in assignments)
+    if any(value and value != profile["_hash"] for value in logged_hashes):
+        raise ValueError("boredom profile sha256 differs from logged profile_sha256")
+    ordered = [record for _, record in sorted(ledger, key=lambda item: item[1].get("seq", item[0]))]
+    prefixes = {meter.sha(ordered[:index]): ordered[:index] for index in range(len(ordered) + 1)}
+    computed = {}
+    for _, assignment in assignments:
+        expected = assignment.get("ledger_sha256")
+        prefix = prefixes.get(expected) if expected else None
+        if expected and prefix is None:
+            raise ValueError(f"ledger prefix does not match assignment round {assignment.get('round')}")
+        if prefix is None:
+            round_ = assignment.get("round", 0)
+            prefix = [row for row in ordered if row.get("round", 0) < round_]
+        for agent in assignment.get("roles", {}):
+            value = meter.status(profile, prefix, agent=agent)
+            logged = (assignment.get("per_agent_boredom") or {}).get(agent)
+            if isinstance(logged, dict):
+                for key, actual in value.items():
+                    previous = logged.get(key)
+                    if isinstance(previous, (int, float)) and isinstance(actual, (int, float)):
+                        if abs(float(previous) - float(actual)) > 1e-9:
+                            raise ValueError(
+                                f"per_agent_boredom mismatch for {agent} round "
+                                f"{assignment.get('round')} field {key}"
+                            )
+                    elif previous is not None and key in logged and previous != actual:
+                        raise ValueError(
+                            f"per_agent_boredom mismatch for {agent} round "
+                            f"{assignment.get('round')} field {key}"
+                        )
+            computed[(assignment.get("round"), agent)] = value
+    return profile, computed
+
+
+def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
     assignments = read_jsonl(out_dir / "assignments.jsonl")
     ledger = read_jsonl(out_dir / "ledger.jsonl")
@@ -176,6 +242,9 @@ def export_autoresearch(out_dir, arm=None, title=None):
     llm_log = read_jsonl(out_dir / "llm_log.jsonl")
     critic_rows = read_tsv(out_dir / "critic.tsv")
     native_run = (out_dir / "run_id").read_text().strip() if (out_dir / "run_id").exists() else ""
+    run_artifact_path = out_dir / "run.json"
+    run_artifact = json.loads(run_artifact_path.read_text(encoding="utf-8")) if run_artifact_path.exists() else {}
+    profile, recomputed_boredom = _recompute_boredom(out_dir, assignments, ledger, run_artifact)
 
     if arm is None:
         arm = next(
@@ -215,18 +284,20 @@ def export_autoresearch(out_dir, arm=None, title=None):
                  payload={"regime": record.get("regime"), "swarm_B": record.get("swarm_B"),
                           "rationale": record.get("rationale"),
                           "profile_sha256": record.get("profile_sha256")})
-        per_agent = record.get("per_agent_boredom") or {}
         for sub, (agent, role) in enumerate(sorted(record.get("roles", {}).items()), 1):
             run.emit("agent.assigned", round_=round_, phase="assign", ts=ts, agent=agent,
                      file="assignments.jsonl", line=line, native_type="assignment", sub=sub,
                      payload={"role": role, "scout": agent in record.get("scouts", []),
                               "rationale": record.get("rationale")})
-            status = per_agent.get(agent, {})
+            status = (record.get("per_agent_boredom") or {}).get(agent)
+            if not status:
+                status = recomputed_boredom.get((round_, agent), {})
             components = {key: value for key, value in status.items()
-                          if key not in {"B", "regime"} and isinstance(value, (int, float))}
+                          if key in {"novelty", "stagnation", "overload", "fail_rate",
+                                     "trivial_rate", "diversity"}}
             run.emit("boredom.measured", round_=round_, phase="assign", ts=ts, agent=agent,
                      file="assignments.jsonl", line=line, native_type="assignment", sub=100 + sub,
-                     payload={"B": record.get("per_agent_B", {}).get(agent, status.get("B")),
+                     payload={"B": status.get("B"),
                               "regime": status.get("regime") or record.get("regime"),
                               "components": components, "shadow": arm == "A"})
 
@@ -480,22 +551,33 @@ def export_autoresearch(out_dir, arm=None, title=None):
                              "agent": next(n for n, a in run.agents.items() if a["agent_id"] == experiment["agent_id"])}
 
     last_round = max([r for _, r in starts] + [0])
-    run.emit("run.finished", round_=last_round, phase="status", ts=all_ts[-1] if all_ts else None,
-             agent="conductor", file="~end", line=0, native_type="run",
-             payload={"status": "completed", "best_metric": confirmed and confirmed["metric_value"]})
+    final_status = status or run_artifact.get("status", "finished")
+    final_status = final_status if final_status in {"finished", "stopped"} else "finished"
+    if final:
+        run.emit("run.finished", round_=last_round, phase="finish", ts=all_ts[-1] if all_ts else None,
+                 agent="conductor", file="~end", line=0, native_type="run",
+                 payload={"status": final_status, "best_metric": confirmed and confirmed["metric_value"]})
     baseline = next((number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None)
     manifest_extra = {
         "title": title or f"autoresearch · {out_dir.name}",
         "arm": {"id": arm, "label": "boredom meter on" if arm == "B" else "meter shadow only",
                 "boredom_enabled": arm != "A", "policy": "boredom_meter"},
         "metric": {"name": "loss", "unit": "", "direction": "minimize"},
-        "boredom": {"scale": [0, 1], "thresholds": {}, "regimes":
+        "boredom": {"scale": [0, 1], "thresholds": {
+                        **profile["thresholds"], "eps": profile["eps"],
+                        "accept_margin": profile.get("accept_margin", 0.0)},
+                    "regimes":
                     ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"]},
         "provenance": {"llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
                        "gpu": "none (CPU only)", "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
                        "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
-                       "command": "", "swarm_commit": "", "native_run_id": native_run},
+                       "command": run_artifact.get("command", ""),
+                       "swarm_commit": run_artifact.get("swarm_commit", ""),
+                       "native_run_id": native_run},
         "baseline": baseline,
+        "profile": profile,
+        "status": final_status if final else "running",
+        "live": not final,
     }
     return run, manifest_extra
 
@@ -779,7 +861,8 @@ def build(run, extra):
     ts_values = [event["ts"] for event in events if event["ts"]]
     manifest = {
         "schema": SCHEMA, "run_id": run.run_id, "swarm": run.swarm, "title": extra["title"],
-        "status": "completed", "live": False, "arm": extra["arm"], "metric": extra["metric"],
+        "status": extra.get("status", "finished"), "live": extra.get("live", False),
+        "arm": extra["arm"], "metric": extra["metric"],
         "boredom": extra["boredom"],
         "time": {"ticks": len(events), "rounds": max((e["round"] for e in events), default=0),
                  "ts_start": min(ts_values) if ts_values else None,
@@ -794,9 +877,9 @@ def build(run, extra):
     for index, event in enumerate(events):
         if event["type"] == "round.started" or (not rounds or rounds[-1]["round"] != event["round"]):
             if not rounds or rounds[-1]["round"] != event["round"]:
-                rounds.append({"round": event["round"], "start_tick": event["tick"], "end_tick": event["tick"],
+                rounds.append({"round": event["round"], "tick_start": event["tick"], "tick_end": event["tick"],
                                "ts_start": event["ts"], "regime": None})
-        rounds[-1]["end_tick"] = event["tick"]
+        rounds[-1]["tick_end"] = event["tick"]
         before_regime = world["swarm"]["regime"]
         apply(world, event, run.entities)
         if event["type"] == "round.started":
@@ -822,7 +905,11 @@ def build(run, extra):
         if event["type"] == "discovery.made":
             series["best"].append([event["tick"], event["payload"].get("metric_value")])
         next_event = events[index + 1] if index + 1 < len(events) else None
-        round_end = next_event is None or next_event["round"] != event["round"]
+        round_end = (
+            event["type"] != "run.finished"
+            and (next_event is None or next_event["round"] != event["round"]
+                 or next_event["type"] == "run.finished")
+        )
         if round_end or event["tick"] - last_keyframe >= KEYFRAME_EVERY:
             keyframes[event["tick"]] = snapshot(world)
             last_keyframe = event["tick"]
@@ -878,15 +965,110 @@ def write(dest, manifest, timeline, events, keyframes, entities):
     return run_dir
 
 
-def export(out_dir, dest, swarm=None, arm=None, title=None):
+def _copy_artifacts(out_dir, run_dir, entities):
+    source_root = Path(out_dir).resolve()
+    for entity in entities["experiments"].values():
+        for relative in (entity.get("artifacts") or {}).values():
+            relative = Path(str(relative))
+            if relative.is_absolute() or ".." in relative.parts:
+                continue
+            source = (source_root / relative).resolve()
+            if source_root not in source.parents or not source.is_file():
+                continue
+            target = run_dir / "artifacts" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+
+
+def export(out_dir, dest, swarm=None, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
     swarm = swarm or ("ignobel" if (out_dir / "events.jsonl").exists() else "autoresearch")
     if swarm == "ignobel":
         run, extra = export_ignobel(out_dir, title)
     else:
-        run, extra = export_autoresearch(out_dir, arm, title)
+        run, extra = export_autoresearch(out_dir, arm, title, final, status)
     manifest, timeline, events, keyframes = build(run, extra)
-    return write(dest, manifest, timeline, events, keyframes, run.entities)
+    run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
+    _copy_artifacts(out_dir, run_dir, run.entities)
+    return run_dir
+
+
+class PublishConflict(RuntimeError):
+    pass
+
+
+def _atomic_write(path, data):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", delete=False) as stream:
+            temp_path = Path(stream.name)
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None and temp_path.exists():
+            temp_path.unlink()
+
+
+def publish(out_dir, dest, *, final=False, status=None):
+    out_dir, dest = Path(out_dir), Path(dest)
+    final_status = status if status in {"finished", "stopped"} else "finished"
+    with tempfile.TemporaryDirectory(prefix="swarm-viewer-export-") as temp:
+        fresh_root = Path(temp) / "export"
+        fresh_dir = export(out_dir, fresh_root, final=final, status=final_status)
+        run_id = fresh_dir.name
+        target = dest / run_id
+        fresh_events = (fresh_dir / "events.ndjson").read_bytes()
+        current_path = target / "events.ndjson"
+        current_events = current_path.read_bytes() if current_path.exists() else b""
+        if not fresh_events.startswith(current_events):
+            raise PublishConflict(f"published events are not a prefix for run {run_id}")
+
+        fresh_keyframes = fresh_dir / "keyframes"
+        keyframe_writes = []
+        if (target / "keyframes").exists():
+            for current in (target / "keyframes").glob("*.json"):
+                replacement = fresh_keyframes / current.name
+                if not replacement.exists() or current.read_bytes() != replacement.read_bytes():
+                    raise PublishConflict(f"published keyframe changed: {current.name}")
+        for frame in fresh_keyframes.glob("*.json"):
+            current = target / "keyframes" / frame.name
+            if not current.exists():
+                keyframe_writes.append((current, frame.read_bytes()))
+
+        index_path = dest / "index.json"
+        if index_path.exists():
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+        else:
+            index = {"schema": SCHEMA, "runs": []}
+        fresh_index = json.loads((fresh_root / "index.json").read_text(encoding="utf-8"))
+        summary = next(item for item in fresh_index["runs"] if item["run_id"] == run_id)
+        index["runs"] = sorted(
+            [item for item in index.get("runs", []) if item.get("run_id") != run_id] + [summary],
+            key=lambda item: item["title"],
+        )
+        index_data = (json.dumps(index, indent=1, sort_keys=True, ensure_ascii=False) + "\n").encode()
+
+        target.mkdir(parents=True, exist_ok=True)
+        with current_path.open("ab") as stream:
+            stream.write(fresh_events[len(current_events):])
+            stream.flush()
+            os.fsync(stream.fileno())
+        for path, data in keyframe_writes:
+            _atomic_write(path, data)
+        for source in (fresh_dir / "entities").glob("*.json"):
+            _atomic_write(target / "entities" / source.name, source.read_bytes())
+        for source in (fresh_dir / "artifacts").rglob("*") if (fresh_dir / "artifacts").exists() else ():
+            if source.is_file():
+                _atomic_write(target / "artifacts" / source.relative_to(fresh_dir / "artifacts"),
+                              source.read_bytes())
+        for name in ("manifest.json", "timeline.json"):
+            _atomic_write(target / name, (fresh_dir / name).read_bytes())
+        _atomic_write(index_path, index_data)
+        return target
 
 
 def main(argv=None):
