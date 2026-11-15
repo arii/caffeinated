@@ -166,6 +166,40 @@ class LLMClientTests(unittest.TestCase):
         edited_lines = {proposal["edits"][0]["old"] for proposal in proposals}
         self.assertEqual(len(edited_lines), len(swarm.AGENTS))
 
+    def test_fake_llm_uses_distinct_edits_for_cpu_tasks(self):
+        profile = meter.load_profile(PROFILE_PATH)
+        for task_name in ("bixbench_mini", "playworld_mini"):
+            task_dir = REPO_ROOT / "testcases" / task_name
+            task = json.loads((task_dir / "task.json").read_text())
+            source = (task_dir / task["editable"]).read_text()
+            proposals = [
+                llm.fake_response(
+                    "WORKER_PROPOSE",
+                    {
+                        "agent": f"worker-{index + 1}",
+                        "fake_edits": task["fake_edits"],
+                        "train_py": source,
+                    },
+                )
+                for index in range(len(swarm.AGENTS))
+            ]
+            with self.subTest(task=task_name):
+                self.assertEqual(
+                    len({
+                        (
+                            proposal["edits"][0]["old"],
+                            proposal["edits"][0]["new"],
+                        )
+                        for proposal in proposals
+                    }),
+                    len(swarm.AGENTS),
+                )
+                for proposal in proposals:
+                    swarm.validate_proposal(profile, proposal)
+                    self.assertEqual(
+                        source.count(proposal["edits"][0]["old"]), 1
+                    )
+
     def test_fake_worker_implements_each_assigned_cell(self):
         profile = meter.load_profile(PROFILE_PATH)
         source = (REPO_ROOT / "train.py").read_text()

@@ -37,6 +37,11 @@ push a branch or tag. Use `--llm queue` to write prompts under
 shows pending calls, and `show`/`answer` inspect and respond to a call. Queue
 mode needs no OpenAI API key; `--queue-timeout` defaults to 3600 seconds.
 
+## Mini benchmarks
+
+`python3 swarm.py --task {hadamard19,bixbench_mini,playworld_mini}` runs the same
+loop on a small local task instead of `train.py` on Modal. See `testcases/README.md`.
+
 ## Tinker (no OpenAI key or fine-tuning)
 
 Use Python 3.11+ in a separate environment: the training project's PyTorch 2.9.1

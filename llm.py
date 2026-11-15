@@ -145,20 +145,45 @@ def fake_response(role, values):
             if isinstance(parsed_proposal, dict):
                 return parsed_proposal
         train_py = str(values.get("train_py") or "")
+        fake_edits = values.get("fake_edits") or []
+        if fake_edits:
+            agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
+            target_index = (
+                (int(agent_match.group(1)) - 1) % len(fake_edits)
+                if agent_match
+                else 0
+            )
+            target = fake_edits[target_index]
+            old = target["old"]
+            new = target["new"]
+            if not isinstance(old, str) or not isinstance(new, str):
+                raise ValueError("fake task edits must contain string old/new values")
+            if not old or train_py.count(old) != 1 or old == new:
+                raise ValueError("fake worker could not find a unique task edit")
+            return {
+                "descriptor": target["descriptor"],
+                "idea": f"Test deterministic task edit {target_index + 1}",
+                "rationale": "Apply a distinct task-specific edit for offline runs.",
+                "lead_id": None,
+                "source_ids": [],
+                "predicted_delta": -0.001,
+                "edits": [{"old": old, "new": new}],
+            }
         if not train_py:
             train_py = (ROOT / "train.py").read_text(encoding="utf-8")
+        targets = tuple(tuple(item) for item in values.get("fake_targets") or ()) or FAKE_TARGETS
         agent_match = re.search(r"(\d+)$", str(values.get("agent", "")))
-        target_index = (int(agent_match.group(1)) - 1) % len(FAKE_TARGETS) if agent_match else 0
-        name, mechanism, method, increment = FAKE_TARGETS[target_index]
+        target_index = (int(agent_match.group(1)) - 1) % len(targets) if agent_match else 0
+        name, mechanism, method, increment = targets[target_index]
         match = re.search(
             rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
             rf"(?P<rhs>[^\n]*)$",
             train_py,
         )
         if not match:
-            for offset in range(len(FAKE_TARGETS)):
-                name, mechanism, method, increment = FAKE_TARGETS[
-                    (target_index + offset) % len(FAKE_TARGETS)
+            for offset in range(len(targets)):
+                name, mechanism, method, increment = targets[
+                    (target_index + offset) % len(targets)
                 ]
                 match = re.search(
                     rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
@@ -168,7 +193,7 @@ def fake_response(role, values):
                 if match:
                     break
         if not match:
-            raise ValueError("fake worker could not find a supported train.py knob")
+            raise ValueError("fake worker could not find a supported knob")
         old = match.group(0)
         rhs = match.group("rhs")
         value_text, marker, comment = rhs.partition("#")

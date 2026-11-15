@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 from types import SimpleNamespace
 
@@ -23,6 +24,7 @@ from boredom import descriptor_meter as meter
 import llm
 import memory
 import research
+from testcases import sandbox
 
 
 ROOT = Path(__file__).resolve().parent
@@ -30,6 +32,11 @@ DEFAULT_PROFILE = ROOT / "boredom_meter" / "profiles" / "autoresearch_llm.json"
 BASELINE_COMMIT = "7017194"
 BASELINE_VAL_BPB = 0.995814
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
+TESTCASES = ROOT / "testcases"
+TARGET_FILE = "train.py"
+TASK = None
+LOCAL_EVAL_TIMEOUT = 300
+SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD")
 RESULT_COLUMNS = (
     "commit",
     "val_bpb",
@@ -322,6 +329,7 @@ def common_values(agent, round_num, role, status, agent_b, best_commit, best_val
         "regime": status["regime"],
         "agent_B": f"{agent_b:.3f}",
         "role": role,
+        **(TASK or {}).get("prompt_values", {}),
     }
 
 
@@ -568,6 +576,9 @@ def run_scouts(
             question=(
                 "What exact train.py change, settings, and measured effect can "
                 "be tested under a five-minute budget?"
+                if TASK is None
+                else f"What exact method, settings, and measured result could be "
+                f"implemented in {TARGET_FILE} for this task?"
             ),
         )
         extract = next(
@@ -704,7 +715,7 @@ def commit_candidate(
         repo, agents_root, arm, agent, base_commit, round_num, attempt
     )
     try:
-        apply_edits(worktree / "train.py", proposal["edits"])
+        apply_edits(worktree / TARGET_FILE, proposal["edits"])
     except EditError:
         raise
     memory_write_claim(proposal, attempt)
@@ -718,7 +729,7 @@ def commit_candidate(
         f"Lead: {lead_id or 'none'}",
         f"Attempt: {attempt}",
     ]
-    git(worktree, "add", "--", "train.py")
+    git(worktree, "add", "--", TARGET_FILE)
     commit_args = ["-c", "user.name=Autoresearch Swarm", "-c", "user.email=swarm@localhost", "commit", "-m", subject]
     for line in trailer_lines:
         commit_args.extend(["-m", line])
@@ -818,7 +829,7 @@ def worker_attempts(
         ]
     )
     current_base = base_commit
-    train_py = git(repo, "show", f"{current_base}:train.py").stdout
+    train_py = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
     common = common_values(
         agent, round_num, role, status, agent_b, best_commit, best_val, profile
     )
@@ -839,6 +850,8 @@ def worker_attempts(
             "recalled_leads": recalled_leads,
             "claims": "\n".join(claims) if claims else "No claims yet.",
             "train_py": train_py,
+            "fake_targets": (TASK or {}).get("fake_targets"),
+            "fake_edits": (TASK or {}).get("fake_edits"),
             "vocab": json.dumps(profile.get("vocab", {}), sort_keys=True),
         },
     )
@@ -1193,9 +1206,102 @@ def modal_gpu_burst(repo, commits, seed, out_dir):
     return parsed, result.stdout, result.stderr
 
 
+def prepare_task(task_dir, context_files):
+    sandbox.prepare_task(task_dir, context_files)
+
+
+def preview_file(path, max_chars=6000):
+    if path.suffix in (".xlsx", ".xls"):
+        try:
+            import pandas
+
+            sheets = pandas.read_excel(path, sheet_name=None)
+        except ImportError as error:
+            return f"(spreadsheet; preview unavailable: {error})"
+        text = "\n".join(
+            f"[sheet {sheet}] {frame.shape[0]} rows x {frame.shape[1]} cols\n"
+            f"{frame.head(5).to_csv(index=False)}"
+            for sheet, frame in sheets.items()
+        )
+    elif path.suffix in (".csv", ".tsv"):
+        with path.open(encoding="utf-8", errors="replace") as stream:
+            lines = [next(stream, "") for _ in range(6)]
+        text = "".join(lines) + "..."
+    else:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    return text if len(text) <= max_chars else text[:max_chars] + "\n...(truncated)"
+
+
+def build_task_context(task_dir, context_files):
+    parts = [
+        f"--- {name}\n{preview_file(task_dir / name)}"
+        for name in context_files
+        if (task_dir / name).exists()
+    ]
+    return "\n".join(parts) or "(none)"
+
+
+def evaluator_env():
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if not any(marker in key.upper() for marker in SECRET_ENV_MARKERS)
+    }
+
+
+def load_task(name):
+    task_dir = TESTCASES / name
+    config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+    target = f"testcases/{name}/{config['editable']}"
+    context_files = config.get("context_files", [])
+    prepare_task(task_dir, context_files)
+    return {
+        **config,
+        "name": name,
+        "dir": task_dir,
+        "target": target,
+        "profile": task_dir / "boredom_profile.json",
+        "prompt_values": {
+            "task_brief": config["brief"],
+            "target_file": target,
+            "task_context": build_task_context(task_dir, context_files),
+        },
+    }
+
+
+def local_task_result(repo, commit, out_dir):
+    """Score a commit's version of the task's editable file with the frozen evaluator."""
+    log_path = Path(out_dir) / f"{commit}.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    source = git(repo, "show", f"{commit}:{TARGET_FILE}", check=False)
+    result = None
+    log = source.stderr
+    if source.returncode == 0:
+        result = sandbox.evaluate_task(TASK["dir"], source.stdout)
+        log = result.get("stdout", "") + result.get("stderr", "")
+    log_path.write_text(log, encoding="utf-8")
+    loss = result.get("loss") if result and result.get("status") == "ok" else None
+    return {
+        "commit": commit,
+        "val_bpb": loss,
+        "memory_gb": 0.0,
+        "status": result.get("status", "crash") if result else "crash",
+        "reason": result.get("reason") if result else "candidate_source_unavailable",
+    }
+
+
 def run_gpu_burst(repo, commits, seed, out_dir, gpu_mode):
     if not commits:
         return {}, ""
+    if gpu_mode == "local":
+        results = {commit: local_task_result(repo, commit, out_dir) for commit in commits}
+        for commit, result in results.items():
+            score = result["val_bpb"]
+            print(
+                f"{commit}\t{score if score is None else f'{score:.6f}'}\t0.0\t"
+                f"{result['status']}"
+            )
+        return results, ""
     if gpu_mode == "fake":
         results = {commit: fake_gpu_result(repo, commit) for commit in commits}
         for commit, result in results.items():
@@ -1447,9 +1553,25 @@ def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
                 os.environ[name] = value
 
 
+def configure_task(args):
+    global TASK, TARGET_FILE
+    if not getattr(args, "task", None):
+        TASK, TARGET_FILE = None, "train.py"
+        os.environ.pop("AUTORESEARCH_TARGET", None)
+        return ROOT / "prompts"
+    TASK = load_task(args.task)
+    TARGET_FILE = TASK["target"]
+    os.environ["AUTORESEARCH_TARGET"] = TARGET_FILE
+    if Path(args.profile).resolve() == DEFAULT_PROFILE.resolve():
+        args.profile = str(TASK["profile"])
+    args.gpu = "local"
+    return TESTCASES / "prompts"
+
+
 def orchestrate(args):
     if args.rounds < 1 or args.rounds > 10:
         raise ValueError("--rounds must be between 1 and 10")
+    prompt_dir = configure_task(args)
     if args.arm not in {"A", "B", "C", "D"}:
         raise ValueError("--arm must be A, B, C, or D")
     repo = Path(args.repo).resolve()
@@ -1462,7 +1584,7 @@ def orchestrate(args):
         and os.environ.get("EXA", "").casefold() != "off"
         and args.exa != "off"
     )
-    effective_no_push = args.no_push or args.gpu == "fake"
+    effective_no_push = args.no_push or args.gpu in ("fake", "local")
     branch, conductor, agents_root = create_arm_worktrees(
         repo, args.arm, start_commit
     )
@@ -1487,7 +1609,7 @@ def orchestrate(args):
         mode=args.llm,
         model=args.model,
         log_path=out_dir / "llm_log.jsonl",
-        prompt_dir=ROOT / "prompts",
+        prompt_dir=prompt_dir,
         replay=args.replay,
         arm=args.arm,
         queue_dir=args.queue_dir or out_dir / "llm_queue",
@@ -1498,6 +1620,14 @@ def orchestrate(args):
             "round\tcommit\tseed42_val_bpb\tseed43_val_bpb\taccepted\tverdict\twhy\n",
             encoding="utf-8",
         )
+
+    baseline_commit, baseline_val = BASELINE_COMMIT, BASELINE_VAL_BPB
+    if TASK is not None:
+        baseline = local_task_result(repo, start_commit[:7], out_dir / "runs")
+        if baseline["val_bpb"] is None:
+            raise RuntimeError(f"task {TASK['name']} baseline failed to score")
+        baseline_commit, baseline_val = start_commit[:7], baseline["val_bpb"]
+        TASK["prompt_values"]["baseline_val"] = f"{baseline_val:.6f}"
 
     run_id_path = out_dir / "run_id"
     if not run_id_path.exists():
@@ -1514,19 +1644,19 @@ def orchestrate(args):
                     "kind": "baseline",
                     "agent": "baseline",
                     "status": "keep",
-                    "score": BASELINE_VAL_BPB,
+                    "score": baseline_val,
                     "descriptor": {"mechanism": "baseline", "method": "none"},
                     "sources": [],
-                    "commit": BASELINE_COMMIT,
+                    "commit": baseline_commit,
                     "round": 0,
                     "lead": None,
-                    "memory_gb": 44.0,
+                    "memory_gb": 44.0 if TASK is None else 0.0,
                     "description": "baseline",
                 },
             )
         write_results(ledger_path, results_path)
-        best_val = BASELINE_VAL_BPB
-        best_metric_commit = BASELINE_COMMIT
+        best_val = baseline_val
+        best_metric_commit = baseline_commit
         latest_candidate = None
         tags_this_run = []
 
@@ -1887,7 +2017,12 @@ def build_parser():
     parser.add_argument(
         "--llm", choices=("openai", "tinker", "fake", "queue"), default="openai"
     )
-    parser.add_argument("--gpu", choices=("modal", "fake"), default="modal")
+    parser.add_argument("--gpu", choices=("modal", "fake", "local"), default="modal")
+    parser.add_argument(
+        "--task",
+        choices=sorted(path.parent.name for path in TESTCASES.glob("*/task.json")),
+        help="run on a small testcases/<task> benchmark with its local evaluator",
+    )
     parser.add_argument("--model")
     parser.add_argument("--queue-dir")
     parser.add_argument("--queue-timeout", type=float, default=3600)
