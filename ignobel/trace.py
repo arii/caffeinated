@@ -192,7 +192,7 @@ def render(run: Path) -> str:
     needed = "".join(
         f"<tr><td>{e['round']}</td><td>{esc(e['agent'])}</td><td>{esc(e['payload']['id'])}</td>"
         f"<td>{esc(e['payload'].get('question', ''))[:140]}</td>"
-        f"<td>{esc(state_of.get(e['payload']['id'], 'needs doing'))}</td></tr>"
+        f"<td>{esc(state_of.get(e['payload']['id'], 'needs doing; not in the lab (its idea has not survived long enough)'))}</td></tr>"
         for e in evs if e["type"] == "experiment_request")
     if needed:
         out.append(f"<h2>Experiments needed</h2><table><tr><th>round</th><th>agent</th><th>id</th><th>question</th>"

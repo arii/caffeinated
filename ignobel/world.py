@@ -240,13 +240,15 @@ class World:
         await self._bench(who, r)
 
     async def _bench(self, who: list, r: int) -> None:
-        """Move on each lab's open experiment requests: take in real measurements somebody returned,
-        or rehearse the experiment once on the stand-in bench. Only returned measurements become data."""
+        """Move on the open experiment requests whose idea has survived long enough: take in real measurements
+        somebody returned, or rehearse the experiment once on the stand-in bench. Only returned measurements become data."""
         inbox = Path(self.cfg.get("bench_inbox") or self.out / "lab_inbox")
         rehearse = []
         for a in who:
+            line, since = a.idea_line()
             for exp in a.experiments:
-                if exp["status"] == "returned":
+                # the lab is only for an idea its lab has stuck with: same line of thought for lab_after_rounds
+                if exp["status"] == "returned" or exp.get("line") != line or r - since < int(self.cfg.get("lab_after_rounds", 5)):
                     continue
                 name = f"x{exp['id'].rsplit('-x', 1)[1]}"
                 rel = Path("data") / a.name / f"{name}.csv"
@@ -352,7 +354,8 @@ class World:
                 idea = a.current_idea()
                 if not a.can_ask_experiment() or idea is None:
                     raise sources.ResearchError("this lab cannot ask for an experiment now (no idea yet, or too many open)")
-                exp = {"id": f"{a.name}-x{len(a.experiments) + 1}", "idea_id": idea.idea_id, "title": idea.title,
+                exp = {"id": f"{a.name}-x{len(a.experiments) + 1}", "idea_id": idea.idea_id, "line": a.idea_line()[0],
+                       "title": idea.title,
                        **bench.clean_request(step), "prediction": idea.prediction.model_dump(), "status": "requested"}
                 a.experiments.append(exp)
                 a.memory.write(Item(id=f"{a.name}-{exp['id']}", kind="experiment", source_agent=a.name,

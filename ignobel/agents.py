@@ -173,6 +173,14 @@ class Agent:
             return bool(self.datasets)
         return self.budget_left > 0 or self.spec.is_statistician
 
+    def idea_line(self) -> tuple[str | None, int]:
+        """(id, round) of the proposal the current idea descends from; refinements keep the line,
+        a new proposal starts another."""
+        for idea in reversed(self.ideas):
+            if idea.kind == "propose":
+                return idea.idea_id, idea.round
+        return (self.ideas[0].idea_id, self.ideas[0].round) if self.ideas else (None, 0)
+
     def can_ask_experiment(self) -> bool:
         return bool(self.spec.family and self.ideas
                     and len(self.experiments) < int(self.cfg.get("max_experiments", 2)))

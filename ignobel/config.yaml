@@ -16,6 +16,8 @@ papers_per_search: 4
 dataset_leads: 3             # dataset candidates returned per search
 max_datasets: 2              # real datasets a daughter can hold
 max_experiments: 2           # experiments a daughter may ask for when no public dataset can answer her idea
+lab_after_rounds: 5          # the bench only takes an experiment whose idea has survived this many rounds:
+                             # the daughter is still on the line of thought (proposal + refinements) it came from
 bench: simulated             # simulated = each request is rehearsed once on placeholder numbers drawn from the
                              # daughter's own prediction (never evidence); none = requests are only listed.
                              # Real measurements returned to <run>/lab_inbox/ (or bench_inbox) are always taken in.

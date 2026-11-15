@@ -39,8 +39,10 @@ Each round a daughter chooses her own research steps (`research` events):
   would refute it; at most `max_experiments`). It is logged as an `experiment_request`, listed in the
   trace under "Experiments needed" and scored by `score.py` as a proposal. A proposal is never
   `supported` and never the candidate.
-- **The bench (`bench.py`):** no real lab is connected yet. With `bench: simulated`, each request is
-  rehearsed once: placeholder measurements are drawn from the daughter's own prediction and her
+- **The bench (`bench.py`):** only an idea that has survived gets in. A request reaches the bench once
+  the daughter has stayed on the line of thought it came from (the proposal and its refinements) for
+  `lab_after_rounds` rounds (5); if she drops that line for a new proposal first, it never does. No
+  real lab is connected yet. With `bench: simulated`, each request that gets in is rehearsed once: placeholder measurements are drawn from the daughter's own prediction and her
   analysis code runs on them in the sandbox, which shows whether the protocol and analysis work and
   about how many measurements she would need. That `experiment_result` is marked
   `provenance: simulated`, is never evidence, and the numbers never become one of her datasets.

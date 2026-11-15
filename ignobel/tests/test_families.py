@@ -358,7 +358,7 @@ STEP = {"tool": "experiment", "question": "Do wet socks slow a walker?", "protoc
 @requires_sandbox
 def test_an_experiment_request_is_listed_and_rehearsed_but_is_never_evidence(tmp_path):
     import score
-    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families")
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families", cfg=_cfg(lab_after_rounds=0))
     asyncio.run(w.round0())
     a = w.agents[0]
     assert "error" in w._do_step(a, {"tool": "experiment", "question": "no protocol"})
@@ -383,7 +383,7 @@ def test_an_experiment_request_is_listed_and_rehearsed_but_is_never_evidence(tmp
 
 
 def test_real_returned_measurements_become_a_dataset_only_with_who_and_when(tmp_path):
-    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families", cfg=_cfg(bench="none"))
+    w = run_arm.build_world("full", 1, 0, tmp_path, roster="families", cfg=_cfg(bench="none", lab_after_rounds=0))
     asyncio.run(w.round0())
     a = w.agents[0]
     w._do_step(a, dict(STEP))
@@ -431,3 +431,22 @@ def test_a_salvaged_experiment_step_keeps_its_sample_size():
     raw = 'experiment{"name":"experiment", question":"Do wet socks slow a walker?", protocol":"Walk 20 m.", "n": 200}}'
     step = agents._steps({"_raw": raw})[0]
     assert step["tool"] == "experiment" and bench.clean_request(step)["n"] == 200
+
+
+@requires_sandbox
+def test_the_bench_only_takes_an_idea_that_survived_five_rounds(tmp_path):
+    w = run_arm.build_world("full", 2, 0, tmp_path, roster="families")
+    asyncio.run(w.round0())
+    a, b = w.agents[0], w.agents[1]
+    for x in (a, b):
+        w._do_step(x, dict(STEP))
+    assert a.experiments[0]["line"] == a.idea_line()[0] == a.ideas[0].idea_id
+    a.refine(2)  # a refinement keeps the line alive
+    b.propose(3, [])  # b dropped her idea for a new one, so her request's idea did not survive
+    asyncio.run(w._bench([a, b], 4))
+    assert [x.experiments[0]["status"] for x in (a, b)] == ["requested", "requested"]
+    asyncio.run(w._bench([a, b], 5))
+    assert [x.experiments[0]["status"] for x in (a, b)] == ["simulated", "requested"]
+    asyncio.run(w._bench([a, b], 9))
+    done = [e for e in events.read(tmp_path / "events.jsonl") if e.type == "experiment_result"]
+    assert [(e.agent, e.round) for e in done] == [(a.name, 5)]

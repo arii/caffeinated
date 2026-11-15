@@ -53,8 +53,9 @@ not enforce payload shapes; the fields below describe the producer's current wri
 - `research` {tool, ...} one research step a daughter lab chose for itself. `tool` is `exa` / `openalex` / `arxiv` / `pubmed` {query, results:[{id (S id), title, url}]}, `read` {source, url, question, notes}, `datasets` {query, results:[{lead (D id), title, url, license, columns}]} or `load` {dataset:{name, id, title, url, license, rows, sha256, columns}}. A step that failed has `error` instead. Every S id is a record in the run's `research_log.jsonl` (autoresearch `research.py` format).
 - `experiment_request` {id, idea_id, title, question, protocol, materials, design:"two_group"|"corr", measure,
   compare, n, refuted_if, prediction} an experiment a daughter lab says her idea needs because no public
-  dataset can answer it. It is a proposal, not a finding.
-- `experiment_result` {request_id, provenance, ...} what the bench (`bench.py`) did with a request.
+  dataset can answer it. `line` is the id of the proposal that idea descends from. It is a proposal, not a finding.
+- `experiment_result` {request_id, provenance, ...} what the bench (`bench.py`) did with a request. The bench
+  only takes a request once its idea has survived `lab_after_rounds` rounds: the daughter is still on that line.
   `provenance: "simulated"` {supported: false, ok, detected, stats, n, needed_n, traceable, code, stderr}: a
   rehearsal of her analysis on placeholder measurements drawn from her own prediction; never evidence.
   `provenance: "returned"` {performed_by, performed_at, apparatus, notes, dataset:{name, id, title, url,
