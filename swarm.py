@@ -1776,6 +1776,7 @@ def run_pi_steering(
     best_val,
     leads,
     research_start,
+    lead_records=None,
 ):
     if not enabled:
         return {}
@@ -1892,6 +1893,13 @@ def run_pi_steering(
             },
         )
         steers = {}
+
+    if lead_records is not None:
+        for agent, steer in steers.items():
+            lead_id = steer.get("lead_id")
+            lead = next((item for item in known_leads if item.get("id") == lead_id), None)
+            if lead is not None:
+                lead_records[agent] = lead
 
     if call_id:
         append_jsonl(
@@ -2074,6 +2082,7 @@ def worker_attempts(
     replay,
     assigned_cells=None,
     pi_steer="none",
+    pi_lead=None,
 ):
     call_id_start = len(getattr(llm_client, "call_ids", []))
 
@@ -2099,7 +2108,10 @@ def worker_attempts(
         for query in memory_queries
     ]
     recalled_results = "\n".join(memory_text(result) for result in (recalls[0], recalls[2]))
-    known_leads = known_lead_records(all_leads, lead, recalls[1])
+    worker_leads = list(all_leads)
+    if isinstance(pi_lead, dict):
+        worker_leads.append(pi_lead)
+    known_leads = known_lead_records(worker_leads, lead, recalls[1])
     recalled_leads = render_leads_for_prompt(known_leads)
     current_base = base_commit
     candidate_source = git(repo, "show", f"{current_base}:{TARGET_FILE}").stdout
@@ -4024,6 +4036,7 @@ def _orchestrate(args, publish_state, cleanup):
             )
             attach_assignment_call_ids(out_dir, round_num, leads)
             all_leads = list(leads.values())
+            pi_lead_records = {}
             pi_steers = run_pi_steering(
                 enabled=args.pi == "on",
                 profile=profile,
@@ -4042,6 +4055,7 @@ def _orchestrate(args, publish_state, cleanup):
                 best_val=best_val,
                 leads=all_leads,
                 research_start=research_start,
+                lead_records=pi_lead_records,
             )
             candidate_records = []
             claims = []
@@ -4078,6 +4092,7 @@ def _orchestrate(args, publish_state, cleanup):
                         claims=claims,
                         replay=args.replay,
                         pi_steer=pi_steers.get(agent, "none"),
+                        pi_lead=pi_lead_records.get(agent),
                     )
                 except llm.LLMError as error:
                     print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
