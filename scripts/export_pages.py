@@ -213,7 +213,15 @@ def _is_gate_only_ignobel(recording):
     return not _has_committee_data(in_run)
 
 
-def export(viewer_dir, out_dir):
+def _attach_igjudge(recording, rid, igjudge_dir):
+    path = Path(igjudge_dir) / f"{rid}.json"
+    if path.is_file():
+        recording["igjudge"] = json.loads(path.read_text(encoding="utf-8"))
+
+
+def export(viewer_dir, out_dir, igjudge_dir=None):
+    """IgJudge final-pass results in <viewer_dir>/../igjudge/<run-id>.json ride along with the recording."""
+    igjudge_dir = Path(viewer_dir).parent / "igjudge" if igjudge_dir is None else igjudge_dir
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     catalog = RecordingCatalog(
@@ -223,6 +231,7 @@ def export(viewer_dir, out_dir):
     for manifest in catalog.list():
         rid = manifest["id"]
         recording = catalog.get(rid)
+        _attach_igjudge(recording, rid, igjudge_dir)
         for key in ("proxy_note", "metric"):
             if key not in manifest and key in recording["manifest"]:
                 manifest[key] = recording["manifest"][key]

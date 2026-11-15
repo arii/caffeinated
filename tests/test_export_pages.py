@@ -75,6 +75,22 @@ class ExportPagesTests(unittest.TestCase):
                 shipped["manifest"]["contentVersion"], noisy_items[0]["contentVersion"]
             )
 
+    def test_igjudge_results_ship_with_the_recording(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            viewer = root / "viewer"
+            write_recording(viewer)
+            plain = export(viewer, root / "plain-out")[0]["contentVersion"]
+            (root / "igjudge").mkdir()
+            verdict = {"schema": "igjudge/v1", "winner": "study:1"}
+            (root / "igjudge" / "run-1.json").write_text(json.dumps(verdict))
+            judged = export(viewer, root / "judged-out")
+            shipped = json.loads(
+                gzip.decompress((root / "judged-out" / "run-1.json.gz").read_bytes())
+            )
+            self.assertEqual(shipped["igjudge"], verdict)
+            self.assertNotEqual(plain, judged[0]["contentVersion"])
+
     def test_recording_content_change_changes_content_version(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
