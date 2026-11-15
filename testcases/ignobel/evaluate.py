@@ -17,8 +17,9 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
 
 Unconfirmed studies score 0. Confirmed studies score 0.25 + 0.75 times the
 committee score (the lower judge's minimum of LAUGH and THINK, divided by 10);
-targeting a group scores 0. When the committee is unavailable, confirmed
-studies retain score 1.
+targeting a group scores 0. IGNOBEL_COMMITTEE=off explicitly selects gate-only
+scoring (confirmed studies score 1, recorded as metric_variant "gate-only");
+otherwise a missing TINKER_API_KEY raises instead of changing the objective.
 
 Every graded study is appended to <run>/ignobel_studies.jsonl; the Ig Nobel
 committee judges confirmed studies during evaluation; score_run.py reports
@@ -410,27 +411,35 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
     task_dir = Path(task_dir).resolve()
     research_log = research_log or os.environ.get("TASK_RESEARCH_LOG")
     started = time.time()
+    committee_on = committee.enabled()
+    if committee_on:
+        committee.require_key()
     status, reason, diagnostics, graded, prereg = "crash", None, "", None, None
     try:
         prereg = parse_prereg(source, load_fields(task_dir))
         graded = grade_prereg(prereg, task_dir, research_log)
         if graded["confirmed"]:
-            if committee.available():
+            if committee_on:
                 context = {}
                 with contextlib.suppress(TypeError, json.JSONDecodeError):
                     context = json.loads(os.environ.get("TASK_EVAL_CONTEXT") or "{}")
-                verdict = committee.score_study(
-                    committee.abstract(prereg, graded),
-                    graded["headline"],
-                    task_dir,
-                    exa_enabled=context.get("exa_enabled"),
-                )
+                graded["score"] = 0.0
+                try:
+                    verdict = committee.score_study(
+                        committee.abstract(prereg, graded),
+                        graded["headline"],
+                        task_dir,
+                        exa_enabled=context.get("exa_enabled"),
+                    )
+                except Exception as error:
+                    message = f"Ig Nobel committee failed: {type(error).__name__}: {error}"
+                    graded["committee"] = {"status": "error", "error": message}
+                    raise RuntimeError(message) from error
                 graded["committee"] = {"available": True, **verdict}
-                score = 0.0 if verdict["rejected"] else 0.25 + 0.75 * verdict["score"]
+                graded["score"] = 0.0 if verdict["rejected"] else 0.25 + 0.75 * verdict["score"]
             else:
-                graded["committee"] = committee.unavailable_result()
-                score = 1.0
-            graded["score"] = score
+                graded["committee"] = {"status": "off"}
+                graded["metric_variant"] = "gate-only"
         record_study(research_log, prereg, graded)
         status = "ok"
     except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
@@ -462,7 +471,11 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
             ]
             if graded["confirmed"]:
                 verdict = graded["committee"]
-                if verdict["available"]:
+                if verdict.get("status") == "off":
+                    out += ["committee: off (gate-only scoring, IGNOBEL_COMMITTEE=off)"]
+                elif verdict.get("status") == "error":
+                    out += [f"committee: error ({verdict['error']})"]
+                elif verdict.get("available"):
                     judges = verdict["judges"]
                     out += [
                         f"committee: {verdict['score']:.3f} "

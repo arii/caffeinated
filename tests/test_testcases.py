@@ -11,6 +11,7 @@ import sys
 import tempfile
 import types
 import unittest
+import urllib.error
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -51,6 +52,7 @@ def evaluate(task):
     return subprocess.run(
         [sys.executable, "evaluate.py"],
         cwd=TESTCASES / task,
+        env={**os.environ, "IGNOBEL_COMMITTEE": "off"},
         capture_output=True,
         text=True,
         timeout=600,
@@ -708,7 +710,7 @@ class IgnobelPreregTests(unittest.TestCase):
             "prior_work_available": False,
         }
         with (
-            patch.object(ignobel.committee, "available", return_value=True),
+            patch.dict(os.environ, {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": "test-only"}),
             patch.object(ignobel.committee, "score_study", return_value=verdict) as score_study,
         ):
             result = self.run_prereg()
@@ -740,7 +742,7 @@ class IgnobelPreregTests(unittest.TestCase):
             "prior_work_available": False,
         }
         with (
-            patch.object(ignobel.committee, "available", return_value=True),
+            patch.dict(os.environ, {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": "test-only"}),
             patch.object(ignobel.committee, "score_study", return_value=verdict),
         ):
             result = self.run_prereg()
@@ -750,7 +752,7 @@ class IgnobelPreregTests(unittest.TestCase):
 
     def test_unconfirmed_study_never_calls_committee(self):
         with (
-            patch.object(ignobel.committee, "available", return_value=True),
+            patch.dict(os.environ, {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": "test-only"}),
             patch.object(ignobel.committee, "score_study") as score_study,
         ):
             result = self.run_prereg(direction="negative")
@@ -770,8 +772,9 @@ class IgnobelPreregTests(unittest.TestCase):
             result = self.run_prereg()
         self.assertTrue(result["graded"]["confirmed"])
         self.assertEqual(result["score"], 1.0)
-        self.assertFalse(result["graded"]["committee"]["available"])
-        self.assertIn("committee: unavailable", result["stdout"])
+        self.assertEqual(result["graded"]["committee"], {"status": "off"})
+        self.assertEqual(result["graded"]["metric_variant"], "gate-only")
+        self.assertIn("committee: off (gate-only scoring", result["stdout"])
         score_study.assert_not_called()
         ask.assert_not_called()
         rows = ignobel_score_run.score_run(
@@ -830,21 +833,48 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertTrue(lines[0].startswith("Studies tested: 2; confirmed: 1."))
         self.assertIn("k=2 tests at alpha=0.005", lines[0])
 
-    def test_missing_tinker_key_keeps_confirmed_score_offline(self):
+    def test_missing_tinker_key_raises_instead_of_changing_the_objective(self):
+        with (
+            patch.dict(os.environ, {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": ""}),
+            patch.object(ignobel.committee, "score_study") as score_study,
+            patch.object(ignobel.committee.urllib.request, "urlopen") as urlopen,
+            self.assertRaises(RuntimeError) as raised,
+        ):
+            self.run_prereg()
+        self.assertEqual(
+            str(raised.exception),
+            "Ig Nobel committee unavailable: TINKER_API_KEY is not set; "
+            "set IGNOBEL_COMMITTEE=off to run gate-only scoring explicitly",
+        )
+        score_study.assert_not_called()
+        urlopen.assert_not_called()
+        self.assertFalse((self.log.parent / "ignobel_studies.jsonl").exists())
+
+    def test_committee_http_error_is_a_grader_error_with_the_status(self):
+        error = urllib.error.HTTPError(
+            "https://tinker.example/chat/completions",
+            402,
+            "Payment Required",
+            {},
+            io.BytesIO(b'{"detail": "Access is blocked due to billing status"}'),
+        )
         with (
             patch.dict(
                 os.environ,
-                {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": ""},
+                {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": "test-only", "EXA": "off"},
             ),
-            patch.object(ignobel.committee, "score_study") as score_study,
-            patch.object(ignobel.committee, "_ask") as ask,
+            patch.object(ignobel.committee.urllib.request, "urlopen", side_effect=error) as urlopen,
         ):
             result = self.run_prereg()
-        self.assertTrue(result["graded"]["confirmed"])
-        self.assertEqual(result["score"], 1.0)
-        self.assertFalse(result["graded"]["committee"]["available"])
-        score_study.assert_not_called()
-        ask.assert_not_called()
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertEqual(result["status"], "crash")
+        self.assertEqual(result["reason"], "grader_error")
+        self.assertEqual(result["score"], 0.0)
+        self.assertIsNone(result["loss"])
+        self.assertIn("HTTP 402", result["stderr"])
+        self.assertEqual(result["graded"]["committee"]["status"], "error")
+        self.assertIn("HTTP 402", result["graded"]["committee"]["error"])
+        self.assertIn("committee: error", result["stdout"])
 
     def test_judge_message_excludes_candidate_question_hypothesis_and_mechanism(self):
         candidate_text = {
@@ -865,7 +895,7 @@ class IgnobelPreregTests(unittest.TestCase):
             }
 
         with (
-            patch.object(ignobel.committee, "available", return_value=True),
+            patch.dict(os.environ, {"IGNOBEL_COMMITTEE": "on", "TINKER_API_KEY": "test-only"}),
             patch.object(
                 ignobel.committee,
                 "get_prior_work",
@@ -1155,6 +1185,19 @@ class IgnobelPreregTests(unittest.TestCase):
 
 
 class IgnobelTaskTests(unittest.TestCase):
+    def test_both_judges_use_the_same_vocabulary_and_schema(self):
+        committee = ignobel_score_run.committee
+        for which, prompt in committee.judge_prompts().items():
+            with self.subTest(judge=which):
+                self.assertIn("LAUGH", prompt)
+                self.assertIn("THINK", prompt)
+                self.assertIn("targets_group", prompt)
+                self.assertTrue(
+                    prompt.endswith("Return JSON {laugh, think, targets_group, reason}.")
+                )
+                for other in ("funny", "substantive", "mocks_people"):
+                    self.assertNotIn(other, prompt)
+
     def test_committee_parser_uses_last_verdict_object_after_reasoning(self):
         content = (
             'Reasoning: first pass {"laugh": 9, "think": 9}. '

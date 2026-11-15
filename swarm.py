@@ -1969,11 +1969,14 @@ def local_task_result(repo, commit, out_dir, role="candidate"):
         if role == "candidate":
             write_candidate_diff(repo, commit, out_dir)
         # Evaluators that log their own records (ignobel studies) tag them with this.
-        run_artifact = Path(out_dir).parent / "run.json"
-        try:
-            run_settings = json.loads(run_artifact.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            run_settings = {}
+        # Candidate logs live in <out>/runs, critic logs in <out>/runs/critic_confirmation.
+        run_settings = {}
+        for parent in list(Path(out_dir).parents)[:2]:
+            try:
+                run_settings = json.loads((parent / "run.json").read_text(encoding="utf-8"))
+                break
+            except (OSError, json.JSONDecodeError):
+                continue
         eval_context = {"commit": commit, "role": role}
         eval_context["exa_enabled"] = (
             run_settings["exa"] == "on" and bool(os.environ.get("EXA_API_KEY"))
