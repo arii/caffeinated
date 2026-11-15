@@ -477,6 +477,7 @@ def test_sketches_tell_how_much_two_reported_arrays_share():
     assert lab.common(lab.sketch(a), lab.sketch([1.5, 2.5, 4.0, 9.0])) == 0.6  # 3 of 5 distinct cells
     assert lab.common(lab.sketch(a), lab.sketch([7.0, 8.0])) == 0.0
     assert lab.common([], []) == 0.0
+    assert lab.sketch([-0.0, "-0.0", 1]) == lab.sketch([0, 0.0, 1.0])
     big = [i * 0.37 for i in range(5000)]
     assert lab.common(lab.sketch(big), lab.sketch(big[::-1])) == 1.0
     assert lab.common(lab.sketch(big), lab.sketch(big[:1600])) < 0.6  # a subset is not the same measurements

@@ -106,7 +106,7 @@ def _cell(v) -> float | None:
         x = float(f"{float(v):.10g}")
     except (TypeError, ValueError):
         return None
-    return x if x == x and abs(x) != float("inf") else None
+    return x + 0.0 if x == x and abs(x) != float("inf") else None  # + 0.0: -0.0 and 0.0 are one value
 
 
 def trace_values(result: dict | None, datasets: list[tuple]) -> dict:
