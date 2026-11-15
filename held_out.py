@@ -24,20 +24,6 @@ def _git_show(repo, commit, target):
     return result.stdout
 
 
-def _reference_source(task_name, task_dir, config):
-    if task_name != "playworld_mini":
-        return None
-    for edit in config.get("fake_edits", []):
-        idea = edit.get("idea", "").lower().replace("-", " ")
-        if "8 frame memory" not in idea:
-            continue
-        source = (task_dir / config["editable"]).read_text(encoding="utf-8")
-        if edit["old"] not in source:
-            return None
-        return source.replace(edit["old"], edit["new"], 1)
-    return None
-
-
 def held_out_test(task_name, out_dir) -> dict:
     out_dir = Path(out_dir).resolve()
     task_dir = TESTCASES / task_name
@@ -49,6 +35,11 @@ def held_out_test(task_name, out_dir) -> dict:
         result = json.loads(artifact_path.read_text(encoding="utf-8"))
         if result.get("task") != task_name or result.get("split") != "test":
             raise ValueError(f"existing held-out result does not match task {task_name!r}")
+        result["reference_test_loss"] = None
+        result["reference_note"] = config.get("reference_note", "")
+        artifact_path.write_text(
+            json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         return result
     run = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
     checkpoint = json.loads((out_dir / "resume_checkpoint.json").read_text(encoding="utf-8"))
@@ -64,10 +55,6 @@ def held_out_test(task_name, out_dir) -> dict:
 
     baseline_result = evaluate(baseline_commit)
     best_result = baseline_result if best_commit == baseline_commit else evaluate(best_commit)
-    reference = _reference_source(task_name, task_dir, config)
-    reference_result = (
-        sandbox.evaluate_task(task_dir, reference, split="test") if reference is not None else None
-    )
     result = {
         "task": task_name,
         "split": "test",
@@ -85,11 +72,8 @@ def held_out_test(task_name, out_dir) -> dict:
             "status": best_result.get("status", "crash"),
             "dev_loss": dev_loss,
         },
-        "reference_test_loss": (
-            reference_result["loss"]
-            if reference_result is not None and reference_result.get("status") == "ok"
-            else None
-        ),
+        "reference_test_loss": None,
+        "reference_note": config.get("reference_note", ""),
         "proxy_note": config.get("proxy_note", ""),
         "evaluated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }

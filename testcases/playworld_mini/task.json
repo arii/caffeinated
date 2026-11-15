@@ -3,11 +3,12 @@
  "deterministic": true,
  "held_out_test": true,
  "search_topic": "predicting future egocentric gridworld frames from actions (learned world model, next-frame prediction)",
- "brief": "a world model (`world_model.py`, function predict) that rolls out 20 future 5x5 egocentric frames of a gridworld from 10 context frames and the future actions; round-by-round loss = 1 - fraction of exactly correct frames on 200 development episodes, with a separate 200-episode held-out test at the end. The 8-frame-memory model's loss 0.6402 is a local proxy reference (not closed Genie 3); public examples use separate seeds in data/train.jsonl and env.py must not be imported",
+ "brief": "a world model (`world_model.py`, function predict) that rolls out 20 future 5x5 egocentric frames of a gridworld from 10 context frames and the future actions; round-by-round loss = 1 - fraction of exactly correct frames on 200 development episodes, with a separate 200-episode held-out test at the end. RECORD = 0.3598 is a dev-only constant from the original commit, not a measured reference; the reference model source is not in this repo and cannot be graded on test. Public examples use separate seeds in data/train.jsonl and env.py must not be imported",
  "context_files": [
   "data/train.jsonl"
  ],
- "proxy_note": "synthetic proxy, not PlayWorld; reference = 8-frame-memory model",
+ "proxy_note": "synthetic proxy, not PlayWorld; RECORD = 0.3598 is dev-only",
+ "reference_note": "dev-only constant; reference model source not in repo, so it cannot be graded on test",
  "fake_edits": [
   {
    "idea": "Replace frame copying with a dead-reckoned map of seen cells (8-frame memory)",

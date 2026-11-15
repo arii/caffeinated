@@ -217,8 +217,6 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, split="dev"):
             f"seconds: {time.time() - started:.1f}",
         ]
     )
-    if split == "test":
-        lines.append(f"beats_reference: {str(score > RECORD).lower()}")
     stderr = ""
     if status != "ok":
         stderr = f"error: {reason}: {diagnostics}\n"

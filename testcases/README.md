@@ -10,14 +10,15 @@ on the host.
 |---|---|---|---|---|
 | `hadamard19` | Exact order-19 ±1 determinant task | `construct.py` | loss ≈ 0.0585 | loss 0 at the known optimum, det = 2^18·3411968 |
 | `bixbench_mini` | 17-question subset using public data from `futurehouse/BixBench` | `analysis.py` | dev accuracy ≈ 0.1 (10 questions) | published full-BixBench accuracy 0.523 |
-| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | dev score ≈ 0.149 | 8-frame-memory model, dev score 0.3598 |
+| `playworld_mini` | Synthetic 9×9 gridworld, predicting 20 future 5×5 frames | `world_model.py` | dev score ≈ 0.149 | dev-only `RECORD` 0.3598 from the original commit; source unavailable |
 | `ignobel` | Pre-registered expert study on real public data, confirmed once, Ig Nobel-likeness judged | `prereg.json` | rare-steak eaters smoke more (steak-risk survey): not significant, loss 1 | none: open-ended |
 
 The exact task notes are stored in each `task.json`: Hadamard is exact with a
 known optimum; BixBench is a 17-question subset, not full BixBench; Playworld
-is a synthetic proxy, not PlayWorld, and uses the 8-frame-memory reference.
-Evaluators print `split`, `n_items`, `score`, `loss`, and `record`;
-`beats_reference` is printed only for test evaluations. Lower loss is better.
+is a synthetic proxy, not PlayWorld. Its `RECORD = 0.3598` is a dev-only
+constant from the original commit, not a measured reference; the reference
+model source is not in the repo and cannot be graded on test. Split evaluators
+print `split`, `n_items`, `score`, `loss`, and `record`. Lower loss is better.
 A malformed or crashing candidate is scored as a crash.
 
 ## Fair evaluation
@@ -26,8 +27,9 @@ For tasks with `"held_out_test": true`, round-by-round swarm feedback uses only
 the development split. At run completion, `held_out.py` grades the baseline and
 best accepted commit once each on the test split and writes
 `<run>/held_out_test.json`; the Lab viewer exposes that result in its manifest.
-If a local reference implementation is available, its test loss is included
-there too. The question text and public data remain visible to candidates, but
+The artifact reports baseline-versus-best test results and includes a
+task-specific `reference_note`; `reference_test_loss` is null.
+Question text and public data remain visible to candidates, but
 test labels (BixBench) and test episodes (Playworld) are never used for swarm
 feedback.
 
@@ -35,10 +37,11 @@ BixBench's 17 questions are divided into 10 development and 7 test questions.
 The published 0.523 accuracy is for full BixBench, so it is only context and is
 not directly comparable to this proxy's seven-question test split. Playworld's
 public training episodes use seeds 0–499, development uses 100,000–100,199,
-and test uses 300,000–300,199. Its 8-frame-memory model is a simple local
-reference, not a measurement of the proprietary PlayWorld system. Likewise,
-the other references are proxies: Hadamard's exact optimum is task-specific,
-and Ig Nobel has no single reference score. BixBench also disables research
+and test uses 300,000–300,199. Its `RECORD = 0.3598` is dev-only and comes from
+the original commit; the reference model source is not in the repo, so it
+cannot be graded on test. Likewise, the other references are proxies:
+Hadamard's exact optimum is task-specific, and Ig Nobel has no single
+reference score. BixBench also disables research
 and rejects source literals matching gold answers in the current split, apart
 from small integers and numbers stated in its public questions.
 
@@ -124,7 +127,7 @@ fast-forward merge (`tests/test_testcases.py` runs one per task in CI):
 |---|---|---|---|
 | `hadamard19` | 0.0585 | 0 (known optimum) | 0 after 4 kept edits (tabu search scored by determinant ratios from the inverse, then budget, restarts and tenure) |
 | `bixbench_mini` | 0.9 | published full-BixBench accuracy 0.523 (not comparable) | 0 after 10 kept answer fixes (SEM, Cohen's d, Shapiro-Wilk, power, interaction F, logistic regressions) |
-| `playworld_mini` | 0.851 | 8-frame-memory local proxy | 0.277 (persistent map with dead reckoning, unlimited memory, blocking, switch/lamp toggling) |
+| `playworld_mini` | 0.851 | dev-only `RECORD = 0.3598` from original commit; source unavailable | 0.277 (persistent map with dead reckoning, unlimited memory, blocking, switch/lamp toggling) |
 | `ignobel` | 1 (rare-steak smokers, not significant) | none: open-ended | 0: fruity candies are liked less (FiveThirtyEight candy power ranking), confirmed on the real public data; a second real registration (FiveThirtyEight flying etiquette) cannot beat a confirmed 0 |
 
 `--task` edits `testcases/<task>/<editable>`, evaluates each commit in the

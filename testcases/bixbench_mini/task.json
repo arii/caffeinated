@@ -98,6 +98,7 @@
   }
  ],
  "proxy_note": "17-question subset, not full BixBench",
+ "reference_note": "full-BixBench accuracy; not comparable to the 7-question split",
  "context_files": [
   "questions.json",
   "data/Swarm_1.csv",

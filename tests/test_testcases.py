@@ -76,7 +76,9 @@ class EvaluatorTests(unittest.TestCase):
         self.assertIn("split: dev", dev["stdout"])
         self.assertIn("n_items: 10", dev["stdout"])
         self.assertNotIn("beats_reference:", dev["stdout"])
-        self.assertIn("beats_reference:", test["stdout"])
+        self.assertNotIn("beats_reference:", test["stdout"])
+        self.assertIn("record: 0.523", test["stdout"])
+        self.assertIn("proxy_note:", test["stdout"])
         self.assertTrue(all(qid not in dev["stdout"] for qid in bixbench_evaluate.TEST_QIDS))
         test_qids = re.findall(r"^(bix-\d+-q\d+):", test["stdout"], re.M)
         self.assertCountEqual(test_qids, bixbench_evaluate.TEST_QIDS)
@@ -108,6 +110,18 @@ class EvaluatorTests(unittest.TestCase):
         self.assertTrue(train.isdisjoint(dev))
         self.assertTrue(train.isdisjoint(test))
         self.assertTrue(dev.isdisjoint(test))
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_playworld_test_output_keeps_record_without_comparison(self):
+        task_dir = TESTCASES / "playworld_mini"
+        config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+        source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+        result = task_evaluation("playworld_mini", source, split="test")
+
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        self.assertIn("record: 0.359800", result["stdout"])
+        self.assertIn("proxy_note:", result["stdout"])
+        self.assertNotIn("beats_reference:", result["stdout"])
 
     def test_bixbench_answer_literal_scanner_handles_exemptions_and_negatives(self):
         key = {
@@ -1113,8 +1127,19 @@ class FakeLongHorizonSmokeTests(unittest.TestCase):
                     )
                     self.assertEqual(manifest["held_out_test"], artifact)
                     self.assertEqual(held_out.held_out_test(task_name, out_dir), artifact)
-                    if task_name == "playworld_mini":
-                        self.assertIsInstance(artifact["reference_test_loss"], float)
+                    self.assertIsNone(artifact["reference_test_loss"])
+                    self.assertEqual(artifact["reference_note"], config["reference_note"])
+                    legacy_artifact = {**artifact, "reference_test_loss": 0.5}
+                    legacy_artifact.pop("reference_note")
+                    artifact_path.write_text(json.dumps(legacy_artifact), encoding="utf-8")
+                    with patch.object(
+                        held_out.sandbox,
+                        "evaluate_task",
+                        side_effect=AssertionError("cached held-out results must not be regraded"),
+                    ):
+                        normalized = held_out.held_out_test(task_name, out_dir)
+                    self.assertIsNone(normalized["reference_test_loss"])
+                    self.assertEqual(normalized["reference_note"], config["reference_note"])
                 else:
                     self.assertFalse(artifact_path.exists())
 

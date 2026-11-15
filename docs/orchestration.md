@@ -48,9 +48,10 @@ split. BixBench still exposes all question text and public data, but grades 10
 of 17 questions during the run; Playworld uses development seeds
 100,000–100,199 and test seeds 300,000–300,199. At completion, `held_out.py`
 grades the baseline and best accepted commit once on the separate test split and writes
-`held_out_test.json`. Playworld also reports the local reference model's test
-loss when its source is available. `export_viewer.py` adds this object to the
-viewer manifest as `held_out_test`, without changing published events.
+`held_out_test.json`. The artifact compares baseline and best on test, includes
+a task-specific `reference_note`, and sets `reference_test_loss` to null.
+`export_viewer.py` adds this object to the viewer manifest as `held_out_test`,
+without changing published events.
 
 BixBench's `task.json` sets `"research": "off"`, which overrides `--exa` and
 `--literature` and disables both Exa and keyless search. Its host evaluator
