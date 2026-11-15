@@ -247,6 +247,7 @@ class ResumeStateTests(unittest.TestCase):
             "branch": "swarm-C-1",
             "viewer": True,
             "viewer_dest": None,
+            "pi": "off",
             "status": "running",
         }
         (self.out / "run.json").write_text(json.dumps(run), encoding="utf-8")
@@ -257,6 +258,7 @@ class ResumeStateTests(unittest.TestCase):
         resume = swarm.resolve_run_args(args)
         self.assertEqual(resume["checkpoint"]["round"], 4)
         self.assertEqual((args.task, args.arm, args.seed, args.llm), ("hadamard19", "C", 7, "fake"))
+        self.assertEqual(args.pi, "off")
         self.assertEqual((args.rounds, args.repo, args.out), (30, "/repo", str(self.out)))
         conflicting = swarm.build_parser().parse_args(["--resume", str(self.out), "--arm", "B"])
         with self.assertRaisesRegex(ValueError, "--arm B conflicts"):
@@ -281,6 +283,7 @@ class ResumeStateTests(unittest.TestCase):
         args = swarm.build_parser().parse_args(["--task", "hadamard19"])
         self.assertIsNone(swarm.resolve_run_args(args))
         self.assertEqual((args.arm, args.rounds, args.llm, args.exa), ("B", 10, "openai", "on"))
+        self.assertEqual(args.pi, "on")
 
     def test_arm_environment_exports_resume_rollbacks_for_memory(self):
         rollbacks = [{"epoch": 1, "after": "2026-01-01T00:10:00Z"}]

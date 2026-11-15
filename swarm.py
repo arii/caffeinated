@@ -672,6 +672,7 @@ def common_values(
         "role": role,
         "hard_rules": hard_rules(profile, events, agent, role, status, deterministic),
         "own_feedback": rejection_feedback(out_dir, agent),
+        "pi_steer": "none",
         "task_brief": (TASK or {}).get("brief", ""),
         "editable": (TASK or {}).get("editable", ""),
         "agent_brief": ((TASK or {}).get("agents") or {}).get(agent, {}).get("brief", ""),
@@ -2054,6 +2055,7 @@ def worker_attempts(
     claims,
     replay,
     assigned_cells=None,
+    pi_steer="none",
 ):
     call_id_start = len(getattr(llm_client, "call_ids", []))
 
@@ -2096,6 +2098,7 @@ def worker_attempts(
         deterministic=bool(TASK.get("deterministic")),
         out_dir=out_dir,
     )
+    common["pi_steer"] = pi_steer
     search_cell = worker_search_cell(agent, role, status)
     worker_sources = []
     searches_used = 0
@@ -3101,6 +3104,7 @@ ROUND_UNTRACKED = (
     "literature_cache",
     "llm_log.jsonl",
     "llm_outcomes.jsonl",
+    "pi.jsonl",
     "research_log.jsonl",
     "viewer_publish_log.jsonl",
     "resume_checkpoint.json",
@@ -3108,6 +3112,7 @@ ROUND_UNTRACKED = (
 FINAL_ARCHIVES = {
     "llm_log.jsonl": "llm_log.jsonl.gz",
     "llm_outcomes.jsonl": "llm_outcomes.jsonl.gz",
+    "pi.jsonl": "pi.jsonl.gz",
     "research_log.jsonl": "research_log.jsonl.gz",
     "runs": "runs.tar.gz",
     "exa_cache": "exa_cache.tar.gz",
@@ -3578,8 +3583,9 @@ RESUMED_SETTINGS = (
     "exa",
     "literature",
     "memory_backend",
+    "pi",
 )
-RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
+RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on", "pi": "on"}
 
 
 def resolve_run_args(args):
@@ -3631,6 +3637,8 @@ def resolve_run_args(args):
             setattr(args, key, stored)
     if "literature" not in run_artifact and args.literature is None:
         args.literature = "off"  # runs from before --literature never researched keylessly
+    if args.pi is None:
+        args.pi = run_artifact.get("pi", "on")
     if args.rounds is None:
         args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
     if (out_dir / "held_out_test.json").exists() and args.rounds > run_artifact.get(
@@ -3800,6 +3808,7 @@ def _orchestrate(args, publish_state, cleanup):
                 "critic_model": args.critic_model,
                 "exa": "on" if exa_enabled else "off",
                 "literature": args.literature,
+                "pi": args.pi,
                 "research": research_source,
                 "profile_path": "boredom_profile.json",
                 "profile_sha256": profile["_hash"],
@@ -3990,6 +3999,25 @@ def _orchestrate(args, publish_state, cleanup):
             )
             attach_assignment_call_ids(out_dir, round_num, leads)
             all_leads = list(leads.values())
+            pi_steers = run_pi_steering(
+                enabled=args.pi == "on",
+                profile=profile,
+                events=events_for_scouts,
+                status=status,
+                roles=allocation["roles"],
+                agents=agents,
+                out_dir=out_dir,
+                llm_client=llm_client,
+                backend=memory_backend,
+                mirror=memory_mirror,
+                memory_log=memory_log,
+                arm=args.arm,
+                round_num=round_num,
+                best_commit=best_metric_commit,
+                best_val=best_val,
+                leads=all_leads,
+                research_start=research_start,
+            )
             candidate_records = []
             claims = []
             assigned_cells = []
@@ -4024,6 +4052,7 @@ def _orchestrate(args, publish_state, cleanup):
                         all_leads=all_leads,
                         claims=claims,
                         replay=args.replay,
+                        pi_steer=pi_steers.get(agent, "none"),
                     )
                 except llm.LLMError as error:
                     print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
@@ -4462,6 +4491,7 @@ def build_parser():
     parser.add_argument("--model")
     parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
+    parser.add_argument("--pi", choices=("on", "off"), help="PI steering (default on)")
     parser.add_argument("--exa", choices=("on", "off"), help="default on")
     parser.add_argument(
         "--literature",

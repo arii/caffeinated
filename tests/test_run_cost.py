@@ -172,6 +172,53 @@ class RunCostTests(unittest.TestCase):
         self.assertEqual(wasted["calls"], 1)
         self.assertEqual(wasted["input_tokens"], 100)
 
+    def test_pi_steer_followed_by_acceptance_is_reported_by_role(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            (run_dir / "llm_log.jsonl").write_text(
+                json.dumps(
+                    {
+                        "call_id": "PI-r1-pi-1",
+                        "role": "PI",
+                        "round": 1,
+                        "agent": "pi",
+                        "usage": {"prompt_tokens": 10, "completion_tokens": 3},
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (run_dir / "pi.jsonl").write_text(
+                json.dumps(
+                    {"type": "pi_steer", "round": 1, "agent": "a", "steer": "try a new method"}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (run_dir / "ledger.jsonl").write_text(
+                json.dumps(
+                    {
+                        "kind": "candidate",
+                        "round": 2,
+                        "agent": "a",
+                        "status": "discard",
+                        "score": 0.4,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            report = run_cost.build_report(run_dir)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                run_cost.main([str(run_dir), "--by", "role", "--json"])
+            cli_report = json.loads(output.getvalue())
+        self.assertEqual(report["llm"]["pi_steer_followed_by_accepted_attempt"], 1)
+        self.assertEqual(report["llm"]["by_role"]["PI"]["steer_followed_by_accepted_attempt"], 1)
+        self.assertEqual(
+            cli_report["selected_breakdown"]["PI"]["steer_followed_by_accepted_attempt"], 1
+        )
+
     def test_summarizes_model_tokens_prices_and_research_costs(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory)

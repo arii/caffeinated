@@ -183,6 +183,23 @@ def _tool_counts(research_records, memory_records):
     }
 
 
+def _pi_steer_followed_by_accepted_attempt(pi_records, ledger_records):
+    accepted_attempts = {
+        (record.get("agent"), record.get("round"))
+        for record in ledger_records
+        if record.get("kind") == "candidate"
+        and record.get("status") in {"keep", "discard"}
+        and record.get("score") is not None
+    }
+    return sum(
+        1
+        for record in pi_records
+        if record.get("type") == "pi_steer"
+        and record.get("steer")
+        and (record.get("agent"), record.get("round", 0) + 1) in accepted_attempts
+    )
+
+
 def _research_costs(records, memory_records=()):
     totals = {"exa": 0.0, "past_dev": 0.0}
     counts = {"exa": 0, "past_dev": 0}
@@ -284,7 +301,13 @@ def build_report(run_dir, prices=None):
     outcomes = read_jsonl(run_dir / "llm_outcomes.jsonl")
     research_records = read_jsonl(run_dir / "research_log.jsonl")
     memory_records = read_jsonl(run_dir / "memory_log.jsonl")
+    pi_records = read_jsonl(run_dir / "pi.jsonl")
+    ledger_records = read_jsonl(run_dir / "ledger.jsonl")
+    pi_followed = _pi_steer_followed_by_accepted_attempt(pi_records, ledger_records)
     usage_totals = _usage_totals(llm_records)
+    by_role = _group_usage(llm_records, "role")
+    if "PI" in by_role:
+        by_role["PI"]["steer_followed_by_accepted_attempt"] = pi_followed
     return {
         "run_dir": str(run_dir),
         "llm": {
@@ -295,9 +318,10 @@ def build_report(run_dir, prices=None):
             "cached_tokens": usage_totals["cached_tokens"],
             "output_tokens": usage_totals["output_tokens"],
             "reasoning_tokens": usage_totals["reasoning_tokens"],
-            "by_role": _group_usage(llm_records, "role"),
+            "by_role": by_role,
             "by_round": _group_usage(llm_records, "round"),
             "by_agent": _group_usage(llm_records, "agent"),
+            "pi_steer_followed_by_accepted_attempt": pi_followed,
             "wasted": _wasted_usage(llm_records, outcomes),
             "outcomes": {
                 outcome: sum(1 for record in outcomes if record.get("outcome") == outcome)
@@ -330,12 +354,15 @@ def main(argv=None):
         action="store_true",
         help="emit JSON (the default; retained for explicit machine-readable invocations)",
     )
+    parser.add_argument("--by", choices=("role", "round", "agent"))
     args = parser.parse_args(argv)
     try:
         prices = dict(parse_price(value) for value in args.price)
         report = build_report(args.run_dir, prices)
     except ValueError as error:
         parser.error(str(error))
+    if args.by:
+        report["selected_breakdown"] = report["llm"][f"by_{args.by}"]
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 

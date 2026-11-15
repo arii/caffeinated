@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -528,6 +528,206 @@ class LocalPrecheckTests(unittest.TestCase):
         self.assertEqual([item["role"] for item in outcomes], ["WORKER_PROPOSE", "WORKER_REPAIR"])
         self.assertEqual([item["outcome"] for item in outcomes], ["rejected", "rejected"])
         self.assertEqual(outcomes[0]["reasons"], reasons)
+
+
+class PISteeringTests(unittest.TestCase):
+    def setUp(self):
+        swarm.configure_task(SimpleNamespace(task="bixbench_mini"))
+        self.profile = meter.load_profile(swarm.TASK["profile"])
+        self.events = [
+            {
+                "kind": "candidate",
+                "agent": "worker-1",
+                "round": round_num,
+                "status": status,
+                "idea": f"attempt {round_num}",
+                "descriptor": {"mechanism": "normalization", "method": "log_cpm"},
+                "gate_reasons": [f"failure {round_num}"],
+                "score": None,
+            }
+            for round_num, status in ((1, "reject"), (2, "duplicate"))
+        ]
+
+    def run_pi(self, *, enabled=True, events=None, client=None, out_dir=None):
+        return swarm.run_pi_steering(
+            enabled=enabled,
+            profile=self.profile,
+            events=self.events if events is None else events,
+            status={
+                "swarm_B": 0.4,
+                "regime": "BOREDOM_SNAP",
+                "per_agent_B": {"worker-1": 0.4},
+            },
+            roles={"worker-1": "divergent"},
+            agents=["worker-1"],
+            out_dir=out_dir,
+            llm_client=client,
+            backend="local",
+            mirror=Path(out_dir) / "memory.jsonl",
+            memory_log=Path(out_dir) / "memory_log.jsonl",
+            arm="B",
+            round_num=3,
+            best_commit="abc123",
+            best_val=0.5,
+            leads=[{"id": "lead-1", "source_ids": ["S3"], "recipe": "try a new normalization"}],
+            research_start=0,
+        )
+
+    def test_no_stuck_agent_skips_the_pi_call(self):
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.object(swarm, "recall_memory") as recall,
+        ):
+            steers = self.run_pi(
+                events=[],
+                client=SimpleNamespace(
+                    call=lambda *args, **kwargs: self.fail("unexpected PI call")
+                ),
+                out_dir=tmp,
+            )
+        self.assertEqual(steers, {})
+        recall.assert_not_called()
+
+    def test_stuck_agent_receives_batched_guidance_and_unknown_citation_is_dropped(self):
+        class Client:
+            def __init__(self):
+                self.call_ids = []
+                self.values = None
+
+            def call(self, role, *, agent, round_num, values):
+                self.call_ids.append("PI-r3-pi-1")
+                self.values = values
+                return {
+                    "steers": [
+                        {
+                            "agent": "worker-1",
+                            "steer": "Try a distinct normalization threshold",
+                            "cite": ["D1_1", "unknown"],
+                            "lead_id": "not-a-lead",
+                        }
+                    ]
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "research_log.jsonl").write_text(
+                json.dumps({"type": "source", "id": "D1_1", "title": "Dataset notes"}) + "\n",
+                encoding="utf-8",
+            )
+            client = Client()
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                steers = self.run_pi(client=client, out_dir=tmp)
+            values = client.values
+            records = llm.read_log(Path(tmp) / "pi.jsonl")
+            outcomes = llm.read_log(Path(tmp) / "llm_outcomes.jsonl")
+        prompt = llm.render_prompt("PI", values)
+        self.assertNotIn("{pi_stuck_agents}", prompt)
+        self.assertNotIn("{pi_available_sources}", prompt)
+        self.assertNotIn("{task_inputs_brief}", prompt)
+        for role in ("SCOUT_QUERY", "SCOUT_PICK", "SCOUT_LEAD", "CRITIC_NOVELTY", "CRITIC"):
+            prompt = llm.render_prompt(role, values)
+            for placeholder in ("{hard_rules}", "{own_feedback}", "{pi_steer}"):
+                self.assertNotIn(placeholder, prompt)
+        self.assertIn("last_attempts", values["pi_stuck_agents"])
+        self.assertIn("Dataset notes", values["pi_available_sources"])
+        self.assertIn("try a new normalization", values["pi_available_leads"])
+        self.assertEqual(
+            steers["worker-1"],
+            "Try a distinct normalization threshold (suggested sources: D1_1)",
+        )
+        self.assertEqual(records[0]["type"], "pi_steer")
+        self.assertEqual(records[0]["cite"], ["D1_1"])
+        self.assertIsNone(records[0]["lead_id"])
+        self.assertEqual(records[0]["llm_call_ids"], ["PI-r3-pi-1"])
+        self.assertEqual(outcomes[0]["outcome"], "steered")
+        self.assertEqual(outcomes[0]["agents"], ["worker-1"])
+
+    def test_worker_propose_and_repair_prompts_receive_pi_guidance(self):
+        task = swarm.TASK
+        base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+        valid = llm.fake_response(
+            "WORKER_PROPOSE",
+            {
+                "agent": "worker-1",
+                "candidate_source": swarm.git(
+                    ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}"
+                ).stdout,
+                "fake_edits": task.get("fake_edits", []),
+                "fake_targets": task.get("fake_targets", []),
+            },
+        )
+        invalid = {**valid, "source_ids": ["not-a-source-id"]}
+        captured_values = []
+
+        def worker_call(role, *, agent, round_num, values):
+            captured_values.append(values)
+            return invalid
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                result = swarm.worker_attempts(
+                    agent="worker-1",
+                    round_num=4,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=self.profile,
+                    profile_path=task["profile"],
+                    events=[],
+                    out_dir=output,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=SimpleNamespace(
+                        call=worker_call,
+                        last_call_id=None,
+                        call_ids=[],
+                    ),
+                    backend="local",
+                    mirror=output / "memory.jsonl",
+                    memory_log=output / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                    pi_steer="Try a distinct normalization threshold",
+                )
+
+        self.assertEqual(result["status"], "reject")
+        self.assertEqual(len(captured_values), 2)
+        for role, values in zip(("WORKER_PROPOSE", "WORKER_REPAIR"), captured_values):
+            prompt = llm.render_prompt(role, values)
+            self.assertIn(
+                "PI guidance for you this round: Try a distinct normalization threshold",
+                prompt,
+            )
+
+    def test_pi_failure_is_nonfatal_and_pi_off_skips_call(self):
+        class BrokenClient:
+            last_call_id = None
+
+            def call(self, *args, **kwargs):
+                raise RuntimeError("offline failure")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                redirect_stderr(io.StringIO()),
+            ):
+                steers = self.run_pi(client=BrokenClient(), out_dir=tmp)
+            failures = llm.read_log(Path(tmp) / "pi.jsonl")
+            off_client = SimpleNamespace(
+                call=lambda *args, **kwargs: self.fail("unexpected PI call")
+            )
+            self.assertEqual(self.run_pi(enabled=False, client=off_client, out_dir=tmp), {})
+        self.assertEqual(steers, {})
+        self.assertEqual(failures[0]["type"], "pi_error")
+        args = swarm.build_parser().parse_args(["--pi", "off"])
+        self.assertEqual(args.pi, "off")
 
 
 class LiveToolGuardTests(unittest.TestCase):
