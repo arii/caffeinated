@@ -1,11 +1,11 @@
 import csv
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from boredom import (
@@ -14,11 +14,8 @@ from boredom import (
     descriptor_meter,
     is_disabled,
     jaccard_distance,
-    ledger_events,
     parse_candidate_diff,
-    representation_from_diff,
 )
-
 
 SCRIPT = Path(__file__).resolve().parents[1] / "boredom.py"
 
@@ -35,7 +32,7 @@ def make_row(commit, value, status="keep", diff_lines=8):
 
 class ComputeMeterTests(unittest.TestCase):
     def test_identical_diffs_and_stagnation_reach_breakout(self):
-        rows = [make_row(f"c{i}", 1.0 if i == 0 else 1.0) for i in range(6)]
+        rows = [make_row(f"c{i}", 1.0) for i in range(6)]
         meter = compute_meter(rows, [{"same"}] * len(rows), k=5)
         self.assertGreaterEqual(meter["B"], 0.85)
         self.assertEqual(meter["regime"], "PARADIGM_BREAKOUT")
@@ -85,9 +82,7 @@ class ComputeMeterTests(unittest.TestCase):
     def test_disabled_forces_exploit_but_keeps_metrics(self):
         rows = [make_row(f"c{i}", 1.0) for i in range(6)]
         with patch.dict(os.environ, {"BOREDOM": "off"}):
-            meter = compute_meter(
-                rows, [{"same"}] * len(rows), k=5, disabled=is_disabled()
-            )
+            meter = compute_meter(rows, [{"same"}] * len(rows), k=5, disabled=is_disabled())
         self.assertGreaterEqual(meter["B"], 0.85)
         self.assertEqual(meter["regime"], "EXPLOIT")
         self.assertTrue(meter["disabled"])
@@ -96,8 +91,7 @@ class ComputeMeterTests(unittest.TestCase):
 class DiffTokenTests(unittest.TestCase):
     def test_knob_assignments_collapse_but_structural_lines_stay_distinct(self):
         first, first_lines = parse_candidate_diff(
-            "--- a/candidate.py\n+++ b/candidate.py\n"
-            "-MATRIX_LR = 0.04\n+MATRIX_LR = 0.05\n"
+            "--- a/candidate.py\n+++ b/candidate.py\n-MATRIX_LR = 0.04\n+MATRIX_LR = 0.05\n"
         )
         second, second_lines = parse_candidate_diff(
             "--- a/candidate.py\n+++ b/candidate.py\n"
@@ -116,8 +110,7 @@ class DiffTokenTests(unittest.TestCase):
 
     def test_scientific_and_exponent_literals_are_single_numeric_tokens(self):
         shingles, _ = parse_candidate_diff(
-            "--- a/candidate.py\n+++ b/candidate.py\n"
-            "-lr = 1e-3\n+width = 2**19\n"
+            "--- a/candidate.py\n+++ b/candidate.py\n-lr = 1e-3\n+width = 2**19\n"
         )
         self.assertIn("<num> * *", shingles)
         self.assertIn("* * <num>", shingles)
@@ -126,8 +119,7 @@ class DiffTokenTests(unittest.TestCase):
 class DescriptorTests(unittest.TestCase):
     def setUp(self):
         self.profile = descriptor_meter.load_profile(
-            Path(__file__).resolve().parents[1]
-            / "testcases/hadamard19/boredom_profile.json"
+            Path(__file__).resolve().parents[1] / "testcases/hadamard19/boredom_profile.json"
         )
 
     def test_descriptor_trailer_is_required(self):
@@ -165,22 +157,46 @@ class CliIntegrationTests(unittest.TestCase):
             root = Path(directory)
             subprocess.run(["git", "init", "-q", str(root)], check=True)
             subprocess.run(
-                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
-                 "commit", "--allow-empty", "-qm", "candidate\n\nDescriptor: search/restarts"],
-                cwd=root, check=True,
+                [
+                    "git",
+                    "-c",
+                    "user.name=Test",
+                    "-c",
+                    "user.email=test@example.com",
+                    "commit",
+                    "--allow-empty",
+                    "-qm",
+                    "candidate\n\nDescriptor: search/restarts",
+                ],
+                cwd=root,
+                check=True,
             )
             ledger = root / "ledger.jsonl"
             results = root / "results.tsv"
             event = {
-                "seq": 1, "commit": "", "status": "reject", "score": None,
+                "seq": 1,
+                "commit": "",
+                "status": "reject",
+                "score": None,
                 "description": "[EXPLOIT] proposal rejected after repair",
                 "descriptor": {"mechanism": "baseline", "method": "none"},
             }
             ledger.write_text(json.dumps(event) + "\n")
             with results.open("w", newline="") as stream:
-                writer = csv.DictWriter(stream, fieldnames=["commit", "loss", "status", "description", "descriptor"], delimiter="\t")
+                writer = csv.DictWriter(
+                    stream,
+                    fieldnames=["commit", "loss", "status", "description", "descriptor"],
+                    delimiter="\t",
+                )
                 writer.writeheader()
-                writer.writerow({"commit": "", "status": "reject", "description": event["description"], "descriptor": json.dumps(event["descriptor"])})
+                writer.writerow(
+                    {
+                        "commit": "",
+                        "status": "reject",
+                        "description": event["description"],
+                        "descriptor": json.dumps(event["descriptor"]),
+                    }
+                )
             for extra in ((), ("--ledger", str(ledger))):
                 status = self.run_cli(root, results, root / "log", "status", "--json", *extra)
                 self.assertEqual(status.returncode, 0, status.stderr)
@@ -188,17 +204,19 @@ class CliIntegrationTests(unittest.TestCase):
                 self.assertEqual(gate.returncode, 0, gate.stderr + gate.stdout)
                 self.assertNotIn("Traceback", gate.stderr)
                 gate_record = json.loads((root / "log").read_text().splitlines()[-1])
-                self.assertEqual(gate_record["ledger_sha256"], json.loads(status.stdout)["ledger_sha256"])
-            results.write_text("commit\tloss\tstatus\tdescription\n\t\treject\t[EXPLOIT] proposal rejected after repair\n")
+                self.assertEqual(
+                    gate_record["ledger_sha256"], json.loads(status.stdout)["ledger_sha256"]
+                )
+            results.write_text(
+                "commit\tloss\tstatus\tdescription\n\t\treject\t[EXPLOIT] proposal rejected after repair\n"
+            )
             status = self.run_cli(root, results, root / "log", "status", "--json")
             self.assertEqual(status.returncode, 0, status.stderr)
             gate = self.run_cli(root, results, root / "log", "gate")
             self.assertEqual(gate.returncode, 1, gate.stderr)
             self.assertIn("history row 1: missing descriptor", gate.stdout)
 
-    def run_cli(
-        self, repo, results, log, command, *extra, env=None, prior_art_off=True
-    ):
+    def run_cli(self, repo, results, log, command, *extra, env=None, prior_art_off=True):
         environment = os.environ.copy()
         environment.pop("BOREDOM", None)
         environment.pop("GROUNDING", None)
@@ -286,24 +304,17 @@ class CliIntegrationTests(unittest.TestCase):
                 lines = editable_file.read_text(encoding="utf-8").splitlines()
                 lines[block * 4 : block * 4 + 4] = ["VALUE = 1"] * 4
                 editable_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                commits.append(
-                    commit("experiment\n\nDescriptor: search/restarts")
-                )
+                commits.append(commit("experiment\n\nDescriptor: search/restarts"))
 
             results = Path(directory) / "results.tsv"
             log = Path(directory) / "boredom_log.jsonl"
             profile_args = self.profile_args_for_test(directory)
             self.write_results(
                 results,
-                [
-                    (sha, "1.000000", "keep", "experiment")
-                    for sha in commits
-                ],
+                [(sha, "1.000000", "keep", "experiment") for sha in commits],
             )
 
-            status = self.run_cli(
-                repo, results, log, "status", "--json", *profile_args
-            )
+            status = self.run_cli(repo, results, log, "status", "--json", *profile_args)
             self.assertEqual(status.returncode, 0, status.stderr)
             record = json.loads(status.stdout)
             self.assertEqual(record["regime"], "BOREDOM_SNAP")
@@ -400,12 +411,9 @@ class CliIntegrationTests(unittest.TestCase):
                 text=True,
             )
             history_commits = [
-                commit("experiment", value, "search/restarts")
-                for value in range(1, 7)
+                commit("experiment", value, "search/restarts") for value in range(1, 7)
             ]
-            no_source_commit = commit(
-                "candidate without source", 7, "construction/circulant"
-            )
+            no_source_commit = commit("candidate without source", 7, "construction/circulant")
             unknown_source_commit = commit(
                 "candidate with unknown source\n\nSource: S9", 8, "construction/circulant"
             )
@@ -414,9 +422,7 @@ class CliIntegrationTests(unittest.TestCase):
                 9,
                 "construction/circulant",
             )
-            missing_descriptor_commit = commit(
-                "candidate missing descriptor", 10
-            )
+            missing_descriptor_commit = commit("candidate missing descriptor", 10)
 
             results = Path(directory) / "results.tsv"
             results.write_text("", encoding="utf-8")
@@ -430,10 +436,7 @@ class CliIntegrationTests(unittest.TestCase):
             profile_path.write_text(json.dumps(profile), encoding="utf-8")
             self.write_results(
                 results,
-                [
-                    (sha, "1.000000", "keep", "experiment")
-                    for sha in history_commits
-                ],
+                [(sha, "1.000000", "keep", "experiment") for sha in history_commits],
             )
             research_log = Path(directory) / "research_log.jsonl"
             research_log.write_text(
@@ -484,10 +487,7 @@ class CliIntegrationTests(unittest.TestCase):
 
             self.write_results(
                 results,
-                [
-                    (sha, "1.000000", "keep", "experiment")
-                    for sha in history_commits
-                ],
+                [(sha, "1.000000", "keep", "experiment") for sha in history_commits],
             )
             breakout = gate(no_source_commit)
             self.assertEqual(breakout.returncode, 1, breakout.stdout)
@@ -507,17 +507,13 @@ class CliIntegrationTests(unittest.TestCase):
 
             self.write_results(
                 results,
-                [
-                    (sha, "1.000000", "keep", "experiment")
-                    for sha in history_commits
-                ],
+                [(sha, "1.000000", "keep", "experiment") for sha in history_commits],
             )
             boredom_disabled = gate(no_source_commit, env={"BOREDOM": "off"})
             self.assertEqual(boredom_disabled.returncode, 0, boredom_disabled.stdout)
 
             gate_records = [
-                json.loads(line)
-                for line in gate_log.read_text(encoding="utf-8").splitlines()
+                json.loads(line) for line in gate_log.read_text(encoding="utf-8").splitlines()
             ]
             valid_record = next(
                 record
@@ -579,36 +575,28 @@ class CliIntegrationTests(unittest.TestCase):
                 text=True,
             )
             history = [
-                commit("history\n\nDescriptor: search/restarts", value)
-                for value in range(1, 7)
+                commit("history\n\nDescriptor: search/restarts", value) for value in range(1, 7)
             ]
             missing = commit("[BREAKOUT] missing prior art\n\nSource: S1", 7)
-            unknown = commit(
-                "[BREAKOUT] unknown prior art\n\nSource: S1\nPrior-art: S9", 8
-            )
+            unknown = commit("[BREAKOUT] unknown prior art\n\nSource: S1\nPrior-art: S9", 8)
             valid_source = commit(
                 "[BREAKOUT] cited source\n\nSource: S1\nPrior-art: S1\n"
                 "Lead: lead-1\nAgent: worker-1",
                 9,
             )
             valid_query = commit(
-                "[BREAKOUT] no prior art found\n\nSource: S1\n"
-                "Prior-art: none-found Q1",
+                "[BREAKOUT] no prior art found\n\nSource: S1\nPrior-art: none-found Q1",
                 10,
             )
             unknown_query = commit(
-                "[BREAKOUT] unknown query\n\nSource: S1\n"
-                "Prior-art: none-found Q9",
+                "[BREAKOUT] unknown query\n\nSource: S1\nPrior-art: none-found Q9",
                 11,
             )
 
             results = Path(directory) / "results.tsv"
             self.write_results(
                 results,
-                [
-                    (sha, "1.000000", "keep", "history")
-                    for sha in history
-                ],
+                [(sha, "1.000000", "keep", "history") for sha in history],
             )
             research_log = Path(directory) / "research_log.jsonl"
             research_log.write_text(
@@ -677,9 +665,7 @@ class CliIntegrationTests(unittest.TestCase):
                 prior_art_off=False,
             )
             self.assertEqual(default_result.returncode, 1, default_result.stdout)
-            self.assertIn(
-                "no-prior-art: missing Prior-art trailer", default_result.stdout
-            )
+            self.assertIn("no-prior-art: missing Prior-art trailer", default_result.stdout)
             for override in ("EXA", "GROUNDING", "PRIOR_ART"):
                 disabled_by = self.run_cli(
                     repo,
@@ -726,18 +712,13 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertNotIn("no-descriptor", disabled_result.stdout)
 
             records = [
-                json.loads(line)
-                for line in gate_log.read_text(encoding="utf-8").splitlines()
+                json.loads(line) for line in gate_log.read_text(encoding="utf-8").splitlines()
             ]
             source_record = next(
-                record
-                for record in records
-                if record.get("candidate_commit") == valid_source
+                record for record in records if record.get("candidate_commit") == valid_source
             )
             query_record = next(
-                record
-                for record in records
-                if record.get("candidate_commit") == valid_query
+                record for record in records if record.get("candidate_commit") == valid_query
             )
             self.assertEqual(source_record["prior_art"], ["S1"])
             self.assertEqual(source_record["lead"], "lead-1")

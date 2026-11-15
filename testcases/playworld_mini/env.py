@@ -4,18 +4,23 @@ A 9x9 walled room with random interior walls, a switch and a lamp. The agent see
 5x5 egocentric window. Stepping onto the switch toggles the lamp, which stays toggled
 when it is out of view, so a good world model needs spatial memory and persistent state.
 """
-import json, random, sys
+
+import json
+import random
+import sys
 
 N, R = 9, 2
 FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)
 MOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}  # up, down, left, right
 INVERSE = {0: 1, 1: 0, 2: 3, 3: 2}
-CONTEXT, HORIZON = 10, 20
+CONTEXT = 10
 BLOCKING = (WALL, LAMP_OFF, LAMP_ON, OOB)
 
 
 def make_world(rng):
-    g = [[WALL if r in (0, N - 1) or c in (0, N - 1) else FLOOR for c in range(N)] for r in range(N)]
+    g = [
+        [WALL if r in (0, N - 1) or c in (0, N - 1) else FLOOR for c in range(N)] for r in range(N)
+    ]
     interior = [(r, c) for r in range(1, N - 1) for c in range(1, N - 1)]
     rng.shuffle(interior)
     for r, c in interior[:8]:
@@ -44,7 +49,9 @@ def observe(w):
         row = []
         for dc in range(-R, R + 1):
             r, c = pr + dr, pc + dc
-            row.append(AGENT if dr == dc == 0 else (w["grid"][r][c] if 0 <= r < N and 0 <= c < N else OOB))
+            row.append(
+                AGENT if dr == dc == 0 else (w["grid"][r][c] if 0 <= r < N and 0 <= c < N else OOB)
+            )
         view.append(row)
     return view
 

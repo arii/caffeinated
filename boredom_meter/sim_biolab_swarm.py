@@ -4,8 +4,13 @@
 Not a biological model. Compares a greedy swarm against the same swarm obeying
 the meter (status -> suggest -> gate) with identical seeds and budgets.
 """
-import argparse, math, random, sys
+
+import argparse
+import math
+import random
+import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent))
 import meter
 
@@ -47,22 +52,36 @@ def run(seed, boredom, budget=36, agents=("scientist", "analyst", "explorer")):
             cells = meter.suggest(profile, events, n=8)
             for c in cells:
                 h, a = c["cell"].split("/")
-                if st["regime"] == "PARADIGM_BREAKOUT" and best and h == best["descriptor"]["hypothesis"]:
+                if (
+                    st["regime"] == "PARADIGM_BREAKOUT"
+                    and best
+                    and h == best["descriptor"]["hypothesis"]
+                ):
                     continue
                 cn, co = CENTERS[h]
                 for _ in range(10):
-                    d = {"hypothesis": h, "assay": a,
-                         "params": {"nutrient": round(clip(cn + rng.gauss(0, 0.08)), 4),
-                                    "oxygen": round(clip(co + rng.gauss(0, 0.08)), 4)}}
+                    d = {
+                        "hypothesis": h,
+                        "assay": a,
+                        "params": {
+                            "nutrient": round(clip(cn + rng.gauss(0, 0.08)), 4),
+                            "oxygen": round(clip(co + rng.gauss(0, 0.08)), 4),
+                        },
+                    }
                     if meter.gate(profile, events, d)["pass"]:
                         cand = d
                         break
                 if cand:
                     break
         if cand is None:
-            cand = {"hypothesis": hyp, "assay": assay,
-                    "params": {"nutrient": round(clip(n + rng.gauss(0, step)), 4),
-                               "oxygen": round(clip(o + rng.gauss(0, step)), 4)}}
+            cand = {
+                "hypothesis": hyp,
+                "assay": assay,
+                "params": {
+                    "nutrient": round(clip(n + rng.gauss(0, step)), 4),
+                    "oxygen": round(clip(o + rng.gauss(0, step)), 4),
+                },
+            }
         p = cand["params"]
         score = round(response(p["nutrient"], p["oxygen"], seed), 6)
         status = "keep" if best is None or score > best["score"] else "discard"
@@ -86,15 +105,19 @@ if __name__ == "__main__":
         *_, events, trace = run(args.show, True, args.budget)
         for e, t in zip(events, trace):
             d = e["descriptor"]
-            print(f"{e['seq']:>3} {e['agent']:<9} {d['hypothesis']}/{d['assay']:<16} "
-                  f"n={d['params']['nutrient']:.2f} o={d['params']['oxygen']:.2f} y={e['score']:.3f} "
-                  f"B={t['B']:.3f} {t['regime']}")
+            print(
+                f"{e['seq']:>3} {e['agent']:<9} {d['hypothesis']}/{d['assay']:<16} "
+                f"n={d['params']['nutrient']:.2f} o={d['params']['oxygen']:.2f} y={e['score']:.3f} "
+                f"B={t['B']:.3f} {t['regime']}"
+            )
         raise SystemExit(0)
     for arm in (False, True):
         res = [run(s, arm, args.budget) for s in range(args.seeds)]
         best = sum(r[0] for r in res) / len(res)
         found = [r[1] for r in res if r[1]]
-        print(f"{'boredom' if arm else 'greedy ':<8} mean_best={best:.3f} "
-              f"found_global={len(found)}/{len(res)} "
-              f"median_attempts_to_global={sorted(found)[len(found)//2] if found else 'n/a'} "
-              f"mean_non_exploit_steps={sum(r[2] for r in res)/len(res):.1f}")
+        print(
+            f"{'boredom' if arm else 'greedy ':<8} mean_best={best:.3f} "
+            f"found_global={len(found)}/{len(res)} "
+            f"median_attempts_to_global={sorted(found)[len(found) // 2] if found else 'n/a'} "
+            f"mean_non_exploit_steps={sum(r[2] for r in res) / len(res):.1f}"
+        )

@@ -1,15 +1,14 @@
 import json
 import os
-from pathlib import Path
 import tempfile
-from types import SimpleNamespace
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import llm
 import swarm
 from boredom_meter import meter
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -18,14 +17,24 @@ def task_values(task):
     swarm.configure_task(SimpleNamespace(task=task))
     status = {"swarm_B": 0.0, "regime": "EXPLOIT"}
     values = swarm.common_values("worker-1", 1, "divergent", status, 0.0, "abc1234", 1.0, {})
-    values.update({
-        "assignment": "divergent", "recalled_results": "", "recalled_leads": "",
-        "claims": "", "search_cell": "none", "worker_sources": "No search run.",
-        "task_inputs": swarm.TASK["prompt_values"]["task_context"],
-        "candidate_source": "", "vocab": "{}", "suggested_cells": "none",
-        "reasons": "none", "assigned_cell": "none", "recalled": "",
-        "target_cell": "data/filter",
-    })
+    values.update(
+        {
+            "assignment": "divergent",
+            "recalled_results": "",
+            "recalled_leads": "",
+            "claims": "",
+            "search_cell": "none",
+            "worker_sources": "No search run.",
+            "task_inputs": swarm.TASK["prompt_values"]["task_context"],
+            "candidate_source": "",
+            "vocab": "{}",
+            "suggested_cells": "none",
+            "reasons": "none",
+            "assigned_cell": "none",
+            "recalled": "",
+            "target_cell": "data/filter",
+        }
+    )
     return values
 
 
@@ -54,8 +63,11 @@ class TaskInputTests(unittest.TestCase):
 class WorkerSearchTests(unittest.TestCase):
     def setUp(self):
         swarm.configure_task(SimpleNamespace(task="hadamard19"))
-        self.cells = [{"cell": "baseline/none"}, {"cell": "construction/circulant"},
-                      {"cell": "objective/barrier"}]
+        self.cells = [
+            {"cell": "baseline/none"},
+            {"cell": "construction/circulant"},
+            {"cell": "objective/barrier"},
+        ]
 
     def test_search_cell_follows_role_regime_and_assignment(self):
         exploit = {"regime": "EXPLOIT", "suggested_cells": self.cells}
@@ -84,17 +96,26 @@ class WorkerSearchTests(unittest.TestCase):
         self.assertIn("Hadamard", query)
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"EXA": "off"}):
             swarm.worker_search(
-                "worker-3", "construction/circulant", ["paper", "code"],
-                status={"regime": "BOREDOM_SNAP"}, out_dir=tmp, replay=False,
+                "worker-3",
+                "construction/circulant",
+                ["paper", "code"],
+                status={"regime": "BOREDOM_SNAP"},
+                out_dir=tmp,
+                replay=False,
             )
-            records = [json.loads(line) for line in (Path(tmp) / "research_log.jsonl").read_text().splitlines()]
+            records = [
+                json.loads(line)
+                for line in (Path(tmp) / "research_log.jsonl").read_text().splitlines()
+            ]
         self.assertEqual([record["purpose"] for record in records], ["worker-search"] * 2)
         self.assertEqual({record["agent"] for record in records}, {"worker-3"})
         self.assertEqual({record["query"] for record in records}, {query})
 
     def test_only_own_lead_is_attached(self):
         leads = {"worker-1": {"id": "lead-1"}}
-        self.assertEqual(swarm.lead_for_agent("worker-1", leads, list(leads.values())), {"id": "lead-1"})
+        self.assertEqual(
+            swarm.lead_for_agent("worker-1", leads, list(leads.values())), {"id": "lead-1"}
+        )
         self.assertIsNone(swarm.lead_for_agent("worker-2", leads, list(leads.values())))
 
 
@@ -106,17 +127,28 @@ class NoveltyAndVocabularyTests(unittest.TestCase):
     def test_critic_novelty_is_logged_per_candidate(self):
         client = llm.LLMClient(mode="fake", log_path=os.devnull)
         candidates = [
-            {"agent": "worker-1", "idea": "a", "commit": "c1",
-             "prior_hits": [{"id": "S1", "title": "t", "highlight": "h"}]},
+            {
+                "agent": "worker-1",
+                "idea": "a",
+                "commit": "c1",
+                "prior_hits": [{"id": "S1", "title": "t", "highlight": "h"}],
+            },
             {"agent": "worker-2", "idea": "b", "prior_hits": []},
         ]
         with tempfile.TemporaryDirectory() as tmp:
             swarm.judge_novelty(
-                candidates, llm_client=client, out_dir=tmp, round_num=1,
-                status={"swarm_B": 0.0, "regime": "EXPLOIT"}, profile=self.profile,
-                best_commit="abc", best_val=1.0,
+                candidates,
+                llm_client=client,
+                out_dir=tmp,
+                round_num=1,
+                status={"swarm_B": 0.0, "regime": "EXPLOIT"},
+                profile=self.profile,
+                best_commit="abc",
+                best_val=1.0,
             )
-            rows = [json.loads(line) for line in (Path(tmp) / "novelty.jsonl").read_text().splitlines()]
+            rows = [
+                json.loads(line) for line in (Path(tmp) / "novelty.jsonl").read_text().splitlines()
+            ]
         self.assertEqual(candidates[0]["novelty"], 0.5)
         self.assertTrue(candidates[0]["prior_art_pass"])
         self.assertNotIn("novelty", candidates[1])
@@ -125,14 +157,28 @@ class NoveltyAndVocabularyTests(unittest.TestCase):
     def test_novelty_fields_do_not_change_boredom(self):
         events = []
         for seq, (method, status, score) in enumerate(
-            [("none", "keep", 1.0), ("restarts", "discard", 1.1), ("seed", "discard", 1.2),
-             ("restarts", "discard", 1.3)], 1
+            [
+                ("none", "keep", 1.0),
+                ("restarts", "discard", 1.1),
+                ("seed", "discard", 1.2),
+                ("restarts", "discard", 1.3),
+            ],
+            1,
         ):
-            events.append({
-                "seq": seq, "kind": "baseline" if seq == 1 else "candidate",
-                "agent": "worker-1", "status": status, "score": score, "round": seq - 1,
-                "descriptor": {"mechanism": "baseline" if seq == 1 else "search", "method": method},
-            })
+            events.append(
+                {
+                    "seq": seq,
+                    "kind": "baseline" if seq == 1 else "candidate",
+                    "agent": "worker-1",
+                    "status": status,
+                    "score": score,
+                    "round": seq - 1,
+                    "descriptor": {
+                        "mechanism": "baseline" if seq == 1 else "search",
+                        "method": method,
+                    },
+                }
+            )
         scored = [{**event, "novelty": 0.0, "prior_art_pass": False} for event in events]
         self.assertEqual(
             {k: v for k, v in meter.status(self.profile, events).items() if k != "ledger_sha256"},
@@ -141,7 +187,9 @@ class NoveltyAndVocabularyTests(unittest.TestCase):
 
     def test_other_slug_is_accepted_and_recorded_without_profile_mutation(self):
         profile_text = Path(swarm.TASK["profile"]).read_text()
-        meter.validate_descriptor(self.profile, {"mechanism": "other", "method": "simulated_annealing"})
+        meter.validate_descriptor(
+            self.profile, {"mechanism": "other", "method": "simulated_annealing"}
+        )
         for slug in ("Bad-Slug", "x", "9lives", "a" * 41):
             with self.assertRaises(ValueError):
                 meter.validate_descriptor(self.profile, {"mechanism": "other", "method": slug})
@@ -152,11 +200,17 @@ class NoveltyAndVocabularyTests(unittest.TestCase):
                     tmp, self.profile, descriptor, agent="worker-1", round_num=1, idea="anneal"
                 )
             swarm.record_vocab_extension(
-                tmp, self.profile, {"mechanism": "search", "method": "restarts"},
-                agent="worker-1", round_num=1, idea="known",
+                tmp,
+                self.profile,
+                {"mechanism": "search", "method": "restarts"},
+                agent="worker-1",
+                round_num=1,
+                idea="known",
             )
             rows = (Path(tmp) / "vocab_extensions.jsonl").read_text().splitlines()
-            self.assertEqual([json.loads(row)["cell"] for row in rows], ["other/simulated_annealing"])
+            self.assertEqual(
+                [json.loads(row)["cell"] for row in rows], ["other/simulated_annealing"]
+            )
             self.assertEqual(
                 swarm.vocab_with_extensions(self.profile, tmp)["other"], ["simulated_annealing"]
             )
@@ -191,23 +245,45 @@ class CriticArmParityTests(unittest.TestCase):
         calls = {}
         for arm, (env, status) in arm_settings.items():
             candidate = {
-                "agent": "worker-2", "idea": "circulant core", "commit": "c2",
-                "rationale": "r", "descriptor": {"mechanism": "construction", "method": "circulant"},
-                "sources": ["S1"], "predicted_delta": -0.01,
+                "agent": "worker-2",
+                "idea": "circulant core",
+                "commit": "c2",
+                "rationale": "r",
+                "descriptor": {"mechanism": "construction", "method": "circulant"},
+                "sources": ["S1"],
+                "predicted_delta": -0.01,
                 "prior_hits": [{"id": "S1", "title": "t", "highlight": "h"}],
             }
-            events = [{"descriptor": {"mechanism": "construction", "method": "circulant"},
-                       "status": "discard", "score": 0.05}]
+            events = [
+                {
+                    "descriptor": {"mechanism": "construction", "method": "circulant"},
+                    "status": "discard",
+                    "score": 0.05,
+                }
+            ]
             client = RecordingClient()
             with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, env):
                 swarm.judge_novelty(
-                    [candidate], llm_client=client, out_dir=tmp, round_num=2,
-                    status=status, profile=profile, best_commit="abc", best_val=0.0585,
+                    [candidate],
+                    llm_client=client,
+                    out_dir=tmp,
+                    round_num=2,
+                    status=status,
+                    profile=profile,
+                    best_commit="abc",
+                    best_val=0.0585,
                 )
                 swarm.critic_review(
-                    client, round_num=2, candidate=candidate, events=events,
-                    first_score=0.05, second_score=0.05, accepted=True,
-                    previous_best_commit="abc", previous_best_val=0.0585, profile=profile,
+                    client,
+                    round_num=2,
+                    candidate=candidate,
+                    events=events,
+                    first_score=0.05,
+                    second_score=0.05,
+                    accepted=True,
+                    previous_best_commit="abc",
+                    previous_best_val=0.0585,
+                    profile=profile,
                 )
             calls[arm] = client.calls
         self.assertEqual([call[0] for call in calls["A"]], ["CRITIC_NOVELTY", "CRITIC"])

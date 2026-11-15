@@ -8,6 +8,7 @@ with the task's loss (lower is better) in the loss column, so boredom.py,
 analyze.py and the trace exporter work unchanged. --status auto keeps the run only
 if it beats the best kept loss so far.
 """
+
 import argparse
 import csv
 import json
@@ -61,18 +62,23 @@ def main():
     elif status == "auto":
         best = best_kept(path)
         status = "keep" if best is None or loss < best else "discard"
-    commit = subprocess.run(
-        ["git", "rev-parse", "--short=7", "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-    ).stdout.strip() or "nogit"
+    commit = (
+        subprocess.run(
+            ["git", "rev-parse", "--short=7", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        or "nogit"
+    )
     new = not path.exists()
     with path.open("a", newline="") as f:
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
         if new:
             w.writerow(HEADER)
-        w.writerow([commit, f"{loss if loss is not None else 0:.6f}", status, args.desc.replace("\t", " ")])
+        w.writerow(
+            [commit, f"{loss if loss is not None else 0:.6f}", status, args.desc.replace("\t", " ")]
+        )
     print(f"logged: {commit} {status}")
 
 

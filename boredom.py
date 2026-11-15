@@ -3,14 +3,14 @@
 
 import argparse
 import csv
-from datetime import datetime, timezone
 import json
 import math
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 METER_PATH = Path(__file__).parent / "boredom_meter"
 if str(METER_PATH) not in sys.path:
@@ -18,8 +18,9 @@ if str(METER_PATH) not in sys.path:
 
 import meter as descriptor_meter
 
-
-DEFAULT_PROFILE = Path(__file__).resolve().parent / "testcases" / "hadamard19" / "boredom_profile.json"
+DEFAULT_PROFILE = (
+    Path(__file__).resolve().parent / "testcases" / "hadamard19" / "boredom_profile.json"
+)
 DEFAULT_WEIGHTS = (0.45, 0.45, 0.10)
 _DIGITS = r"\d(?:_?\d)*"
 NUMBER_PATTERN = rf"(?:{_DIGITS}(?:\.(?:{_DIGITS})?)?|\.(?:{_DIGITS}))(?:[eE][+-]?{_DIGITS})?"
@@ -99,17 +100,12 @@ def compute_meter(rows, zs, k=5, eps=0.0005, weights=DEFAULT_WEIGHTS, disabled=F
     window = rows[-k:]
     crash_rate = sum(row.get("status") == "crash" for row in window) / len(window)
     trivial_count = sum(
-        bool(row.get("resolvable", True)) and int(row.get("diff_lines", 0)) <= 2
-        for row in window
+        bool(row.get("resolvable", True)) and int(row.get("diff_lines", 0)) <= 2 for row in window
     )
     trivial_rate = trivial_count / len(window)
     overload = max(crash_rate, trivial_rate)
     w_novelty, w_stagnation, w_overload = weights
-    boredom = (
-        w_novelty * (1.0 - novelty)
-        + w_stagnation * stagnation
-        + w_overload * overload
-    )
+    boredom = w_novelty * (1.0 - novelty) + w_stagnation * stagnation + w_overload * overload
     boredom = min(max(boredom, 0.0), 1.0)
 
     if disabled or n_rows < 3 or boredom < 0.70:
@@ -141,9 +137,9 @@ def parse_candidate_diff(diff_text):
     """Extract changed lines, line count, and word-level three-shingles."""
     changed_lines = []
     for line in diff_text.splitlines():
-        if line.startswith("+++") or line.startswith("---"):
+        if line.startswith(("+++", "---")):
             continue
-        if line.startswith("+") or line.startswith("-"):
+        if line.startswith(("+", "-")):
             changed_lines.append(line[1:])
 
     tokens = []
@@ -156,10 +152,7 @@ def parse_candidate_diff(diff_text):
             "<num>" if NUMBER_RE.fullmatch(token) else token.casefold()
             for token in TOKEN_RE.findall(content)
         )
-    shingles = {
-        " ".join(tokens[index : index + 3])
-        for index in range(max(0, len(tokens) - 2))
-    }
+    shingles = {" ".join(tokens[index : index + 3]) for index in range(max(0, len(tokens) - 2))}
     return shingles, len(changed_lines)
 
 
@@ -173,8 +166,13 @@ def commit_representation(commit, description, repo):
     try:
         result = subprocess.run(
             [
-                "git", "show", "--format=", "--unified=0", commit,
-                "--", os.environ.get("AUTORESEARCH_TARGET", "candidate.py"),
+                "git",
+                "show",
+                "--format=",
+                "--unified=0",
+                commit,
+                "--",
+                os.environ.get("AUTORESEARCH_TARGET", "candidate.py"),
             ],
             cwd=repo,
             check=True,
@@ -184,9 +182,7 @@ def commit_representation(commit, description, repo):
     except (OSError, subprocess.CalledProcessError):
         return description_tokens(description), 0, False
 
-    representation, diff_lines = representation_from_diff(
-        result.stdout, description
-    )
+    representation, diff_lines = representation_from_diff(result.stdout, description)
     return representation, diff_lines, True
 
 
@@ -288,9 +284,7 @@ def ledger_events(rows, repo, profile, errors=None):
                 "seq": seq,
                 "commit": row.get("commit"),
                 "kind": row.get("kind"),
-                "agent": row.get("agent")
-                or message_trailer(message, "Agent")
-                or "agent",
+                "agent": row.get("agent") or message_trailer(message, "Agent") or "agent",
                 "status": row.get("status"),
                 "score": score,
                 "descriptor": descriptor,
@@ -361,9 +355,7 @@ def read_research_sources(path):
             try:
                 record = json.loads(line)
             except json.JSONDecodeError as error:
-                raise ValueError(
-                    f"invalid JSON in {path}, line {line_number}"
-                ) from error
+                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
             if record.get("type") == "source" and record.get("id"):
                 sources.add(str(record["id"]))
     return sources
@@ -381,9 +373,7 @@ def read_research_ids(path):
             try:
                 record = json.loads(line)
             except json.JSONDecodeError as error:
-                raise ValueError(
-                    f"invalid JSON in {path}, line {line_number}"
-                ) from error
+                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
             record_type = record.get("type")
             if record_type in ids and record.get("id"):
                 ids[record_type].add(str(record["id"]))
@@ -400,24 +390,6 @@ def read_results(path):
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("results.tsv is missing required columns")
         return list(reader)
-
-
-def load_history(rows, repo):
-    normalized = []
-    representations = []
-    for row in rows:
-        z, diff_lines, resolvable = commit_representation(
-            row["commit"], row.get("description", ""), repo
-        )
-        normalized.append(
-            {
-                **row,
-                "diff_lines": diff_lines,
-                "resolvable": resolvable,
-            }
-        )
-        representations.append(z)
-    return normalized, representations
 
 
 def is_disabled():
@@ -437,8 +409,7 @@ def timestamp():
 
 def status_record(rows, events, metrics, profile, disabled):
     best_seq = metrics["best_seq"]
-    best_commit = next((event.get("commit") for event in events
-                        if event["seq"] == best_seq), None)
+    best_commit = next((event.get("commit") for event in events if event["seq"] == best_seq), None)
     regime = "EXPLOIT" if disabled else metrics["regime"]
     return {
         "ts": timestamp(),
@@ -492,17 +463,12 @@ def run_status(args):
         f"overload={record['overload']:.3f} frontier_stall={record['frontier_stall']}"
     )
     if record["best_loss"] is not None:
-        print(
-            f"best_loss={record['best_loss']:.6f} "
-            f"best_commit={record['best_commit']}"
-        )
+        print(f"best_loss={record['best_loss']:.6f} best_commit={record['best_commit']}")
     print_directive(record["regime"], record["directive"])
 
     if record["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT"):
         print("Episodic memory (last 10 discard/crash attempts):")
-        failed_rows = [
-            row for row in rows if row.get("status") in ("discard", "crash")
-        ][-10:]
+        failed_rows = [row for row in rows if row.get("status") in ("discard", "crash")][-10:]
         if failed_rows:
             for row in failed_rows:
                 print(f"  - {row['commit']}: {row.get('description', '')}")
@@ -530,12 +496,11 @@ def run_gate(args):
     metrics = descriptor_meter.status(profile, events)
     regime = "EXPLOIT" if disabled else metrics["regime"]
     known_sources = read_research_sources(args.research_log)
-    prior_art, has_prior_art, invalid_prior_art, none_found_queries = (
-        prior_art_trailers(candidate_message)
+    prior_art, has_prior_art, invalid_prior_art, none_found_queries = prior_art_trailers(
+        candidate_message
     )
     prior_art_enabled = not any(
-        os.environ.get(name, "").casefold() == "off"
-        for name in ("EXA", "GROUNDING", "PRIOR_ART")
+        os.environ.get(name, "").casefold() == "off" for name in ("EXA", "GROUNDING", "PRIOR_ART")
     )
     research_ids = (
         read_research_ids(args.research_log)
@@ -543,9 +508,7 @@ def run_gate(args):
         else {"source": set(), "query": set()}
     )
     valid_sources = [source_id for source_id in cited_sources if source_id in known_sources]
-    unknown_sources = [
-        source_id for source_id in cited_sources if source_id not in known_sources
-    ]
+    unknown_sources = [source_id for source_id in cited_sources if source_id not in known_sources]
     reasons = list(history_errors)
     candidate_descriptor = None
     descriptor_trailer = message_trailer(candidate_message, "Descriptor")
@@ -587,40 +550,26 @@ def run_gate(args):
         if not has_source_trailer:
             reasons.append("ungrounded: no Source trailer")
         elif unknown_sources:
-            reasons.append(
-                "ungrounded: unknown id " + ", ".join(unknown_sources)
-            )
+            reasons.append("ungrounded: unknown id " + ", ".join(unknown_sources))
         else:
             reasons.append("ungrounded: no valid source id in Source trailer")
     if prior_art_enabled:
         if not has_prior_art:
             reasons.append("no-prior-art: missing Prior-art trailer")
         elif invalid_prior_art:
-            reasons.append(
-                "no-prior-art: invalid id " + ", ".join(invalid_prior_art)
-            )
+            reasons.append("no-prior-art: invalid id " + ", ".join(invalid_prior_art))
         elif not prior_art:
             reasons.append("no-prior-art: empty Prior-art trailer")
         else:
             unknown_prior_art = [
                 item
                 for item in prior_art
-                if (
-                    item in none_found_queries
-                    and item not in research_ids["query"]
-                )
-                or (
-                    item not in none_found_queries
-                    and item not in research_ids["source"]
-                )
+                if (item in none_found_queries and item not in research_ids["query"])
+                or (item not in none_found_queries and item not in research_ids["source"])
             ]
             if unknown_prior_art:
-                reasons.append(
-                    "no-prior-art: unknown id " + ", ".join(unknown_prior_art)
-                )
-    _, diff_lines, _ = commit_representation(
-        args.commit, candidate_description, args.repo
-    )
+                reasons.append("no-prior-art: unknown id " + ", ".join(unknown_prior_art))
+    _, diff_lines, _ = commit_representation(args.commit, candidate_description, args.repo)
     passed = not reasons
     record = {
         "type": "gate",
@@ -725,9 +674,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.k is not None and args.k < 1:
         parser.error("--k must be at least 1")
-    if args.eps is not None and (
-        args.eps < 0 or not math.isfinite(args.eps)
-    ):
+    if args.eps is not None and (args.eps < 0 or not math.isfinite(args.eps)):
         parser.error("--eps must be a finite non-negative number")
     if args.command == "gate":
         if args.min_lines < 0:

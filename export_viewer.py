@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
+from types import SimpleNamespace
 
 from boredom_meter import meter
 
@@ -23,26 +24,57 @@ NS_CAFFEINATED = uuid.UUID("6f1c3d2e-5b7a-4c1e-9a43-0c0ffee00001")
 KEYFRAME_EVERY = 250
 RECENT_EVENTS = 20
 PHASES = {
-    "autoresearch": ("assign", "research", "propose", "gate", "evaluate", "critic", "status", "finish"),
+    "autoresearch": (
+        "assign",
+        "research",
+        "propose",
+        "gate",
+        "evaluate",
+        "critic",
+        "status",
+        "finish",
+    ),
     "ignobel": ("seed", "boredom", "talk", "share", "snap", "propose", "study", "diary"),
 }
 ENTITY_KINDS = (
-    "questions", "observations", "hypotheses", "experiments", "rewards",
-    "diary", "memory", "sources", "llm_calls", "discoveries",
+    "questions",
+    "observations",
+    "hypotheses",
+    "experiments",
+    "rewards",
+    "diary",
+    "memory",
+    "sources",
+    "llm_calls",
+    "discoveries",
 )
 STATIONS = {
-    "assigned": "notebook", "searching": "explorer", "recalling": "notebook",
-    "proposing": "notebook", "gating": "analyzer", "evaluating": "culture",
-    "reviewing": "analyzer", "talking": "partner", "sharing": "partner",
-    "snapping": "explorer", "writing": "notebook", "idle": "home",
+    "assigned": "notebook",
+    "searching": "explorer",
+    "recalling": "notebook",
+    "proposing": "notebook",
+    "gating": "analyzer",
+    "evaluating": "culture",
+    "reviewing": "analyzer",
+    "talking": "partner",
+    "sharing": "partner",
+    "snapping": "explorer",
+    "writing": "notebook",
+    "idle": "home",
 }
 EVENT_ACTIVITY = {
-    "agent.assigned": "assigned", "question.asked": "searching",
-    "observation.received": "searching", "hypothesis.proposed": "proposing",
-    "gate.checked": "gating", "experiment.started": "evaluating",
-    "experiment.finished": "reviewing", "verdict.issued": "reviewing",
-    "message.sent": "talking", "items.shared": "sharing",
-    "diary.written": "writing", "memory.written": "writing",
+    "agent.assigned": "assigned",
+    "question.asked": "searching",
+    "observation.received": "searching",
+    "hypothesis.proposed": "proposing",
+    "gate.checked": "gating",
+    "experiment.started": "evaluating",
+    "experiment.finished": "reviewing",
+    "verdict.issued": "reviewing",
+    "message.sent": "talking",
+    "items.shared": "sharing",
+    "diary.written": "writing",
+    "memory.written": "writing",
 }
 
 
@@ -102,19 +134,22 @@ class Run:
     def agent_id(self, native):
         return self.agents[native]["agent_id"] if native in self.agents else None
 
-    def emit(self, kind, *, round_, phase, ts, agent, file, line, native_type,
-             payload, refs=None, sub=0):
-        self.raw.append({
-            "key": (round_, self.phase_rank[phase], ts or "", file, line, sub),
-            "type": kind,
-            "round": round_,
-            "phase": phase,
-            "ts": ts,
-            "agent_id": self.agent_id(agent) if agent else None,
-            "refs": refs or {},
-            "source": {"file": file, "line": line, "native_type": native_type, "sub": sub},
-            "payload": payload,
-        })
+    def emit(
+        self, kind, *, round_, phase, ts, agent, file, line, native_type, payload, refs=None, sub=0
+    ):
+        self.raw.append(
+            {
+                "key": (round_, self.phase_rank[phase], ts or "", file, line, sub),
+                "type": kind,
+                "round": round_,
+                "phase": phase,
+                "ts": ts,
+                "agent_id": self.agent_id(agent) if agent else None,
+                "refs": refs or {},
+                "source": {"file": file, "line": line, "native_type": native_type, "sub": sub},
+                "payload": payload,
+            }
+        )
 
     def put(self, kind, entity_id, entity):
         self.entities[kind][entity_id] = {"id": entity_id, **entity}
@@ -125,26 +160,30 @@ class Run:
         events = []
         for tick, raw in enumerate(self.raw):
             src = raw["source"]
-            events.append({
-                "schema": SCHEMA,
-                "run_id": self.run_id,
-                "event_id": uid(self.run_id, f"{src['file']}:{src['line']}:{src['sub']}:{raw['type']}"),
-                "tick": tick,
-                "round": raw["round"],
-                "phase": raw["phase"],
-                "ts": raw["ts"],
-                "type": raw["type"],
-                "agent_id": raw["agent_id"],
-                "refs": raw["refs"],
-                "source": {key: src[key] for key in ("file", "line", "native_type")},
-                "payload": raw["payload"],
-            })
+            events.append(
+                {
+                    "schema": SCHEMA,
+                    "run_id": self.run_id,
+                    "event_id": uid(
+                        self.run_id, f"{src['file']}:{src['line']}:{src['sub']}:{raw['type']}"
+                    ),
+                    "tick": tick,
+                    "round": raw["round"],
+                    "phase": raw["phase"],
+                    "ts": raw["ts"],
+                    "type": raw["type"],
+                    "agent_id": raw["agent_id"],
+                    "refs": raw["refs"],
+                    "source": {key: src[key] for key in ("file", "line", "native_type")},
+                    "payload": raw["payload"],
+                }
+            )
         tick_of = {}
         for event in events:
             for ref in event["refs"].values():
                 if isinstance(ref, str):
                     tick_of.setdefault(ref, event["tick"])
-        for kind, table in self.entities.items():
+        for table in self.entities.values():
             for entity_id, entity in table.items():
                 if "tick" in entity and entity["tick"] is None:
                     entity["tick"] = tick_of.get(entity_id)
@@ -169,6 +208,7 @@ def reward_for(metric, reference, status, direction="minimize"):
 
 
 # ---------------------------------------------------------------- autoresearch
+
 
 def _load_profile(out_dir, assignments, run_artifact):
     expected_hash = run_artifact.get("profile_sha256") or next(
@@ -206,7 +246,9 @@ def _recompute_boredom(out_dir, assignments, ledger, run_artifact):
         expected = assignment.get("ledger_sha256")
         prefix = prefixes.get(expected) if expected else None
         if expected and prefix is None:
-            raise ValueError(f"ledger prefix does not match assignment round {assignment.get('round')}")
+            raise ValueError(
+                f"ledger prefix does not match assignment round {assignment.get('round')}"
+            )
         if prefix is None:
             round_ = assignment.get("round", 0)
             prefix = [row for row in ordered if row.get("round", 0) < round_]
@@ -243,63 +285,132 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     critic_rows = read_tsv(out_dir / "critic.tsv")
     native_run = (out_dir / "run_id").read_text().strip() if (out_dir / "run_id").exists() else ""
     run_artifact_path = out_dir / "run.json"
-    run_artifact = json.loads(run_artifact_path.read_text(encoding="utf-8")) if run_artifact_path.exists() else {}
+    run_artifact = (
+        json.loads(run_artifact_path.read_text(encoding="utf-8"))
+        if run_artifact_path.exists()
+        else {}
+    )
     profile, recomputed_boredom = _recompute_boredom(out_dir, assignments, ledger, run_artifact)
 
     if arm is None:
         arm = next(
-            (item.get("metadata", {}).get("arm") for _, item in memory_items
-             if item.get("metadata", {}).get("arm")),
+            (
+                item.get("metadata", {}).get("arm")
+                for _, item in memory_items
+                if item.get("metadata", {}).get("arm")
+            ),
             "B",
         )
     all_ts = sorted(
-        record["ts"] for rows in (assignments, boredom_log, research, memory_log, llm_log)
-        for _, record in rows if record.get("ts")
+        record["ts"]
+        for rows in (assignments, boredom_log, research, memory_log, llm_log)
+        for _, record in rows
+        if record.get("ts")
     )
     first_ts = all_ts[0] if all_ts else native_run
     run_id = uid(NS_CAFFEINATED, f"autoresearch:{arm}:{out_dir.name}:{first_ts}")
     run = Run("autoresearch", run_id)
     run.agent("conductor", "conductor", "Conductor")
     run.agent("baseline", "baseline", "Baseline")
-    workers = sorted({
-        agent for _, record in assignments for agent in record.get("roles", {})
-    } | {record["agent"] for _, record in ledger if record.get("kind") == "candidate"})
+    workers = sorted(
+        {agent for _, record in assignments for agent in record.get("roles", {})}
+        | {record["agent"] for _, record in ledger if record.get("kind") == "candidate"}
+    )
     for worker in workers:
         run.agent(worker, "worker", worker.replace("worker-", "Worker "))
     run.agent("critic", "critic", "Critic")
 
-    starts = sorted((record["ts"], record["round"]) for _, record in assignments if record.get("ts"))
-    status_ts = sorted(record["ts"] for _, record in boredom_log
-                       if record.get("type") == "status" and record.get("ts"))
+    starts = sorted(
+        (record["ts"], record["round"]) for _, record in assignments if record.get("ts")
+    )
+    status_ts = sorted(
+        record["ts"]
+        for _, record in boredom_log
+        if record.get("type") == "status" and record.get("ts")
+    )
 
-    run.emit("run.started", round_=0, phase="assign", ts=all_ts[0] if all_ts else None,
-             agent="conductor", file="run_id", line=1, native_type="run",
-             payload={"native_run_id": native_run, "arm": arm})
+    run.emit(
+        "run.started",
+        round_=0,
+        phase="assign",
+        ts=all_ts[0] if all_ts else None,
+        agent="conductor",
+        file="run_id",
+        line=1,
+        native_type="run",
+        payload={"native_run_id": native_run, "arm": arm},
+    )
 
     # Rounds, roles and per-agent boredom.
     for line, record in assignments:
         round_, ts = record["round"], record.get("ts")
-        run.emit("round.started", round_=round_, phase="assign", ts=ts, agent="conductor",
-                 file="assignments.jsonl", line=line, native_type="assignment",
-                 payload={"regime": record.get("regime"), "swarm_B": record.get("swarm_B"),
-                          "rationale": record.get("rationale"),
-                          "profile_sha256": record.get("profile_sha256")})
+        run.emit(
+            "round.started",
+            round_=round_,
+            phase="assign",
+            ts=ts,
+            agent="conductor",
+            file="assignments.jsonl",
+            line=line,
+            native_type="assignment",
+            payload={
+                "regime": record.get("regime"),
+                "swarm_B": record.get("swarm_B"),
+                "rationale": record.get("rationale"),
+                "profile_sha256": record.get("profile_sha256"),
+            },
+        )
         for sub, (agent, role) in enumerate(sorted(record.get("roles", {}).items()), 1):
-            run.emit("agent.assigned", round_=round_, phase="assign", ts=ts, agent=agent,
-                     file="assignments.jsonl", line=line, native_type="assignment", sub=sub,
-                     payload={"role": role, "scout": agent in record.get("scouts", []),
-                              "rationale": record.get("rationale")})
+            run.emit(
+                "agent.assigned",
+                round_=round_,
+                phase="assign",
+                ts=ts,
+                agent=agent,
+                file="assignments.jsonl",
+                line=line,
+                native_type="assignment",
+                sub=sub,
+                payload={
+                    "role": role,
+                    "scout": agent in record.get("scouts", []),
+                    "rationale": record.get("rationale"),
+                },
+            )
             status = (record.get("per_agent_boredom") or {}).get(agent)
             if not status:
                 status = recomputed_boredom.get((round_, agent), {})
-            components = {key: value for key, value in status.items()
-                          if key in {"novelty", "stagnation", "overload", "fail_rate",
-                                     "trivial_rate", "diversity", "frustration"}}
-            run.emit("boredom.measured", round_=round_, phase="assign", ts=ts, agent=agent,
-                     file="assignments.jsonl", line=line, native_type="assignment", sub=100 + sub,
-                     payload={"B": status.get("B"),
-                              "regime": status.get("regime") or record.get("regime"),
-                              "components": components, "shadow": arm == "A"})
+            components = {
+                key: value
+                for key, value in status.items()
+                if key
+                in {
+                    "novelty",
+                    "stagnation",
+                    "overload",
+                    "fail_rate",
+                    "trivial_rate",
+                    "diversity",
+                    "frustration",
+                }
+            }
+            run.emit(
+                "boredom.measured",
+                round_=round_,
+                phase="assign",
+                ts=ts,
+                agent=agent,
+                file="assignments.jsonl",
+                line=line,
+                native_type="assignment",
+                sub=100 + sub,
+                payload={
+                    "B": status.get("B"),
+                    "regime": status.get("regime") or record.get("regime"),
+                    "components": components,
+                    "shadow": arm == "A",
+                },
+            )
 
     # Swarm-level meter status and novelty gates.
     gate_ts = {}
@@ -308,25 +419,51 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         ts = record.get("ts")
         round_ = round_of_ts(starts, ts)
         if record.get("type") == "status":
-            run.emit("boredom.measured", round_=round_, phase="status", ts=ts, agent=None,
-                     file="boredom_log.jsonl", line=line, native_type="status",
-                     payload={"scope": "swarm", "B": record.get("B"), "regime": record.get("regime"),
-                              "frontier_stall": record.get("frontier_stall"),
-                              "frustration": record.get("frustration"),
-                              "best_metric": record.get("best_loss"),
-                              "directive": record.get("directive"), "shadow": arm == "A"})
+            run.emit(
+                "boredom.measured",
+                round_=round_,
+                phase="status",
+                ts=ts,
+                agent=None,
+                file="boredom_log.jsonl",
+                line=line,
+                native_type="status",
+                payload={
+                    "scope": "swarm",
+                    "B": record.get("B"),
+                    "regime": record.get("regime"),
+                    "frontier_stall": record.get("frontier_stall"),
+                    "frustration": record.get("frustration"),
+                    "best_metric": record.get("best_loss"),
+                    "directive": record.get("directive"),
+                    "shadow": arm == "A",
+                },
+            )
         elif record.get("type") == "gate":
             commit = record.get("candidate_commit")
             if commit:
                 gate_ts.setdefault(commit, ts)
-            run.emit("gate.checked", round_=round_, phase="gate", ts=ts, agent=record.get("agent"),
-                     file="boredom_log.jsonl", line=line, native_type="gate",
-                     refs={"experiment_id": f"experiment:{commit}"} if commit in ledger_commits else {},
-                     payload={"pass": record.get("pass"), "candidate_commit": commit, "grounded": record.get("grounded"),
-                              "min_recent_dist": record.get("min_recent_dist"),
-                              "min_failed_dist": record.get("min_failed_dist"),
-                              "prior_art": record.get("prior_art"), "lead": record.get("lead"),
-                              "descriptor": record.get("descriptor")})
+            run.emit(
+                "gate.checked",
+                round_=round_,
+                phase="gate",
+                ts=ts,
+                agent=record.get("agent"),
+                file="boredom_log.jsonl",
+                line=line,
+                native_type="gate",
+                refs={"experiment_id": f"experiment:{commit}"} if commit in ledger_commits else {},
+                payload={
+                    "pass": record.get("pass"),
+                    "candidate_commit": commit,
+                    "grounded": record.get("grounded"),
+                    "min_recent_dist": record.get("min_recent_dist"),
+                    "min_failed_dist": record.get("min_failed_dist"),
+                    "prior_art": record.get("prior_art"),
+                    "lead": record.get("lead"),
+                    "descriptor": record.get("descriptor"),
+                },
+            )
 
     # Exa research: queries are questions, sources/extracts are observations.
     query_agent = {}
@@ -337,33 +474,85 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             agent = record.get("agent") if record.get("agent") in run.agents else None
             query_agent[record["id"]] = agent
             kind = {"prior_art": "prior_art"}.get(record.get("purpose"), "search")
-            run.put("questions", qid, {"agent_id": run.agent_id(agent), "kind": kind,
-                                       "text": record.get("query"), "tick": None,
-                                       "round": round_, "purpose": record.get("purpose"),
-                                       "answered_by": []})
-            run.emit("question.asked", round_=round_, phase="research", ts=ts, agent=agent,
-                     file="research_log.jsonl", line=line, native_type="query",
-                     refs={"question_id": qid},
-                     payload={"kind": kind, "text": record.get("query"),
-                              "n_results": record.get("n_results"), "cost": record.get("cost")})
+            run.put(
+                "questions",
+                qid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": kind,
+                    "text": record.get("query"),
+                    "tick": None,
+                    "round": round_,
+                    "purpose": record.get("purpose"),
+                    "answered_by": [],
+                },
+            )
+            run.emit(
+                "question.asked",
+                round_=round_,
+                phase="research",
+                ts=ts,
+                agent=agent,
+                file="research_log.jsonl",
+                line=line,
+                native_type="query",
+                refs={"question_id": qid},
+                payload={
+                    "kind": kind,
+                    "text": record.get("query"),
+                    "n_results": record.get("n_results"),
+                    "cost": record.get("cost"),
+                },
+            )
         elif record.get("type") == "source":
             sid = f"source:{record['id']}"
             qid = f"question:{record.get('query_id')}"
-            run.put("sources", sid, {"title": record.get("title"), "url": record.get("url"),
-                                     "published": record.get("published"),
-                                     "highlights": record.get("highlights", []),
-                                     "query_id": qid, "extract": None, "cited_by": []})
+            run.put(
+                "sources",
+                sid,
+                {
+                    "title": record.get("title"),
+                    "url": record.get("url"),
+                    "published": record.get("published"),
+                    "highlights": record.get("highlights", []),
+                    "query_id": qid,
+                    "extract": None,
+                    "cited_by": [],
+                },
+            )
             oid = f"observation:{record['id']}"
             agent = query_agent.get(record.get("query_id"))
-            run.put("observations", oid, {"agent_id": run.agent_id(agent), "kind": "sources",
-                                          "summary": record.get("title"), "refs": [sid],
-                                          "question_id": qid, "tick": None, "round": round_})
+            run.put(
+                "observations",
+                oid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "sources",
+                    "summary": record.get("title"),
+                    "refs": [sid],
+                    "question_id": qid,
+                    "tick": None,
+                    "round": round_,
+                },
+            )
             if qid in run.entities["questions"]:
                 run.entities["questions"][qid]["answered_by"].append(oid)
-            run.emit("observation.received", round_=round_, phase="research", ts=ts, agent=agent,
-                     file="research_log.jsonl", line=line, native_type="source",
-                     refs={"observation_id": oid, "source_id": sid, "question_id": qid},
-                     payload={"kind": "sources", "summary": record.get("title"), "url": record.get("url")})
+            run.emit(
+                "observation.received",
+                round_=round_,
+                phase="research",
+                ts=ts,
+                agent=agent,
+                file="research_log.jsonl",
+                line=line,
+                native_type="source",
+                refs={"observation_id": oid, "source_id": sid, "question_id": qid},
+                payload={
+                    "kind": "sources",
+                    "summary": record.get("title"),
+                    "url": record.get("url"),
+                },
+            )
         elif record.get("type") == "extract":
             sid = f"source:{record.get('source_id')}"
             if sid in run.entities["sources"]:
@@ -379,89 +568,225 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         agent = native if native in run.agents else None
         qid, oid = f"question:recall-{line}", f"observation:recall-{line}"
         hits = [f"memory:{source_id}" for source_id in record.get("source_ids", [])]
-        run.put("questions", qid, {"agent_id": run.agent_id(agent), "kind": "recall",
-                                   "text": record.get("query"), "tick": None, "round": round_,
-                                   "answered_by": [oid], "attribution": "logged" if agent else "unknown"})
-        run.put("observations", oid, {"agent_id": run.agent_id(agent), "kind": "memories",
-                                      "summary": f"{record.get('n_results', 0)} memories from "
-                                                 f"{', '.join(record.get('authors', [])) or 'nobody'}",
-                                      "refs": hits, "question_id": qid, "tick": None, "round": round_})
-        common = dict(round_=round_, phase="research", ts=ts, agent=agent,
-                      file="memory_log.jsonl", line=line, native_type="recall")
-        run.emit("question.asked", **common, refs={"question_id": qid},
-                 payload={"kind": "recall", "text": record.get("query"), "backend": record.get("backend")})
-        run.emit("observation.received", **common, sub=1, refs={"observation_id": oid, "question_id": qid},
-                 payload={"kind": "memories", "n_results": record.get("n_results"),
-                          "authors": record.get("authors", []), "memory_ids": hits})
+        run.put(
+            "questions",
+            qid,
+            {
+                "agent_id": run.agent_id(agent),
+                "kind": "recall",
+                "text": record.get("query"),
+                "tick": None,
+                "round": round_,
+                "answered_by": [oid],
+                "attribution": "logged" if agent else "unknown",
+            },
+        )
+        run.put(
+            "observations",
+            oid,
+            {
+                "agent_id": run.agent_id(agent),
+                "kind": "memories",
+                "summary": f"{record.get('n_results', 0)} memories from "
+                f"{', '.join(record.get('authors', [])) or 'nobody'}",
+                "refs": hits,
+                "question_id": qid,
+                "tick": None,
+                "round": round_,
+            },
+        )
+        common = {
+            "round_": round_,
+            "phase": "research",
+            "ts": ts,
+            "agent": agent,
+            "file": "memory_log.jsonl",
+            "line": line,
+            "native_type": "recall",
+        }
+        run.emit(
+            "question.asked",
+            **common,
+            refs={"question_id": qid},
+            payload={
+                "kind": "recall",
+                "text": record.get("query"),
+                "backend": record.get("backend"),
+            },
+        )
+        run.emit(
+            "observation.received",
+            **common,
+            sub=1,
+            refs={"observation_id": oid, "question_id": qid},
+            payload={
+                "kind": "memories",
+                "n_results": record.get("n_results"),
+                "authors": record.get("authors", []),
+                "memory_ids": hits,
+            },
+        )
         for hit in hits:
             if hit in run.entities["memory"]:
                 run.entities["memory"][hit]["recalled_by"].append(run.agent_id(agent))
 
     # Shared memory writes; claims are hypotheses, lessons are diary entries.
     claims = {}
-    phase_for = {"lead": "research", "claim": "propose", "result": "critic", "verdict": "critic",
-                 "lesson": "critic", "assignment": "assign"}
+    phase_for = {
+        "lead": "research",
+        "claim": "propose",
+        "result": "critic",
+        "verdict": "critic",
+        "lesson": "critic",
+        "assignment": "assign",
+    }
     for line, item in memory_items:
         meta = item.get("metadata", {})
         label = meta.get("type") or (item.get("label") or "note").split(" by ")[0]
         author = item.get("author")
         agent = author if author in run.agents else ("conductor" if label == "assignment" else None)
-        round_ = meta.get("round") if isinstance(meta.get("round"), int) else round_of_ts(starts, item.get("timestamp"))
+        round_ = (
+            meta.get("round")
+            if isinstance(meta.get("round"), int)
+            else round_of_ts(starts, item.get("timestamp"))
+        )
         mid = f"memory:{item.get('sourceId') or item.get('id') or line}"  # recalls report sourceId
         ts = item.get("timestamp")
-        run.put("memory", mid, {"native_id": item.get("id"), "author_agent_id": run.agent_id(agent),
-                                "author": author,
-                                "type": label, "text": item.get("content"),
-                                "scope": item.get("audience") or "swarm", "tick": None,
-                                "round": round_, "metadata": meta, "recalled_by": []})
+        run.put(
+            "memory",
+            mid,
+            {
+                "native_id": item.get("id"),
+                "author_agent_id": run.agent_id(agent),
+                "author": author,
+                "type": label,
+                "text": item.get("content"),
+                "scope": item.get("audience") or "swarm",
+                "tick": None,
+                "round": round_,
+                "metadata": meta,
+                "recalled_by": [],
+            },
+        )
         phase = phase_for.get(label, "critic")
-        common = dict(round_=round_, phase=phase, ts=ts, agent=agent,
-                      file="memory.jsonl", line=line, native_type=label)
-        run.emit("memory.written", **common, refs={"memory_id": mid},
-                 payload={"type": label, "excerpt": (item.get("content") or "")[:240]})
+        common = {
+            "round_": round_,
+            "phase": phase,
+            "ts": ts,
+            "agent": agent,
+            "file": "memory.jsonl",
+            "line": line,
+            "native_type": label,
+        }
+        run.emit(
+            "memory.written",
+            **common,
+            refs={"memory_id": mid},
+            payload={"type": label, "excerpt": (item.get("content") or "")[:240]},
+        )
         if label == "claim":
             hid = f"hypothesis:{meta.get('commit') or line}"
             claims[(author, round_)] = hid
-            run.put("hypotheses", hid, {"agent_id": run.agent_id(agent), "round": round_,
-                                        "text": meta.get("idea") or item.get("content"),
-                                        "rationale": meta.get("rationale"),
-                                        "descriptor": meta.get("descriptor"),
-                                        "predicted_delta": meta.get("predicted_delta"),
-                                        "lead_id": meta.get("lead_id") or meta.get("lead"),
-                                        "source_ids": meta.get("source_ids") or meta.get("sources") or [],
-                                        "memory_id": mid, "tick": None})
-            run.emit("hypothesis.proposed", **common, sub=1, refs={"hypothesis_id": hid, "memory_id": mid},
-                     payload={"text": run.entities["hypotheses"][hid]["text"]})
+            run.put(
+                "hypotheses",
+                hid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "round": round_,
+                    "text": meta.get("idea") or item.get("content"),
+                    "rationale": meta.get("rationale"),
+                    "descriptor": meta.get("descriptor"),
+                    "predicted_delta": meta.get("predicted_delta"),
+                    "lead_id": meta.get("lead_id") or meta.get("lead"),
+                    "source_ids": meta.get("source_ids") or meta.get("sources") or [],
+                    "memory_id": mid,
+                    "tick": None,
+                },
+            )
+            run.emit(
+                "hypothesis.proposed",
+                **common,
+                sub=1,
+                refs={"hypothesis_id": hid, "memory_id": mid},
+                payload={"text": run.entities["hypotheses"][hid]["text"]},
+            )
         if label in {"claim", "lesson"}:
             did = f"diary:{line}"
             kind = "rationale" if label == "claim" else "critic_lesson"
-            run.put("diary", did, {"agent_id": run.agent_id(agent), "kind": kind, "round": round_,
-                                   "text": meta.get("rationale") or item.get("content"), "tick": None,
-                                   "refs": [mid]})
-            run.emit("diary.written", **common, sub=2, refs={"diary_id": did},
-                     payload={"kind": kind, "excerpt": (run.entities["diary"][did]["text"] or "")[:240]})
+            run.put(
+                "diary",
+                did,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": kind,
+                    "round": round_,
+                    "text": meta.get("rationale") or item.get("content"),
+                    "tick": None,
+                    "refs": [mid],
+                },
+            )
+            run.emit(
+                "diary.written",
+                **common,
+                sub=2,
+                refs={"diary_id": did},
+                payload={"kind": kind, "excerpt": (run.entities["diary"][did]["text"] or "")[:240]},
+            )
 
     # LLM calls: metadata only in events; prompts live in the entity.
     for line, record in llm_log:
         role = (record.get("role") or "").upper()
         native = record.get("agent")
         agent = native if native in run.agents else ("critic" if role == "CRITIC" else None)
-        phase = "research" if role.startswith("SCOUT") else "critic" if role == "CRITIC" else "propose"
+        phase = (
+            "research" if role.startswith("SCOUT") else "critic" if role == "CRITIC" else "propose"
+        )
         ts = record.get("ts")
-        round_ = record.get("round") if isinstance(record.get("round"), int) else round_of_ts(starts, ts)
+        round_ = (
+            record.get("round") if isinstance(record.get("round"), int) else round_of_ts(starts, ts)
+        )
         cid = f"llm_call:{line}"
         usage = record.get("usage") or {}
-        reasoning = [attempt.get("reasoning") for attempt in record.get("attempts", []) if attempt.get("reasoning")]
-        run.put("llm_calls", cid, {"agent_id": run.agent_id(agent), "role": role, "model": record.get("model"),
-                                   "prompt_sha": record.get("prompt_sha"), "prompt": record.get("prompt"),
-                                   "response": record.get("response"),
-                                   "reasoning": record.get("reasoning") or ("\n\n".join(reasoning) or None),
-                                   "usage": usage, "latency_ms": record.get("latency_ms"),
-                                   "round": round_, "tick": None})
-        run.emit("llm.called", round_=round_, phase=phase, ts=ts, agent=agent, file="llm_log.jsonl",
-                 line=line, native_type=role, refs={"llm_call_id": cid},
-                 payload={"role": role, "model": record.get("model"), "prompt_sha": record.get("prompt_sha"),
-                          "tokens": usage.get("total_tokens"), "latency_ms": record.get("latency_ms")})
+        reasoning = [
+            attempt.get("reasoning")
+            for attempt in record.get("attempts", [])
+            if attempt.get("reasoning")
+        ]
+        run.put(
+            "llm_calls",
+            cid,
+            {
+                "agent_id": run.agent_id(agent),
+                "role": role,
+                "model": record.get("model"),
+                "prompt_sha": record.get("prompt_sha"),
+                "prompt": record.get("prompt"),
+                "response": record.get("response"),
+                "reasoning": record.get("reasoning") or ("\n\n".join(reasoning) or None),
+                "usage": usage,
+                "latency_ms": record.get("latency_ms"),
+                "round": round_,
+                "tick": None,
+            },
+        )
+        run.emit(
+            "llm.called",
+            round_=round_,
+            phase=phase,
+            ts=ts,
+            agent=agent,
+            file="llm_log.jsonl",
+            line=line,
+            native_type=role,
+            refs={"llm_call_id": cid},
+            payload={
+                "role": role,
+                "model": record.get("model"),
+                "prompt_sha": record.get("prompt_sha"),
+                "tokens": usage.get("total_tokens"),
+                "latency_ms": record.get("latency_ms"),
+            },
+        )
 
     # Ledger: experiments, rewards, verdicts, discoveries.
     critic_why = {(row.get("round"), row.get("commit")): row for row in critic_rows}
@@ -495,33 +820,79 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             value = reward_for(metric, reference, status) if kind == "candidate" else 0.0
             rid = f"reward:{row.get('seq')}"
             hid = claims.get((row.get("agent"), round_))
-            run.put("rewards", rid, {"agent_id": run.agent_id(agent), "experiment_id": eid,
-                                     "value": value, "metric_value": metric, "reference": reference,
-                                     "status": status, "round": round_, "tick": None})
-            run.put("experiments", eid, {
-                "agent_id": run.agent_id(agent), "kind": kind, "round": round_, "seq": row.get("seq"),
-                "commit": commit, "parent_commit": None, "description": row.get("description"),
-                "descriptor": row.get("descriptor"), "role": row.get("role"),
-                "regime_label": row.get("regime_label"), "status": status, "metric_value": metric,
-                "replicate_score": row.get("replicate_score"), "predicted_delta": row.get("predicted_delta"),
-                "lead": row.get("lead"), "source_ids": [f"source:{s}" for s in row.get("sources") or []],
-                "hypothesis_id": hid, "gate": {"reasons": gate_reasons,
-                                               "attempts": len(row.get("gate_attempts") or [])},
-                "verdict": None, "reward_id": rid,
-                "artifacts": {"log": f"runs/{commit}.log"} if commit else {},
-                "start_tick": None, "end_tick": None, "tick": None,
-            })
+            run.put(
+                "rewards",
+                rid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "experiment_id": eid,
+                    "value": value,
+                    "metric_value": metric,
+                    "reference": reference,
+                    "status": status,
+                    "round": round_,
+                    "tick": None,
+                },
+            )
+            run.put(
+                "experiments",
+                eid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": kind,
+                    "round": round_,
+                    "seq": row.get("seq"),
+                    "commit": commit,
+                    "parent_commit": None,
+                    "description": row.get("description"),
+                    "descriptor": row.get("descriptor"),
+                    "role": row.get("role"),
+                    "regime_label": row.get("regime_label"),
+                    "status": status,
+                    "metric_value": metric,
+                    "replicate_score": row.get("replicate_score"),
+                    "predicted_delta": row.get("predicted_delta"),
+                    "lead": row.get("lead"),
+                    "source_ids": [f"source:{s}" for s in row.get("sources") or []],
+                    "hypothesis_id": hid,
+                    "gate": {
+                        "reasons": gate_reasons,
+                        "attempts": len(row.get("gate_attempts") or []),
+                    },
+                    "verdict": None,
+                    "reward_id": rid,
+                    "artifacts": {"log": f"runs/{commit}.log"} if commit else {},
+                    "start_tick": None,
+                    "end_tick": None,
+                    "tick": None,
+                },
+            )
             for source in row.get("sources") or []:
                 if f"source:{source}" in run.entities["sources"]:
                     run.entities["sources"][f"source:{source}"]["cited_by"].append(eid)
-            common = dict(round_=round_, phase="evaluate", agent=agent, file="ledger.jsonl", line=line,
-                          native_type=kind)
-            run.emit("experiment.started", **common, ts=started,
-                     refs={"experiment_id": eid, **({"hypothesis_id": hid} if hid else {})},
-                     payload={"description": row.get("description"), "role": row.get("role")})
-            run.emit("experiment.finished", **common, ts=finished_ts, sub=1,
-                     refs={"experiment_id": eid, "reward_id": rid},
-                     payload={"status": status, "metric_value": metric, "reward": value})
+            common = {
+                "round_": round_,
+                "phase": "evaluate",
+                "agent": agent,
+                "file": "ledger.jsonl",
+                "line": line,
+                "native_type": kind,
+            }
+            run.emit(
+                "experiment.started",
+                **common,
+                ts=started,
+                refs={"experiment_id": eid, **({"hypothesis_id": hid} if hid else {})},
+                payload={"description": row.get("description"), "role": row.get("role")},
+            )
+            run.emit(
+                "experiment.finished",
+                **common,
+                ts=finished_ts,
+                sub=1,
+                refs={"experiment_id": eid, "reward_id": rid},
+                payload={"status": status, "metric_value": metric, "reward": value},
+            )
             if status == "keep" and metric is not None and (best is None or metric < best):
                 best = metric
             if kind == "baseline" and metric is not None:
@@ -530,59 +901,121 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             eid = experiments_by_commit.get(commit, f"experiment:{commit}")
             accepted = bool(row.get("accepted"))
             info = critic_why.get((str(round_), commit), {})
-            verdict = {"verdict": row.get("verdict"), "accepted": accepted,
-                       "replicate_score": row.get("replicate_score"), "why": info.get("why")}
+            verdict = {
+                "verdict": row.get("verdict"),
+                "accepted": accepted,
+                "replicate_score": row.get("replicate_score"),
+                "why": info.get("why"),
+            }
             if eid in run.entities["experiments"]:
                 run.entities["experiments"][eid]["verdict"] = verdict
-            common = dict(round_=round_, phase="critic", ts=row.get("ts"), agent="critic",
-                          file="ledger.jsonl", line=line, native_type="critic")
+            common = {
+                "round_": round_,
+                "phase": "critic",
+                "ts": row.get("ts"),
+                "agent": "critic",
+                "file": "ledger.jsonl",
+                "line": line,
+                "native_type": "critic",
+            }
             run.emit("verdict.issued", **common, refs={"experiment_id": eid}, payload=verdict)
             experiment = run.entities["experiments"].get(eid)
             metric = experiment and experiment["metric_value"]
             second = number(row.get("score"))
             if metric is not None and second is not None:
                 metric = (metric + second) / 2  # swarm.py confirms best on the two-seed mean
-            if accepted and metric is not None and (confirmed is None or metric < confirmed["metric_value"]):
+            if (
+                accepted
+                and metric is not None
+                and (confirmed is None or metric < confirmed["metric_value"])
+            ):
                 previous = confirmed["metric_value"] if confirmed else None
                 xid = f"discovery:{commit}"
-                run.put("discoveries", xid, {
-                    "agent_id": experiment["agent_id"], "experiment_id": eid, "round": round_,
-                    "metric_value": metric, "previous_best": previous,
-                    "improvement": None if previous is None else round(previous - metric, 6),
-                    "lineage": {"hypothesis_id": experiment["hypothesis_id"], "lead": experiment["lead"],
-                                "source_ids": experiment["source_ids"]},
-                    "title": experiment["description"], "tick": None,
-                })
-                run.emit("discovery.made", **common, sub=1, refs={"discovery_id": xid, "experiment_id": eid},
-                         payload={"metric_value": metric, "previous_best": previous,
-                                  "title": experiment["description"]})
-                confirmed = {"metric_value": metric, "experiment_id": eid,
-                             "agent": next(n for n, a in run.agents.items() if a["agent_id"] == experiment["agent_id"])}
+                run.put(
+                    "discoveries",
+                    xid,
+                    {
+                        "agent_id": experiment["agent_id"],
+                        "experiment_id": eid,
+                        "round": round_,
+                        "metric_value": metric,
+                        "previous_best": previous,
+                        "improvement": None if previous is None else round(previous - metric, 6),
+                        "lineage": {
+                            "hypothesis_id": experiment["hypothesis_id"],
+                            "lead": experiment["lead"],
+                            "source_ids": experiment["source_ids"],
+                        },
+                        "title": experiment["description"],
+                        "tick": None,
+                    },
+                )
+                run.emit(
+                    "discovery.made",
+                    **common,
+                    sub=1,
+                    refs={"discovery_id": xid, "experiment_id": eid},
+                    payload={
+                        "metric_value": metric,
+                        "previous_best": previous,
+                        "title": experiment["description"],
+                    },
+                )
+                confirmed = {
+                    "metric_value": metric,
+                    "experiment_id": eid,
+                    "agent": next(
+                        n for n, a in run.agents.items() if a["agent_id"] == experiment["agent_id"]
+                    ),
+                }
 
     last_round = max([r for _, r in starts] + [0])
     final_status = status or run_artifact.get("status", "finished")
     final_status = final_status if final_status in {"finished", "stopped"} else "finished"
     if final:
-        run.emit("run.finished", round_=last_round, phase="finish", ts=all_ts[-1] if all_ts else None,
-                 agent="conductor", file="~end", line=0, native_type="run",
-                 payload={"status": final_status, "best_metric": confirmed and confirmed["metric_value"]})
-    baseline = next((number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None)
+        run.emit(
+            "run.finished",
+            round_=last_round,
+            phase="finish",
+            ts=all_ts[-1] if all_ts else None,
+            agent="conductor",
+            file="~end",
+            line=0,
+            native_type="run",
+            payload={
+                "status": final_status,
+                "best_metric": confirmed and confirmed["metric_value"],
+            },
+        )
+    baseline = next(
+        (number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None
+    )
     manifest_extra = {
         "title": title or f"autoresearch · {out_dir.name}",
-        "arm": {"id": arm, "label": "boredom meter on" if arm == "B" else "meter shadow only",
-                "boredom_enabled": arm != "A", "policy": "boredom_meter"},
+        "arm": {
+            "id": arm,
+            "label": "boredom meter on" if arm == "B" else "meter shadow only",
+            "boredom_enabled": arm != "A",
+            "policy": "boredom_meter",
+        },
         "metric": {"name": "loss", "unit": "", "direction": "minimize"},
-        "boredom": {"scale": [0, 1], "thresholds": {
-                        **profile["thresholds"], "eps": profile["eps"],
-                        "accept_margin": profile.get("accept_margin", 0.0)},
-                    "regimes":
-                    ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"]},
-        "provenance": {"llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
-                       "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
-                       "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
-                       "command": run_artifact.get("command", ""),
-                       "swarm_commit": run_artifact.get("swarm_commit", ""),
-                       "native_run_id": native_run},
+        "boredom": {
+            "scale": [0, 1],
+            "thresholds": {
+                **profile["thresholds"],
+                "eps": profile["eps"],
+                "accept_margin": profile.get("accept_margin", 0.0),
+            },
+            "regimes": ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"],
+        },
+        "provenance": {
+            "llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
+            "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
+            "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
+            "command": run_artifact.get("command", ""),
+            "swarm_commit": run_artifact.get("swarm_commit", ""),
+            "native_run_id": native_run,
+        },
         "baseline": baseline,
         "profile": profile,
         "status": final_status if final else "running",
@@ -594,6 +1027,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
 
 # ---------------------------------------------------------------- ignobel
 
+
 def export_ignobel(out_dir, title=None):
     out_dir = Path(out_dir)
     rows = read_jsonl(out_dir / "events.jsonl")
@@ -603,24 +1037,48 @@ def export_ignobel(out_dir, title=None):
     arm, seed = first.get("arm", "full"), first.get("seed", 0)
     run_id = uid(NS_CAFFEINATED, f"ignobel:{arm}:{out_dir.name}:{seed}")
     run = Run("ignobel", run_id)
-    statisticians = {r["payload"].get("requester") for _, r in rows if r.get("type") == "measurement_request"}
-    names = {r["agent"] for _, r in rows if r.get("agent")} | statisticians | {
-        r["payload"].get(key) for _, r in rows for key in ("partner", "receiver")
-        if r.get("type") in {"talk", "share"}
+    statisticians = {
+        r["payload"].get("requester") for _, r in rows if r.get("type") == "measurement_request"
     }
+    names = (
+        {r["agent"] for _, r in rows if r.get("agent")}
+        | statisticians
+        | {
+            r["payload"].get(key)
+            for _, r in rows
+            for key in ("partner", "receiver")
+            if r.get("type") in {"talk", "share"}
+        }
+    )
     for name in sorted(n for n in names if isinstance(n, str) and n and n != "world"):
         run.agent(name, "statistician" if name in statisticians else "researcher", name.title())
     run.agent("world", "world", "World")
-    phase_for = {"seed": "seed", "boredom": "boredom", "talk": "talk", "share": "share", "snap": "snap",
-                 "idea": "propose", "prediction": "propose", "measurement_request": "study",
-                 "study_result": "study", "lesson": "diary"}
+    phase_for = {
+        "seed": "seed",
+        "boredom": "boredom",
+        "talk": "talk",
+        "share": "share",
+        "snap": "snap",
+        "idea": "propose",
+        "prediction": "propose",
+        "measurement_request": "study",
+        "study_result": "study",
+        "lesson": "diary",
+    }
     best = {}
     for line, event in rows:
         kind, agent, round_ = event.get("type"), event.get("agent"), event.get("round", 0)
         agent = agent if agent in run.agents else "world"
         payload = event.get("payload") or {}
-        common = dict(round_=round_, phase=phase_for.get(kind, "diary"), ts=None, agent=agent,
-                      file="events.jsonl", line=line, native_type=kind)
+        common = {
+            "round_": round_,
+            "phase": phase_for.get(kind, "diary"),
+            "ts": None,
+            "agent": agent,
+            "file": "events.jsonl",
+            "line": line,
+            "native_type": kind,
+        }
         if kind in {"seed", "snap"}:
             qid, oid = f"question:{line}", f"observation:{line}"
             urls = payload.get("source_urls") or payload.get("urls") or []
@@ -628,58 +1086,152 @@ def export_ignobel(out_dir, title=None):
             for url in urls:
                 sid = f"source:{url}"
                 sources.append(sid)
-                run.entities["sources"].setdefault(sid, {"id": sid, "title": url, "url": url,
-                                                         "query_id": qid, "cited_by": []})
+                run.entities["sources"].setdefault(
+                    sid, {"id": sid, "title": url, "url": url, "query_id": qid, "cited_by": []}
+                )
             text = payload.get("query") or payload.get("text") or payload.get("topic") or kind
-            run.put("questions", qid, {"agent_id": run.agent_id(agent), "kind": "search", "text": text,
-                                       "round": round_, "tick": None, "answered_by": [oid]})
-            run.put("observations", oid, {"agent_id": run.agent_id(agent), "kind": "snap" if kind == "snap" else "sources",
-                                          "summary": text, "refs": sources, "question_id": qid,
-                                          "round": round_, "tick": None})
-            run.emit("question.asked", **common, refs={"question_id": qid}, payload={"kind": "search", "text": text})
-            run.emit("observation.received", **common, sub=1, refs={"observation_id": oid},
-                     payload={"kind": "snap" if kind == "snap" else "sources", "summary": text,
-                              "partner": payload.get("partner")})
+            run.put(
+                "questions",
+                qid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "search",
+                    "text": text,
+                    "round": round_,
+                    "tick": None,
+                    "answered_by": [oid],
+                },
+            )
+            run.put(
+                "observations",
+                oid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "snap" if kind == "snap" else "sources",
+                    "summary": text,
+                    "refs": sources,
+                    "question_id": qid,
+                    "round": round_,
+                    "tick": None,
+                },
+            )
+            run.emit(
+                "question.asked",
+                **common,
+                refs={"question_id": qid},
+                payload={"kind": "search", "text": text},
+            )
+            run.emit(
+                "observation.received",
+                **common,
+                sub=1,
+                refs={"observation_id": oid},
+                payload={
+                    "kind": "snap" if kind == "snap" else "sources",
+                    "summary": text,
+                    "partner": payload.get("partner"),
+                },
+            )
         elif kind == "idea":
             hid = f"hypothesis:{payload.get('idea_id', line)}"
-            run.put("hypotheses", hid, {"agent_id": run.agent_id(agent), "round": round_,
-                                        "text": payload.get("text"), "kind": payload.get("kind"),
-                                        "descriptor": payload.get("descriptor"),
-                                        "source_ids": [f"source:{u}" for u in payload.get("source_urls", [])],
-                                        "novelty": payload.get("novelty"), "partner": payload.get("partner"),
-                                        "prediction": None, "tick": None})
-            run.emit("hypothesis.proposed", **common, refs={"hypothesis_id": hid},
-                     payload={"text": payload.get("text"), "kind": payload.get("kind")})
+            run.put(
+                "hypotheses",
+                hid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "round": round_,
+                    "text": payload.get("text"),
+                    "kind": payload.get("kind"),
+                    "descriptor": payload.get("descriptor"),
+                    "source_ids": [f"source:{u}" for u in payload.get("source_urls", [])],
+                    "novelty": payload.get("novelty"),
+                    "partner": payload.get("partner"),
+                    "prediction": None,
+                    "tick": None,
+                },
+            )
+            run.emit(
+                "hypothesis.proposed",
+                **common,
+                refs={"hypothesis_id": hid},
+                payload={"text": payload.get("text"), "kind": payload.get("kind")},
+            )
         elif kind == "prediction":
             hid = f"hypothesis:{payload.get('idea_id')}"
             if hid in run.entities["hypotheses"]:
                 run.entities["hypotheses"][hid]["prediction"] = {
-                    "direction": payload.get("direction"), "effect_size": payload.get("effect_size")}
+                    "direction": payload.get("direction"),
+                    "effect_size": payload.get("effect_size"),
+                }
         elif kind == "boredom":
-            components = {k: payload[k] for k in ("similarity", "self_repeat", "ext_familiar",
-                                                 "unsurprise", "stall", "frustration") if k in payload}
-            run.emit("agent.assigned", **common, payload={"role": payload.get("action"), "scout": False})
-            run.emit("boredom.measured", **common, sub=1,
-                     payload={"B": payload.get("B"), "regime": payload.get("regime"),
-                              "components": components, "shadow": arm != "full"})
+            components = {
+                k: payload[k]
+                for k in (
+                    "similarity",
+                    "self_repeat",
+                    "ext_familiar",
+                    "unsurprise",
+                    "stall",
+                    "frustration",
+                )
+                if k in payload
+            }
+            run.emit(
+                "agent.assigned", **common, payload={"role": payload.get("action"), "scout": False}
+            )
+            run.emit(
+                "boredom.measured",
+                **common,
+                sub=1,
+                payload={
+                    "B": payload.get("B"),
+                    "regime": payload.get("regime"),
+                    "components": components,
+                    "shadow": arm != "full",
+                },
+            )
         elif kind == "talk":
             partner = payload.get("partner")
-            run.emit("message.sent", **common, refs={"to_agent_id": run.agent_id(partner)} if partner in run.agents else {},
-                     payload={"turn": payload.get("turn"), "text": payload.get("text")})
+            run.emit(
+                "message.sent",
+                **common,
+                refs={"to_agent_id": run.agent_id(partner)} if partner in run.agents else {},
+                payload={"turn": payload.get("turn"), "text": payload.get("text")},
+            )
         elif kind == "share":
             receiver = payload.get("receiver")
-            run.emit("items.shared", **common,
-                     refs={"to_agent_id": run.agent_id(receiver)} if receiver in run.agents else {},
-                     payload={"offered": payload.get("offered"), "kept": payload.get("kept")})
+            run.emit(
+                "items.shared",
+                **common,
+                refs={"to_agent_id": run.agent_id(receiver)} if receiver in run.agents else {},
+                payload={"offered": payload.get("offered"), "kept": payload.get("kept")},
+            )
         elif kind == "measurement_request":
             oid = f"observation:{line}"
-            run.put("observations", oid, {"agent_id": run.agent_id(agent), "kind": "measurement",
-                                          "summary": f"{payload.get('instrument')} n={payload.get('n')}",
-                                          "refs": [], "round": round_, "tick": None,
-                                          "requester": payload.get("requester")})
-            run.emit("observation.received", **common, refs={"observation_id": oid},
-                     payload={"kind": "measurement", "instrument": payload.get("instrument"),
-                              "n": payload.get("n"), "budget_left": payload.get("budget_left")})
+            run.put(
+                "observations",
+                oid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "measurement",
+                    "summary": f"{payload.get('instrument')} n={payload.get('n')}",
+                    "refs": [],
+                    "round": round_,
+                    "tick": None,
+                    "requester": payload.get("requester"),
+                },
+            )
+            run.emit(
+                "observation.received",
+                **common,
+                refs={"observation_id": oid},
+                payload={
+                    "kind": "measurement",
+                    "instrument": payload.get("instrument"),
+                    "n": payload.get("n"),
+                    "budget_left": payload.get("budget_left"),
+                },
+            )
         elif kind == "study_result":
             eid = f"experiment:{payload.get('study_id', line)}"
             hid = f"hypothesis:{payload.get('idea_id')}"
@@ -687,47 +1239,127 @@ def export_ignobel(out_dir, title=None):
             prediction = payload.get("prediction") or {}
             gap = study_gap(prediction, stats.get("effect_size"), stats.get("direction"))
             replicated = bool(payload.get("replicated"))
-            status = "failed" if not payload.get("ok") else ("replicated" if replicated else "not_replicated")
+            status = (
+                "failed"
+                if not payload.get("ok")
+                else ("replicated" if replicated else "not_replicated")
+            )
             value = round(1 - gap, 6) if replicated else 0.0
             rid = f"reward:{payload.get('study_id', line)}"
-            run.put("rewards", rid, {"agent_id": run.agent_id(agent), "experiment_id": eid, "value": value,
-                                     "metric_value": stats.get("p"), "reference": None, "status": status,
-                                     "gap": gap, "round": round_, "tick": None})
-            run.put("experiments", eid, {
-                "agent_id": run.agent_id(agent), "kind": "study", "round": round_, "status": status,
-                "hypothesis_id": hid if hid in run.entities["hypotheses"] else None,
-                "description": payload.get("title") or payload.get("abstract"), "abstract": payload.get("abstract"),
-                "stats": stats, "prediction": prediction, "novelty": payload.get("novelty"),
-                "metric_value": stats.get("p"), "reward_id": rid, "verdict": None,
-                "artifacts": {"plot": payload["plot_path"]} if payload.get("plot_path") else {},
-                "stderr": payload.get("stderr"), "tick": None,
-            })
-            run.emit("experiment.started", **common, refs={"experiment_id": eid}, payload={"title": payload.get("title")})
-            run.emit("experiment.finished", **common, sub=1, refs={"experiment_id": eid, "reward_id": rid},
-                     payload={"status": status, "p": stats.get("p"), "effect_size": stats.get("effect_size"),
-                              "reward": value})
+            run.put(
+                "rewards",
+                rid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "experiment_id": eid,
+                    "value": value,
+                    "metric_value": stats.get("p"),
+                    "reference": None,
+                    "status": status,
+                    "gap": gap,
+                    "round": round_,
+                    "tick": None,
+                },
+            )
+            run.put(
+                "experiments",
+                eid,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "study",
+                    "round": round_,
+                    "status": status,
+                    "hypothesis_id": hid if hid in run.entities["hypotheses"] else None,
+                    "description": payload.get("title") or payload.get("abstract"),
+                    "abstract": payload.get("abstract"),
+                    "stats": stats,
+                    "prediction": prediction,
+                    "novelty": payload.get("novelty"),
+                    "metric_value": stats.get("p"),
+                    "reward_id": rid,
+                    "verdict": None,
+                    "artifacts": {"plot": payload["plot_path"]} if payload.get("plot_path") else {},
+                    "stderr": payload.get("stderr"),
+                    "tick": None,
+                },
+            )
+            run.emit(
+                "experiment.started",
+                **common,
+                refs={"experiment_id": eid},
+                payload={"title": payload.get("title")},
+            )
+            run.emit(
+                "experiment.finished",
+                **common,
+                sub=1,
+                refs={"experiment_id": eid, "reward_id": rid},
+                payload={
+                    "status": status,
+                    "p": stats.get("p"),
+                    "effect_size": stats.get("effect_size"),
+                    "reward": value,
+                },
+            )
             if replicated and value > best.get(agent, -1):
                 best[agent] = value
                 xid = f"discovery:{payload.get('study_id', line)}"
-                run.put("discoveries", xid, {"agent_id": run.agent_id(agent), "experiment_id": eid,
-                                             "round": round_, "metric_value": value, "title": payload.get("title"),
-                                             "lineage": {"hypothesis_id": hid}, "tick": None})
-                run.emit("discovery.made", **common, sub=2, refs={"discovery_id": xid, "experiment_id": eid},
-                         payload={"title": payload.get("title"), "reward": value})
+                run.put(
+                    "discoveries",
+                    xid,
+                    {
+                        "agent_id": run.agent_id(agent),
+                        "experiment_id": eid,
+                        "round": round_,
+                        "metric_value": value,
+                        "title": payload.get("title"),
+                        "lineage": {"hypothesis_id": hid},
+                        "tick": None,
+                    },
+                )
+                run.emit(
+                    "discovery.made",
+                    **common,
+                    sub=2,
+                    refs={"discovery_id": xid, "experiment_id": eid},
+                    payload={"title": payload.get("title"), "reward": value},
+                )
         elif kind == "lesson":
             did = f"diary:{line}"
-            run.put("diary", did, {"agent_id": run.agent_id(agent), "kind": "lesson", "round": round_,
-                                   "text": payload.get("text"), "refs": [], "tick": None})
-            run.emit("diary.written", **common, refs={"diary_id": did},
-                     payload={"kind": "lesson", "excerpt": (payload.get("text") or "")[:240]})
+            run.put(
+                "diary",
+                did,
+                {
+                    "agent_id": run.agent_id(agent),
+                    "kind": "lesson",
+                    "round": round_,
+                    "text": payload.get("text"),
+                    "refs": [],
+                    "tick": None,
+                },
+            )
+            run.emit(
+                "diary.written",
+                **common,
+                refs={"diary_id": did},
+                payload={"kind": "lesson", "excerpt": (payload.get("text") or "")[:240]},
+            )
     manifest_extra = {
         "title": title or f"ignobel · {arm} · seed {seed}",
         "arm": {"id": arm, "label": arm, "boredom_enabled": arm == "full", "policy": arm},
         "metric": {"name": "replicated_findings", "unit": "", "direction": "maximize"},
-        "boredom": {"scale": [0, 1], "thresholds": {}, "regimes":
-                    ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "FRUSTRATED", "CONVERGED"]},
-        "provenance": {"llm": "see prompts/", "exa": "see events",
-                       "memory_backend": "ignobel memory", "command": "", "swarm_commit": ""},
+        "boredom": {
+            "scale": [0, 1],
+            "thresholds": {},
+            "regimes": ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "FRUSTRATED", "CONVERGED"],
+        },
+        "provenance": {
+            "llm": "see prompts/",
+            "exa": "see events",
+            "memory_backend": "ignobel memory",
+            "command": "",
+            "swarm_commit": "",
+        },
         "baseline": None,
     }
     return run, manifest_extra
@@ -743,24 +1375,59 @@ def study_gap(prediction, effect, direction):
 
 # ---------------------------------------------------------------- reducer
 
+
 def initial_world(run, manifest):
     agents = {}
-    for native, identity in run.agents.items():
+    for identity in run.agents.values():
         agents[identity["agent_id"]] = {
-            "agent_id": identity["agent_id"], "type": identity["type"], "role": None, "scout": False,
-            "activity": "idle", "station": "home", "since_tick": 0,
-            "boredom": None, "focus": {}, "last_observation_id": None, "last_question_id": None,
-            "last_reward": None, "diary_head": None,
-            "counters": {"experiments": 0, "keeps": 0, "questions": 0, "observations": 0,
-                         "memory_writes": 0, "tokens": 0},
+            "agent_id": identity["agent_id"],
+            "type": identity["type"],
+            "role": None,
+            "scout": False,
+            "activity": "idle",
+            "station": "home",
+            "since_tick": 0,
+            "boredom": None,
+            "focus": {},
+            "last_observation_id": None,
+            "last_question_id": None,
+            "last_reward": None,
+            "diary_head": None,
+            "counters": {
+                "experiments": 0,
+                "keeps": 0,
+                "questions": 0,
+                "observations": 0,
+                "memory_writes": 0,
+                "tokens": 0,
+            },
         }
-    return {"run_id": run.run_id, "tick": -1, "round": 0, "phase": None, "ts": None,
-            "swarm": {"B": None, "regime": None, "frontier_stall": None, "best": None,
-                      "baseline": manifest.get("baseline")},
-            "agents": agents, "in_flight": {"experiment_ids": [], "conversations": []},
-            "totals": {"experiments": 0, "discoveries": 0, "questions": 0, "sources": 0,
-                       "memory_items": 0, "tokens": 0},
-            "discovery_ids": [], "recent_events": []}
+    return {
+        "run_id": run.run_id,
+        "tick": -1,
+        "round": 0,
+        "phase": None,
+        "ts": None,
+        "swarm": {
+            "B": None,
+            "regime": None,
+            "frontier_stall": None,
+            "best": None,
+            "baseline": manifest.get("baseline"),
+        },
+        "agents": agents,
+        "in_flight": {"experiment_ids": [], "conversations": []},
+        "totals": {
+            "experiments": 0,
+            "discoveries": 0,
+            "questions": 0,
+            "sources": 0,
+            "memory_items": 0,
+            "tokens": 0,
+        },
+        "discovery_ids": [],
+        "recent_events": [],
+    }
 
 
 def apply(world, event, entities):
@@ -778,8 +1445,11 @@ def apply(world, event, entities):
             state["activity"], state["station"], state["since_tick"] = "idle", "home", event["tick"]
         world["in_flight"]["conversations"] = []
     elif kind == "boredom.measured" and payload.get("scope") == "swarm":
-        world["swarm"].update(B=payload.get("B"), regime=payload.get("regime"),
-                              frontier_stall=payload.get("frontier_stall"))
+        world["swarm"].update(
+            B=payload.get("B"),
+            regime=payload.get("regime"),
+            frontier_stall=payload.get("frontier_stall"),
+        )
     elif kind == "question.asked":
         world["totals"]["questions"] += 1
     elif kind == "observation.received" and payload.get("kind") == "sources":
@@ -799,9 +1469,12 @@ def apply(world, event, entities):
         world["totals"]["discoveries"] += 1
         world["discovery_ids"].append(refs["discovery_id"])
         discovery = entities["discoveries"][refs["discovery_id"]]
-        world["swarm"]["best"] = {"metric_value": discovery["metric_value"],
-                                  "experiment_id": discovery["experiment_id"],
-                                  "agent_id": discovery["agent_id"], "tick": event["tick"]}
+        world["swarm"]["best"] = {
+            "metric_value": discovery["metric_value"],
+            "experiment_id": discovery["experiment_id"],
+            "agent_id": discovery["agent_id"],
+            "tick": event["tick"],
+        }
     elif kind == "message.sent" and event["agent_id"] and refs.get("to_agent_id"):
         world["in_flight"]["conversations"].append([event["agent_id"], refs["to_agent_id"]])
     if agent is None:
@@ -817,9 +1490,13 @@ def apply(world, event, entities):
     if kind == "agent.assigned":
         agent["role"], agent["scout"] = payload.get("role"), bool(payload.get("scout"))
     elif kind == "boredom.measured":
-        agent["boredom"] = {"B": payload.get("B"), "regime": payload.get("regime"),
-                            "components": payload.get("components", {}),
-                            "shadow": bool(payload.get("shadow")), "measured_tick": event["tick"]}
+        agent["boredom"] = {
+            "B": payload.get("B"),
+            "regime": payload.get("regime"),
+            "components": payload.get("components", {}),
+            "shadow": bool(payload.get("shadow")),
+            "measured_tick": event["tick"],
+        }
     elif kind == "question.asked":
         agent["last_question_id"] = refs.get("question_id")
         agent["focus"]["question_id"] = refs.get("question_id")
@@ -835,9 +1512,14 @@ def apply(world, event, entities):
     elif kind == "experiment.finished":
         reward = entities["rewards"].get(refs.get("reward_id"))
         if reward:
-            agent["last_reward"] = {"reward_id": reward["id"], "value": reward["value"],
-                                    "status": reward["status"], "metric_value": reward["metric_value"],
-                                    "experiment_id": reward["experiment_id"], "tick": event["tick"]}
+            agent["last_reward"] = {
+                "reward_id": reward["id"],
+                "value": reward["value"],
+                "status": reward["status"],
+                "metric_value": reward["metric_value"],
+                "experiment_id": reward["experiment_id"],
+                "tick": event["tick"],
+            }
             if reward["status"] in {"keep", "replicated"}:
                 counters["keeps"] += 1
     elif kind == "diary.written":
@@ -861,6 +1543,7 @@ def snapshot(world):
 
 # ---------------------------------------------------------------- output
 
+
 def build(run, extra):
     events = run.finalize()
     for event in events:
@@ -874,62 +1557,110 @@ def build(run, extra):
                 entity["end_tick"] = event["tick"]
     ts_values = [event["ts"] for event in events if event["ts"]]
     manifest = {
-        "schema": SCHEMA, "run_id": run.run_id, "swarm": run.swarm, "title": extra["title"],
-        "status": extra.get("status", "finished"), "live": extra.get("live", False),
+        "schema": SCHEMA,
+        "run_id": run.run_id,
+        "swarm": run.swarm,
+        "title": extra["title"],
+        "status": extra.get("status", "finished"),
+        "live": extra.get("live", False),
         "converged": bool(extra.get("converged", False)),
-        "arm": extra["arm"], "metric": extra["metric"],
+        "arm": extra["arm"],
+        "metric": extra["metric"],
         "boredom": extra["boredom"],
-        "time": {"ticks": len(events), "rounds": max((e["round"] for e in events), default=0),
-                 "ts_start": min(ts_values) if ts_values else None,
-                 "ts_end": max(ts_values) if ts_values else None},
+        "time": {
+            "ticks": len(events),
+            "rounds": max((e["round"] for e in events), default=0),
+            "ts_start": min(ts_values) if ts_values else None,
+            "ts_end": max(ts_values) if ts_values else None,
+        },
         "agents": list(run.agents.values()),
         "provenance": {**extra["provenance"], "artifacts": {}},
     }
     world = initial_world(run, extra)
     keyframes, rounds, markers = {}, [], []
-    series = {"swarm_B": [], "best": [], "agent_B": {a["agent_id"]: [] for a in run.agents.values()}}
+    series = {
+        "swarm_B": [],
+        "best": [],
+        "agent_B": {a["agent_id"]: [] for a in run.agents.values()},
+    }
     last_keyframe = -KEYFRAME_EVERY
     for index, event in enumerate(events):
-        if event["type"] == "round.started" or (not rounds or rounds[-1]["round"] != event["round"]):
-            if not rounds or rounds[-1]["round"] != event["round"]:
-                rounds.append({"round": event["round"], "tick_start": event["tick"], "tick_end": event["tick"],
-                               "ts_start": event["ts"], "regime": None})
+        if not rounds or rounds[-1]["round"] != event["round"]:
+            rounds.append(
+                {
+                    "round": event["round"],
+                    "tick_start": event["tick"],
+                    "tick_end": event["tick"],
+                    "ts_start": event["ts"],
+                    "regime": None,
+                }
+            )
         rounds[-1]["tick_end"] = event["tick"]
         before_regime = world["swarm"]["regime"]
         apply(world, event, run.entities)
         if event["type"] == "round.started":
             rounds[-1]["regime"] = event["payload"].get("regime")
         if world["swarm"]["regime"] != before_regime and before_regime is not None:
-            markers.append({"tick": event["tick"], "kind": "regime_change",
-                            "label": f"{before_regime} → {world['swarm']['regime']}"})
+            markers.append(
+                {
+                    "tick": event["tick"],
+                    "kind": "regime_change",
+                    "label": f"{before_regime} → {world['swarm']['regime']}",
+                }
+            )
         if event["type"] == "discovery.made":
-            markers.append({"tick": event["tick"], "kind": "discovery", "ref": event["refs"]["discovery_id"],
-                            "label": event["payload"].get("title")})
-        if event["type"] == "experiment.finished" and event["payload"].get("status") in {"crash", "failed"}:
-            markers.append({"tick": event["tick"], "kind": "crash", "ref": event["refs"]["experiment_id"]})
+            markers.append(
+                {
+                    "tick": event["tick"],
+                    "kind": "discovery",
+                    "ref": event["refs"]["discovery_id"],
+                    "label": event["payload"].get("title"),
+                }
+            )
+        if event["type"] == "experiment.finished" and event["payload"].get("status") in {
+            "crash",
+            "failed",
+        }:
+            markers.append(
+                {"tick": event["tick"], "kind": "crash", "ref": event["refs"]["experiment_id"]}
+            )
         if event["type"] == "verdict.issued":
-            markers.append({"tick": event["tick"], "kind": "verdict", "ref": event["refs"]["experiment_id"],
-                            "label": event["payload"].get("verdict")})
+            markers.append(
+                {
+                    "tick": event["tick"],
+                    "kind": "verdict",
+                    "ref": event["refs"]["experiment_id"],
+                    "label": event["payload"].get("verdict"),
+                }
+            )
         if event["type"] == "boredom.measured":
             if event["payload"].get("scope") == "swarm" or (event["agent_id"] is None):
                 series["swarm_B"].append([event["tick"], event["payload"].get("B")])
             else:
-                series["agent_B"][event["agent_id"]].append([event["tick"], event["payload"].get("B")])
+                series["agent_B"][event["agent_id"]].append(
+                    [event["tick"], event["payload"].get("B")]
+                )
         if event["type"] == "round.started" and event["payload"].get("swarm_B") is not None:
             series["swarm_B"].append([event["tick"], event["payload"]["swarm_B"]])
         if event["type"] == "discovery.made":
             series["best"].append([event["tick"], event["payload"].get("metric_value")])
         next_event = events[index + 1] if index + 1 < len(events) else None
-        round_end = (
-            event["type"] != "run.finished"
-            and (next_event is None or next_event["round"] != event["round"]
-                 or next_event["type"] == "run.finished")
+        round_end = event["type"] != "run.finished" and (
+            next_event is None
+            or next_event["round"] != event["round"]
+            or next_event["type"] == "run.finished"
         )
         if round_end or event["tick"] - last_keyframe >= KEYFRAME_EVERY:
             keyframes[event["tick"]] = snapshot(world)
             last_keyframe = event["tick"]
-    timeline = {"run_id": run.run_id, "ticks": len(events), "rounds": rounds, "markers": markers,
-                "series": series, "keyframes": sorted(keyframes)}
+    timeline = {
+        "run_id": run.run_id,
+        "ticks": len(events),
+        "rounds": rounds,
+        "markers": markers,
+        "series": series,
+        "keyframes": sorted(keyframes),
+    }
     return manifest, timeline, events, keyframes
 
 
@@ -938,16 +1669,17 @@ def world_at(events, run_manifest, entities, tick, keyframes=None):
     keyframes = keyframes or {}
     base = max((k for k in keyframes if k <= tick), default=None)
     if base is None:
-        class Shim:
-            run_id = run_manifest["run_id"]
-            agents = {a["native_id"]: a for a in run_manifest["agents"]}
-        world = initial_world(Shim, {"baseline": run_manifest.get("baseline")})
+        run = SimpleNamespace(
+            run_id=run_manifest["run_id"],
+            agents={a["native_id"]: a for a in run_manifest["agents"]},
+        )
+        world = initial_world(run, {"baseline": run_manifest.get("baseline")})
         start = 0
     else:
         frame = json.loads(json.dumps(keyframes[base]))
         world = {**frame, "agents": {a["agent_id"]: a for a in frame["agents"]}}
         start = base + 1
-    for event in events[start:tick + 1]:
+    for event in events[start : tick + 1]:
         apply(world, event, entities)
     return snapshot(world)
 
@@ -958,7 +1690,9 @@ def write(dest, manifest, timeline, events, keyframes, entities):
     (run_dir / "entities").mkdir(parents=True, exist_ok=True)
 
     def dump(path, value):
-        path.write_text(json.dumps(value, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(value, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
 
     dump(run_dir / "manifest.json", manifest)
     dump(run_dir / "timeline.json", timeline)
@@ -970,12 +1704,20 @@ def write(dest, manifest, timeline, events, keyframes, entities):
     for kind, table in entities.items():
         dump(run_dir / "entities" / f"{kind}.json", [table[key] for key in sorted(table)])
     index_path = Path(dest) / "index.json"
-    index = json.loads(index_path.read_text()) if index_path.exists() else {"schema": SCHEMA, "runs": []}
-    summary = {key: manifest[key] for key in ("run_id", "swarm", "title", "status", "live", "arm", "time")}
+    index = (
+        json.loads(index_path.read_text())
+        if index_path.exists()
+        else {"schema": SCHEMA, "runs": []}
+    )
+    summary = {
+        key: manifest[key] for key in ("run_id", "swarm", "title", "status", "live", "arm", "time")
+    }
     summary["agents"] = len(manifest["agents"])
     summary["discoveries"] = len(entities["discoveries"])
-    index["runs"] = sorted([r for r in index["runs"] if r["run_id"] != manifest["run_id"]] + [summary],
-                           key=lambda r: r["title"])
+    index["runs"] = sorted(
+        [r for r in index["runs"] if r["run_id"] != manifest["run_id"]] + [summary],
+        key=lambda r: r["title"],
+    )
     dump(index_path, index)
     return run_dir
 
@@ -1017,7 +1759,9 @@ def _atomic_write(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", delete=False) as stream:
+        with tempfile.NamedTemporaryFile(
+            dir=path.parent, prefix=f".{path.name}.", delete=False
+        ) as stream:
             temp_path = Path(stream.name)
             stream.write(data)
             stream.flush()
@@ -1065,21 +1809,27 @@ def publish(out_dir, dest, *, final=False, status=None):
             [item for item in index.get("runs", []) if item.get("run_id") != run_id] + [summary],
             key=lambda item: item["title"],
         )
-        index_data = (json.dumps(index, indent=1, sort_keys=True, ensure_ascii=False) + "\n").encode()
+        index_data = (
+            json.dumps(index, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode()
 
         target.mkdir(parents=True, exist_ok=True)
         with current_path.open("ab") as stream:
-            stream.write(fresh_events[len(current_events):])
+            stream.write(fresh_events[len(current_events) :])
             stream.flush()
             os.fsync(stream.fileno())
         for path, data in keyframe_writes:
             _atomic_write(path, data)
         for source in (fresh_dir / "entities").glob("*.json"):
             _atomic_write(target / "entities" / source.name, source.read_bytes())
-        for source in (fresh_dir / "artifacts").rglob("*") if (fresh_dir / "artifacts").exists() else ():
+        for source in (
+            (fresh_dir / "artifacts").rglob("*") if (fresh_dir / "artifacts").exists() else ()
+        ):
             if source.is_file():
-                _atomic_write(target / "artifacts" / source.relative_to(fresh_dir / "artifacts"),
-                              source.read_bytes())
+                _atomic_write(
+                    target / "artifacts" / source.relative_to(fresh_dir / "artifacts"),
+                    source.read_bytes(),
+                )
         for name in ("manifest.json", "timeline.json"):
             _atomic_write(target / name, (fresh_dir / name).read_bytes())
         _atomic_write(index_path, index_data)

@@ -1,9 +1,9 @@
 """Trusted grader for the synthetic Playworld proxy."""
 
 import json
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -75,9 +75,7 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None):
             try:
                 predictions = json.loads((run.output or b"").decode("utf-8"))
                 if not isinstance(predictions, list) or len(predictions) != len(episodes):
-                    raise ValueError(
-                        f"predictions must contain {len(episodes)} episodes"
-                    )
+                    raise ValueError(f"predictions must contain {len(episodes)} episodes")
             except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
                 reason = "invalid_output"
                 diagnostics = f"{type(error).__name__}: {error}"
