@@ -152,7 +152,7 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
     return path, branch
 
 
-def allocate_roles(profile, events, agents=AGENTS, arm="B"):
+def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
     regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
     per_agent = {
@@ -166,18 +166,30 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B"):
     roles = {}
     scouts = []
 
+    def divergent_worker():
+        return bored[0] if bored else min(
+            agents, key=lambda agent: (per_agent[agent], agent)
+        )
+
     if arm == "A":
         roles = {agent: "exploit" for agent in agents}
-        rationale = "Arm A keeps four exploit slots; meter-directed scouting is disabled."
+        scout = divergent_worker()
+        roles[scout] = "divergent"
+        scouts = [scout] if exa_enabled else []
+        rationale = (
+            "Arm A fixes three exploit slots and one divergent slot; "
+            "it scouts when Exa is enabled."
+        )
     elif regime == "BOREDOM_SNAP":
-        scout_count = min(2, 1 + len(bored))
-        scouts = bored[:scout_count]
-        if len(scouts) < scout_count:
-            remaining = sorted(
-                (agent for agent in agents if agent not in scouts),
-                key=lambda agent: (per_agent[agent], agent),
-            )
-            scouts.extend(remaining[: scout_count - len(scouts)])
+        if exa_enabled:
+            scout_count = min(2, 1 + len(bored))
+            scouts = bored[:scout_count]
+            if len(scouts) < scout_count:
+                remaining = sorted(
+                    (agent for agent in agents if agent not in scouts),
+                    key=lambda agent: (per_agent[agent], agent),
+                )
+                scouts.extend(remaining[: scout_count - len(scouts)])
         roles = {agent: "exploit" for agent in agents}
         for agent in scouts:
             roles[agent] = "divergent"
@@ -192,25 +204,28 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B"):
             f"{len(scouts)} divergent workers scout."
         )
     elif regime == "PARADIGM_BREAKOUT":
-        scouts = bored[:2]
-        if len(scouts) < 2:
-            remaining = sorted(
-                (agent for agent in agents if agent not in scouts),
-                key=lambda agent: (per_agent[agent], agent),
-            )
-            scouts.extend(remaining[: 2 - len(scouts)])
+        if exa_enabled:
+            scouts = bored[:2]
+            if len(scouts) < 2:
+                remaining = sorted(
+                    (agent for agent in agents if agent not in scouts),
+                    key=lambda agent: (per_agent[agent], agent),
+                )
+                scouts.extend(remaining[: 2 - len(scouts)])
         roles = {agent: "divergent" for agent in agents}
-        rationale = "BREAKOUT assigns four divergent slots and two scouts."
+        rationale = (
+            f"BREAKOUT assigns four divergent slots and {len(scouts)} scouts."
+        )
     elif regime == "CONVERGED":
         roles = {agent: "exploit" for agent in agents}
-        rationale = "CONVERGED permits confirmation runs only."
+        if exa_enabled:
+            scouts = [divergent_worker()]
+        rationale = "CONVERGED permits confirmation runs only, with one scout."
     else:
         roles = {agent: "exploit" for agent in agents}
-        if bored:
-            scouts = [bored[0]]
-            divergent_agent = scouts[0]
-        else:
-            divergent_agent = min(agents, key=lambda agent: (per_agent[agent], agent))
+        divergent_agent = divergent_worker()
+        if exa_enabled:
+            scouts = [divergent_agent]
         roles[divergent_agent] = "divergent"
         rationale = "EXPLOIT assigns three exploit slots and one divergent slot."
 
@@ -1350,8 +1365,10 @@ def arm_environment(arm, exa_enabled, memory_backend=None):
     os.environ["EXA"] = "on" if exa_enabled else "off"
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
-    elif arm in ("A", "D"):
+    elif arm == "D":
         os.environ["MEMORY_BACKEND"] = "local"
+    else:
+        os.environ["MEMORY_BACKEND"] = "pastdev"
     if arm == "A":
         os.environ["BOREDOM"] = "off"
     else:
@@ -1402,15 +1419,20 @@ def orchestrate(args):
     critic_path = out_dir / "critic.tsv"
     memory_mirror = out_dir / "memory.jsonl"
     memory_log = out_dir / "memory_log.jsonl"
-    memory_backend = memory.selected_backend(args.memory_backend, args.arm)
-    if args.arm in ("A", "D") and args.memory_backend is None:
-        memory_backend = "local"
+    memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
+    if memory_override:
+        memory_backend = memory.selected_backend(memory_override, args.arm)
+    else:
+        memory_backend = "local" if args.arm == "D" else "pastdev"
     llm_client = llm.LLMClient(
         mode=args.llm,
         model=args.model,
         log_path=out_dir / "llm_log.jsonl",
         prompt_dir=ROOT / "prompts",
         replay=args.replay,
+        arm=args.arm,
+        queue_dir=args.queue_dir or out_dir / "llm_queue",
+        queue_timeout=args.queue_timeout,
     )
     if not critic_path.exists():
         critic_path.write_text(
@@ -1418,7 +1440,7 @@ def orchestrate(args):
             encoding="utf-8",
         )
 
-    with arm_environment(args.arm, exa_enabled, args.memory_backend):
+    with arm_environment(args.arm, exa_enabled, memory_backend):
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,
@@ -1445,7 +1467,9 @@ def orchestrate(args):
 
         for round_num in range(1, args.rounds + 1):
             events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(profile, events, AGENTS, args.arm)
+            allocation = allocate_roles(
+                profile, events, AGENTS, args.arm, exa_enabled
+            )
             status = {
                 **allocation,
                 "ledger_sha256": allocation["ledger_sha256"],
@@ -1791,9 +1815,13 @@ def build_parser():
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
     parser.add_argument("--profile", default=str(DEFAULT_PROFILE))
-    parser.add_argument("--llm", choices=("openai", "fake"), default="openai")
+    parser.add_argument(
+        "--llm", choices=("openai", "fake", "queue"), default="openai"
+    )
     parser.add_argument("--gpu", choices=("modal", "fake"), default="modal")
     parser.add_argument("--model")
+    parser.add_argument("--queue-dir")
+    parser.add_argument("--queue-timeout", type=float, default=3600)
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), default="on")
     parser.add_argument("--seed", type=int, default=42)

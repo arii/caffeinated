@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import tempfile
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -51,6 +52,21 @@ def append_log(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+
+
+def atomic_write_text(path, text):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        delete=False,
+    ) as stream:
+        temporary = Path(stream.name)
+        stream.write(text)
+    os.replace(temporary, path)
 
 
 def fill_placeholders(template, values):
@@ -176,22 +192,33 @@ class LLMClient:
         log_path="llm_log.jsonl",
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
+        arm=None,
+        queue_dir=None,
+        queue_timeout=3600,
     ):
         self.mode = mode.casefold()
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
         self.replay = replay
+        self.arm = arm or os.environ.get("AUTORESEARCH_ARM")
+        self.queue_dir = Path(queue_dir or "llm_queue")
+        self.queue_timeout = float(queue_timeout)
+        if self.queue_timeout <= 0:
+            raise ValueError("--queue-timeout must be greater than zero")
+        self.call_counts = {}
         self.records = read_log(self.log_path)
         self.model = model or os.environ.get("OPENAI_MODEL")
         if self.mode == "fake":
             self.model = self.model or "fake"
-        elif not replay:
+        elif self.mode == "queue":
+            self.model = "devin-queue"
+        elif self.mode == "openai" and not replay:
             if not self.model:
                 raise ValueError("set --model or OPENAI_MODEL for OpenAI requests")
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY is required for OpenAI requests")
-        if self.mode not in {"openai", "fake"}:
-            raise ValueError("LLM mode must be openai or fake")
+        elif self.mode != "openai":
+            raise ValueError("LLM mode must be openai, fake, or queue")
 
     def call(self, role, *, agent, round_num, values):
         prompt_values = dict(values)
@@ -213,6 +240,10 @@ class LLMClient:
             response = previous.get("response")
             model = previous.get("model", model)
             usage = previous.get("usage")
+        elif self.mode == "queue":
+            response = self._queue_request(
+                role, agent=agent, round_num=round_num, prompt=prompt
+            )
         elif self.mode == "fake":
             response = fake_response(role, prompt_values)
         else:
@@ -234,6 +265,65 @@ class LLMClient:
         append_log(self.log_path, record)
         self.records.append(record)
         return response
+
+    def _queue_request(self, role, *, agent, round_num, prompt):
+        self.queue_dir.mkdir(parents=True, exist_ok=True)
+        role_name = role.casefold()
+        counter_key = (round_num, role_name, agent)
+        call_number = self.call_counts.get(counter_key, 0) + 1
+        call_id = f"r{round_num}-{role_name}-{agent}-{call_number}"
+        while (
+            (self.queue_dir / f"{call_id}.prompt.json").exists()
+            or (self.queue_dir / f"{call_id}.response.json").exists()
+        ):
+            call_number += 1
+            call_id = f"r{round_num}-{role_name}-{agent}-{call_number}"
+        self.call_counts[counter_key] = call_number
+        request = {
+            "call_id": call_id,
+            "role": role.upper(),
+            "agent": agent,
+            "round": round_num,
+            "arm": self.arm,
+            "prompt": prompt,
+        }
+        prompt_path = self.queue_dir / f"{call_id}.prompt.json"
+        response_path = self.queue_dir / f"{call_id}.response.json"
+        error_path = self.queue_dir / f"{call_id}.error.txt"
+        atomic_write_text(
+            prompt_path,
+            json.dumps(request, sort_keys=True, ensure_ascii=False) + "\n",
+        )
+        deadline = time.monotonic() + self.queue_timeout
+        invalid_signature = None
+        while True:
+            try:
+                signature = (
+                    response_path.stat().st_mtime_ns,
+                    response_path.stat().st_size,
+                )
+            except FileNotFoundError:
+                signature = None
+            if signature is not None and signature != invalid_signature:
+                try:
+                    response = json.loads(response_path.read_text(encoding="utf-8"))
+                    if not isinstance(response, dict):
+                        raise ValueError("response must be a JSON object")
+                except (OSError, json.JSONDecodeError, ValueError) as error:
+                    invalid_signature = signature
+                    atomic_write_text(
+                        error_path,
+                        f"invalid JSON response: {error}\n",
+                    )
+                else:
+                    error_path.unlink(missing_ok=True)
+                    return response
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise RuntimeError(
+                    f"timed out waiting for LLM response {call_id}"
+                )
+            time.sleep(min(2, remaining))
 
     def _request(self, prompt):
         api_key = os.environ.get("OPENAI_API_KEY")

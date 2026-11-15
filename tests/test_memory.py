@@ -56,6 +56,22 @@ class PastStubHandler(BaseHTTPRequestHandler):
             response = {"status": "completed", "settled": True, "failure": None}
         self._respond(200, response)
 
+    def do_PUT(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        self.server.requests.append(
+            {
+                "method": "PUT",
+                "path": self.path,
+                "authorization": self.headers.get("Authorization"),
+                "body": body,
+            }
+        )
+        slug = self.path.rsplit("/", 1)[-1]
+        self._respond(
+            201,
+            {"slug": slug, "kind": body["kind"], "identities": body["identities"]},
+        )
+
     def log_message(self, format_string, *args):
         pass
 
@@ -236,7 +252,7 @@ class MemoryCliTests(unittest.TestCase):
             command = [
                 "sync",
                 "--arm",
-                "control",
+                "Z",
                 "--results",
                 str(results),
                 "--repo",
@@ -248,8 +264,12 @@ class MemoryCliTests(unittest.TestCase):
                 "--log",
                 str(Path(directory) / "memory_log.jsonl"),
             ]
-            first_sync = self.run_cli(server, *command)
-            second_sync = self.run_cli(server, *command)
+            first_sync = self.run_cli(
+                server, *command, env={"AUTORESEARCH_ARM": "Z"}
+            )
+            second_sync = self.run_cli(
+                server, *command, env={"AUTORESEARCH_ARM": "Z"}
+            )
             self.assertEqual(first_sync.returncode, 0, first_sync.stderr)
             self.assertEqual(second_sync.returncode, 0, second_sync.stderr)
 
@@ -261,11 +281,14 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(len(batch_requests), 2)
             first_body = batch_requests[0]["body"]
             second_body = batch_requests[1]["body"]
-            self.assertTrue(first_body["idempotencyKey"].startswith("sync:control:"))
+            self.assertTrue(first_body["idempotencyKey"].startswith("sync:Z:"))
             self.assertEqual(
                 first_body["idempotencyKey"], second_body["idempotencyKey"]
             )
             self.assertEqual(len(first_body["items"]), 2)
+            self.assertTrue(
+                all(item["audience"] == "arm-z" for item in first_body["items"])
+            )
 
     def test_wait_polls_until_completed_and_fails_on_failed_status(self):
         server = self.start_server()
@@ -493,6 +516,81 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(event["mem_type"], "lesson")
             self.assertIn("latency_ms", event)
             self.assertIn("completed_ms", event)
+
+    def test_pastdev_arm_audience_scopes_write_and_recall(self):
+        server = self.start_server()
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "memory_log.jsonl"
+            mirror = Path(directory) / "memory.jsonl"
+            env = {
+                "AUTORESEARCH_ARM": "Z",
+                "MEMORY_BACKEND": "pastdev",
+                "PAST_API_KEY": TEST_API_KEY,
+                "PAST_API_KEY_Z": "",
+                "PAST_API_KEY_Y": "",
+                "PAST_BASE_URL": f"http://127.0.0.1:{server.server_port}",
+            }
+            with patch.dict(os.environ, env, clear=False), patch.object(
+                memory, "_ENSURED_AUDIENCES", set()
+            ):
+                memory.write(
+                    "result",
+                    "run:audience-test",
+                    "unique audience isolation result",
+                    "autoresearch-agent",
+                    {"arm": "z"},
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    arm="Z",
+                )
+                memory.recall(
+                    "unique audience isolation result",
+                    "autoresearch",
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    arm="Z",
+                )
+                memory.recall(
+                    "unique audience isolation result",
+                    "autoresearch",
+                    backend="pastdev",
+                    mirror=mirror,
+                    log=log,
+                    arm="Y",
+                )
+
+            requests = server.requests
+            self.assertEqual(
+                [request["path"] for request in requests],
+                [
+                    "/api/v1/audiences/arm-z",
+                    "/api/v1/ingest",
+                    "/api/v1/recall",
+                    "/api/v1/audiences/arm-y",
+                    "/api/v1/recall",
+                ],
+            )
+            self.assertEqual(
+                requests[0]["body"],
+                {"kind": "fixed", "identities": ["swarm-arm-z"]},
+            )
+            self.assertEqual(requests[1]["body"]["audience"], "arm-z")
+            self.assertEqual(requests[1]["body"]["identity"], "autoresearch-agent")
+            self.assertEqual(requests[2]["body"]["identity"], "swarm-arm-z")
+            self.assertEqual(requests[3]["body"]["identities"], ["swarm-arm-y"])
+            self.assertEqual(requests[4]["body"]["identity"], "swarm-arm-y")
+            self.assertTrue(
+                all(request["authorization"] == f"Bearer {TEST_API_KEY}" for request in requests)
+            )
+            records = [
+                json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(
+                [record["audience"] for record in records],
+                ["arm-z", "arm-z", "arm-y"],
+            )
 
     def test_local_backend_ranks_by_idf_and_none_backend_stays_empty(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -124,7 +124,7 @@ Add `value=<number>` for a parameterized descriptor when applicable. For example
 
 ## Research grounding
 
-In BOREDOM_SNAP and PARADIGM_BREAKOUT, ground every candidate in retrieved research before running it. `research.py` uses Exa and requires the `EXA_API_KEY` environment variable. Search for the current bottleneck, derive the candidate idea from a result, and cite that result in the commit message:
+In BOREDOM_SNAP and PARADIGM_BREAKOUT, ground each candidate in retrieved research before running it. `research.py` uses Exa and requires the `EXA_API_KEY` environment variable. Search for the current bottleneck, derive the candidate idea from a result, and cite that result in the commit message:
 
 ```bash
 python3 research.py search "<query naming the current bottleneck>"
@@ -132,10 +132,9 @@ git commit -m "[SNAP] <research-grounded change>" \
   -m "Source: S<k>" -m "Descriptor: architecture/mlp"
 ```
 
-Use a `[BREAKOUT]` subject in PARADIGM_BREAKOUT. The cited `S<k>` must be an id printed by the search and present in `research_log.jsonl`; the novelty gate rejects ungrounded SNAP/BREAKOUT candidates. In `notes.md`, add one line per grounded candidate mapping its source to the change. Research is optional in EXPLOIT. At completion, copy `research_log.jsonl` into `experiments/<arm>/` alongside the arm results.
+Use a `[BREAKOUT]` subject in PARADIGM_BREAKOUT. Additionally, for every candidate in every regime, run `python3 research.py prior-art "<candidate idea>"` and add a `Prior-art: S<k>` trailer for a returned source, or `Prior-art: none-found Q<k>` if the search finds none. The gate checks these IDs against the research log. The SNAP/BREAKOUT `Source:` trailer rule remains unchanged. At completion, copy `research_log.jsonl` into `experiments/<arm>/` alongside the arm results.
 
-If `PRIOR_ART=required`, run `python3 research.py prior-art "<candidate idea>"` and add a `Prior-art: S<k>` trailer for a returned source, or `Prior-art: none-found Q<k>` if the search finds none. The gate checks these IDs against the research log.
-This prior-art requirement remains active when `BOREDOM=off`.
+The prior-art requirement remains active when `BOREDOM=off`. Setting `EXA=off`, `GROUNDING=off`, or `PRIOR_ART=off` disables the requirement.
 
 ## Memory
 

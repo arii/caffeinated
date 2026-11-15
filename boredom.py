@@ -511,7 +511,10 @@ def run_gate(args):
     prior_art, has_prior_art, invalid_prior_art, none_found_queries = (
         prior_art_trailers(candidate_message)
     )
-    prior_art_enabled = os.environ.get("PRIOR_ART", "").casefold() == "required"
+    prior_art_enabled = not any(
+        os.environ.get(name, "").casefold() == "off"
+        for name in ("EXA", "GROUNDING", "PRIOR_ART")
+    )
     research_ids = (
         read_research_ids(args.research_log)
         if prior_art_enabled
