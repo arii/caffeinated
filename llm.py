@@ -19,11 +19,39 @@ load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
 TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
 TINKER_TIMEOUT_SECONDS = 900
+DEFAULT_TINKER_REASONING_EFFORT = "low"
 TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
 def timestamp():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _usage_int(value):
+    if isinstance(value, bool):
+        return 0
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _usage_with_token_details(usage, raw_usage, reasoning_content=None):
+    usage = dict(usage or {})
+    if isinstance(raw_usage, dict):
+        prompt_details = raw_usage.get("prompt_tokens_details")
+        if isinstance(prompt_details, dict):
+            usage["prompt_tokens_details"] = prompt_details
+            if "cached_tokens" in prompt_details:
+                usage["cached_tokens"] = _usage_int(prompt_details["cached_tokens"])
+        completion_details = raw_usage.get("completion_tokens_details")
+        if isinstance(completion_details, dict):
+            usage["completion_tokens_details"] = completion_details
+            if "reasoning_tokens" in completion_details:
+                usage["reasoning_tokens"] = _usage_int(completion_details["reasoning_tokens"])
+    if reasoning_content is not None:
+        usage["reasoning_chars"] = len(str(reasoning_content))
+    return usage
 
 
 def prompt_sha(prompt):
@@ -78,7 +106,14 @@ def render_prompt(role, values, prompt_dir=DEFAULT_PROMPT_DIR):
     }
     common = (prompt_dir / "common.md").read_text(encoding="utf-8")
     common = fill_placeholders(common, values)
-    role_file = prompt_dir / f"{role.casefold()}.md"
+    template_role = (
+        "worker_execute"
+        if values.get("supervisor_instruction") and role.upper().startswith("WORKER_")
+        else "pi_steer"
+        if role.upper() == "PI"
+        else role.casefold()
+    )
+    role_file = prompt_dir / f"{template_role}.md"
     role_template = role_file.read_text(encoding="utf-8")
     role_template = role_template.replace("{common}", common)
     return fill_placeholders(role_template, values)
@@ -129,6 +164,8 @@ def fake_response(role, values):
             "why": "The second evaluation matches the candidate run.",
             "lesson": None,
         }
+    if role == "PI":
+        return {"steers": []}
     if role in ("WORKER_PROPOSE", "WORKER_REPAIR"):
         assigned = values.get("assigned_cell")
         if assigned and assigned != "none":
@@ -295,7 +332,7 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
 
 
 class LLMError(RuntimeError):
-    """A model request failed after its retries; the caller may record it and go on."""
+    """A model request failed; the caller may record it and go on."""
 
 
 class LLMClient:
@@ -310,8 +347,18 @@ class LLMClient:
         replay=False,
         seed=None,
         fake_delay=0.0,
+        worker_tokens=600,
+        supervisor_tokens=4096,
+        max_cost_usd=1.0,
     ):
+        self.max_cost_usd = max_cost_usd
         self.mode = mode.casefold()
+        self.worker_tokens = worker_tokens
+        self.supervisor_tokens = supervisor_tokens
+        self.supervised = bool((role_models or {}).get("SUPERVISOR"))
+        self.worker_calls = {}
+        if not 128 <= worker_tokens <= 4096 or not 256 <= supervisor_tokens <= 8192:
+            raise ValueError("invalid worker/supervisor token limit")
         self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
@@ -319,6 +366,20 @@ class LLMClient:
         self.seed = seed
         self.sampling_seed = None
         self.records = read_log(self.log_path)
+        self.call_counter = len(self.records)
+        self.call_ids = [
+            record["call_id"] for record in self.records if isinstance(record.get("call_id"), str)
+        ]
+        self.call_metadata = {
+            record["call_id"]: {
+                "role": record.get("role"),
+                "agent": record.get("agent"),
+                "round": record.get("round"),
+            }
+            for record in self.records
+            if isinstance(record.get("call_id"), str)
+        }
+        self.last_call_id = None
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
@@ -344,6 +405,14 @@ class LLMClient:
             raise ValueError("LLM mode must be openai, tinker, or fake")
 
     def call(self, role, *, agent, round_num, values):
+        if self.supervised and role.upper().startswith("WORKER_") and not self.replay:
+            key = (agent, round_num)
+            if self.worker_calls.get(key, 0) >= 2:
+                raise LLMError(f"{agent}: worker call budget reached (one execution + one repair)")
+            self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
+        self.call_counter += 1
+        call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
+        self.last_call_id = None
         prompt_values = dict(values)
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
@@ -382,15 +451,52 @@ class LLMClient:
         else:
             try:
                 if self.mode == "tinker":
-                    response, usage = self._request_tinker(prompt, model=model)
+                    response, usage = self._request_tinker(
+                        prompt,
+                        model=model,
+                        role=role,
+                        allow_json_retry=role.upper() != "PI",
+                    )
+                elif self.supervised:
+                    import openai_live
+
+                    response, usage = openai_live.request(self, prompt, model=model, role=role)
                 else:
                     response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
+                if self.mode == "openai" and self.supervised:
+                    record = {
+                        "ts": timestamp(),
+                        "call_id": call_id,
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                        "model": model,
+                        "prompt_sha": digest,
+                        "prompt": prompt,
+                        "response": None,
+                        "error": str(error),
+                        "latency_ms": int((time.monotonic() - started) * 1000),
+                        "usage": self.request_attempts[-1].get("usage")
+                        if self.request_attempts
+                        else None,
+                        "attempts": self.request_attempts,
+                    }
+                    append_log(self.log_path, record)
+                    self.records.append(record)
+                    self.call_ids.append(call_id)
+                    self.call_metadata[call_id] = {
+                        "role": role.upper(),
+                        "agent": agent,
+                        "round": round_num,
+                    }
+                    self.last_call_id = call_id
                 raise LLMError(f"{role} call for {agent} failed: {error}") from error
         if not isinstance(response, dict):
             raise LLMError(f"LLM role {role} response must be a JSON object")
         record = {
             "ts": timestamp(),
+            "call_id": call_id,
             "role": role.upper(),
             "agent": agent,
             "round": round_num,
@@ -406,17 +512,25 @@ class LLMClient:
             record["attempts"] = self.request_attempts
         append_log(self.log_path, record)
         self.records.append(record)
+        self.call_ids.append(call_id)
+        self.call_metadata[call_id] = {"role": role.upper(), "agent": agent, "round": round_num}
+        self.last_call_id = call_id
         return response
 
-    def _tinker_completion(self, prompt, model=None):
+    def _tinker_completion(self, prompt, model=None, role=None):
         """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
         base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
+        reasoning_effort = (
+            os.environ.get("TINKER_PI_REASONING_EFFORT", "medium")
+            if str(role or "").upper() == "PI"
+            else os.environ.get("TINKER_REASONING_EFFORT", DEFAULT_TINKER_REASONING_EFFORT)
+        )
         payload = {
             "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 8192,
             "temperature": 0.3,
-            "reasoning_effort": os.environ.get("TINKER_REASONING_EFFORT", "low"),
+            "reasoning_effort": reasoning_effort,
         }
         if self.sampling_seed is not None:
             payload["seed"] = self.sampling_seed
@@ -453,22 +567,27 @@ class LLMClient:
         except (KeyError, IndexError, TypeError) as error:
             raise RuntimeError("Tinker returned no completion message") from error
         content = message.get("content") or ""
-        reasoning = str(message.get("reasoning_content") or "").strip()
+        reasoning_content = message.get("reasoning_content")
+        reasoning = str(reasoning_content or "").strip()
         raw_usage = response.get("usage") or {}
-        usage = {
-            key: int(raw_usage.get(key) or 0)
-            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
-        }
+        usage = _usage_with_token_details(
+            {
+                key: _usage_int(raw_usage.get(key))
+                for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+            },
+            raw_usage,
+            reasoning_content=reasoning_content,
+        )
         if reasoning:
             usage["reasoning"] = reasoning
         return content, usage
 
-    def _request_tinker(self, prompt, model=None):
+    def _request_tinker(self, prompt, model=None, role=None, allow_json_retry=True):
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         request_prompt = prompt
         for attempt in range(2):
             started = time.monotonic()
-            content, attempt_usage = self._tinker_completion(request_prompt, model=model)
+            content, attempt_usage = self._tinker_completion(request_prompt, model=model, role=role)
             reasoning = attempt_usage.pop("reasoning", "")
             record = {
                 "response": content,
@@ -478,12 +597,26 @@ class LLMClient:
             if reasoning:
                 record["reasoning"] = reasoning
             self.request_attempts.append(record)
-            for key in usage:
-                usage[key] += attempt_usage.get(key, 0)
+            for key in (
+                "prompt_tokens",
+                "completion_tokens",
+                "total_tokens",
+                "cached_tokens",
+                "reasoning_tokens",
+                "reasoning_chars",
+            ):
+                if key in attempt_usage:
+                    usage[key] = usage.get(key, 0) + attempt_usage[key]
+            if "cached_tokens" in usage:
+                usage["prompt_tokens_details"] = {"cached_tokens": usage["cached_tokens"]}
+            if "reasoning_tokens" in usage:
+                usage["completion_tokens_details"] = {"reasoning_tokens": usage["reasoning_tokens"]}
             try:
                 return first_json_object(content), usage
             except ValueError as error:
                 record["parse_error"] = str(error)
+                if not allow_json_retry:
+                    raise RuntimeError(f"Tinker returned invalid JSON: {error}") from error
                 if attempt:
                     raise RuntimeError(
                         f"Tinker returned invalid JSON after one retry: {error}"
@@ -524,10 +657,17 @@ class LLMClient:
         except json.JSONDecodeError as error:
             raise RuntimeError("OpenAI returned invalid JSON") from error
         try:
-            content = response["choices"][0]["message"]["content"]
+            message = response["choices"][0]["message"]
+            content = message["content"]
             parsed = json.loads(content)
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as error:
             raise RuntimeError("OpenAI returned an invalid JSON-mode completion") from error
         if not isinstance(parsed, dict):
             raise RuntimeError("OpenAI completion must be a JSON object")
-        return parsed, response.get("usage")
+        raw_usage = response.get("usage") or {}
+        usage = _usage_with_token_details(
+            raw_usage,
+            raw_usage,
+            reasoning_content=message.get("reasoning_content"),
+        )
+        return parsed, usage

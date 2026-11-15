@@ -23,7 +23,7 @@ NOTEBOOK_ITEMS = 15
 
 def outcome(result):
     if result.get("rejected"):
-        return "rejected: " + str(result["rejected"])[:140]
+        return "rejected: " + str(result["rejected"])[:400]
     if "rho" not in result:
         return "not run"
     verdict = (

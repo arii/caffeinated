@@ -83,8 +83,8 @@ test('staff strip labels follow reached rounds and critic reviews',()=>{
  ];
  assert.equal(staffStripLabel('conductor',events,5),'Conductor · Refining');
  assert.equal(staffStripLabel('conductor',events,10),'Conductor · Bored — trying new directions');
- assert.equal(staffStripHelp('conductor',events,5),'After a significant improvement or before min_attempts: 3 exploit + 1 divergent.');
- assert.equal(staffStripHelp('conductor',events,10),'B ≥ 0.70: 1 exploit + 3 divergent; the novelty gate rejects near-duplicates.');
+ assert.equal(staffStripHelp('conductor',events,5),'After a significant improvement or before min_attempts: most workers refine; one explores.');
+ assert.equal(staffStripHelp('conductor',events,10),'B ≥ 0.70: one worker refines while the others explore; the novelty gate rejects near-duplicates.');
  assert.equal(staffStripLabel('critic',events,3),'Critic · 0 reviews');
  assert.equal(staffStripLabel('critic',events,5),'Critic · 1 review');
  assert.equal(staffStripLabel('critic',events,10),'Critic · 2 reviews');
@@ -93,7 +93,7 @@ test('staff strip labels follow reached rounds and critic reviews',()=>{
 
 test('regime labels explain exploit and SNAP role assignments',()=>{
  assert.equal(regimeLabel('EXPLOIT').label,'Exploiting');
- assert.match(regimeLabel('BOREDOM_SNAP').description,/1 exploit \+ 3 divergent/);
+ assert.match(regimeLabel('BOREDOM_SNAP').description,/one worker refines while the others explore/);
 });
 
 test('sparklinePath makes a compact SVG path and ignores undersized input',()=>{

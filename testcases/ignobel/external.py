@@ -148,7 +148,9 @@ def ensure(url, task_dir=HERE, research_log=None):
         entry_path.is_file()
         and (Path(task_dir) / ".cache" / "replication" / f"{name}.csv").is_file()
     ):
-        return name, json.loads(entry_path.read_text(encoding="utf-8"))
+        entry = json.loads(entry_path.read_text(encoding="utf-8"))
+        if entry.get("prepare_version") == prepare.VERSION:
+            return name, entry
     check_url(url, research_log)
     previous = prepare.HERE, prepare.URL_CHECK
     prepare.HERE, prepare.URL_CHECK = Path(task_dir), safe_url
@@ -176,5 +178,6 @@ def _build(url, name, entry_path):
         raise ValueError(f"needs at least {MIN_ROWS} rows and 2 usable columns")
     raw = prepare.fetch(url).encode("utf-8", errors="replace")
     entry["sha256"] = hashlib.sha256(raw).hexdigest()
+    entry["prepare_version"] = prepare.VERSION
     prepare.atomic_write(entry_path, json.dumps(entry, indent=1) + "\n")
     return entry

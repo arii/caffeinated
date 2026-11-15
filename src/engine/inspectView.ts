@@ -35,6 +35,7 @@ export function awardBadge(s:StudyCard,c:ViewContext){
  if(s.award)return s.award.rejected?`<span class="badge rejected">Committee rejected</span>`:`<span class="badge award">🏆 ${c.esc(s.award.award||'Ig Nobel')}${s.award.score!=null?` · ${s.award.score}`:''}</span>`;
  if(s.result?.rejected)return '<span class="badge rejected">Rejected</span>';
  if(!s.result)return '<span class="badge">Preregistered</span>';
+ if(s.result.confirmed&&s.priorArtPass===false)return `<span class="badge" title="Replicated, but the novelty critic matched it to prior work, so it was not accepted.">Confirmed · not accepted: prior art${s.novelty!=null?` (novelty ${s.novelty.toFixed(2)})`:''}</span>`;
  return s.result.confirmed?'<span class="badge ok">Confirmed</span>':'<span class="badge">Not confirmed</span>';
 }
 export function studyCardHtml(s:StudyCard,c:ViewContext){

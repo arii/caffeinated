@@ -133,6 +133,23 @@ class FakeLLMTests(unittest.TestCase):
             len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1
         )
 
+    def test_dataset_finds_count_as_sources(self):
+        profile = meter.load_profile(PROFILE)
+        source = (ROOT / "testcases/hadamard19/construct.py").read_text()
+        task = swarm.load_task("hadamard19")
+        proposal = llm.fake_response(
+            "WORKER_PROPOSE",
+            {"agent": "worker-1", "candidate_source": source, "fake_targets": task["fake_targets"]},
+        )
+        proposal["source_ids"] = ["S3", "D6_2"]
+        self.assertEqual(swarm.validate_proposal(profile, proposal)["source_ids"], ["S3", "D6_2"])
+        proposal["source_ids"] = ["paper-1"]
+        with self.assertRaises(ValueError):
+            swarm.validate_proposal(profile, proposal)
+        self.assertEqual(
+            swarm.boredom.source_trailers("x\n\nSource: S3, D6_2, paper-1")[0], ["S3", "D6_2"]
+        )
+
     def test_fake_edit_pairs_support_chained_multi_and_whole_file_edits(self):
         source = "A = 1\nB = 2\n"
         self.assertEqual(

@@ -378,6 +378,7 @@ def build_recording(native_manifest, native_events, entities, sample=True, stale
                 "effectSize": number(p.get("effect_size")),
                 "pValue": number(p.get("p")),
                 "reward": number(p.get("reward")),
+                "study": entity.get("study"),
             }
             result_by_id[eid] = row
             s["results"].append(row)

@@ -245,6 +245,38 @@ class Run:
         return relabelled
 
 
+STUDY_LINE = re.compile(r"^(field|question|registered test|rho|replicated|rejected|error): (.*)$")
+STUDY_RHO = re.compile(r"^(-?[\d.]+) \(p=([^,]+), n=(\d+)\)")
+
+
+def study_from_log(path):
+    """The ignobel evaluator's registered study, parsed from a candidate's run log."""
+    if not path.is_file():
+        return None
+    fields = {}
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = STUDY_LINE.match(line)
+        if match:
+            fields[match[1]] = match[2].strip()
+    if "question" not in fields:
+        return None
+    study = {
+        "field": fields.get("field"),
+        "question": fields["question"],
+        "test": fields.get("registered test"),
+        "rho": None,
+        "p": None,
+        "n": None,
+        "replicated": fields.get("replicated") == "true",
+        "rejected": None if fields.get("rejected") in (None, "no") else fields["rejected"],
+        "error": fields.get("error"),
+    }
+    match = STUDY_RHO.match(fields.get("rho", ""))
+    if match:
+        study.update(rho=number(match[1]), p=number(match[2]), n=int(match[3]))
+    return study
+
+
 def round_of_ts(starts, ts):
     """Round whose assignment timestamp is the latest at or before ts.
 
@@ -1156,6 +1188,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                     "reward_id": rid,
                     "artifacts": experiment_artifacts(out_dir, commit),
                     "log_tail": log_tail(out_dir, commit),
+                    "study": study_from_log(out_dir / "runs" / f"{commit}.log") if commit else None,
                     "start_tick": None,
                     "end_tick": None,
                     "tick": None,
@@ -1330,7 +1363,13 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
             "regimes": ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"],
         },
         "provenance": {
-            "llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
+            "llm": run_artifact.get("model")
+            or next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
+            **(
+                {"supervisor_model": run_artifact["supervisor_model"]}
+                if run_artifact.get("supervisor_model")
+                else {}
+            ),
             "critic_model": run_artifact.get("critic_model", "unknown"),
             "exa": "live"
             if any(r.get("type") == "query" and not r.get("disabled") for _, r in research)
@@ -1424,11 +1463,24 @@ def study_outcome(result):
 def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_ts):
     """Ig Nobel preregistrations, results and committee awards (ignobel_studies.jsonl)."""
     rows = read_jsonl(Path(out_dir) / "ignobel_studies.jsonl")
+    novelty = {
+        str(record["commit"])[:7]: record
+        for _, record in read_jsonl(Path(out_dir) / "novelty.jsonl")
+        if record.get("commit")
+    }
+    # Records written before the evaluator logged its commit: match by the logged question.
+    by_question = {}
+    for known in experiments_by_commit:
+        study = study_from_log(Path(out_dir) / "runs" / f"{known}.log") if known else None
+        if study:
+            by_question.setdefault(study["question"], []).append(known)
     by_commit, by_prereg = {}, {}
     for line, record, ts in with_inherited_ts(rows, "ts"):
         prereg, result = record.get("prereg") or {}, record.get("result") or {}
         commit = record.get("commit")
         prereg_key = json.dumps(prereg, sort_keys=True)
+        if not commit and prereg_key not in by_prereg and by_question.get(prereg.get("question")):
+            commit = by_question[prereg.get("question")].pop(0)
         original = by_commit.get(commit) if commit else None
         if record.get("role") == "critic" or (not commit and prereg_key in by_prereg):
             original = original or by_prereg.get(prereg_key)
@@ -1496,6 +1548,10 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
                 "citations": result.get("citations") or prereg.get("citations") or [],
                 "replications": [],
                 "committee": result.get("committee"),
+                "novelty": (novelty.get(str(commit)[:7]) or {}).get("novelty") if commit else None,
+                "prior_art_pass": (
+                    (novelty.get(str(commit)[:7]) or {}).get("prior_art_pass") if commit else None
+                ),
                 "tick": None,
             },
         )

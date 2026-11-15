@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
+import {entityRows} from '../src/engine/inspect.ts';
 import {researchCommitteeScores,researchFinalists,researchResults,researchToolUsage,preCommitteeResultsHtml} from '../src/engine/intro.ts';
 
 const config=JSON.parse(readFileSync(new URL('../data/pages/intro.json',import.meta.url),'utf8'));
@@ -18,6 +19,14 @@ test('Ig Nobel results count distinct studies without counting the critic rerun'
  assert.equal(summary.confirmed,11);
  assert.equal(summary.underCurrentRules,10);
  assert.equal(recording.events.filter(event=>event.type==='study.replicated').length,1);
+});
+
+test('a replicated study the novelty critic matched to prior art is not a finalist',()=>{
+ const copy=structuredClone(recording),rows=entityRows(copy,'studies'),raw=copy.entities.studies;
+ const target=(Array.isArray(raw)?raw:Object.values(raw)).find(row=>(row.id??row.study_id)==='study:14');
+ assert.ok(rows.length&&target);target.prior_art_pass=false;
+ const ids=researchFinalists(copy).map(item=>item.id);
+ assert.ok(!ids.includes('study:14'));assert.ok(ids.includes('study:11'));
 });
 
 test('recorded tool usage is computed from events and source cards',()=>{
@@ -65,4 +74,13 @@ test('the compact first screen and static assets contain no satire intro copy',(
  assert.doesNotMatch(files,/id="intro"/);
  assert.match(files,/id="open-results"/);
  assert.match(files,/id="open-about"/);
+});
+
+ test('ending citation is grounded in this recording and does not leak into another run',()=>{
+ const html=preCommitteeResultsHtml(config,recording,esc);
+ assert.match(html,/Kitchen Physics Lab — for confirming that heavier cars get fewer city miles per gallon/);
+ assert.ok(html.indexOf('Research result in one sentence')<html.indexOf('Tools used in this run'));
+ assert.match(html,/Committee verdict: no award/);
+ const other={...recording,manifest:{...recording.manifest,id:'another-run'}};
+ assert.doesNotMatch(preCommitteeResultsHtml(config,other,esc),/Research result in one sentence/);
 });
