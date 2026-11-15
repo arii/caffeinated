@@ -362,7 +362,7 @@ class SandboxedSwarmTests(unittest.TestCase):
                 profile = original(path)
                 profile["patience"] = 1
                 profile["required_mechanisms"] = ["baseline"]
-                profile["attempt_statuses"] = ["keep", "discard", "crash", "reject"]
+                profile["attempt_statuses"] = ["keep", "discard", "crash", "reject", "duplicate"]
                 profile["_hash"] = meter.sha(
                     {key: value for key, value in profile.items() if not key.startswith("_")}
                 )
@@ -375,7 +375,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             summary = json.loads((out / "converged.json").read_text())
             ledger = meter.read_ledger(out / "ledger.jsonl")
             profile = original(PROFILE)
-            profile["attempt_statuses"] = ["keep", "discard", "crash", "reject"]
+            profile["attempt_statuses"] = ["keep", "discard", "crash", "reject", "duplicate"]
             self.assertLess(summary["round"], 10)
             self.assertLess(
                 max(event.get("round", 0) for event in ledger), summary["round"]

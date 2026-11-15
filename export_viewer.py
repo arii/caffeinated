@@ -294,7 +294,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                 status = recomputed_boredom.get((round_, agent), {})
             components = {key: value for key, value in status.items()
                           if key in {"novelty", "stagnation", "overload", "fail_rate",
-                                     "trivial_rate", "diversity"}}
+                                     "trivial_rate", "diversity", "frustration"}}
             run.emit("boredom.measured", round_=round_, phase="assign", ts=ts, agent=agent,
                      file="assignments.jsonl", line=line, native_type="assignment", sub=100 + sub,
                      payload={"B": status.get("B"),
@@ -312,6 +312,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
                      file="boredom_log.jsonl", line=line, native_type="status",
                      payload={"scope": "swarm", "B": record.get("B"), "regime": record.get("regime"),
                               "frontier_stall": record.get("frontier_stall"),
+                              "frustration": record.get("frustration"),
                               "best_metric": record.get("best_loss"),
                               "directive": record.get("directive"), "shadow": arm == "A"})
         elif record.get("type") == "gate":

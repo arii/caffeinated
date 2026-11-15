@@ -101,6 +101,23 @@ def fake_response(role, values):
             "predicted_delta": -0.001,
             "risk": "The small benchmark may not expose the effect.",
         }
+    if role == "CRITIC_NOVELTY":
+        try:
+            candidates = json.loads(str(values.get("candidates") or "[]"))
+        except json.JSONDecodeError:
+            candidates = []
+        return {
+            "scores": [
+                {
+                    "agent": item.get("agent"),
+                    "novelty": 0.5,
+                    "closest": None,
+                    "why": "Offline runs cannot judge prior art.",
+                }
+                for item in candidates
+                if isinstance(item, dict)
+            ]
+        }
     if role == "CRITIC":
         return {
             "verdict": "replicated",
@@ -136,7 +153,19 @@ def fake_response(role, values):
                 if agent_match
                 else 0
             )
-            target = fake_edits[target_index]
+            target_index = (target_index + values.get("fake_offset", 0)) % len(fake_edits)
+            # A previous kept edit may have consumed this exact old text.
+            # Select the next applicable canned edit rather than aborting a run.
+            for offset in range(len(fake_edits)):
+                index = (target_index + offset) % len(fake_edits)
+                target = fake_edits[index]
+                if (isinstance(target.get("old"), str) and target["old"]
+                        and candidate_source.count(target["old"]) == 1
+                        and target["old"] != target.get("new")):
+                    target_index = index
+                    break
+            else:
+                raise ValueError("fake worker could not find a unique task edit")
             old = target["old"]
             new = target["new"]
             if not isinstance(old, str) or not isinstance(new, str):
@@ -160,6 +189,7 @@ def fake_response(role, values):
                 if agent_match
                 else 0
             )
+            target_index = (target_index + values.get("fake_offset", 0)) % len(fake_targets)
             name, mechanism, method, increment = fake_targets[target_index]
             match = re.search(
                 rf"(?m)^(?P<prefix>\s*{re.escape(name)}\s*=\s*)"
@@ -252,11 +282,14 @@ class LLMClient:
         log_path="llm_log.jsonl",
         prompt_dir=DEFAULT_PROMPT_DIR,
         replay=False,
+        seed=None,
     ):
         self.mode = mode.casefold()
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
         self.replay = replay
+        self.seed = seed
+        self.sampling_seed = None
         self.records = read_log(self.log_path)
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
@@ -286,6 +319,12 @@ class LLMClient:
         prompt_values["agent"] = agent
         prompt_values["round"] = round_num
         prompt_values["role"] = role.casefold()
+        if self.seed is not None:
+            # Key by role/worker/round, so arm-specific extra calls do not shift
+            # the common random numbers for later matched calls.
+            key = f"{self.seed}:{role}:{agent}:{round_num}"
+            self.sampling_seed = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16) % (2**31)
+            prompt_values["fake_offset"] = self.seed + round_num - 1
         prompt = render_prompt(role, prompt_values, self.prompt_dir)
         digest = prompt_sha(prompt)
         started = time.monotonic()
@@ -321,6 +360,7 @@ class LLMClient:
             "response": response,
             "latency_ms": int((time.monotonic() - started) * 1000),
             "usage": usage,
+            "seed": self.sampling_seed,
         }
         if self.request_attempts:
             record["attempts"] = self.request_attempts
@@ -372,7 +412,8 @@ class LLMClient:
             prompt=model_input,
             num_samples=1,
             sampling_params=tinker.types.SamplingParams(
-                max_tokens=8192, temperature=0.3, stop=stop
+                max_tokens=8192, temperature=0.3, stop=stop,
+                **({"seed": self.sampling_seed} if self.sampling_seed is not None else {}),
             ),
         ).result().sequences[0]
         usage = {
@@ -441,6 +482,8 @@ class LLMClient:
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
         }
+        if self.sampling_seed is not None:
+            payload["seed"] = self.sampling_seed
         request = Request(
             f"{base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
