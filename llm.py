@@ -16,6 +16,9 @@ from runtime_env import load_local_env
 ROOT = Path(__file__).resolve().parent
 load_local_env(ROOT / ".env")
 DEFAULT_PROMPT_DIR = ROOT / "prompts"
+TINKER_BASE_URL = "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1"
+TINKER_TIMEOUT_SECONDS = 900
+TRANSIENT_HTTP = {408, 409, 429, 500, 502, 503, 504}
 
 
 def timestamp():
@@ -292,10 +295,6 @@ class LLMClient:
         self.model = model or os.environ.get(
             "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
         )
-        self.tinker_service = None
-        self.tinker_sampler = None
-        self.tinker_renderer = None
-        self.tinker_tokenizer = None
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
@@ -367,78 +366,56 @@ class LLMClient:
         return response
 
     def _tinker_completion(self, prompt):
-        try:
-            import tinker
-        except ImportError as error:
-            raise RuntimeError("Tinker requires Python 3.11+ and pip install tinker") from error
-        if self.tinker_sampler is None:
-            if self.model.split(":")[0] == "moonshotai/Kimi-K3.1-Pro":
-                try:
-                    from tml_renderers import renderers
-                except ImportError as error:
-                    raise RuntimeError(
-                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; see program.md"
-                    ) from error
-                self.tinker_renderer = renderers.KimiK31Pro.low()
-            self.tinker_service = tinker.ServiceClient()
-            self.tinker_sampler = self.tinker_service.create_sampling_client(
-                base_model=self.model
-            ).result()
-            if self.tinker_renderer is None:
-                self.tinker_tokenizer = self.tinker_sampler.get_tokenizer()
-        if self.tinker_renderer is not None:
-            from tml_renderers import chat
-            from tml_renderers.tinker import token_spans_to_tinker_model_input
-
-            spans, parser = self.tinker_renderer.render_for_completion(
-                chat.MessageList.from_openai_chat_dicts([{"role": "user", "content": prompt}])
-            )
-            model_input = token_spans_to_tinker_model_input(spans)
-            stop = self.tinker_renderer.stop()
-        else:
-            tokens = self.tinker_tokenizer.apply_chat_template(
-                [{"role": "user", "content": prompt}],
-                tokenize=True,
-                add_generation_prompt=True,
-            )
-            model_input = tinker.types.ModelInput.from_ints(tokens)
-            stop = [self.tinker_tokenizer.eos_token_id]
-        sequence = (
-            self.tinker_sampler.sample(
-                prompt=model_input,
-                num_samples=1,
-                sampling_params=tinker.types.SamplingParams(
-                    max_tokens=8192,
-                    temperature=0.3,
-                    stop=stop,
-                    **({"seed": self.sampling_seed} if self.sampling_seed is not None else {}),
-                ),
-            )
-            .result()
-            .sequences[0]
-        )
-        usage = {
-            "prompt_tokens": len(model_input.to_ints()),
-            "completion_tokens": len(sequence.tokens),
+        """Sample through Tinker's OpenAI-compatible endpoint; it renders the chat template."""
+        base_url = os.environ.get("TINKER_BASE_URL", TINKER_BASE_URL).rstrip("/")
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 8192,
+            "temperature": 0.3,
+            "reasoning_effort": os.environ.get("TINKER_REASONING_EFFORT", "low"),
         }
-        usage["total_tokens"] = sum(usage.values())
-        if self.tinker_renderer is not None:
+        if self.sampling_seed is not None:
+            payload["seed"] = self.sampling_seed
+        request = Request(
+            f"{base_url}/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {os.environ.get('TINKER_API_KEY', '')}",
+                "Content-Type": "application/json",
+                "User-Agent": "caffeinated-swarm",
+            },
+            method="POST",
+        )
+        for attempt in range(3):
             try:
-                messages = chat.MessageList(
-                    parser.parse_tokens(sequence.tokens).messages
-                ).to_openai_chat_dicts()
-                assistant = [m for m in messages if m.get("role") == "assistant"]
-                content = "\n".join(m.get("content") or "" for m in assistant)
-                reasoning = "\n".join(
-                    str(m.get("reasoning_content") or m.get("reasoning") or m.get("thinking") or "")
-                    for m in assistant
-                ).strip()
-            except ValueError:
-                content = reasoning = ""
-        else:
-            text = self.tinker_tokenizer.decode(sequence.tokens, skip_special_tokens=True)
-            reasoning, _, content = text.rpartition("</think>")
-            reasoning = reasoning.replace("<think>", "").strip()
+                with urlopen(request, timeout=TINKER_TIMEOUT_SECONDS) as http_response:
+                    response = json.loads(http_response.read().decode("utf-8"))
+                break
+            except HTTPError as error:
+                if error.code in TRANSIENT_HTTP and attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                detail = error.read().decode("utf-8", "replace")[:300]
+                raise RuntimeError(f"Tinker returned HTTP {error.code}: {detail}") from error
+            except URLError as error:
+                if attempt < 2:
+                    time.sleep(5 * (attempt + 1))
+                    continue
+                raise RuntimeError(f"Tinker request failed: {error.reason}") from error
+            except json.JSONDecodeError as error:
+                raise RuntimeError("Tinker returned invalid JSON") from error
+        try:
+            message = response["choices"][0]["message"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise RuntimeError("Tinker returned no completion message") from error
+        content = message.get("content") or ""
+        reasoning = str(message.get("reasoning_content") or "").strip()
+        raw_usage = response.get("usage") or {}
+        usage = {
+            key: int(raw_usage.get(key) or 0)
+            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+        }
         if reasoning:
             usage["reasoning"] = reasoning
         return content, usage

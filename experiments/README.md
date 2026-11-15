@@ -72,10 +72,8 @@ successful rows are saved before the driver exits with an error. Queued arms
 are marked `not_started`. Parallel live runs share provider rate limits and
 host resources, so concurrency need not yield a proportional speedup.
 
-The installed `tinker==0.39.0` SDK was checked without a live call:
-`SamplingParams` has an explicit `seed: Optional[int] = None` signature
-parameter and model field, and `SamplingParams(seed=42).model_dump()` preserves
-the seed. The swarm therefore passes it to Tinker sampling.
+Tinker's OpenAI-compatible `/chat/completions` endpoint accepts the standard
+`seed` field, so the swarm passes it with each Tinker request.
 
 The swarm's `--seed` sets Tinker/OpenAI sampling seeds keyed by
 seed/role/worker/round. Thus extra B calls do not shift later matching calls.

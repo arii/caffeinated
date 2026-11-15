@@ -10,10 +10,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tinker = [
-    "tinker==0.39.0; python_version >= '3.11'",
-    "tml-renderers==0.4.1; python_version >= '3.11'",
-]
 viewer = [
     "fastapi>=0.115,<1",
     "uvicorn>=0.30,<1",
