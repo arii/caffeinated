@@ -276,6 +276,15 @@ class ResumeStateTests(unittest.TestCase):
         self.assertIsNone(swarm.resolve_run_args(args))
         self.assertEqual((args.arm, args.rounds, args.llm, args.exa), ("B", 10, "openai", "on"))
 
+    def test_arm_environment_exports_resume_rollbacks_for_memory(self):
+        rollbacks = [{"epoch": 1, "after": "2026-01-01T00:10:00Z"}]
+        with patch.dict(os.environ, {"AUTORESEARCH_RUN_ROLLBACKS": "stale"}):
+            with swarm.arm_environment("A", False, "pastdev", run_id="r1", rollbacks=rollbacks):
+                self.assertEqual(json.loads(os.environ["AUTORESEARCH_RUN_ROLLBACKS"]), rollbacks)
+            with swarm.arm_environment("A", False, "pastdev", run_id="r1"):
+                self.assertNotIn("AUTORESEARCH_RUN_ROLLBACKS", os.environ)
+            self.assertEqual(os.environ["AUTORESEARCH_RUN_ROLLBACKS"], "stale")
+
     def test_only_tags_from_after_the_checkpoint_are_deleted(self):
         repo = self.out / "repo"
         subprocess.run(["git", "init", "-q", str(repo)], check=True)

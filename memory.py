@@ -166,7 +166,31 @@ def arm_run_scope(arm=None, run_id=None):
     task = os.environ.get("AUTORESEARCH_TASK")
     if task:
         scope["task"] = task
+    rollbacks = run_rollbacks()
+    if rollbacks:
+        scope["rollbacks"] = rollbacks
     return scope
+
+
+def run_rollbacks():
+    """Resumes of this run, from swarm.py: [{"epoch": n, "after": checkpoint ts}]."""
+    try:
+        rollbacks = json.loads(os.environ.get("AUTORESEARCH_RUN_ROLLBACKS") or "[]")
+    except ValueError:
+        return []
+    return [item for item in rollbacks if isinstance(item, dict) and item.get("after")]
+
+
+def rolled_back(metadata, rollbacks):
+    """True for a memory written after a checkpoint that a later resume rolled back to."""
+    written = timestamp_value(metadata.get("written_at"))
+    if written is None:
+        return False
+    epoch = metadata.get("run_epoch") or 0
+    return any(
+        int(item["epoch"]) > epoch and written > (timestamp_value(item["after"]) or written)
+        for item in rollbacks or ()
+    )
 
 
 def append_jsonl(path, record):
@@ -406,7 +430,9 @@ def write(
         scope = arm_run_scope(
             arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
         )
-        payload["metadata"].update(scope or {})
+        if scope:
+            rollbacks = scope.pop("rollbacks", [])
+            payload["metadata"].update(scope, run_epoch=len(rollbacks), written_at=utc_now())
         if scope and not memory_id.startswith("run:"):
             payload["id"] = f"{memory_id}@{scope['run_id'][:12]}"
     ingestion_id = None
@@ -781,7 +807,7 @@ def scope_decision(metadata, scope):
     if task and metadata.get("task") not in (None, task):
         return "foreign_task"
     if metadata["run_id"] == scope["run_id"]:
-        return "same_run"
+        return "rolled_back" if rolled_back(metadata, scope.get("rollbacks")) else "same_run"
     if not task or metadata.get("task") != task:
         return "untagged_task"
     mem_type = metadata.get("type")

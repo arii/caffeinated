@@ -442,6 +442,7 @@ class SandboxedSwarmTests(unittest.TestCase):
             run = json.loads((out / "run.json").read_text())
             self.assertEqual((run["status"], run["run_id"]), ("finished", run_id))
             self.assertEqual(len(run["resumes"]), 1)
+            self.assertTrue(run["resumes"][0]["checkpoint_ts"])
             self.assertEqual(
                 [path for path in (out / "viewer").iterdir() if path.is_dir()], [viewer]
             )

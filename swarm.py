@@ -2308,10 +2308,11 @@ def critic_lesson_memory(
 
 
 @contextmanager
-def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
+def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None, rollbacks=None):
     names = (
         "AUTORESEARCH_ARM",
         "AUTORESEARCH_RUN_ID",
+        "AUTORESEARCH_RUN_ROLLBACKS",
         "EXA",
         "BOREDOM",
         "PRIOR_ART",
@@ -2322,6 +2323,10 @@ def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None):
     os.environ["AUTORESEARCH_ARM"] = arm
     if run_id is not None:
         os.environ["AUTORESEARCH_RUN_ID"] = run_id
+    if rollbacks:
+        os.environ["AUTORESEARCH_RUN_ROLLBACKS"] = json.dumps(rollbacks)
+    else:
+        os.environ.pop("AUTORESEARCH_RUN_ROLLBACKS", None)
     os.environ["EXA"] = "on" if exa_enabled else "off"
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
@@ -2583,10 +2588,16 @@ def _orchestrate(args, publish_state, cleanup):
             {
                 "ts": timestamp(),
                 "after_round": resume["checkpoint"]["round"],
+                "checkpoint_ts": resume["checkpoint"].get("ts"),
                 "command": redact_command(sys.argv),
             }
         )
         _write_run_artifact(out_dir, resumed)
+        memory_rollbacks = [
+            {"epoch": epoch, "after": entry["checkpoint_ts"]}
+            for epoch, entry in enumerate(resumed["resumes"], 1)
+            if entry.get("checkpoint_ts")
+        ]
     else:
         _write_run_artifact(
             out_dir,
@@ -2651,9 +2662,12 @@ def _orchestrate(args, publish_state, cleanup):
     baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
     if resume is None:
         record_score_cache(repo, out_dir, {baseline_commit: baseline})
+        memory_rollbacks = []
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
-    with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
+    with arm_environment(
+        args.arm, exa_enabled, memory_backend, run_id=run_id, rollbacks=memory_rollbacks
+    ):
         if not meter.read_ledger(ledger_path):
             meter.submit(
                 profile,

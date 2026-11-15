@@ -60,7 +60,10 @@ published-event length). `swarm.py --resume <out>` continues a crashed or killed
 run with the same run id, ledger, score cache, memory mirror, arm branch and
 settings from `run.json`; it truncates a half-written round, cuts the published
 recording back to its checkpointed prefix so later publishes still append, and
-deletes that round's tags. `--rounds N` extends the run; conflicting `--task`,
+deletes that round's tags. past.dev memories from the abandoned round cannot be
+deleted remotely, so each write carries `run_epoch` and `written_at`, and recall
+drops same-run memories written after a checkpoint that a later resume rolled
+back to (`AUTORESEARCH_RUN_ROLLBACKS`). `--rounds N` extends the run; conflicting `--task`,
 `--arm`, `--seed`, `--llm`, `--model`, `--exa` or `--memory-backend` values are
 rejected. A worker whose LLM call fails after retries records a `crash` row
 for that attempt and the round goes on; if every worker fails, the run stops so

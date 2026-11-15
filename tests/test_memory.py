@@ -480,6 +480,8 @@ class MemoryCliTests(unittest.TestCase):
             self.assertEqual(request["path"], "/api/v1/ingest")
             self.assertEqual(request["authorization"], f"Bearer {arm_key}")
             self.assertNotIn(arm_key, result.stdout + result.stderr)
+            written_at = request["body"]["metadata"].pop("written_at")
+            self.assertIsNotNone(memory.timestamp_value(written_at))
             self.assertEqual(
                 request["body"],
                 {
@@ -493,6 +495,7 @@ class MemoryCliTests(unittest.TestCase):
                         "author": "worker-1",
                         "arm": "BOREDOM",
                         "run_id": "test-run",
+                        "run_epoch": 0,
                     },
                     "identity": "worker-1",
                 },
@@ -743,6 +746,35 @@ class MemoryCliTests(unittest.TestCase):
             memory.scope_decision({"arm": "A", "run_id": "pair-1", "type": "claim"}, scope),
             "same_run",
         )
+
+    def test_scope_decision_drops_memories_of_a_rolled_back_round(self):
+        rollbacks = [{"epoch": 1, "after": "2026-01-01T00:10:00Z"}]
+        scope = {"arm": "A", "run_id": "pair-1", "rollbacks": rollbacks}
+
+        def decision(written_at, epoch, mem_type="claim"):
+            metadata = {"arm": "A", "run_id": "pair-1", "type": mem_type, "run_epoch": epoch}
+            return memory.scope_decision({**metadata, "written_at": written_at}, scope)
+
+        self.assertEqual(decision("2026-01-01T00:09:59Z", 0), "same_run")
+        self.assertEqual(decision("2026-01-01T00:10:01Z", 0), "rolled_back")
+        self.assertEqual(decision("2026-01-01T00:10:01Z", 0, "lesson"), "rolled_back")
+        self.assertEqual(decision("2026-01-01T00:12:00Z", 1), "same_run")
+        self.assertEqual(
+            memory.scope_decision({"arm": "A", "run_id": "pair-1", "type": "claim"}, scope),
+            "same_run",
+        )
+
+    def test_arm_run_scope_reads_resume_rollbacks(self):
+        rollbacks = [{"epoch": 1, "after": "2026-01-01T00:10:00Z"}]
+        env = {
+            "AUTORESEARCH_ARM": "A",
+            "AUTORESEARCH_RUN_ID": "pair-1",
+            "AUTORESEARCH_RUN_ROLLBACKS": json.dumps(rollbacks),
+        }
+        with patch.dict(os.environ, env):
+            self.assertEqual(memory.arm_run_scope()["rollbacks"], rollbacks)
+        with patch.dict(os.environ, {**env, "AUTORESEARCH_RUN_ROLLBACKS": "not json"}):
+            self.assertNotIn("rollbacks", memory.arm_run_scope())
 
     def test_pastdev_arm_recall_with_empty_mirror_drops_all_results(self):
         server = self.start_server()
