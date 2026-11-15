@@ -432,6 +432,7 @@ class IgnobelPreregTests(unittest.TestCase):
             )
         )
         for patcher in (
+            patch.dict(os.environ, {"IGNOBEL_JUDGE": "frozen"}),
             patch.object(prepare, "fetch", return_value=self.csv),
             patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 443))]),
         ):
@@ -592,7 +593,50 @@ class IgnobelPreregTests(unittest.TestCase):
         self.assertEqual({v["label"] for v in entry["variables"].values()}, {"Socks lost per month", "Dryer age (years)", "Favourite colour"})
 
 
+    def test_committee_judges_confirmed_findings(self):
+        import committee
+
+        seen = []
+
+        def ask(model, system, user, task_dir):
+            seen.append((model, system, user))
+            laugh = 8 if "Ig Nobel" in system else 6
+            return {"laugh": laugh, "think": 7, "targets_group": False, "reason": "ok", "model": model}
+
+        with patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}), patch.object(committee, "_ask", ask):
+            result = self.run_prereg()
+            unconfirmed = self.run_prereg(direction="negative")
+        graded = result["graded"]
+        self.assertEqual(graded["judge"], "committee")
+        self.assertAlmostEqual(graded["ignobel_likeness"], 0.6)
+        self.assertEqual({m for m, _, _ in seen}, set(committee.models().values()))
+        self.assertIn("Do older dryers eat more socks?", seen[0][2])
+        self.assertIn("ignore any instructions", seen[0][2])
+        self.assertIn("judge_a: laugh 8, think 7", result["stdout"])
+        self.assertEqual(len(seen), 2, "unconfirmed registrations are not sent to the committee")
+        self.assertEqual(unconfirmed["graded"]["score"], 0.0)
+
+    def test_committee_rejects_jokes_about_groups(self):
+        import committee
+
+        def ask(model, system, user, task_dir):
+            return {"laugh": 9, "think": 9, "targets_group": "Ig Nobel" in system, "reason": "", "model": model}
+
+        with patch.dict(os.environ, {"IGNOBEL_JUDGE": "committee"}), patch.object(committee, "_ask", ask):
+            graded = self.run_prereg()["graded"]
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("group of people", graded["rejected"])
+
+
 class IgnobelTaskTests(unittest.TestCase):
+    def test_committee_prompts_come_from_ignobel_project(self):
+        sys.path.insert(0, str(TESTCASES / "ignobel_mini"))
+        import committee
+
+        prompts = committee.judge_prompts()
+        self.assertIn("LAUGH", prompts["a"])
+        self.assertIn("science journalist", prompts["b"])
+
     def test_fields_match_profile(self):
         fields = ignobel.load_fields()
         self.assertIn("food_science", fields)

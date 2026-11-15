@@ -12,9 +12,11 @@ expert BEFORE any data is seen. Candidate code is never executed. The host
    per run (later registrations on the same dataset score 0);
 4. runs the registered test once on all rows (Spearman rho, two-sided
    p < ALPHA, sign must match), rejecting trivial pairs;
-5. scores the dataset's own column wording, never the candidate's prose, with
-   a frozen Ig Nobel-likeness judge trained on real Ig Nobel prize rationales
-   and winning-paper titles vs. ordinary OpenAlex paper titles.
+5. scores Ig Nobel-likeness of confirmed findings with the two-judge committee
+   from ignobel/committee.py (committee.py: laugh and think, 1-10, lower judge
+   wins, 0 if the joke targets a group) on a host-written abstract; offline
+   (IGNOBEL_JUDGE=frozen or no TINKER_API_KEY) a frozen classifier trained on
+   real Ig Nobel rationales vs. OpenAlex titles scores the column wording.
 
 calibration = min(|rho|, predicted) / max(|rho|, predicted)
 score = confirmed * min(1, |rho| / RHO_FULL) * (0.5 + 0.5 * calibration) * ignobel_likeness
@@ -39,6 +41,7 @@ for path in (ROOT, HERE):
 
 from judge_text import likeness, tokens
 from stats import spearman
+import committee
 import external
 
 ALPHA = 0.005
@@ -307,10 +310,8 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
     sign = 1 if prereg["direction"] == "positive" else -1
     confirmed = rejected is None and p < ALPHA and rho * sign > 0
     calibration = min(abs(rho), predicted) / max(abs(rho), predicted) if rho else 0.0
-    funny = likeness(f"{side_text(x, x_level)} {side_text(y, y_level)}", judge)
     strength = min(1.0, abs(rho) / RHO_FULL)
-    score = strength * (0.5 + 0.5 * calibration) * funny if confirmed else 0.0
-    return {
+    graded = {
         **result,
         "headline": headline(entry, x, x_level, y, y_level, prereg["direction"]),
         "rejected": rejected,
@@ -321,10 +322,20 @@ def grade_prereg(prereg, task_dir=HERE, research_log=None, judge=None):
         "calibration": calibration,
         "confirmed": confirmed,
         "strength": strength,
-        "ignobel_likeness": funny,
-        "score": score,
         "sha256": entry.get("sha256", ""),
+        "judge": committee.mode(),
     }
+    if graded["judge"] == "committee":
+        verdict = committee.score_study(committee.abstract(prereg, graded), prereg["question"], task_dir) if confirmed else None
+        funny = verdict["score"] if verdict else 0.0
+        graded["committee"] = verdict
+        if verdict and verdict["rejected"]:
+            graded["rejected"] = "committee: the joke targets a group of people"
+    else:
+        funny = likeness(f"{side_text(x, x_level)} {side_text(y, y_level)}", judge)
+    graded["ignobel_likeness"] = funny
+    graded["score"] = strength * (0.5 + 0.5 * calibration) * funny if confirmed else 0.0
+    return graded
 
 
 def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
@@ -352,8 +363,12 @@ def evaluate_source(source, task_dir=HERE, timeout_s=None, research_log=None):
                 f"registered test: {graded['headline']}",
                 f"rho: {graded['rho']:.4f} (p={graded['p']:.2g}, n={graded['n']}); predicted {graded['predicted_rho']:.3f}, calibration {graded['calibration']:.3f}",
                 f"confirmed: {str(graded['confirmed']).lower()}",
-                f"ignobel_likeness: {graded['ignobel_likeness']:.4f}",
+                f"ignobel_likeness: {graded['ignobel_likeness']:.4f} (judge: {graded['judge']})",
             ]
+            for which, verdict in ((graded.get("committee") or {}).get("verdicts") or {}).items():
+                out.append(
+                    f"judge_{which}: laugh {verdict['laugh']}, think {verdict['think']} ({verdict['model']}): {verdict['reason'][:160]}"
+                )
         out.append(f"rejected: {graded['rejected'] or 'no'}")
     out += [
         f"score: {score:.6f}",
