@@ -1,0 +1,5 @@
+{
+ "editable": "analysis.py",
+ "brief": "an analysis script (`analysis.py`) that answers 17 BixBench questions (see questions.json) from 3 raw datasets in data/ and prints {question_id: number}; loss = 1 - accuracy, and the record to beat is BixBench's best published accuracy 0.523 (loss 0.477)",
+ "fake_targets": []
+}

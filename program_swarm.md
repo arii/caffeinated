@@ -28,3 +28,8 @@ Each real run uses Modal H100 bursts and writes to
 protocol offline, use `--llm fake --gpu fake --no-push` with
 `MEMORY_BACKEND=local EXA=off`; fake GPU scores are deterministic and never
 push a branch or tag.
+
+## Mini benchmarks
+
+`python3 swarm.py --task {hadamard19,bixbench_mini,playworld_mini}` runs the same
+loop on a small local task instead of `train.py` on Modal. See `testcases/README.md`.

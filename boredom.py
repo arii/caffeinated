@@ -172,7 +172,10 @@ def commit_representation(commit, description, repo):
     """Return a row's representation, falling back to description if unresolved."""
     try:
         result = subprocess.run(
-            ["git", "show", "--format=", "--unified=0", commit, "--", "train.py"],
+            [
+                "git", "show", "--format=", "--unified=0", commit,
+                "--", os.environ.get("AUTORESEARCH_TARGET", "train.py"),
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
