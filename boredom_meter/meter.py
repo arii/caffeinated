@@ -288,7 +288,7 @@ def suggest(profile, events, n=5, depth=None):
     return [{"cell": c, "visits": visits.get(c, 0), "fails": fails.get(c, 0), "best": best.get(c)} for c in ranked[:n]]
 
 
-def gate(profile, events, descriptor, agent=None, sources=None):
+def gate(profile, events, descriptor, agent=None, sources=None, role=None):
     validate_descriptor(profile, descriptor)
     st = status(profile, events, agent)
     archive = [e["descriptor"] for e in events]
@@ -311,7 +311,7 @@ def gate(profile, events, descriptor, agent=None, sources=None):
         if g.get("require_sources") and not sources:
             reasons.append("ungrounded: cite at least one research source id")
     elif st["regime"] != "EXPLOIT":
-        if min_recent is not None and min_recent < g["snap_min_distance"]:
+        if role != "exploit" and min_recent is not None and min_recent < g["snap_min_distance"]:
             reasons.append(f"near-duplicate of a recent attempt ({min_recent:.3f} < {g['snap_min_distance']})")
         if min_failed is not None and min_failed < g["failed_min_distance"]:
             reasons.append(f"too close to a failed/discarded attempt ({min_failed:.3f} < {g['failed_min_distance']})")

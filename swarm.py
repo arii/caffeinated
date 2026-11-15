@@ -37,6 +37,8 @@ RESULT_COLUMNS = (
     "description",
     "agent",
     "round",
+    "descriptor",
+    "kind",
 )
 
 
@@ -264,6 +266,8 @@ def write_results(ledger_path, results_path):
                     event.get("description", ""),
                     event.get("agent", ""),
                     event.get("round", 0),
+                    json.dumps(event.get("descriptor"), sort_keys=True),
+                    event.get("kind", ""),
                 ]
             )
     return events
@@ -728,10 +732,13 @@ def gate_candidate(
     out_dir,
     profile_path,
     commit,
+    role=None,
 ):
     args = SimpleNamespace(
         command="gate",
         results=str(Path(out_dir) / "results.tsv"),
+        ledger=str(Path(out_dir) / "ledger.jsonl"),
+        role=role,
         log=str(Path(out_dir) / "boredom_log.jsonl"),
         repo=str(repo),
         profile=str(profile_path),
@@ -984,6 +991,7 @@ def worker_attempts(
             out_dir=out_dir,
             profile_path=profile_path,
             commit=committed["commit"],
+            role=role,
         )
         attempts.append(
             {

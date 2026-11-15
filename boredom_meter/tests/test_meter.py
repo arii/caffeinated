@@ -111,6 +111,18 @@ class MeterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             meter.gate(self.p, [], bad)
 
+    def test_exploit_role_skips_near_duplicate_but_not_failed_basin(self):
+        self.p["thresholds"]["breakout"] = 1.1
+        events = [dict(e, status="keep") for e in stuck_ledger()]
+        descriptor = events[-1]["descriptor"]
+        self.assertEqual(meter.status(self.p, events)["regime"], "BOREDOM_SNAP")
+        self.assertFalse(meter.gate(self.p, events, descriptor)["pass"])
+        self.assertTrue(meter.gate(self.p, events, descriptor, role="exploit")["pass"])
+        events[-1]["status"] = "discard"
+        result = meter.gate(self.p, events, descriptor, role="exploit")
+        self.assertFalse(result["pass"])
+        self.assertTrue(any("failed/discarded" in reason for reason in result["reasons"]))
+
     def test_suggest_is_deterministic_and_prefers_unvisited(self):
         s1 = meter.suggest(self.p, stuck_ledger(), n=3)
         s2 = meter.suggest(self.p, stuck_ledger(), n=3)

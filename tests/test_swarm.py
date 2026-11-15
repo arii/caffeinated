@@ -310,7 +310,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
             if line.strip()
         ]
 
-    def test_two_round_fake_swarm_writes_round_artifacts_and_memory(self):
+    def test_ten_round_fake_swarm_gates_match_conductor_ledger_and_regime(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = self.create_repo(directory)
             out_dir = Path(directory) / "swarm-out"
@@ -326,7 +326,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
                     "--arm",
                     "B",
                     "--rounds",
-                    "2",
+                    "10",
                     "--llm",
                     "fake",
                     "--gpu",
@@ -362,7 +362,7 @@ class SwarmOrchestratorTests(unittest.TestCase):
 
             ledger = self.jsonl(out_dir / "ledger.jsonl")
             self.assertEqual(
-                sum(item.get("kind") == "candidate" for item in ledger), 8
+                sum(item.get("kind") == "candidate" for item in ledger), 40
             )
             self.assertGreaterEqual(
                 sum(item.get("kind") == "critic" for item in ledger), 1
@@ -376,7 +376,21 @@ class SwarmOrchestratorTests(unittest.TestCase):
                 )
                 self.assertEqual(candidate["replicate_score"], critic["score"])
             assignments = self.jsonl(out_dir / "assignments.jsonl")
-            self.assertEqual(len(assignments), 2)
+            self.assertEqual(len(assignments), 10)
+            profile = meter.load_profile(PROFILE_PATH)
+            logs = self.jsonl(out_dir / "boredom_log.jsonl")
+            gates = [item for item in logs if item.get("type") == "gate"]
+            self.assertTrue(gates)
+            for assignment in assignments:
+                matching = [g for g in gates if g["ledger_sha256"] == assignment["ledger_sha256"]]
+                self.assertTrue(matching)
+                for gate in matching:
+                    self.assertEqual(gate["regime"], assignment["regime"])
+            for gate in gates:
+                prefix = ledger[:gate["n_rows"]]
+                conductor = swarm.meter.status(profile, prefix)
+                self.assertEqual(gate["ledger_sha256"], conductor["ledger_sha256"])
+                self.assertEqual(gate["regime"], conductor["regime"])
             for assignment in assignments:
                 self.assertEqual(len(assignment["ledger_sha256"]), 64)
                 self.assertEqual(len(assignment["profile_sha256"]), 64)
