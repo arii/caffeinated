@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stdlib OpenAI Chat Completions client for swarm JSON prompts."""
+"""OpenAI, Tinker, queue, and offline clients for swarm JSON prompts."""
 
 from datetime import datetime, timezone
 import hashlib
@@ -29,6 +29,20 @@ def timestamp():
 
 def prompt_sha(prompt):
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+
+def first_json_object(content):
+    content = content.strip()
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        start = content.find("{")
+        if start < 0:
+            raise ValueError("no JSON object found") from None
+        parsed, _ = json.JSONDecoder().raw_decode(content, start)
+    if not isinstance(parsed, dict):
+        raise ValueError("completion must be a JSON object")
+    return parsed
 
 
 def read_log(path):
@@ -276,18 +290,30 @@ class LLMClient:
             raise ValueError("--queue-timeout must be greater than zero")
         self.call_counts = {}
         self.records = read_log(self.log_path)
-        self.model = model or os.environ.get("OPENAI_MODEL")
+        self.model = model or os.environ.get(
+            "TINKER_MODEL" if self.mode == "tinker" else "OPENAI_MODEL"
+        )
+        self.tinker_service = None
+        self.tinker_sampler = None
+        self.tinker_renderer = None
+        self.tinker_tokenizer = None
+        self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
         elif self.mode == "queue":
             self.model = "devin-queue"
+        elif self.mode == "tinker":
+            if not replay and not self.model:
+                raise ValueError("set --model or TINKER_MODEL for Tinker requests")
+            if not replay and not os.environ.get("TINKER_API_KEY"):
+                raise ValueError("TINKER_API_KEY is required for Tinker requests")
         elif self.mode == "openai" and not replay:
             if not self.model:
                 raise ValueError("set --model or OPENAI_MODEL for OpenAI requests")
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY is required for OpenAI requests")
         elif self.mode != "openai":
-            raise ValueError("LLM mode must be openai, fake, or queue")
+            raise ValueError("LLM mode must be openai, tinker, fake, or queue")
 
     def call(self, role, *, agent, round_num, values):
         prompt_values = dict(values)
@@ -299,6 +325,7 @@ class LLMClient:
         started = time.monotonic()
         usage = None
         model = self.model
+        self.request_attempts = []
         if self.replay:
             previous = next(
                 (record for record in self.records if record.get("prompt_sha") == digest),
@@ -315,6 +342,8 @@ class LLMClient:
             )
         elif self.mode == "fake":
             response = fake_response(role, prompt_values)
+        elif self.mode == "tinker":
+            response, usage = self._request_tinker(prompt)
         else:
             response, usage = self._request(prompt)
         if not isinstance(response, dict):
@@ -331,9 +360,106 @@ class LLMClient:
             "latency_ms": int((time.monotonic() - started) * 1000),
             "usage": usage,
         }
+        if self.request_attempts:
+            record["attempts"] = self.request_attempts
         append_log(self.log_path, record)
         self.records.append(record)
         return response
+
+    def _tinker_completion(self, prompt):
+        try:
+            import tinker
+        except ImportError as error:
+            raise RuntimeError("Tinker requires Python 3.11+ and pip install tinker") from error
+        if self.tinker_sampler is None:
+            if self.model.split(":")[0] == "moonshotai/Kimi-K3.1-Pro":
+                try:
+                    from tml_renderers import renderers
+                except ImportError as error:
+                    raise RuntimeError(
+                        "Kimi K3.1 requires tml-renderers and PyTorch 2.10+; "
+                        "see program_swarm.md"
+                    ) from error
+                self.tinker_renderer = renderers.KimiK31Pro.low()
+            self.tinker_service = tinker.ServiceClient()
+            self.tinker_sampler = self.tinker_service.create_sampling_client(
+                base_model=self.model
+            ).result()
+            if self.tinker_renderer is None:
+                self.tinker_tokenizer = self.tinker_sampler.get_tokenizer()
+        if self.tinker_renderer is not None:
+            from tml_renderers import chat
+            from tml_renderers.tinker import token_spans_to_tinker_model_input
+
+            spans, parser = self.tinker_renderer.render_for_completion(
+                chat.MessageList.from_openai_chat_dicts(
+                    [{"role": "user", "content": prompt}]
+                )
+            )
+            model_input = token_spans_to_tinker_model_input(spans)
+            stop = self.tinker_renderer.stop()
+        else:
+            tokens = self.tinker_tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                tokenize=True,
+                add_generation_prompt=True,
+            )
+            model_input = tinker.types.ModelInput.from_ints(tokens)
+            stop = [self.tinker_tokenizer.eos_token_id]
+        sequence = self.tinker_sampler.sample(
+            prompt=model_input,
+            num_samples=1,
+            sampling_params=tinker.types.SamplingParams(
+                max_tokens=8192, temperature=0.3, stop=stop
+            ),
+        ).result().sequences[0]
+        usage = {
+            "prompt_tokens": len(model_input.to_ints()),
+            "completion_tokens": len(sequence.tokens),
+        }
+        usage["total_tokens"] = sum(usage.values())
+        if self.tinker_renderer is not None:
+            try:
+                messages = chat.MessageList(
+                    parser.parse_tokens(sequence.tokens).messages
+                ).to_openai_chat_dicts()
+                content = "\n".join(
+                    message.get("content") or "" for message in messages
+                    if message.get("role") == "assistant"
+                )
+            except ValueError:
+                content = ""
+        else:
+            content = self.tinker_tokenizer.decode(sequence.tokens, skip_special_tokens=True)
+            content = content.rsplit("</think>", 1)[-1]
+        return content, usage
+
+    def _request_tinker(self, prompt):
+        usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        request_prompt = prompt
+        for attempt in range(2):
+            started = time.monotonic()
+            content, attempt_usage = self._tinker_completion(request_prompt)
+            record = {
+                "response": content,
+                "latency_ms": int((time.monotonic() - started) * 1000),
+                "usage": attempt_usage,
+            }
+            self.request_attempts.append(record)
+            for key in usage:
+                usage[key] += attempt_usage.get(key, 0)
+            try:
+                return first_json_object(content), usage
+            except ValueError as error:
+                record["parse_error"] = str(error)
+                if attempt:
+                    raise RuntimeError(
+                        f"Tinker returned invalid JSON after one retry: {error}"
+                    ) from error
+                request_prompt = (
+                    prompt + "\nYour previous response could not be parsed: "
+                    + str(error) + "\nReturn a single valid JSON object only."
+                )
 
     def _queue_request(self, role, *, agent, round_num, prompt):
         self.queue_dir.mkdir(parents=True, exist_ok=True)

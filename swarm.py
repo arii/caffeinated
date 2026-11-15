@@ -1885,7 +1885,7 @@ def build_parser():
     parser.add_argument("--out")
     parser.add_argument("--profile", default=str(DEFAULT_PROFILE))
     parser.add_argument(
-        "--llm", choices=("openai", "fake", "queue"), default="openai"
+        "--llm", choices=("openai", "tinker", "fake", "queue"), default="openai"
     )
     parser.add_argument("--gpu", choices=("modal", "fake"), default="modal")
     parser.add_argument("--model")
