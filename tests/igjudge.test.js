@@ -21,7 +21,8 @@ test('html shows every idea, six scores, highlights the winner and escapes text'
  const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
  const html=igJudgeHtml(artifact,esc);
  assert.match(html,/IgJudge final verdict/);
- assert.match(html,/Winner · 80\/100 · Strong/);
+ assert.match(html,/Winner · 80\/100/);
+ assert.doesNotMatch(html,/Strong|Weak|Class/);
  assert.match(html,/Top &lt;idea&gt;/);
  assert.doesNotMatch(html,/<idea>/);
  assert.equal((html.match(/<tr class="igjudge-win">/g)||[]).length,1);
