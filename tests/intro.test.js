@@ -85,6 +85,14 @@ test('the compact first screen and static assets contain no satire intro copy',(
  assert.doesNotMatch(preCommitteeResultsHtml(config,other,esc),/Research result in one sentence/);
 });
 
+
+test('continuous results show this session without unrelated historical benchmarks',()=>{
+ const live=structuredClone(recording);live.manifest.continuous=true;
+ const html=preCommitteeResultsHtml(config,live,esc);
+ assert.match(html,/This session's studies/);
+ assert.doesNotMatch(html,/BixBench held-out|Track 3|Memory retrieval|Kimi/);
+});
+
 test('About panel names the project, team and authors instead of a placeholder',()=>{
  assert.equal(config.authors.placeholder,undefined);
  assert.equal(config.authors.project,'Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)');

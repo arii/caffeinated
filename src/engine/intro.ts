@@ -160,6 +160,11 @@ function resultCitationHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
 }
 
 export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string,summary=researchResults(r)){
+ if(r.manifest.continuous){
+  const verdict=committeeResultsHtml(r,esc)||finalistHtml(c,r,esc);
+  return `${verdict}<section class="result-chart"><h2>This session's studies</h2>${funnelSvg(summary,esc)}<p>${summary.registered} registered · ${summary.ran} tested · ${summary.confirmed} confirmed</p></section><p class="metric-note">${esc(r.manifest.metric?.description||summary.proxyNote||c.results.noProxy)}</p>`;
+ }
+
  const charts=c.results.charts,tools=researchToolUsage(r),finalistSection=committeeResultsHtml(r,esc)||finalistHtml(c,r,esc),funnel=`<section class="result-chart"><h2>Ig Nobel test funnel</h2>${funnelSvg(summary,esc)}<p class="chart-caption">${esc(charts.funnelCaption)}</p></section>`;
  const bixbench=`<section class="result-chart"><h2>BixBench held-out</h2>${bixbenchSvg(c,esc)}<p class="chart-caption">${esc(charts.bixbench.caption)}</p></section>`;
  const track3=`<section class="result-chart"><h2>Track 3 · three-arm comparison</h2>${track3Svg(c,esc)}<div class="chart-legend">${charts.track3.legend.map(item=>`<span><i style="background:${armColors[item.arm]}"></i>${esc(item.arm)} = ${esc(item.label)}</span>`).join('')}</div><p class="chart-caption">${esc(charts.track3.caption)}</p></section>`;

@@ -22,6 +22,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
+import continuous_swarm
 import literature
 import live_publish
 import llm
@@ -96,7 +97,7 @@ def read_jsonl(path):
     if not path.exists():
         return []
     records = []
-    with path.open(encoding="utf-8") as stream:
+    with live_publish.log_lock, path.open(encoding="utf-8") as stream:
         for line_number, line in enumerate(stream, 1):
             if not line.strip():
                 continue
@@ -3241,6 +3242,37 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
     return target
 
 
+def record_queue_stop(queue, out_dir, run_artifact, publish_state):
+    run_artifact["stop_reason"] = queue.reason or "queue_empty"
+    if queue.reason == "user_stop":
+        publish_state["terminal_status"] = "stopped"
+    _write_run_artifact(out_dir, run_artifact)
+
+
+def accept_continuous_study(conductor, commit):
+    """Copy the independent study while preserving the conductor's artifact history."""
+    git(conductor, "restore", "--source", commit, "--", TARGET_FILE)
+    git(conductor, "add", "--", TARGET_FILE)
+    git(
+        conductor,
+        "-c",
+        "user.name=Autoresearch Swarm",
+        "-c",
+        "user.email=swarm@localhost",
+        "commit",
+        "--allow-empty",
+        "-m",
+        f"Accept study {commit}",
+    )
+
+
+def completed_job_tool_counts(out_dir, job, research_start, memory_start):
+    """A queued result retains the research window of the plan that assigned it."""
+    if job is not None:
+        return job["tool_counts"]
+    return round_tool_counts(out_dir, research_start, memory_start)
+
+
 def assert_live_tool_use(
     out_dir,
     *,
@@ -3714,6 +3746,9 @@ RESUMED_SETTINGS = (
     "model",
     "critic_model",
     "workers",
+    "continuous",
+    "max_workers",
+    "max_minutes",
     "supervisor_model",
     "worker_tokens",
     "supervisor_tokens",
@@ -3730,6 +3765,9 @@ RUN_DEFAULTS = {
     "llm": "openai",
     "exa": "on",
     "workers": 4,
+    "continuous": False,
+    "max_workers": 20,
+    "max_minutes": 30,
     "worker_tokens": 600,
     "supervisor_tokens": 4096,
     "max_cost_usd": 1.0,
@@ -3934,8 +3972,18 @@ def _orchestrate(args, publish_state, cleanup):
     if args.arm not in {"A", "B", "C", "D", "S"}:
         raise ValueError("--arm must be A, B, C, D, or S")
     worker_count = getattr(args, "workers", None) or 4
-    if not 1 <= worker_count <= 12:
-        raise ValueError("--workers must be between 1 and 12")
+    if not 1 <= worker_count <= 20:
+        raise ValueError("--workers must be between 1 and 20")
+    continuous = bool(getattr(args, "continuous", False))
+    if continuous:
+        if resume is not None:
+            raise ValueError("Continuous runs cannot resume; start a fresh budgeted run")
+        if args.task != "ignobel" or not args.supervisor_model or args.arm != "B":
+            raise ValueError("Continuous mode requires supervised Ig Nobel arm B")
+        if not worker_count <= args.max_workers <= 20 or not 1 <= args.max_minutes <= 120:
+            raise ValueError("Continuous limits: initial workers <= maximum <= 20; 1-120 minutes")
+        if not 0 < args.max_cost_usd <= 10:
+            raise ValueError("Continuous mode budget must be positive and at most $10")
     if getattr(args, "supervisor_model", None) and args.llm != "openai":
         raise ValueError("--supervisor-model requires --llm openai")
     agents = (
@@ -4120,6 +4168,9 @@ def _orchestrate(args, publish_state, cleanup):
             "worker_tokens": args.worker_tokens or 600,
             "supervisor_tokens": args.supervisor_tokens or 4096,
             "max_cost_usd": args.max_cost_usd,
+            "continuous": continuous,
+            "max_workers": args.max_workers,
+            "max_minutes": args.max_minutes,
         }
     )
     _write_run_artifact(out_dir, run_artifact)
@@ -4207,166 +4258,249 @@ def _orchestrate(args, publish_state, cleanup):
                 },
             )
 
-        for round_num in range(first_round, args.rounds + 1):
+        queue = None
+        if continuous:
+            queue = cleanup.enter_context(
+                continuous_swarm.Queue(
+                    out_dir,
+                    initial=worker_count,
+                    maximum=args.max_workers,
+                    minutes=args.max_minutes,
+                    budget=args.max_cost_usd,
+                )
+            )
+            publish_state["queue"] = queue
+        for round_num in range(first_round, 100001 if continuous else args.rounds + 1):
             research_start = len(read_jsonl(out_dir / "research_log.jsonl"))
             memory_start = len(read_jsonl(memory_log))
             llm_start = len(read_jsonl(out_dir / "llm_log.jsonl"))
             outcome_start = len(read_jsonl(out_dir / "llm_outcomes.jsonl"))
             error_start = len(read_jsonl(out_dir / "llm_errors.jsonl"))
-            events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(profile, events, agents, args.arm, research_source != "off")
-            status = {
-                **allocation,
-                "ledger_sha256": allocation["ledger_sha256"],
-                "profile_sha256": profile["_hash"],
-            }
-            if allocation["regime"] == "CONVERGED" or known_optimum_reached(best_val):
-                write_converged(
-                    out_dir,
-                    profile,
-                    events,
-                    status,
+            planning_agents = queue.plan_agents() if queue else list(agents)
+            if planning_agents:
+                agents = tuple(planning_agents)
+                events = meter.read_ledger(ledger_path)
+                allocation = allocate_roles(
+                    profile, events, agents, args.arm, research_source != "off"
+                )
+                status = {
+                    **allocation,
+                    "ledger_sha256": allocation["ledger_sha256"],
+                    "profile_sha256": profile["_hash"],
+                }
+                if (
+                    not continuous and allocation["regime"] == "CONVERGED"
+                ) or known_optimum_reached(best_val):
+                    write_converged(
+                        out_dir,
+                        profile,
+                        events,
+                        status,
+                        round_num=round_num,
+                        best_commit=best_metric_commit,
+                        best_val=best_val,
+                        reason=(
+                            "known_optimum_loss" if known_optimum_reached(best_val) else "meter"
+                        ),
+                    )
+                    break
+                events_for_scouts = list(events)
+                cell_suggestions = (
+                    [] if args.arm in METER_OFF_ARMS else suggest_cells(profile, events_for_scouts)
+                )
+                allocation["suggested_cells"] = cell_suggestions
+                status["suggested_cells"] = cell_suggestions
+                append_assignment(
+                    allocation,
+                    out_dir=out_dir,
+                    backend=memory_backend,
+                    mirror=memory_mirror,
+                    memory_log=memory_log,
+                    arm=args.arm,
+                    round_num=round_num,
+                    provenance=provenance,
+                )
+                # After the assignment so sources it logs fall in this round of the viewer timeline.
+                refresh_round_context(out_dir, round_num, cell_suggestions)
+                status["per_agent_B"] = allocation["per_agent_B"]
+                viewer_frontier(out_dir, round_num, "assign")
+                if viewer_dest:
+                    live_publish.watch(out_dir, publisher.request)
+                    publisher.request()
+                leads = run_scouts(
+                    allocation["scouts"] if not llm_client.supervised or TASK.get("scout") else [],
+                    profile=profile,
+                    events=events_for_scouts,
+                    status=status,
+                    out_dir=out_dir,
+                    llm_client=llm_client,
+                    backend=memory_backend,
+                    mirror=memory_mirror,
+                    memory_log=memory_log,
+                    arm=args.arm,
                     round_num=round_num,
                     best_commit=best_metric_commit,
                     best_val=best_val,
-                    reason=("known_optimum_loss" if known_optimum_reached(best_val) else "meter"),
+                    replay=args.replay,
                 )
-                break
-            events_for_scouts = list(events)
-            cell_suggestions = (
-                [] if args.arm in METER_OFF_ARMS else suggest_cells(profile, events_for_scouts)
-            )
-            allocation["suggested_cells"] = cell_suggestions
-            status["suggested_cells"] = cell_suggestions
-            append_assignment(
-                allocation,
-                out_dir=out_dir,
-                backend=memory_backend,
-                mirror=memory_mirror,
-                memory_log=memory_log,
-                arm=args.arm,
-                round_num=round_num,
-                provenance=provenance,
-            )
-            # After the assignment so sources it logs fall in this round of the viewer timeline.
-            refresh_round_context(out_dir, round_num, cell_suggestions)
-            status["per_agent_B"] = allocation["per_agent_B"]
-            viewer_frontier(out_dir, round_num, "assign")
-            if viewer_dest:
-                live_publish.watch(out_dir, publisher.request)
-                publisher.request()
-            leads = run_scouts(
-                allocation["scouts"] if not llm_client.supervised or TASK.get("scout") else [],
-                profile=profile,
-                events=events_for_scouts,
-                status=status,
-                out_dir=out_dir,
-                llm_client=llm_client,
-                backend=memory_backend,
-                mirror=memory_mirror,
-                memory_log=memory_log,
-                arm=args.arm,
-                round_num=round_num,
-                best_commit=best_metric_commit,
-                best_val=best_val,
-                replay=args.replay,
-            )
-            attach_assignment_call_ids(out_dir, round_num, leads)
-            all_leads = list(leads.values())
-            pi_lead_records = {}
-            pi_steers = run_pi_steering(
-                enabled=args.pi == "on",
-                profile=profile,
-                events=events_for_scouts,
-                status=status,
-                roles=allocation["roles"],
-                agents=agents,
-                out_dir=out_dir,
-                llm_client=llm_client,
-                backend=memory_backend,
-                mirror=memory_mirror,
-                memory_log=memory_log,
-                arm=args.arm,
-                round_num=round_num,
-                best_commit=best_metric_commit,
-                best_val=best_val,
-                leads=all_leads,
-                research_start=research_start,
-                lead_records=pi_lead_records,
-            )
-            candidate_records = []
-            claims = []
-            assigned_cells = []
-            base_commit = git_text(conductor, "rev-parse", "HEAD")
-            if llm_client.supervised:
-                status["supervisor_tasks"] = plan_supervised_workers(
-                    llm_client,
-                    agents,
-                    round_num,
-                    profile,
-                    status,
-                    base_commit,
-                    best_val,
-                    conductor,
-                    out_dir,
-                    memory_backend,
-                    memory_mirror,
-                    memory_log,
-                    args.arm,
+                attach_assignment_call_ids(out_dir, round_num, leads)
+                all_leads = list(leads.values())
+                pi_lead_records = {}
+                pi_steers = run_pi_steering(
+                    enabled=args.pi == "on",
+                    profile=profile,
+                    events=events_for_scouts,
+                    status=status,
+                    roles=allocation["roles"],
+                    agents=agents,
+                    out_dir=out_dir,
+                    llm_client=llm_client,
+                    backend=memory_backend,
+                    mirror=memory_mirror,
+                    memory_log=memory_log,
+                    arm=args.arm,
+                    round_num=round_num,
+                    best_commit=best_metric_commit,
+                    best_val=best_val,
                     leads=all_leads,
+                    research_start=research_start,
+                    lead_records=pi_lead_records,
                 )
-            for agent in agents:
-                role = allocation["roles"][agent]
-                lead = lead_for_agent(agent, leads, all_leads)
-                worker_call_start = len(getattr(llm_client, "call_ids", []))
-                try:
-                    candidate = worker_attempts(
-                        assigned_cells=assigned_cells,
-                        agent=agent,
-                        round_num=round_num,
-                        arm=args.arm,
-                        role=role,
-                        agent_b=allocation["per_agent_B"][agent],
-                        status=status,
-                        best_commit=best_metric_commit,
-                        best_val=best_val,
-                        profile=profile,
-                        profile_path=profile_path,
-                        events=events_for_scouts,
-                        out_dir=out_dir,
-                        repo=repo,
-                        agents_root=agents_root,
-                        base_commit=base_commit,
-                        llm_client=llm_client,
-                        backend=memory_backend,
-                        mirror=memory_mirror,
-                        memory_log=memory_log,
-                        lead=lead,
-                        all_leads=all_leads,
-                        claims=claims,
-                        replay=args.replay,
-                        pi_steer=pi_steers.get(agent, "none"),
-                        pi_lead=pi_lead_records.get(agent),
+                claims = []
+                assigned_cells = []
+                base_commit = git_text(conductor, "rev-parse", "HEAD")
+                if queue and queue.stopped():
+                    continue
+                if llm_client.supervised:
+                    status["supervisor_tasks"] = plan_supervised_workers(
+                        llm_client,
+                        agents,
+                        round_num,
+                        profile,
+                        status,
+                        base_commit,
+                        best_val,
+                        conductor,
+                        out_dir,
+                        memory_backend,
+                        memory_mirror,
+                        memory_log,
+                        args.arm,
+                        leads=all_leads,
                     )
-                except llm.WorkerCallBudgetError as error:
-                    print(f"round {round_num}: {agent} {error}", file=sys.stderr)
-                    candidate = worker_budget_candidate(agent, role, error)
-                    candidate["llm_call_ids"] = list(
-                        getattr(llm_client, "call_ids", [])[worker_call_start:]
+            candidate_records = []
+            job = None
+            if queue:
+                if planning_agents:
+                    batch_tool_counts = round_tool_counts(out_dir, research_start, memory_start)
+                for agent in planning_agents:
+                    role = allocation["roles"][agent]
+                    lead = lead_for_agent(agent, leads, all_leads)
+                    queue.enqueue(
+                        worker_attempts,
+                        {
+                            "assigned_cells": assigned_cells,
+                            "agent": agent,
+                            "round_num": round_num,
+                            "arm": args.arm,
+                            "role": role,
+                            "agent_b": allocation["per_agent_B"][agent],
+                            "status": status,
+                            "best_commit": best_metric_commit,
+                            "best_val": best_val,
+                            "profile": profile,
+                            "profile_path": profile_path,
+                            "events": events_for_scouts,
+                            "out_dir": out_dir,
+                            "repo": repo,
+                            "agents_root": agents_root,
+                            "base_commit": base_commit,
+                            "backend": memory_backend,
+                            "mirror": memory_mirror,
+                            "memory_log": memory_log,
+                            "lead": lead,
+                            "all_leads": all_leads,
+                            "claims": claims,
+                            "replay": args.replay,
+                            "pi_steer": pi_steers.get(agent, "none"),
+                            "pi_lead": pi_lead_records.get(agent),
+                        },
+                        {
+                            "allocation": allocation,
+                            "status": status,
+                            "tool_counts": batch_tool_counts,
+                        },
+                        llm_client,
                     )
-                except llm.LLMError as error:
-                    print(f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr)
-                    candidate = llm_failure_candidate(agent, role, error)
-                    candidate["llm_call_ids"] = list(
-                        getattr(llm_client, "call_ids", [])[worker_call_start:]
-                    )
-                candidate["regime_label"] = {
-                    "EXPLOIT": "EXPLOIT",
-                    "BOREDOM_SNAP": "SNAP",
-                    "PARADIGM_BREAKOUT": "BREAKOUT",
-                }.get(allocation["regime"], "EXPLOIT")
+                completed = queue.next()
+                if completed is None:
+                    record_queue_stop(queue, out_dir, run_artifact, publish_state)
+                    break
+                candidate, job = completed
+                round_num = job["job"]
+                allocation, status = job["allocation"], job["status"]
+                llm_client.call_metadata.update(job["client"].call_metadata)
+                candidate["regime_label"] = allocation["regime"]
                 candidate_records.append(candidate)
-            if all(candidate.get("llm_error") for candidate in candidate_records):
+                run_artifact["workers"] = len(queue.agents)
+                _write_run_artifact(out_dir, run_artifact)
+            else:
+                for agent in agents:
+                    role = allocation["roles"][agent]
+                    lead = lead_for_agent(agent, leads, all_leads)
+                    worker_call_start = len(getattr(llm_client, "call_ids", []))
+                    try:
+                        candidate = worker_attempts(
+                            assigned_cells=assigned_cells,
+                            agent=agent,
+                            round_num=round_num,
+                            arm=args.arm,
+                            role=role,
+                            agent_b=allocation["per_agent_B"][agent],
+                            status=status,
+                            best_commit=best_metric_commit,
+                            best_val=best_val,
+                            profile=profile,
+                            profile_path=profile_path,
+                            events=events_for_scouts,
+                            out_dir=out_dir,
+                            repo=repo,
+                            agents_root=agents_root,
+                            base_commit=base_commit,
+                            llm_client=llm_client,
+                            backend=memory_backend,
+                            mirror=memory_mirror,
+                            memory_log=memory_log,
+                            lead=lead,
+                            all_leads=all_leads,
+                            claims=claims,
+                            replay=args.replay,
+                            pi_steer=pi_steers.get(agent, "none"),
+                            pi_lead=pi_lead_records.get(agent),
+                        )
+                    except llm.WorkerCallBudgetError as error:
+                        print(f"round {round_num}: {agent} {error}", file=sys.stderr)
+                        candidate = worker_budget_candidate(agent, role, error)
+                        candidate["llm_call_ids"] = list(
+                            getattr(llm_client, "call_ids", [])[worker_call_start:]
+                        )
+                    except llm.LLMError as error:
+                        print(
+                            f"round {round_num}: {agent} LLM call failed: {error}", file=sys.stderr
+                        )
+                        candidate = llm_failure_candidate(agent, role, error)
+                        candidate["llm_call_ids"] = list(
+                            getattr(llm_client, "call_ids", [])[worker_call_start:]
+                        )
+                    candidate["regime_label"] = {
+                        "EXPLOIT": "EXPLOIT",
+                        "BOREDOM_SNAP": "SNAP",
+                        "PARADIGM_BREAKOUT": "BREAKOUT",
+                    }.get(allocation["regime"], "EXPLOIT")
+                    candidate_records.append(candidate)
+            if not continuous and all(
+                candidate.get("llm_error") for candidate in candidate_records
+            ):
                 raise RuntimeError(
                     f"every worker's LLM call failed in round {round_num}; fix the provider and "
                     f"continue with --resume {out_dir}"
@@ -4578,6 +4712,9 @@ def _orchestrate(args, publish_state, cleanup):
                     and event.get("commit")
                     and git_text(conductor, "rev-parse", "HEAD") != event["commit"]
                 ):
+                    if continuous:
+                        accept_continuous_study(conductor, event["commit"])
+                        continue
                     merge_result = git(
                         conductor,
                         "merge",
@@ -4618,7 +4755,7 @@ def _orchestrate(args, publish_state, cleanup):
                 memory_start=memory_start,
                 expect_exa=exa_enabled and not args.replay and os.environ.get("EXA_REPLAY") != "1",
                 expect_pastdev=memory_backend == "pastdev",
-                counts=tool_counts,
+                counts=completed_job_tool_counts(out_dir, job, research_start, memory_start),
             )
             events = write_results(ledger_path, results_path)
             _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
@@ -4700,7 +4837,9 @@ def _orchestrate(args, publish_state, cleanup):
             )
 
     try:
-        if run_post_run_hook(out_dir, args.llm, replay=args.replay, on_start=start_scoring):
+        if not continuous and run_post_run_hook(
+            out_dir, args.llm, replay=args.replay, on_start=start_scoring
+        ):
             record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
             if not effective_no_push:
                 git(conductor, "push", "origin", branch)
@@ -4716,6 +4855,7 @@ def _orchestrate(args, publish_state, cleanup):
         "best_commit": best_metric_commit,
         "best_loss": best_val,
         "no_push": effective_no_push,
+        **({"stop_reason": queue.reason} if queue and queue.reason else {}),
     }
 
 
@@ -4725,12 +4865,21 @@ def orchestrate(args):
     with ExitStack() as cleanup:
         try:
             return _orchestrate(args, publish_state, cleanup)
-        except BaseException:
+        except BaseException as error:
+            if getattr(args, "continuous", False) and "budget exhausted" in str(error):
+                terminal_status = "stopped"
+                publish_state["stop_reason"] = "budget_limit"
+                print(
+                    "Continuous run reached its budget; no further requests sent", file=sys.stderr
+                )
+                return {"out": str(publish_state.get("out_dir")), "stop_reason": "budget_limit"}
             if not publish_state.get("completed"):
                 terminal_status = "stopped"
             raise
         finally:
-            _finish_publish(publish_state, terminal_status)
+            if publish_state.get("queue"):
+                publish_state["queue"].close()
+            _finish_publish(publish_state, publish_state.get("terminal_status", terminal_status))
 
 
 def _finish_publish(publish_state, terminal_status):
@@ -4745,6 +4894,8 @@ def _finish_publish(publish_state, terminal_status):
             try:
                 run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
                 run_artifact["status"] = terminal_status
+                if publish_state.get("stop_reason"):
+                    run_artifact["stop_reason"] = publish_state["stop_reason"]
                 _write_run_artifact(out_dir, run_artifact)
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
@@ -4792,6 +4943,14 @@ def build_parser():
         "--arm", choices=("A", "B", "C", "D", "S"), help="experiment arm (default B)"
     )
     parser.add_argument("--rounds", type=int, help="total rounds, 1-50 (default 10)")
+    parser.add_argument(
+        "--continuous",
+        action="store_true",
+        default=None,
+        help="continuous supervised Ig Nobel queue instead of synchronized rounds",
+    )
+    parser.add_argument("--max-workers", type=int, help="continuous worker cap (default 20)")
+    parser.add_argument("--max-minutes", type=int, help="continuous admission window (default 30)")
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
@@ -4808,7 +4967,7 @@ def build_parser():
     )
     parser.add_argument("--model")
     parser.add_argument(
-        "--workers", type=int, help="worker identities (1-12, default 4); calls are queued"
+        "--workers", type=int, help="worker identities (1-20, default 4); calls are queued"
     )
     parser.add_argument(
         "--max-cost-usd", type=float, help="Supervised OpenAI run ceiling, default $1"
@@ -4858,6 +5017,9 @@ def main(argv=None):
     except (OSError, ValueError, RuntimeError, research.BudgetExceeded) as error:
         print(f"swarm.py: {error}", file=sys.stderr)
         return 2
+    if result.get("stop_reason"):
+        print(f"Run stopped: {result['stop_reason']}; out={result['out']}")
+        return 0
     print(
         f"arm {result['arm']} complete; best {result['best_commit']} "
         f"loss={result['best_loss']:.6f}; branch={result['branch']}; "
