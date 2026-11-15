@@ -15,7 +15,7 @@ export class LabCameraRig{
   this.baseYaw=Math.atan2(dir.x,dir.z);this.basePitch=Math.atan2(dir.y,Math.hypot(dir.x,dir.z));
   this.yaw=0;this.pitch=0;this.anchor.copy(this.camera.position);this.freePos.copy(this.camera.position);this.camera.lookAt(point);
  }
- dragBy(dx:number,dy:number){this.yaw+=dx*.0032;this.pitch=THREE.MathUtils.clamp(this.pitch+dy*.0028,-1.2,1.25);}
+ dragBy(dx:number,dy:number){this.yaw+=dx*.0032;this.pitch=THREE.MathUtils.clamp(this.pitch-dy*.0028,-1.2,1.25);}
  update(dt:number,keys:ReadonlySet<string>){
   const forward=new THREE.Vector3();this.camera.getWorldDirection(forward);forward.y=0;forward.normalize();
   const right=new THREE.Vector3(forward.z,0,-forward.x),move=new THREE.Vector3();
