@@ -282,9 +282,7 @@ def claim_registry(research_log, name, digest, predicted):
             )
         return None, previous["predicted_rho"]
     registry[name] = {"test": digest, "predicted_rho": predicted}
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(registry, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    external.prepare.atomic_write(path, json.dumps(registry, indent=1, sort_keys=True) + "\n")
     return None, predicted
 
 

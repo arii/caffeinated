@@ -12,6 +12,7 @@ import csv
 import hashlib
 import io
 import re
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -49,6 +50,17 @@ class CheckedRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+def atomic_write(path, data):
+    """Write via a uniquely named temporary file, so concurrent writers never share one."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "wb", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
+    ) as stream:
+        stream.write(data.encode("utf-8") if isinstance(data, str) else data)
+    Path(stream.name).replace(path)
+
+
 def source_url(path):
     return path if path.startswith("https://") else f"{BASE}/{path}"
 
@@ -70,9 +82,7 @@ def fetch(path):
             raw = response.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise ValueError(f"{url} is larger than {MAX_BYTES} bytes")
-        temporary = cache.with_suffix(".tmp")
-        temporary.write_bytes(raw)
-        temporary.replace(cache)
+        atomic_write(cache, raw)
     raw = cache.read_bytes()
     try:
         return raw.decode("utf-8")
@@ -199,11 +209,11 @@ def build(name, spec):
         (HERE / "data" / f"{name}.csv", discovery),
         (HERE / ".cache" / "replication" / f"{name}.csv", replication),
     ):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8") as stream:
-            writer = csv.writer(stream)
-            writer.writerow(header)
-            writer.writerows(part)
+        stream = io.StringIO(newline="")
+        writer = csv.writer(stream)
+        writer.writerow(header)
+        writer.writerows(part)
+        atomic_write(path, stream.getvalue())
     return {
         "title": spec["title"],
         "source": [source_url(p) for p in spec["files"]],

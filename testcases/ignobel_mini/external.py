@@ -161,7 +161,5 @@ def _build(url, name, entry_path):
         raise ValueError(f"needs at least {MIN_ROWS} rows and 2 usable columns")
     raw = prepare.fetch(url).encode("utf-8", errors="replace")
     entry["sha256"] = hashlib.sha256(raw).hexdigest()
-    temporary = entry_path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(entry, indent=1) + "\n", encoding="utf-8")
-    temporary.replace(entry_path)
+    prepare.atomic_write(entry_path, json.dumps(entry, indent=1) + "\n")
     return entry

@@ -24,6 +24,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import prepare
+
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 DEFAULT_MODELS = {
@@ -148,10 +150,7 @@ def _ask(model, system, user, task_dir):
         "reason": str(data.get("reason", ""))[:300],
         "model": model,
     }
-    cache.parent.mkdir(parents=True, exist_ok=True)
-    temporary = cache.with_suffix(".tmp")
-    temporary.write_text(json.dumps(verdict) + "\n", encoding="utf-8")
-    temporary.replace(cache)
+    prepare.atomic_write(cache, json.dumps(verdict) + "\n")
     return verdict
 
 
