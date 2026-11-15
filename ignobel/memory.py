@@ -224,16 +224,20 @@ class PastDevRun:
         except Exception as e:
             self._log({"type": "recall_error", "reader": reader, "error": str(e)[:300]})
             return []
-        out = []
+        out, foreign = [], 0
         for r in resp.get("results") or []:
             sources = r.get("sources") or []
             sids = [str(s.get("sourceId")) for s in sources if s.get("sourceId")]
+            if not sids or not all(sid.startswith(f"fam-{self.tag}-") for sid in sids):
+                foreign += 1  # project data written with no audience is readable by every identity
+                continue
             out.append({"content": r.get("content") or "", "occurredAt": r.get("occurredAt"),
                         "supersededAt": (r.get("artifact") or {}).get("supersededAt"),
                         "sourceIds": sids, "authors": sorted({self.authors.get(s, "?") for s in sids}),
                         "excerpts": [x for s in sources for x in (s.get("excerpts") or [])][:2]})
         self._log({"type": "recall", "reader": reader, "query": query[:200], "at": at,
-                   "ms": round((time.monotonic() - started) * 1000), "n": len(out),
+                   "ms": round((time.monotonic() - started) * 1000), "n": len(out), "foreign": foreign,
+                   "tokens": sum(len(r["content"]) // 4 for r in out),
                    "authors": sorted({a for r in out for a in r["authors"]}),
                    "superseded": sum(1 for r in out if r["supersededAt"]),
                    "pending": (resp.get("pending") or {}).get("ingestions") if isinstance(resp.get("pending"), dict) else None})
