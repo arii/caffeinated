@@ -50,7 +50,7 @@ def test_group_joke_is_rejected(monkeypatch):
 
 def test_score_py_writes_scores_jsonl(tmp_path):
     out = tmp_path / "run"
-    world = run_arm.build_world("full", 4, 0, out)
+    world = run_arm.build_world("full", 4, 0, out, roster="flat")
     asyncio.run(world.run(2))
     rows = score.score_events(out / "events.jsonl")
     lines = (out / "scores.jsonl").read_text().splitlines()
@@ -67,7 +67,7 @@ def test_judge_output_never_in_agent_prompts(tmp_path):
     (out / "scores.jsonl").write_text(json.dumps({"study_id": "x", "score": 9, "reason": canary}) + "\n")
     llm.set_prompt_log(out / "prompts.jsonl")
     try:
-        world = run_arm.build_world("full", 4, 0, out)
+        world = run_arm.build_world("full", 4, 0, out, roster="flat")
         asyncio.run(world.run(3))
     finally:
         llm.set_prompt_log(None)

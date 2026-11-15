@@ -1,792 +1,523 @@
 import csv
+import itertools
 import json
 import os
-from pathlib import Path
+import re
 import shutil
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import subprocess
 import sys
 import tempfile
-import threading
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
+import export_viewer
 import llm
 import swarm
-import swarm_queue
 from boredom import descriptor_meter as meter
+from test_testcases import DOCKER_AVAILABLE, DOCKER_SKIP_REASON
+
+ROOT = Path(__file__).resolve().parents[1]
+PROFILE = ROOT / "testcases/hadamard19/boredom_profile.json"
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SWARM_SCRIPT = REPO_ROOT / "swarm.py"
-PROFILE_PATH = REPO_ROOT / "boredom_meter" / "profiles" / "autoresearch_llm.json"
-
-
-class OpenAIStubHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        self.server.request_path = self.path
-        self.server.authorization = self.headers.get("Authorization")
-        self.server.request_body = json.loads(
-            self.rfile.read(int(self.headers["Content-Length"]))
-        )
-        body = json.dumps(
-            {
-                "choices": [
-                    {
-                        "message": {
-                            "content": json.dumps(
-                                {
-                                    "paper_query": "paper search",
-                                    "code_query": "code search",
-                                    "bottleneck": "validation loss",
-                                }
-                            )
-                        }
-                    }
-                ],
-                "usage": {"prompt_tokens": 12, "completion_tokens": 7},
-            }
-        ).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, format_string, *args):
-        pass
-
-
-class LLMClientTests(unittest.TestCase):
-    def common_values(self):
-        return {
-            "agent": "scout-1",
-            "best_commit": "abc123",
-            "best_val_bpb": "0.995814",
-            "noise": "0.0036",
-            "round": 1,
-            "swarm_B": "0.2",
-            "regime": "EXPLOIT",
-            "agent_B": "0.0",
-            "role": "scout",
-        }
-
-    def test_chat_completions_json_request_shape(self):
-        server = ThreadingHTTPServer(("127.0.0.1", 0), OpenAIStubHandler)
-        thread = threading.Thread(target=server.serve_forever)
-        thread.start()
-        self.addCleanup(server.server_close)
-        self.addCleanup(thread.join)
-        self.addCleanup(server.shutdown)
-
-        with tempfile.TemporaryDirectory() as directory:
-            log_path = Path(directory) / "llm.jsonl"
-            with patch.dict(
-                os.environ,
-                {
-                    "OPENAI_API_KEY": "stub-secret",
-                    "OPENAI_BASE_URL": f"http://127.0.0.1:{server.server_port}/v1",
-                },
-            ):
-                client = llm.LLMClient(
-                    model="stub-model",
-                    log_path=log_path,
-                )
-                response = client.call(
-                    "SCOUT_QUERY",
-                    agent="scout-1",
-                    round_num=1,
-                    values={
-                        "recalled": "none",
-                        "suggested_cells": "batch/total_batch",
-                    },
-                )
-
-            self.assertEqual(server.request_path, "/v1/chat/completions")
-            self.assertEqual(server.authorization, "Bearer stub-secret")
-            self.assertEqual(server.request_body["model"], "stub-model")
-            self.assertEqual(
-                server.request_body["response_format"], {"type": "json_object"}
-            )
-            self.assertEqual(server.request_body["messages"][0]["role"], "user")
-            self.assertIn(
-                "Under-visited mechanism cells",
-                server.request_body["messages"][0]["content"],
-            )
-            self.assertEqual(response["paper_query"], "paper search")
-            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["model"], "stub-model")
-            self.assertEqual(record["role"], "SCOUT_QUERY")
-            self.assertEqual(record["usage"]["prompt_tokens"], 12)
-            self.assertEqual(len(record["prompt_sha"]), 64)
-
-    def test_prompt_template_preserves_literal_json_braces(self):
-        values = {
-            **self.common_values(),
-            "assignment": "exploit",
-            "recalled_results": "none",
-            "recalled_leads": "none",
-            "claims": "none",
-            "train_py": "WIDTH = 8",
-            "vocab": '{"optimizer": ["matrix_lr"]}',
-        }
-        prompt = llm.render_prompt("worker_propose", values)
-        self.assertIn(
-            'JSON: {"descriptor": {"mechanism": str, "method": str, "params":',
-            prompt,
-        )
-        self.assertIn('{"optimizer": ["matrix_lr"]}', prompt)
-        self.assertIn('You are scout-1', prompt)
-
-    def test_openai_model_is_required_without_a_default(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(ValueError, "OPENAI_MODEL"):
-                llm.LLMClient()
-
-    def test_fake_llm_has_a_valid_json_object_for_each_role(self):
-        train_py = (REPO_ROOT / "train.py").read_text()
+class FakeLLMTests(unittest.TestCase):
+    def test_task_fake_proposals_are_valid_and_distinct(self):
+        task = swarm.load_task("hadamard19")
+        source = (ROOT / "testcases/hadamard19/construct.py").read_text()
+        profile = meter.load_profile(PROFILE)
         proposals = [
             llm.fake_response(
                 "WORKER_PROPOSE",
-                {"agent": agent, "train_py": train_py},
+                {
+                    "agent": agent,
+                    "candidate_source": source,
+                    "fake_targets": task["fake_targets"],
+                },
             )
             for agent in swarm.AGENTS
         ]
-        worker = proposals[0]
-        responses = [
-            llm.fake_response("SCOUT_QUERY", {}),
-            llm.fake_response("SCOUT_PICK", {"sources": "S1 | example"}),
-            llm.fake_response("SCOUT_LEAD", {}),
-            worker,
-            llm.fake_response("WORKER_REPAIR", {"proposal": json.dumps(worker)}),
-            llm.fake_response("CRITIC", {}),
-        ]
-        self.assertTrue(all(isinstance(response, dict) for response in responses))
-        self.assertTrue(all(len(proposal["edits"]) == 1 for proposal in proposals))
-        edited_lines = {proposal["edits"][0]["old"] for proposal in proposals}
-        self.assertEqual(len(edited_lines), len(swarm.AGENTS))
+        for proposal in proposals:
+            swarm.validate_proposal(profile, proposal)
+            self.assertEqual(len(proposal["edits"]), 1)
+            self.assertNotEqual(proposal["edits"][0]["old"], proposal["edits"][0]["new"])
+        self.assertGreater(
+            len({(p["edits"][0]["old"], p["edits"][0]["new"]) for p in proposals}), 1
+        )
 
-    def test_fake_llm_uses_distinct_edits_for_cpu_tasks(self):
-        profile = meter.load_profile(PROFILE_PATH)
-        for task_name in ("bixbench_mini", "playworld_mini"):
-            task_dir = REPO_ROOT / "testcases" / task_name
-            task = json.loads((task_dir / "task.json").read_text())
-            source = (task_dir / task["editable"]).read_text()
-            proposals = [
-                llm.fake_response(
-                    "WORKER_PROPOSE",
-                    {
-                        "agent": f"worker-{index + 1}",
-                        "fake_edits": task["fake_edits"],
-                        "train_py": source,
-                    },
-                )
-                for index in range(len(swarm.AGENTS))
-            ]
-            with self.subTest(task=task_name):
-                self.assertEqual(
-                    len({
-                        (
-                            proposal["edits"][0]["old"],
-                            proposal["edits"][0]["new"],
-                        )
-                        for proposal in proposals
-                    }),
-                    len(swarm.AGENTS),
-                )
-                for proposal in proposals:
-                    swarm.validate_proposal(profile, proposal)
-                    self.assertEqual(
-                        source.count(proposal["edits"][0]["old"]), 1
-                    )
+    def test_assigned_cell_uses_task_knob(self):
+        task = swarm.load_task("hadamard19")
+        source = (ROOT / "testcases/hadamard19/construct.py").read_text()
+        proposal = llm.fake_assigned_proposal(
+            "search/restarts",
+            source,
+            {"params": {"value": 6}},
+            fake_targets=task["fake_targets"],
+        )
+        self.assertEqual(proposal["descriptor"]["mechanism"], "search")
+        self.assertEqual(proposal["descriptor"]["method"], "restarts")
+        self.assertTrue(proposal["edits"])
 
-    def test_fake_worker_implements_each_assigned_cell(self):
-        profile = meter.load_profile(PROFILE_PATH)
-        source = (REPO_ROOT / "train.py").read_text()
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "train.py"
-            for cell in meter.all_cells(profile, 2):
-                if cell == "baseline/none":
-                    continue
-                with self.subTest(cell=cell):
-                    proposal = llm.fake_response("WORKER_REPAIR", {"assigned_cell": cell, "train_py": source})
-                    swarm.validate_proposal(profile, proposal)
-                    self.assertEqual(meter.cell_key(profile, proposal["descriptor"], 2), cell)
-                    path.write_text(source)
-                    swarm.apply_edits(path, proposal["edits"])
-                    compile(path.read_text(), "train.py", "exec")
-
-    def test_fake_assigned_cell_rejects_unsupported_or_missing_training_code(self):
-        with self.assertRaisesRegex(ValueError, "does not support"):
-            llm.fake_assigned_proposal("unknown/method", "")
-        for cell in ("architecture/depth", "architecture/mlp", "batch/total_batch", "attention/family"):
-            with self.subTest(cell=cell), self.assertRaises(ValueError):
-                llm.fake_assigned_proposal(cell, "")
-
-    def test_fake_assigned_cell_honors_required_numeric_descriptor(self):
-        proposal = llm.fake_response("WORKER_REPAIR", {
-            "assigned_cell": "architecture/depth",
-            "assigned_descriptor": {"mechanism": "architecture", "method": "depth", "params": {"value": 36}},
-            "train_py": (REPO_ROOT / "train.py").read_text(),
-        })
-        self.assertEqual(proposal["descriptor"]["params"]["value"], 36)
-        self.assertEqual(proposal["edits"][0]["new"], "DEPTH = 36")
-
-    def test_queue_client_waits_for_answer_and_logs_queue_model(self):
-        with tempfile.TemporaryDirectory() as directory:
-            queue_dir = Path(directory) / "llm_queue"
-            errors = []
-            stop = threading.Event()
-            invalid_sent = set()
-
-            def answer_queued_call():
-                while not stop.is_set():
-                    for prompt_file in queue_dir.glob("*.prompt.json"):
-                        try:
-                            document = json.loads(
-                                prompt_file.read_text(encoding="utf-8")
-                            )
-                            call_id = document["call_id"]
-                            response_path = swarm_queue.response_path(
-                                queue_dir, call_id
-                            )
-                            error_path = queue_dir / f"{call_id}.error.txt"
-                            if call_id not in invalid_sent:
-                                response_path.write_text("{ invalid", encoding="utf-8")
-                                invalid_sent.add(call_id)
-                                continue
-                            if not error_path.exists():
-                                continue
-                            swarm_queue.answer(
-                                queue_dir,
-                                call_id,
-                                {
-                                    "paper_query": "query",
-                                    "code_query": "code",
-                                    "bottleneck": "loss",
-                                },
-                            )
-                        except Exception as error:
-                            errors.append(error)
-                    stop.wait(0.01)
-
-            thread = threading.Thread(target=answer_queued_call)
-            thread.start()
-            log_path = Path(directory) / "llm_log.jsonl"
-            client = llm.LLMClient(
-                mode="queue",
-                arm="B",
-                queue_dir=queue_dir,
-                queue_timeout=5,
-                log_path=log_path,
+    def test_hadamard_fake_targets_build_construction_and_objective_edits(self):
+        task = swarm.load_task("hadamard19")
+        source = (ROOT / "testcases/hadamard19/construct.py").read_text()
+        for _name, mechanism, method, _ in task["fake_targets"]:
+            if mechanism not in {"construction", "objective"}:
+                continue
+            proposal = llm.fake_assigned_proposal(
+                f"{mechanism}/{method}",
+                source,
+                {"mechanism": mechanism, "method": method},
+                fake_targets=task["fake_targets"],
             )
-            try:
-                response = client.call(
-                    "SCOUT_QUERY",
-                    agent="scout-1",
-                    round_num=2,
-                    values={
-                        **self.common_values(),
-                        "recalled": "none",
-                        "suggested_cells": "optimizer/matrix_lr",
-                    },
-                )
-            finally:
-                stop.set()
-                thread.join(timeout=2)
+            self.assertNotEqual(proposal.get("status"), "reject")
+            self.assertIn(proposal["edits"][0]["old"], source)
+            self.assertEqual(proposal["descriptor"]["mechanism"], mechanism)
+            self.assertEqual(proposal["descriptor"]["method"], method)
 
-            self.assertFalse(errors, errors)
-            self.assertEqual(response["paper_query"], "query")
-            prompt_file = next(queue_dir.glob("*.prompt.json"))
-            document = json.loads(prompt_file.read_text(encoding="utf-8"))
-            self.assertEqual(
-                document["call_id"],
-                prompt_file.name.removesuffix(".prompt.json"),
-            )
-            self.assertEqual(document["role"], "SCOUT_QUERY")
-            self.assertEqual(document["agent"], "scout-1")
-            self.assertEqual(document["round"], 2)
-            self.assertEqual(document["arm"], "B")
-            self.assertIn("Under-visited mechanism cells", document["prompt"])
-            self.assertEqual(swarm_queue.show_prompt(queue_dir, document["call_id"]),
-                             document["prompt"])
-            self.assertEqual(swarm_queue.list_pending(queue_dir), [])
-            self.assertFalse(
-                (queue_dir / f"{document['call_id']}.error.txt").exists()
-            )
-            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["model"], "devin-queue")
-
-
-class CriticAcceptanceTests(unittest.TestCase):
-    def test_two_seed_mean_uses_one_sigma_acceptance_margin(self):
-        profile = meter.load_profile(PROFILE_PATH)
-        best = 0.995814
-
-        self.assertEqual(profile["version"], json.loads(PROFILE_PATH.read_text())["version"])
-        self.assertEqual(profile["accept_margin"], 0.0018)
-        self.assertTrue(swarm.candidate_is_provisional(profile, 0.993814, best))
-        self.assertTrue(
-            swarm.critic_accepts(profile, 0.993814, 0.993814, best, "ok")
+    def test_unbuildable_assigned_cell_is_rejected(self):
+        proposal = llm.fake_assigned_proposal(
+            "objective/log_det",
+            "RESTARTS = 4\n",
+            {"mechanism": "objective", "method": "log_det"},
+            fake_targets=[["RESTARTS", "search", "restarts", 1]],
         )
-        self.assertFalse(
-            swarm.critic_accepts(profile, 0.994814, 0.994814, best, "ok")
+        self.assertEqual(proposal["status"], "reject")
+        self.assertEqual(proposal["reason"], "unbuildable assignment: objective/log_det")
+
+    def test_real_repair_descriptor_mismatch_is_rejected(self):
+        profile = meter.load_profile(PROFILE)
+        reason = swarm.assigned_cell_mismatch_reason(
+            profile,
+            {"mechanism": "search", "method": "restarts"},
+            "objective/log_det",
         )
-        self.assertFalse(
-            swarm.candidate_is_provisional(profile, 0.994814, best)
+        self.assertEqual(reason, "unbuildable assignment: objective/log_det")
+
+    def test_deterministic_critic_uses_first_score_without_rerun(self):
+        with (
+            patch.object(swarm, "TASK", {"deterministic": True}),
+            patch("swarm.run_evaluations", side_effect=AssertionError("unexpected rerun")),
+        ):
+            result = swarm.critic_confirmation_result(Path("."), "commit", 0.123, Path("critic"))
+        self.assertEqual(result["loss"], 0.123)
+        self.assertEqual(result["critic_rerun"], "skipped (deterministic)")
+
+
+class AllocationTests(unittest.TestCase):
+    def test_exploit_scout_and_arm_a_fixed_allocation(self):
+        profile = meter.load_profile(PROFILE)
+        for arm in ("A", "B"):
+            allocation = swarm.allocate_roles(profile, [], arm=arm, exa_enabled=True)
+            self.assertEqual(len(allocation["scouts"]), 1)
+            self.assertEqual(allocation["roles"][allocation["scouts"][0]], "divergent")
+        self.assertEqual(
+            list(swarm.allocate_roles(profile, [], arm="A")["roles"].values()).count("exploit"),
+            3,
+        )
+        self.assertEqual(
+            swarm.allocate_roles(profile, [], arm="B", exa_enabled=False)["scouts"],
+            [],
         )
 
-    def test_critic_margin_falls_back_to_meter_eps(self):
-        profile = meter.load_profile(PROFILE_PATH)
-        profile.pop("accept_margin")
-        self.assertFalse(
-            swarm.critic_accepts(profile, 0.993814, 0.993814, 0.995814, "ok")
-        )
-
-
-class SwarmOrchestratorTests(unittest.TestCase):
-    def create_repo(self, parent):
-        repo = Path(parent) / "repo"
-        repo.mkdir()
-        subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        shutil.copy2(REPO_ROOT / "train.py", repo / "train.py")
-        shutil.copy2(REPO_ROOT / ".gitignore", repo / ".gitignore")
-        subprocess.run(["git", "add", "train.py", ".gitignore"], cwd=repo, check=True)
-        subprocess.run(
+    def test_meter_gate_hash_and_reject_audit_invariance(self):
+        profile = meter.load_profile(PROFILE)
+        descriptor = {"mechanism": "search", "method": "restarts", "params": {"value": 8}}
+        event = {
+            "seq": 1,
+            "agent": "worker-1",
+            "status": "discard",
+            "score": 0.0585,
+            "descriptor": descriptor,
+        }
+        before = meter.gate(profile, [event], descriptor)
+        after = meter.gate(
+            profile,
             [
-                "git",
-                "-c",
-                "user.name=Swarm Test",
-                "-c",
-                "user.email=swarm-test@example.test",
-                "commit",
-                "-q",
-                "-m",
-                "baseline",
+                event,
+                {
+                    "seq": 2,
+                    "kind": "critic",
+                    "status": "keep",
+                    "score": 0.0,
+                    "descriptor": descriptor,
+                },
+                {
+                    "seq": 3,
+                    "status": "reject",
+                    "score": None,
+                    "descriptor": descriptor,
+                },
             ],
-            cwd=repo,
-            check=True,
+            descriptor,
         )
+        self.assertEqual(before["regime"], after["regime"])
+        self.assertNotEqual(before["ledger_sha256"], after["ledger_sha256"])
+        self.assertEqual(before["pass"], after["pass"])
+
+
+class SandboxedSwarmTests(unittest.TestCase):
+    def without_commits(self, value):
+        if isinstance(value, str):
+            return re.sub(
+                r"(duplicate: (?:blob already scored as|same editable blob as) )\S+",
+                r"\1<commit>",
+                value,
+            )
+        if isinstance(value, dict):
+            return {
+                key: self.without_commits(item)
+                for key, item in value.items()
+                if "commit" not in key and key not in {"duplicate_of", "ts"}
+            }
+        if isinstance(value, list):
+            return [self.without_commits(item) for item in value]
+        return value
+
+    def create_repo(self, path, name):
+        repo = Path(path) / f"repo-{name}"
+        repo.mkdir()
+        cases = repo / "testcases"
+        cases.mkdir()
+        for name in ("sandbox.py", "run_task.py"):
+            shutil.copy2(ROOT / "testcases" / name, cases / name)
+        shutil.copytree(ROOT / "testcases/hadamard19", cases / "hadamard19")
+        (repo / ".gitignore").write_text(".swarm_worktrees/\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+        subprocess.run(["git", "add", "."], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-qm", "baseline"], cwd=repo, check=True)
         return repo
 
-    def jsonl(self, path):
-        return [
-            json.loads(line)
-            for line in Path(path).read_text(encoding="utf-8").splitlines()
-            if line.strip()
+    def run_three_rounds(self, parent, name):
+        repo = self.create_repo(parent, name)
+        out = Path(parent) / name
+        env = os.environ.copy()
+        env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
+        env.pop("OPENAI_API_KEY", None)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "swarm.py"),
+                "--task",
+                "hadamard19",
+                "--arm",
+                "B",
+                "--rounds",
+                "3",
+                "--llm",
+                "fake",
+                "--no-push",
+                "--out",
+                str(out),
+                "--repo",
+                str(repo),
+            ],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        ledger = [
+            json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines() if line
         ]
+        return ledger, out
 
-    def test_ten_round_fake_swarm_is_reproducible_and_makes_gated_progress(self):
-        with tempfile.TemporaryDirectory() as directory:
-            repo = self.create_repo(directory)
-            out_dir = Path(directory) / "swarm-out"
-            env = os.environ.copy()
-            for name in list(env):
-                if name.startswith(("PAST_API_KEY", "OPENAI_API_KEY")):
-                    env.pop(name)
-            env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(SWARM_SCRIPT),
-                    "--arm",
-                    "B",
-                    "--rounds",
-                    "10",
-                    "--no-push",
-                    "--llm",
-                    "fake",
-                    "--gpu",
-                    "fake",
-                    "--out",
-                    str(out_dir),
-                    "--repo",
-                    str(repo),
-                ],
-                cwd=REPO_ROOT,
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+    def publish_round_snapshots(self, out, parent):
+        def rows(path):
+            if not path.exists():
+                return []
+            return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
-            second_parent = Path(directory) / "second"
-            second_parent.mkdir()
-            second_repo = self.create_repo(second_parent)
-            second_out = second_parent / "swarm-out"
-            command = list(result.args)
-            command[command.index("--out") + 1] = str(second_out)
-            command[command.index("--repo") + 1] = str(second_repo)
-            repeated = subprocess.run(command, cwd=REPO_ROOT, env=env, capture_output=True, text=True)
-            self.assertEqual(repeated.returncode, 0, repeated.stderr + repeated.stdout)
-            run_id = (out_dir / "run_id").read_text().strip()
-            self.assertTrue(run_id)
-            self.assertNotEqual(run_id, (second_out / "run_id").read_text().strip())
-
-            def without_commits(value):
-                if isinstance(value, dict):
-                    return {key: without_commits(item) for key, item in value.items() if key != "commit"}
-                if isinstance(value, list):
-                    return [without_commits(item) for item in value]
-                return value
-
-            self.assertEqual(
-                without_commits(self.jsonl(out_dir / "ledger.jsonl")),
-                without_commits(self.jsonl(second_out / "ledger.jsonl")),
-            )
-
-            expected = (
+        statuses = [row for row in rows(out / "boredom_log.jsonl") if row.get("type") == "status"]
+        self.assertGreaterEqual(len(statuses), 3)
+        destination = parent / "incremental"
+        snapshots = []
+        for round_num in range(1, 4):
+            prefix = parent / f"prefix-{round_num}" / out.name
+            prefix.parent.mkdir(parents=True)
+            shutil.copytree(out, prefix)
+            end_ts = statuses[round_num - 1]["ts"]
+            for name in (
+                "assignments.jsonl",
                 "ledger.jsonl",
-                "results.tsv",
                 "boredom_log.jsonl",
                 "research_log.jsonl",
                 "memory.jsonl",
                 "memory_log.jsonl",
-                "assignments.jsonl",
                 "llm_log.jsonl",
-                "critic.tsv",
-            )
-            for name in expected:
-                self.assertTrue((out_dir / name).is_file(), name)
-            self.assertTrue((out_dir / "exa_cache").is_dir())
-            self.assertTrue(list((out_dir / "runs").rglob("*.log")))
-
-            ledger = self.jsonl(out_dir / "ledger.jsonl")
-            self.assertEqual(
-                sum(item.get("kind") == "candidate" for item in ledger), 40
-            )
-            self.assertGreaterEqual(
-                sum(item.get("kind") == "critic" for item in ledger), 1
-            )
-            for critic in (item for item in ledger if item.get("kind") == "critic"):
-                candidate = next(
-                    item for item in ledger
-                    if item.get("kind") == "candidate"
-                    and item["commit"] == critic["commit"]
-                    and item["round"] == critic["round"]
+            ):
+                path = prefix / name
+                if not path.exists():
+                    continue
+                filtered = []
+                for record in rows(path):
+                    round_value = record.get("round")
+                    if name == "memory.jsonl":
+                        round_value = (record.get("metadata") or {}).get("round")
+                    if isinstance(round_value, int):
+                        keep = round_value <= round_num
+                    else:
+                        stamp = record.get("ts") or record.get("timestamp")
+                        keep = stamp is None or stamp <= end_ts
+                    filtered.append(record) if keep else None
+                path.write_text(
+                    "".join(
+                        json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n"
+                        for record in filtered
+                    ),
+                    encoding="utf-8",
                 )
-                self.assertEqual(candidate["replicate_score"], critic["score"])
-            assignments = self.jsonl(out_dir / "assignments.jsonl")
-            self.assertEqual(len(assignments), 10)
-            attempts = [item for item in ledger if item.get("kind") == "candidate" and item["status"] != "reject"]
-            self.assertGreater(len({meter.cell_key(meter.load_profile(PROFILE_PATH), item["descriptor"], 2) for item in attempts}), 4)
-            bored_rounds = [item["round"] for item in assignments if item["regime"] in ("BOREDOM_SNAP", "PARADIGM_BREAKOUT")]
-            self.assertTrue(bored_rounds)
-            for round_num in bored_rounds:
-                ran = [item for item in attempts if item["round"] == round_num]
-                self.assertTrue(ran, f"no GPU candidate in bored round {round_num}")
-                self.assertTrue(all(item["gate_attempts"][-1]["pass"] for item in ran))
-            profile = meter.load_profile(PROFILE_PATH)
-            logs = self.jsonl(out_dir / "boredom_log.jsonl")
-            gates = [item for item in logs if item.get("type") == "gate"]
-            self.assertTrue(gates)
-            for assignment in assignments:
-                matching = [g for g in gates if g["ledger_sha256"] == assignment["ledger_sha256"]]
-                self.assertTrue(matching)
-                for gate in matching:
-                    self.assertEqual(gate["regime"], assignment["regime"])
-            for gate in gates:
-                prefix = ledger[:gate["n_rows"]]
-                conductor = swarm.meter.status(profile, prefix)
-                self.assertEqual(gate["ledger_sha256"], conductor["ledger_sha256"])
-                self.assertEqual(gate["regime"], conductor["regime"])
-            for assignment in assignments:
-                self.assertEqual(len(assignment["ledger_sha256"]), 64)
-                self.assertEqual(len(assignment["profile_sha256"]), 64)
-            with (out_dir / "results.tsv").open(newline="", encoding="utf-8") as stream:
-                result_rows = list(csv.DictReader(stream, delimiter="\t"))
-            self.assertEqual(len(result_rows), len(ledger))
-            memory_records = self.jsonl(out_dir / "memory.jsonl")
-            memory_types = {
-                record["metadata"]["type"] for record in memory_records
-            }
-            self.assertTrue({"assignment", "claim", "result"} <= memory_types)
-
-    def test_scout_allocation_in_exploit_snap_and_arm_a(self):
-        profile = meter.load_profile(PROFILE_PATH)
-        profile["thresholds"]["snap"] = 0.0
-        profile["_hash"] = meter.sha(
-            {key: value for key, value in profile.items() if not key.startswith("_")}
-        )
-        events = [
-            {
-                "seq": number,
-                "agent": "worker-1",
-                "status": "discard",
-                "score": 0.995814,
-                "descriptor": {"mechanism": "baseline", "method": "none"},
-            }
-            for number in range(1, 6)
-        ]
-        snap = swarm.allocate_roles(profile, events, arm="B")
-        self.assertEqual(snap["regime"], "BOREDOM_SNAP")
-        self.assertEqual(list(snap["roles"].values()).count("exploit"), 1)
-        self.assertEqual(list(snap["roles"].values()).count("divergent"), 3)
-        self.assertGreaterEqual(len(snap["scouts"]), 1)
-        self.assertTrue(
-            all(snap["roles"][agent] == "divergent" for agent in snap["scouts"])
-        )
-
-        static_allocations = [
-            swarm.allocate_roles(profile, events, arm="A", exa_enabled=True),
-            swarm.allocate_roles(profile, [], arm="A", exa_enabled=True),
-        ]
-        for static in static_allocations:
-            self.assertEqual(
-                list(static["roles"].values()).count("exploit"), 3
+            for name in ("critic.tsv", "results.tsv"):
+                path = prefix / name
+                if path.exists():
+                    with path.open(encoding="utf-8", newline="") as stream:
+                        reader = csv.DictReader(stream, delimiter="\t")
+                        fields, filtered = (
+                            reader.fieldnames,
+                            [row for row in reader if int(row.get("round") or 0) <= round_num],
+                        )
+                    with path.open("w", encoding="utf-8", newline="") as stream:
+                        writer = csv.DictWriter(stream, fieldnames=fields, delimiter="\t")
+                        writer.writeheader()
+                        writer.writerows(filtered)
+            run_artifact = json.loads((prefix / "run.json").read_text())
+            run_artifact["status"] = "running"
+            (prefix / "run.json").write_text(json.dumps(run_artifact), encoding="utf-8")
+            run_dir = export_viewer.publish(
+                prefix,
+                destination,
+                final=round_num == 3,
+                status="finished" if round_num == 3 else "running",
             )
-            self.assertEqual(
-                list(static["roles"].values()).count("divergent"), 1
-            )
-            self.assertEqual(len(static["scouts"]), 1)
-
-        exploit_profile = meter.load_profile(PROFILE_PATH)
-        exploit = swarm.allocate_roles(
-            exploit_profile, [], arm="B", exa_enabled=True
-        )
-        self.assertEqual(exploit["regime"], "EXPLOIT")
-        self.assertEqual(len(exploit["scouts"]), 1)
+            snapshot = parent / f"snapshot-{round_num}"
+            shutil.copytree(run_dir, snapshot)
+            snapshots.append(snapshot)
+        fresh_root = parent / "one-shot"
+        fresh_run = export_viewer.export(out, fresh_root)
         self.assertEqual(
-            exploit["roles"][exploit["scouts"][0]], "divergent"
+            {
+                p.relative_to(snapshots[-1]).as_posix(): p.read_bytes()
+                for p in snapshots[-1].rglob("*")
+                if p.is_file()
+            },
+            {
+                p.relative_to(fresh_run).as_posix(): p.read_bytes()
+                for p in fresh_run.rglob("*")
+                if p.is_file()
+            },
         )
-        no_exa = swarm.allocate_roles(
-            exploit_profile, [], arm="B", exa_enabled=False
-        )
-        self.assertEqual(no_exa["scouts"], [])
+        return snapshots
 
-    def test_arm_memory_backend_defaults(self):
-        with patch.dict(os.environ, {}, clear=True):
-            with swarm.arm_environment("A", True):
-                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
-            with swarm.arm_environment("B", True):
-                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
-            with swarm.arm_environment("C", False):
-                self.assertEqual(os.environ["MEMORY_BACKEND"], "pastdev")
-            with swarm.arm_environment("D", True):
-                self.assertEqual(os.environ["MEMORY_BACKEND"], "local")
-
-    def test_arm_environment_propagates_and_restores_swarm_run_id(self):
-        with patch.dict(os.environ, {"AUTORESEARCH_RUN_ID": "previous-run"}):
-            with swarm.arm_environment("B", False, "pastdev", run_id="current-run"):
-                self.assertEqual(swarm.memory.arm_run_scope(), {"arm": "B", "run_id": "current-run"})
-            self.assertEqual(os.environ["AUTORESEARCH_RUN_ID"], "previous-run")
-
-    def test_converged_round_keeps_confirmation_roles_and_scouts(self):
-        profile = meter.load_profile(PROFILE_PATH)
-
-        def converged_status(_profile, _events, agent=None):
-            return {
-                "B": 0.8 if agent == "worker-2" else 0.1,
-                "regime": "CONVERGED",
-                "ledger_sha256": "a" * 64,
-                "profile_sha256": "b" * 64,
-            }
-
-        with patch.object(swarm.meter, "status", side_effect=converged_status):
-            allocation = swarm.allocate_roles(
-                profile, [], arm="B", exa_enabled=True
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_fake_three_round_ledgers_match_with_real_docker_evaluator(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            first, first_out = self.run_three_rounds(Path(tmp), "out-one")
+            snapshots = self.publish_round_snapshots(first_out, Path(tmp))
+            second, _ = self.run_three_rounds(Path(tmp), "out-two")
+            event_files = [(path / "events.ndjson").read_bytes() for path in snapshots]
+            for previous, current in itertools.pairwise(event_files):
+                self.assertTrue(current.startswith(previous))
+            manifests = [json.loads((path / "manifest.json").read_text()) for path in snapshots]
+            self.assertEqual(
+                [manifest["status"] for manifest in manifests], ["running", "running", "finished"]
             )
-        self.assertEqual(set(allocation["roles"].values()), {"exploit"})
-        self.assertEqual(allocation["scouts"], ["worker-2"])
+            event_rows = [
+                [json.loads(line) for line in data.decode().splitlines()] for data in event_files
+            ]
+            self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[0]))
+            self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[1]))
+            self.assertTrue(any(event["type"] == "run.finished" for event in event_rows[2]))
+            frames = [
+                {path.name: path.read_bytes() for path in (snapshot / "keyframes").glob("*.json")}
+                for snapshot in snapshots
+            ]
+            for previous, current in itertools.pairwise(frames):
+                for name, data in previous.items():
+                    self.assertEqual(current[name], data)
+        self.assertEqual(self.without_commits(first), self.without_commits(second))
+        self.assertEqual(sum(row.get("kind") == "candidate" for row in first), 12)
 
-    def test_one_round_queue_swarm_runs_without_openai_key(self):
-        with tempfile.TemporaryDirectory() as directory:
-            repo = self.create_repo(directory)
-            out_dir = Path(directory) / "queue-out"
-            queue_dir = out_dir / "llm_queue"
-            train_py = (repo / "train.py").read_text(encoding="utf-8")
-            env = os.environ.copy()
-            for name in list(env):
-                if name.startswith(("PAST_API_KEY", "OPENAI_API_KEY")):
-                    env.pop(name)
-            env.pop("OPENAI_MODEL", None)
-            env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
-            process = subprocess.Popen(
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_viewer_publish_failure_does_not_stop_swarm(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "publish-failure")
+            out = Path(tmp) / "out"
+            args = swarm.build_parser().parse_args(
                 [
-                    sys.executable,
-                    str(SWARM_SCRIPT),
-                    "--arm",
-                    "B",
+                    "--task",
+                    "hadamard19",
                     "--rounds",
                     "1",
                     "--llm",
-                    "queue",
-                    "--gpu",
                     "fake",
-                    "--queue-timeout",
-                    "10",
+                    "--no-push",
                     "--out",
-                    str(out_dir),
+                    str(out),
                     "--repo",
                     str(repo),
-                ],
-                cwd=REPO_ROOT,
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
+                ]
             )
-            stop = threading.Event()
-            errors = []
+            env = {"EXA": "off", "MEMORY_BACKEND": "local"}
+            with (
+                patch.dict(os.environ, env),
+                patch("export_viewer.publish", side_effect=RuntimeError("test publish failure")),
+            ):
+                result = swarm.orchestrate(args)
+            self.assertEqual(result["arm"], "B")
+            entries = [
+                json.loads(line)
+                for line in (out / "viewer_publish_log.jsonl").read_text().splitlines()
+            ]
+            self.assertGreaterEqual(len(entries), 2)
+            ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
+            self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
 
-            def answer_round_calls():
-                while not stop.is_set():
-                    for prompt_file in queue_dir.glob("*.prompt.json"):
-                        try:
-                            document = json.loads(
-                                prompt_file.read_text(encoding="utf-8")
-                            )
-                            response_file = swarm_queue.response_path(
-                                queue_dir, document["call_id"]
-                            )
-                            if response_file.exists():
-                                continue
-                            role = document["role"]
-                            if role.startswith("WORKER_"):
-                                response = llm.fake_response(
-                                    role,
-                                    {
-                                        "agent": document["agent"],
-                                        "train_py": train_py,
-                                    },
-                                )
-                            else:
-                                response = llm.fake_response(role, {})
-                            swarm_queue.answer(
-                                queue_dir, document["call_id"], response
-                            )
-                        except Exception as error:
-                            errors.append(error)
-                    stop.wait(0.01)
-
-            answer_thread = threading.Thread(target=answer_round_calls)
-            answer_thread.start()
-            try:
-                stdout, stderr = process.communicate(timeout=120)
-            finally:
-                stop.set()
-                answer_thread.join(timeout=5)
-
-            self.assertFalse(errors, errors)
-            self.assertEqual(process.returncode, 0, stderr + stdout)
-            calls = self.jsonl(out_dir / "llm_log.jsonl")
-            self.assertTrue(calls)
-            self.assertTrue(all(call["model"] == "devin-queue" for call in calls))
-            self.assertTrue(list(queue_dir.glob("*.prompt.json")))
-            self.assertTrue(list(queue_dir.glob("*.response.json")))
-
-    def test_second_gate_rejection_assigns_cell_through_queue_and_gates_it(self):
-        with tempfile.TemporaryDirectory() as directory:
-            repo = self.create_repo(directory)
-            out_dir = Path(directory) / "out"
-            out_dir.mkdir()
-            (out_dir / "exa_cache").mkdir()
-            profile = meter.load_profile(PROFILE_PATH)
-            base_commit = subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], cwd=repo, text=True
-            ).strip()
-            memory_log = out_dir / "memory_log.jsonl"
-            mirror = out_dir / "memory.jsonl"
-            client = llm.LLMClient(
-                mode="queue",
-                queue_dir=out_dir / "queue",
-                queue_timeout=10,
-                log_path=out_dir / "llm_log.jsonl",
-                prompt_dir=REPO_ROOT / "prompts",
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_fake_run_stops_early_when_converged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "converged")
+            out = Path(tmp) / "out"
+            args = swarm.build_parser().parse_args(
+                [
+                    "--task",
+                    "hadamard19",
+                    "--rounds",
+                    "10",
+                    "--llm",
+                    "fake",
+                    "--no-push",
+                    "--out",
+                    str(out),
+                    "--repo",
+                    str(repo),
+                ]
             )
-            status = {
-                "swarm_B": 0.75,
-                "regime": "BOREDOM_SNAP",
-                "per_agent_B": {agent: 0.0 for agent in swarm.AGENTS},
-                "suggested_cells": [{"cell": "architecture/depth", "visits": 0}],
-            }
-            stop = threading.Event()
-            errors = []
+            original = meter.load_profile
 
-            def answer_calls():
-                while not stop.is_set():
-                    for path in client.queue_dir.glob("*.prompt.json"):
-                        document = json.loads(path.read_text())
-                        if swarm_queue.response_path(client.queue_dir, document["call_id"]).exists():
-                            continue
-                        try:
-                            assigned = document["prompt"].split("Assigned cell (if not none, implement exactly this cell): ")[1].splitlines()[0]
-                            response = llm.fake_response(document["role"], {
-                                "agent": document["agent"],
-                                "assigned_cell": assigned,
-                                "train_py": (repo / "train.py").read_text(),
-                            })
-                            swarm_queue.answer(client.queue_dir, document["call_id"], response)
-                        except Exception as error:
-                            errors.append(error)
-                    stop.wait(0.01)
-
-            thread = threading.Thread(target=answer_calls)
-            thread.start()
-            self.addCleanup(thread.join, 5)
-            self.addCleanup(stop.set)
-            with patch.dict(
-                os.environ,
-                {"EXA": "off", "MEMORY_BACKEND": "local"},
-                clear=False,
-            ), patch.object(
-                swarm,
-                "gate_candidate",
-                side_effect=[
-                    (False, {"reasons": ["near-duplicate"]}),
-                    (False, {"reasons": ["near-duplicate after repair"]}),
-                    (False, {"reasons": ["assigned candidate rejected normally"]}),
-                ],
-            ) as gate:
-                candidate = swarm.worker_attempts(
-                    agent="worker-1",
-                    round_num=1,
-                    arm="B",
-                    role="divergent",
-                    agent_b=0.0,
-                    status=status,
-                    best_commit=base_commit,
-                    best_val=0.995814,
-                    profile=profile,
-                    profile_path=PROFILE_PATH,
-                    out_dir=out_dir,
-                    repo=repo,
-                    agents_root=repo / ".swarm_worktrees" / "B",
-                    base_commit=base_commit,
-                    llm_client=client,
-                    backend="local",
-                    mirror=mirror,
-                    memory_log=memory_log,
-                    lead=None,
-                    all_leads=[],
-                    claims=[],
-                    replay=False,
+            def quick_profile(path):
+                profile = original(path)
+                profile["patience"] = 1
+                profile["required_mechanisms"] = ["baseline"]
+                profile["attempt_statuses"] = ["keep", "discard", "crash", "reject", "duplicate"]
+                profile["_hash"] = meter.sha(
+                    {key: value for key, value in profile.items() if not key.startswith("_")}
                 )
+                return profile
 
-            stop.set()
-            thread.join(5)
-            self.assertFalse(errors, errors)
-            self.assertEqual(gate.call_count, 3)
-            calls = self.jsonl(out_dir / "llm_log.jsonl")
+            with (
+                patch.dict(os.environ, {"EXA": "off", "MEMORY_BACKEND": "local"}),
+                patch("swarm.meter.load_profile", side_effect=quick_profile),
+            ):
+                swarm.orchestrate(args)
+            summary = json.loads((out / "converged.json").read_text())
+            ledger = meter.read_ledger(out / "ledger.jsonl")
+            profile = original(PROFILE)
+            profile["attempt_statuses"] = ["keep", "discard", "crash", "reject", "duplicate"]
+            self.assertLess(summary["round"], 10)
+            self.assertLess(max(event.get("round", 0) for event in ledger), summary["round"])
             self.assertEqual(
-                sum(record["role"] == "WORKER_REPAIR" for record in calls), 2
+                round(summary["best_loss"], 6),
+                summary["status_record"]["best_loss"],
             )
-            self.assertTrue(all("Suggested cells: architecture/depth (visits=0)" in call["prompt"] for call in calls))
-            self.assertIn("Gate reasons: near-duplicate after repair", calls[-1]["prompt"])
-            self.assertIn("Assigned cell (if not none, implement exactly this cell): architecture/depth", calls[-1]["prompt"])
-            self.assertEqual(candidate["descriptor"]["mechanism"], "architecture")
-            self.assertEqual(candidate["descriptor"]["method"], "depth")
-            self.assertEqual(candidate["status"], "reject")
-            self.assertEqual(len(candidate["attempts"]), 3)
+            self.assertEqual(
+                summary["attempt_count"],
+                len(list(meter.attempt_events(profile, ledger))),
+            )
+            self.assertTrue(json.loads((out / "run.json").read_text())["converged"])
+            manifest = json.loads(next((out / "viewer").glob("*/manifest.json")).read_text())
+            self.assertEqual(manifest["status"], "finished")
+            self.assertTrue(manifest["converged"])
+
+    def test_deterministic_gate_rejects_previously_scored_blob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "dedup")
+            out = Path(tmp) / "out"
+            out.mkdir()
+            args = swarm.build_parser().parse_args(["--task", "hadamard19", "--llm", "fake"])
+            swarm.configure_task(args)
+            commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            swarm.record_score_cache(repo, out, {commit: {"loss": 0.5, "status": "ok"}})
+            passed, record = swarm.gate_candidate(
+                repo=repo, out_dir=out, profile_path=PROFILE, commit=commit
+            )
+            self.assertFalse(passed)
+            self.assertEqual(
+                record["reasons"],
+                [f"duplicate: blob already scored as {commit}"],
+            )
+            self.assertEqual(record["duplicate_of"], commit)
+            self.assertEqual(record["score"], 0.5)
+            profile = meter.load_profile(PROFILE)
             event = swarm.add_result_event(
                 profile,
-                out_dir / "ledger.jsonl",
-                candidate,
+                out / "ledger.jsonl",
+                {
+                    "agent": "worker-1",
+                    "commit": commit,
+                    "descriptor": {"mechanism": "search", "method": "restarts"},
+                    "duplicate_of": record["duplicate_of"],
+                    "reasons": record["reasons"],
+                },
                 1,
-                "reject",
-                None,
-                None,
+                "duplicate",
+                record["score"],
             )
-            self.assertEqual(event["status"], "reject")
-            self.assertEqual(meter.read_ledger(out_dir / "ledger.jsonl")[0]["status"], "reject")
+            self.assertEqual(event["status"], "duplicate")
+            self.assertEqual(event["score"], 0.5)
+            self.assertEqual(event["duplicate_of"], commit)
+
+    def test_same_round_duplicate_is_evaluated_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "same-round-dedup")
+            out = Path(tmp) / "out"
+            out.mkdir()
+            args = swarm.build_parser().parse_args(["--task", "hadamard19", "--llm", "fake"])
+            swarm.configure_task(args)
+            first_commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            subprocess.run(
+                ["git", "commit", "--allow-empty", "-m", "same editable blob"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            second_commit = swarm.git_text(repo, "rev-parse", "HEAD")
+            self.assertNotEqual(first_commit, second_commit)
+            self.assertEqual(
+                swarm.git_text(repo, "rev-parse", f"{first_commit}:{swarm.TARGET_FILE}"),
+                swarm.git_text(repo, "rev-parse", f"{second_commit}:{swarm.TARGET_FILE}"),
+            )
+            candidates = [
+                {
+                    "agent": agent,
+                    "status": "pending",
+                    "score": None,
+                    "commit": commit,
+                    "descriptor": {"mechanism": "search", "method": "restarts"},
+                    "role": "exploit",
+                    "attempts": [{"attempt": 1, "commit": commit, "pass": True, "reasons": []}],
+                    "reasons": [],
+                }
+                for agent, commit in (
+                    ("worker-1", first_commit),
+                    ("worker-2", second_commit),
+                )
+            ]
+            evaluation_candidates = swarm.deduplicate_round_candidates(repo, candidates, out)
+            self.assertEqual(len(evaluation_candidates), 1)
+            self.assertEqual(evaluation_candidates[0]["commit"], first_commit)
+            duplicate = candidates[1]
+            self.assertEqual(duplicate["status"], "duplicate")
+            self.assertEqual(duplicate["duplicate_of"], first_commit)
+            self.assertTrue(duplicate["same_round_duplicate"])
+            gate_record = json.loads((out / "boredom_log.jsonl").read_text().splitlines()[-1])
+            self.assertFalse(gate_record["pass"])
+            self.assertEqual(gate_record["duplicate_of"], first_commit)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -109,7 +109,7 @@ A new domain needs only a profile, with no code changes:
 | :-- | :-- | :-- |
 | `profiles/biolab_growth.json` | hypothesis → assay, params `nutrient`, `oxygen` | growth (Little Sprout synthetic two-basin lab) |
 | `profiles/compbio_pipeline.json` | pipeline stage → method, params `resolution`, `fdr`, `n_hvg`, `mito_pct` | deterministic in-loop validator (BixBench3-style reproduction) |
-| `profiles/autoresearch_llm.json` | mechanism → method, param `value` (ratio scale) | val_bpb |
+| `testcases/hadamard19/boredom_profile.json` | mechanism → method, param `value` (ratio scale) | loss |
 
 To build a good profile:
 - Use a **closed vocabulary** so every agent describes the same idea the same way.

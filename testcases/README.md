@@ -53,7 +53,7 @@ EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 -
 
 `--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
 Docker sandbox, loads `testcases/<task>/boredom_profile.json`, and uses the
-generic prompts in `testcases/prompts/`. The task loss goes in the `val_bpb`
+generic prompts in `prompts/`. The task loss goes in the `loss`
 column, so the artifacts retain the autoresearch format.
 
 ## Score by hand

@@ -7,8 +7,11 @@ from copy import deepcopy
 from datetime import datetime
 import hashlib
 import json
+import logging
+import os
 from pathlib import Path
 import re
+import shlex
 import zipfile
 
 from backend.ingest import number, spectrum_color
@@ -38,7 +41,7 @@ def event_message(event):
     return str(p.get('text') or p.get('summary') or p.get('title') or p.get('why') or p.get('rationale') or p.get('excerpt') or event['type'].replace('.',' · '))[:3000]
 
 
-def build_recording(native_manifest, native_events, entities):
+def build_recording(native_manifest, native_events, entities, sample=True):
     """Pure deterministic fold. Entity lookups never import late verdicts/results."""
     manifest=deepcopy(native_manifest)
     if manifest.get('schema')!='swarm-viewer/v1':raise ValueError('Unsupported recording schema')
@@ -52,11 +55,19 @@ def build_recording(native_manifest, native_events, entities):
         seen_ids.add(event['event_id']);seen_ticks.add(tick)
         events.append({**event,'agentId':event.get('agent_id'),'message':event_message(event)})
     last_tick=max((e['tick'] for e in events),default=0)
-    manifest.update({'id':manifest['run_id'],'totalTicks':last_tick,'tickDurationMs':700,'live':False})
+    live=manifest.get('status') in {'running','live'} or bool(manifest.get('live'))
+    manifest.update({'id':manifest['run_id'],'totalTicks':last_tick,'tickDurationMs':700,'live':live})
     mock_sources='example.org/mock' in json.dumps(entities)
-    manifest['description']='Recorded sample · mock prior-art sources' if mock_sources else 'Recorded research · no live model calls'
-    manifest['sample']=mock_sources
     provenance=manifest.get('provenance',{})
+    manifest['sample']=sample
+    llm=provenance.get('llm','unknown')
+    try:
+        command=provenance.get('command',[])
+        if isinstance(command,str):command=shlex.split(command)
+        provider=next((part.split('=',1)[1] if '=' in part else command[i+1] for i,part in enumerate(command) if part=='--llm' or part.startswith('--llm=')),None)
+        if provider:llm=provider
+    except (ValueError,IndexError):pass
+    manifest['description']=('Recorded sample · mock prior-art sources' if mock_sources else 'Recorded research · no live model calls') if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
     created=manifest.get('time',{}).get('ts_start')
     created_at=datetime.fromisoformat(created.replace('Z','+00:00')).timestamp() if created else 0
     agents=[]
@@ -92,7 +103,7 @@ def build_recording(native_manifest, native_events, entities):
         else:s['value']=(min if s['metric']['direction']=='minimize' else max)(s['value'],value)
     for event in events:
         kind=event['type'];tick=event['tick'];p=event.get('payload',{});refs=event.get('refs',{});aid=event.get('agent_id');a=by_id.get(aid)
-        s['tick']=tick;s['lastSequence']=tick+1;s['round']=event.get('round',s['round']);s['phase']=event.get('phase','');s['progress']=tick/max(1,last_tick)
+        s['tick']=tick;s['lastSequence']=tick+1;s['round']=event.get('round',s['round']);s['phase']=event.get('phase','');s['progress']=tick/max(1,last_tick+int(live))
         if a:
             if kind in ACTIVITY:
                 a['sinceTick']=tick;a['activity'],a['state'],a['stationId']=ACTIVITY[kind]
@@ -167,16 +178,20 @@ def build_recording(native_manifest, native_events, entities):
                 if a:a['lastNote']=message
             if a:a['lastMessage']=message
             s['findings']=(s['findings']+[{'agent':a['id'] if a else aid or '', 'role':kind.split('.')[0].title(),'message':message,'round':event.get('round',0),'tick':tick,'type':kind}])[-8:]
-        if kind=='run.finished' or tick==last_tick:
-            s['status']=manifest.get('status','completed');s['progress']=1
+        if kind=='run.finished' or (tick==last_tick and not live):
+            status=manifest.get('status','completed')
+            s['status']='completed' if status=='finished' else status;s['progress']=1
             for item in agents:item['state']='idle';item['activity']='idle'
         frames.append({'tick':tick,'snapshot':deepcopy(s)})
     return {'manifest':manifest,'frames':frames,'events':events,'entities':entities}
 
 
 class RecordingCatalog:
-    def __init__(self, archive):
+    def __init__(self, archive, directories=(), repo_root=None):
         self.archive=Path(archive);self.manifests={};self.cache={}
+        self.directories=[Path(p).absolute() for p in directories]
+        self.repo_root=Path(repo_root) if repo_root is not None else Path(__file__).resolve().parents[1]
+        self.directory_runs={};self.directory_cache={}
         self.content_version=''
         if not self.archive.is_file():return
         self.content_version=hashlib.sha256(self.archive.read_bytes()).hexdigest()[:16]+'-v2'
@@ -187,7 +202,66 @@ class RecordingCatalog:
                     m=json.loads(z.read(name));rid=m['run_id']
                     if name!=f'runs/{rid}/manifest.json':raise ValueError('Invalid manifest path')
                     self.manifests[rid]=m
+    def _scan(self):
+        runs={}
+        roots=set()
+        for pattern in ('.swarm_worktrees/*/conductor/experiments/*/viewer', 'experiments/*/viewer'):
+            roots.update(self.repo_root.glob(pattern))
+        for root in sorted(roots-set(self.directories))+self.directories:
+            if root.is_symlink():continue
+            if not root.is_dir():continue
+            for parent, dirs, files in os.walk(root,followlinks=False):
+                path=Path(parent)
+                dirs[:]=sorted(d for d in dirs if not (path/d).is_symlink()) if len(path.relative_to(root).parts)<5 else []
+                if 'manifest.json' not in files:continue
+                rid=path.name
+                if not re.fullmatch(r'[a-zA-Z0-9-]+',rid):continue
+                try:
+                    signature=[];size=0
+                    for base, children, names in os.walk(path,followlinks=False):
+                        if any((Path(base)/n).is_symlink() for n in children+names):raise ValueError('Symlink in recording')
+                        for name in sorted(names):
+                            file=Path(base)/name;stat=file.stat();size+=stat.st_size
+                            if size>50_000_000:raise ValueError('Recording too large')
+                            signature.append((file.relative_to(path).as_posix(),stat.st_size,stat.st_mtime_ns))
+                    version=hashlib.sha256(json.dumps(sorted(signature)).encode()).hexdigest()[:16]+'-v3'
+                    runs[rid]=(path,version)
+                except (OSError,ValueError) as exc:logging.warning('Skipping recording %s: %s',path,exc)
+        self.directory_runs=runs
+        self.directory_cache={key:value for key,value in self.directory_cache.items() if key in {(rid,item[1]) for rid,item in runs.items()}}
+
+    def _directory_get(self, rid):
+        path,version=self.directory_runs[rid];key=(rid,version)
+        if key not in self.directory_cache:
+            manifest=json.loads((path/'manifest.json').read_text())
+            if manifest['run_id']!=rid:raise ValueError('Invalid manifest path')
+            events=[]
+            event_path=path/'events.ndjson'
+            for line in event_path.read_text().splitlines() if event_path.exists() else []:
+                if not line.strip():continue
+                try:events.append(json.loads(line))
+                except ValueError:logging.warning('Skipping partial event in %s',path)
+            entities={}
+            for name in COLLECTIONS:
+                file=path/'entities'/f'{name}.json'
+                if file.exists():
+                    try:entities[name]=json.loads(file.read_text())
+                    except ValueError:logging.warning('Skipping partial entity file %s',file)
+            recording=build_recording(manifest,events,entities,sample=False)
+            recording['manifest']['contentVersion']=version
+            self.directory_cache[key]=recording
+        return self.directory_cache[key]
+
     def get(self, rid):
+        self._scan()
+        return self._get(rid)
+
+    def _get(self, rid):
+        if rid in self.directory_runs:
+            try:return self._directory_get(rid)
+            except (OSError,ValueError,KeyError,TypeError,AttributeError,OverflowError) as exc:
+                logging.warning('Skipping recording %s: %s',rid,exc)
+                if rid not in self.manifests:raise KeyError(rid) from exc
         if rid not in self.manifests:raise KeyError(rid)
         if rid not in self.cache:
             with zipfile.ZipFile(self.archive) as z:
@@ -197,4 +271,9 @@ class RecordingCatalog:
             self.cache[rid]=build_recording(self.manifests[rid],events,entities)
             self.cache[rid]['manifest']['contentVersion']=self.content_version
         return self.cache[rid]
-    def list(self):return [self.get(rid)['manifest'] for rid in self.manifests]
+    def list(self):
+        self._scan();items=[]
+        for rid in sorted(self.manifests.keys()|self.directory_runs.keys()):
+            try:items.append(self._get(rid)['manifest'])
+            except KeyError:continue
+        return items

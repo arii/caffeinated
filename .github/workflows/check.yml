@@ -1,0 +1,43 @@
+name: check
+
+on:
+  pull_request:
+    branches: [main, autoresearch]
+  push:
+    branches: [main, autoresearch]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      EXA: "off"
+      MEMORY_BACKEND: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.10"
+          activate-environment: true
+      - name: Install dev and viewer dependencies
+        run: uv pip install -r pyproject.toml --extra dev --extra viewer -r backend/requirements.txt
+      - name: Build testcase sandbox image
+        run: docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+      - name: make check
+        run: make check PYTHON=python
+      - name: Recording API tests
+        run: python -m unittest discover -s backend/tests
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test

@@ -2,15 +2,14 @@
 
 A first-person lab for walking through recorded research. This branch plays the supplied `swarm-viewer/v1` archive; it does not launch experiments, submit Tinker calls, or generate new agent dialogue. The future research backend can supply new recordings, including Ig Nobel objectives, through the same data boundary.
 
-Backend team: start with the [integration guide](docs/backend-integration.md) for the bundle format, runnable payload example, event mapping, and `LAB_RECORDINGS_ZIP` setup.
+Backend team: start with the [integration guide](docs/backend-integration.md) for live directory publishing (`LAB_RECORDINGS_DIRS`), ZIP imports, runnable payload examples, and event mapping.
 
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
 - **Experiment producer:** [Ig Nobel backend](ignobel/README.md), [native event schema](ignobel/events.md), and [datasets](ignobel/data/README.md).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
-- **Autoresearch runner:** [swarm protocol](program_swarm.md) and [upstream training documentation](docs/autoresearch-upstream.md).
-- **Artificial Scientist Swarms backend:** [backend and judge guide](https://github.com/arii/caffeinated/blob/autoresearch/README.md) on the `autoresearch` branch, covering agent types, the orchestration loop and the boredom meter.
+- **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
 
 ## Run
@@ -24,6 +23,21 @@ npm run dev
 ```
 
 Open http://localhost:5175. The bundled ZIP is included in `data/replays/`, so no credentials or separate archive import are needed. Vite runs on 5175 and the local recording API on 8765. Separate terminals can use `npm run dev:frontend` and `npm run dev:backend`.
+
+### Watch a swarm run
+
+From the repo root, in two terminals:
+
+```sh
+# one-time: make setup && docker build -t caffeinated-testcases:py311-v1 -f testcases/Dockerfile testcases
+# put TINKER_API_KEY, EXA_API_KEY, PAST_API_KEY in .env (see .env.example)
+npm run dev                                                          # terminal 1: lab
+python3 swarm.py --task hadamard19 --arm B --rounds 10 --llm tinker  # terminal 2: research
+```
+
+Open http://localhost:5175. The lab picks up the newest live swarm run automatically (then the newest finished swarm run, then a bundled sample). No `--out`, environment variables or worktree cleanup are needed: `swarm.py` reuses its own leftover worktrees, and missing keys or a missing sandbox image are reported before anything is created. Use `--llm fake --exa off --memory-backend local --no-push` for an offline dry run. Details: [quickstart](docs/autoresearch-backend.md#quickstart).
+
+The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/viewer` and `experiments/*/viewer` folders on every refresh, including arms created after startup. The picker refreshes every four seconds; live recordings reload while preserving the playhead, and explicit URL or picker selections are kept. To follow another clone or a custom `--out`, add `LAB_RECORDINGS_DIRS=/path/to/out/viewer` (multiple roots separated by `:`). `LAB_RECORDINGS_ZIP=/path/to/archive.zip` still works alongside directories; replacing a ZIP requires a restart. `LAB_PYTHON` optionally selects the backend Python.
 
 ## Explore a recording
 
@@ -65,6 +79,6 @@ npm run test:backend
 npm run build
 ```
 
-Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The retained upstream runner tests have separate training/test dependencies; see `program_swarm.md` and `testcases/README.md` when working on those components.
+Checks cover deterministic seeking, backward-state isolation, paused poses, navigable stations, snapshot contracts, all four bundled recordings, ordered evidence, confirmed metrics, gzip/cache responses, and read-only behavior. The research swarm has its own checks (`make setup && make check`); see [the backend guide](docs/autoresearch-backend.md) and `testcases/README.md`.
 
 The upstream research implementation remains in this branch. Its credentials, `.env`, local histories, and virtual environments stay ignored. Existing environment loading does not start research, and viewing the replay consumes no model credits.

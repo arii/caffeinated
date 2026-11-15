@@ -1,7 +1,0 @@
-diff --git a/train.py b/train.py
-index 76391ca..4f4c1cb 100644
---- a/train.py
-+++ b/train.py
-@@ -440 +440 @@ EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
--UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-+UNEMBEDDING_LR = 0.006  # learning rate for lm_head (Adam)

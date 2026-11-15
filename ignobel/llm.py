@@ -96,19 +96,30 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     cache_file = CACHE_DIR / "llm" / f"{key}.json"
     if cache_file.exists():
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        if isinstance(cached["data"], dict) and cached["data"].get("_parse_error"):
+            cached["data"] = parse_reply(cached["data"].get("_raw", ""))
         return LLMResult(**cached, cached=True)
 
     t0 = time.monotonic()
     tokens = 0
     budget = max_tokens
-    for _ in range(2):  # a cut-off reply is retried once with double the budget
-        resp = _openai_call(lambda client: client.chat.completions.create(
-            model=model,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            response_format={"type": "json_object"},
-            max_completion_tokens=budget,
-            seed=seed,
-        ))
+    import openai
+    for attempt in range(2):  # a cut-off reply is retried once with double the budget
+        try:
+            resp = _openai_call(lambda client: client.chat.completions.create(
+                model=model,
+                messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+                response_format={"type": "json_object"},
+                max_completion_tokens=budget,
+                seed=seed,
+            ))
+        except openai.UnprocessableEntityError as e:
+            # the provider could not turn the model's output into a reply (seen with Tinker when the
+            # model answers in function-call syntax). One retry, then an unusable, uncached reply.
+            if attempt == 0:
+                continue
+            return LLMResult(data={"_raw": "", "_parse_error": True, "_error": f"HTTP 422: {str(e)[:200]}"},
+                             tokens=tokens, latency_ms=int((time.monotonic() - t0) * 1000), model=model)
         used = resp.usage.total_tokens if resp.usage else 0
         tokens += used
         _charge(used)
@@ -118,11 +129,7 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
             break
         budget *= 2
     latency_ms = int((time.monotonic() - t0) * 1000)
-    text = choice.message.content or ""
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        data = {"_raw": text, "_parse_error": True}
+    data = parse_reply(choice.message.content or "")
     if truncated:
         data["_truncated"] = True
     result = LLMResult(data=data, tokens=tokens, latency_ms=latency_ms, model=model)
@@ -131,6 +138,47 @@ def chat_json(model: str, system: str, user: str, *, kind: str, seed: int = 0,
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     cache_file.write_text(json.dumps(result.model_dump(exclude={"cached"})), encoding="utf-8")
     return result
+
+
+def _quote_bare_keys(s: str) -> str:
+    """{code: "x", requests: []} -> {"code": "x", "requests": []}; string contents are left alone."""
+    out, i, in_str, esc, expect_key = [], 0, False, False, False
+    while i < len(s):
+        c = s[i]
+        if in_str:
+            esc, in_str = (False, True) if esc else (c == "\\", c != '"')
+        elif c == '"':
+            in_str = True
+        elif c in "{,":
+            expect_key = True
+        elif expect_key and (c.isalpha() or c == "_"):
+            j = i
+            while j < len(s) and (s[j].isalnum() or s[j] == "_"):
+                j += 1
+            k = j
+            while k < len(s) and s[k].isspace():
+                k += 1
+            expect_key = False
+            if k < len(s) and s[k] == ":":
+                out.append(f'"{s[i:j]}"')
+                i = j
+                continue
+        elif not c.isspace():
+            expect_key = False
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def parse_reply(text: str) -> dict:
+    """JSON object from a model reply. Some models (Tinker Inkling) leave object keys unquoted."""
+    for candidate in (text, _quote_bare_keys(text)):
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        return data if isinstance(data, dict) else {"_raw": text, "_parse_error": True}
+    return {"_raw": text, "_parse_error": True}
 
 
 def embed(texts: list[str]) -> np.ndarray:
@@ -268,6 +316,9 @@ _LESSONS = [
 ]
 
 
+_SUBFIELDS = ["kitchen", "office", "bathroom", "playground", "commuter", "garden", "hospital", "nightclub"]
+
+
 def _pick(seq, h: str, offset: int = 0):
     return seq[(int(h[offset:offset + 8], 16)) % len(seq)]
 
@@ -285,6 +336,7 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
             "method": method,
             "prediction": {"direction": "+" if n % 2 == 0 else "-",
                            "effect_size": round(0.1 + (n % 80) / 100, 2)},
+            **({"citations": ctx["sources"][:2]} if ctx.get("sources") else {}),
         }
     if kind == "refine":
         # A sensible scientist keeps the idea, sharpens the hypothesis, and predicts what it saw last time.
@@ -311,6 +363,31 @@ def _mock_json(kind: str, h: str, ctx: dict) -> dict:
                             f"{verdict} We discuss what this says about {noun} and about us."}
     if kind == "lesson":
         return {"lesson": _pick(_LESSONS, h)}
+    if kind == "research_plan":
+        query = _pick(ctx.get("queries") or [noun], h)
+        paper = {"tool": _pick(("openalex", "arxiv", "pubmed", "exa"), h, 8), "query": query}
+        if not ctx.get("datasets"):
+            first = {"tool": "load", "lead": "D1"} if ctx.get("leads") else {"tool": "datasets", "query": query}
+            return {"steps": [first, paper], "why": "mock: a study needs real data"}
+        if ctx.get("can_ask_experiment") and n % 3 == 0:
+            return {"steps": [{"tool": "experiment", "question": f"Do {noun} respond to a manipulation nobody has recorded?",
+                               "protocol": f"Assign {noun} at random to two conditions and measure the response.",
+                               "materials": "a bench, a stopwatch and patience", "design": ("two_group", "corr")[n % 2],
+                               "measure": "response", "compare": "treated vs untreated" if n % 2 == 0 else "dose",
+                               "n": 60 + n % 40, "refuted_if": "the two conditions do not differ"}, paper],
+                    "why": "mock: no public dataset covers this"}
+        steps = [paper]
+        if ctx.get("sources"):
+            steps.append({"tool": "read", "source": ctx["sources"][n % len(ctx["sources"])],
+                          "question": "What was the main result, in numbers?"})
+        return {"steps": steps, "why": "mock: read more"}
+    if kind == "spawn":
+        field = ctx.get("field", "science")
+        k = int(ctx.get("spawned", 0)) + 1
+        topic = _pick(_SUBFIELDS, h)
+        return {"name": f"{field[:4]}{topic.split()[0]}{k}", "field": f"{topic} {field}",
+                "seed_queries": [f"{topic} {field} odd findings", f"everyday {field} experiments"],
+                "methods": [method, "randomised trials"]}
     if kind in ("judge_a", "judge_b"):
         base = 3 + (n % 7)
         return {"laugh": max(1, min(10, base + (n >> 8) % 3 - 1)),
@@ -337,7 +414,27 @@ def _mock_requests(n: int, ctx: dict) -> list[dict]:
 
 def _mock_study_code(n: int, ctx: dict) -> str:
     variant = n % 10
-    if ctx.get("instruments"):
+    if ctx.get("rehearsal"):
+        d = ctx["rehearsal"]
+        num = [c["name"] for c in d["columns"] if c["kind"] == "numeric"]
+        cat = [c for c in d["columns"] if c["kind"] == "categorical"]
+        if cat:
+            g = cat[0]
+            return ("from lab_runtime import rows, report\n"
+                    f"a = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][0]!r}}})]\n"
+                    f"b = [r[0] for r in rows({d['name']!r}, [{num[0]!r}], where={{{g['name']!r}: {g['values'][1]!r}}})]\n"
+                    "report(a, b, direction='+', effect_size=0.5)\n")
+        return ("from lab_runtime import rows, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{num[0]!r}, {num[1]!r}]))\n"
+                "report_corr(x, y, direction='+', effect_size=0.5)\n")
+    real = [d for d in ctx.get("datasets") or [] if len(d["numeric"]) >= 2]
+    if real:
+        d = real[n % len(real)]
+        a, b = d["numeric"][n % len(d["numeric"])], d["numeric"][(n // 3 + 1) % len(d["numeric"])]
+        b = b if b != a else d["numeric"][(d["numeric"].index(a) + 1) % len(d["numeric"])]
+        head = ("from lab_runtime import rows, report, report_corr\n"
+                f"x, y = zip(*rows({d['name']!r}, [{a!r}, {b!r}]))\n")
+    elif ctx.get("instruments"):
         head = ("from lab_runtime import instruments, instrument, report, report_corr\n"
                 "names = instruments()\n"
                 "x = instrument(names[0])\n"

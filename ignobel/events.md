@@ -28,9 +28,16 @@ not enforce payload shapes; the fields below describe the producer's current wri
 - `boredom`: {B, similarity, unsurprise, failure, regime:"EXPLOIT"|"BOREDOM_SNAP", action}.
   The meter is private; the action is REFINE, SNAP or RUN_STUDY, selected by the arm's policy.
   Under random/never policies the logged B-derived regime need not describe the chosen action.
+  A daughter lab's event instead carries {B, repetition, stall, unsurprise, known, engagement,
+  frustration, similarity, failure, threshold_shift, trigger, regime, action}; `trigger` is
+  null or one of stuck, stall, no_data, cooldown, satisfied.
 - `snap`: {partner: str|null, source:{title,url,snippet}}. Logged for every agent selected
   to explore, including random-policy snaps; partner is null when no partner is available.
-- `talk`: {partner, turn, text}, one turn of a conversation (three turns by default).
+- `talk`: {partner, turn, text, overlap?}, one turn of a conversation: a chance meeting between two
+  agents (`talk_turns` turns, three by default), or the mothers' round-0 meeting (agent =
+  mother, partner = the other mothers). The first turn of a meeting carries `overlap`
+  {idea_similarity?, datasets?:[title]} when the two daughters were told that their current ideas
+  are near-identical or that they use the same dataset.
 - `share`: {receiver, offered:[item_id], kept:[item_id]}, bounded by max_share_items
   (default three) in each conversation direction when exchange is enabled.
 - `measurement_request`: {requester, instrument, args, n, budget_left} when successful.
@@ -44,6 +51,28 @@ not enforce payload shapes; the fields below describe the producer's current wri
   Novelty sources contain title, url and similarity. Logged tokens/latency combine
   study-code and abstract chat calls, not sandbox runtime.
 - `lesson`: {text}, the rewritten private lesson note after each round.
+- `spawn` {daughter, field, reason, field_B?, instruments:[name]} a mother (agent = mother name) started a daughter lab: `reason` is `founded` (round 0, after the mothers' meeting) or `bored` (its daughters' mean boredom reached `spawn_threshold`; `field_B` is that mean)
+- `research` {tool, ...} one research step a daughter lab chose for itself. `tool` is `exa` / `openalex` / `arxiv` / `pubmed` {query, results:[{id (S id), title, url}]}, `read` {source, url, question, notes}, `datasets` {query, results:[{lead (D id), title, url, license, columns}]} or `load` {dataset:{name, id, title, url, license, rows, sha256, columns}}. A step that failed has `error` instead. Every S id is a record in the run's `research_log.jsonl` (autoresearch `research.py` format).
+- `experiment_request` {id, idea_id, title, question, protocol, materials, design:"two_group"|"corr", measure,
+  compare, n, refuted_if, prediction} an experiment a daughter lab says her idea needs because no public
+  dataset can answer it. `line` is the id of the proposal that idea descends from. It is a proposal, not a finding.
+- `experiment_result` {request_id, provenance, ...} what the bench (`bench.py`) did with a request. The bench
+  only takes a request once its idea has survived `lab_after_rounds` rounds: the daughter is still on that line.
+  `provenance: "simulated"` {supported: false, ok, detected, stats, n, needed_n, traceable, code, stderr}: a
+  rehearsal of her analysis on placeholder measurements drawn from her own prediction; never evidence.
+  `provenance: "returned"` {performed_by, performed_at, apparatus, notes, dataset:{name, id, title, url,
+  license, rows, sha256, columns}}: real measurements somebody performed and returned, now a dataset of
+  hers; or {error} if the return was not accepted.
+
+For daughter labs, `study_result` also has `evidence` {datasets:[{name, id, title, url, license,
+rows, sha256}], citations:[{id, title, url}], read:[name], traceable, trace:{array:{column, share}},
+finding:[{dataset, column, sketch}], supported}. `read` lists the loaded datasets the code opened, `traceable` is the share of all
+reported values found as cells of those datasets, and `trace` gives each reported array's best
+column and share. `supported` means the result replicated, the code opened a loaded dataset, and
+every reported array has more than `traceable_share` of its values in one column of it.
+`finding` has one entry per traced array: the sha256 of the dataset file, the column, and a sketch
+of the reported values (`lab.sketch`), which `score.py` uses to give a finding to the first
+supported study that reported it (`preceded_by` on later rows of `scores.jsonl`).
 
 Successful search-backed seed, snap and study_result.novelty records carry source URLs.
 Mock results use example.org URLs. Budget or service failures can stop an action before

@@ -195,6 +195,7 @@ def _fake_modal(monkeypatch, timeout=False, returncode=0):
         pass
 
     image = types.SimpleNamespace(add_local_dir=lambda *a, **k: "image")
+    image.pip_install = lambda *a, **k: image
     modal = types.SimpleNamespace(
         App=types.SimpleNamespace(lookup=lambda *a, **k: "app"),
         Image=types.SimpleNamespace(debian_slim=lambda **k: image),
@@ -227,3 +228,10 @@ def test_sandbox_choice(monkeypatch):
     monkeypatch.setenv("IGNOBEL_SANDBOX", "host")
     with pytest.raises(lab.SandboxUnavailable):
         lab._sandbox()
+
+
+def test_a_hand_printed_malformed_result_is_a_failed_study():
+    assert lab._parse('@@RESULT [1, 2]')[0] is None
+    assert lab._parse('@@RESULT {"kind": "corr", "x": [1, 2], "y": "abc"}')[0] is None
+    assert lab._parse('@@RESULT {"kind": "two_group", "group_a": [1, "2"], "group_b": [3]}')[0] is None
+    assert lab._parse('@@RESULT {"kind": "corr", "x": [1, 2.5], "y": [3, 4]}')[0]["x"] == [1, 2.5]

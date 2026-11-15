@@ -3,7 +3,9 @@
 Print one JSON object mapping question_id -> numeric answer. Questions are in
 questions.json; raw data is in data/. Unanswered questions score as wrong.
 """
+
 import json
+
 import pandas as pd
 
 answers = {}

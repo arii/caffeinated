@@ -117,3 +117,10 @@ def test_openai_keys_take_turns_and_dead_keys_are_dropped(monkeypatch):
         used = list(pool.map(lambda _: llm._openai_call(call), range(40)))
     assert set(used) == {"k1", "k3"}
     assert [c.api_key for c in llm._clients] == ["k1", "k3"]
+
+
+def test_reply_with_unquoted_keys_is_parsed():
+    raw = '{code: "d = {k: 1}\\nprint(\\"a, b: c\\")", requests: []}'
+    assert llm.parse_reply(raw) == {"code": 'd = {k: 1}\nprint("a, b: c")', "requests": []}
+    assert llm.parse_reply('{"text": "fine"}') == {"text": "fine"}
+    assert llm.parse_reply("not json")["_parse_error"]
