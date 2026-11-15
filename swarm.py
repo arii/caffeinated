@@ -396,6 +396,7 @@ def append_assignment(
     memory_log,
     arm,
     round_num,
+    provenance=None,
 ):
     record = {
         "type": "assignment",
@@ -410,6 +411,7 @@ def append_assignment(
         "rationale": assignment["rationale"],
         "ledger_sha256": assignment["ledger_sha256"],
         "profile_sha256": assignment["profile_sha256"],
+        "provenance": provenance or {},
     }
     append_jsonl(Path(out_dir) / "assignments.jsonl", record)
     write_memory_item(
@@ -1461,7 +1463,55 @@ def configure_task(args):
     return ROOT / "prompts"
 
 
-def orchestrate(args):
+def redact_command(argv):
+    redacted = []
+    redact_next = False
+    secret_value = re.compile(
+        r"(?i)(sk-[a-z0-9_-]{12,}|gh[pousr]_[a-z0-9]{20,}|xox[baprs]-[a-z0-9-]+|"
+        r"[a-z0-9_-]*(?:key|token|secret|password|credential|auth)[a-z0-9_-]*=\S+)"
+    )
+    for arg in argv:
+        if redact_next:
+            redacted.append("[REDACTED]")
+            redact_next = False
+            continue
+        if secret_value.search(arg):
+            redacted.append("[REDACTED]")
+        elif arg.startswith("-") and re.search(
+            r"key|token|secret|password|credential|auth", arg, re.I
+        ):
+            redacted.append(arg)
+            redact_next = True
+        else:
+            redacted.append(arg)
+    return redacted
+
+
+def _write_run_artifact(out_dir, data):
+    path = Path(out_dir) / "run.json"
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
+    if not dest:
+        return
+    out_dir = Path(out_dir)
+    try:
+        import export_viewer
+
+        export_viewer.publish(out_dir, dest, final=final, status=status)
+    except Exception as error:
+        try:
+            append_jsonl(out_dir / "viewer_publish_log.jsonl", {
+                "ts": timestamp(), "status": status, "final": final,
+                "error": type(error).__name__, "message": str(error),
+            })
+        except Exception as log_error:
+            print(f"viewer publish log failed: {type(log_error).__name__}", file=sys.stderr)
+        print(f"viewer publish failed: {type(error).__name__}: {error}", file=sys.stderr)
+
+
+def _orchestrate(args, publish_state):
     if args.rounds < 1 or args.rounds > 10:
         raise ValueError("--rounds must be between 1 and 10")
     prompt_dir = configure_task(args)
@@ -1488,6 +1538,26 @@ def orchestrate(args):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "runs").mkdir(parents=True, exist_ok=True)
     (out_dir / "exa_cache").mkdir(parents=True, exist_ok=True)
+    viewer_dest = None if args.no_viewer else (
+        Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer"
+    )
+    publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
+    run_id_path = out_dir / "run_id"
+    if not run_id_path.exists():
+        run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
+    run_id = run_id_path.read_text(encoding="utf-8").strip()
+    if not run_id:
+        raise ValueError("swarm run_id must not be empty")
+    provenance = {"swarm_commit": start_commit, "command": redact_command(sys.argv)}
+    profile_artifact = {key: value for key, value in profile.items() if not key.startswith("_")}
+    (out_dir / "boredom_profile.json").write_text(
+        json.dumps(profile_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    _write_run_artifact(out_dir, {
+        "run_id": run_id, "task": args.task, "arm": args.arm, "status": "running",
+        "profile_path": "boredom_profile.json", "profile_sha256": profile["_hash"],
+        **provenance,
+    })
     ledger_path = out_dir / "ledger.jsonl"
     results_path = out_dir / "results.tsv"
     critic_path = out_dir / "critic.tsv"
@@ -1517,12 +1587,6 @@ def orchestrate(args):
     baseline_commit, baseline_val = start_commit[:7], baseline["loss"]
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
-    run_id_path = out_dir / "run_id"
-    if not run_id_path.exists():
-        run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
-    run_id = run_id_path.read_text(encoding="utf-8").strip()
-    if not run_id:
-        raise ValueError("swarm run_id must not be empty")
     with arm_environment(args.arm, exa_enabled, memory_backend, run_id=run_id):
         if not meter.read_ledger(ledger_path):
             meter.submit(
@@ -1571,6 +1635,7 @@ def orchestrate(args):
                 memory_log=memory_log,
                 arm=args.arm,
                 round_num=round_num,
+                provenance=provenance,
             )
             status["per_agent_B"] = allocation["per_agent_B"]
             leads = run_scouts(
@@ -1874,6 +1939,7 @@ def orchestrate(args):
                 if event.get("kind") == "candidate" and event.get("round", 0) > 0
             )
             write_round_summary(events, candidates_done)
+            publish_viewer_state(out_dir, viewer_dest, final=False, status="running")
             if latest_candidate is not None and accepted:
                 print(
                     f"round {round_num}: accepted {latest_candidate['commit']} "
@@ -1890,6 +1956,30 @@ def orchestrate(args):
         "best_loss": best_val,
         "no_push": effective_no_push,
     }
+
+
+def orchestrate(args):
+    publish_state = {}
+    terminal_status = "finished"
+    try:
+        return _orchestrate(args, publish_state)
+    except BaseException:
+        terminal_status = "stopped"
+        raise
+    finally:
+        out_dir = publish_state.get("out_dir")
+        if out_dir:
+            run_path = Path(out_dir) / "run.json"
+            if run_path.exists():
+                try:
+                    run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
+                    run_artifact["status"] = terminal_status
+                    _write_run_artifact(out_dir, run_artifact)
+                except Exception as error:
+                    print(f"viewer run status update failed: {error}", file=sys.stderr)
+            publish_viewer_state(
+                out_dir, publish_state.get("dest"), final=True, status=terminal_status
+            )
 
 
 def build_parser():
@@ -1912,6 +2002,8 @@ def build_parser():
     parser.add_argument("--exa", choices=("on", "off"), default="on")
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
+    parser.add_argument("--viewer-dest", help="directory for live viewer exports (default: <out>/viewer)")
+    parser.add_argument("--no-viewer", action="store_true")
     return parser
 
 

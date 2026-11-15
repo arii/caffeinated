@@ -5,11 +5,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import csv
 import unittest
 from unittest.mock import patch
 
 import llm
 import swarm
+import export_viewer
 from boredom import descriptor_meter as meter
 
 
@@ -178,12 +180,121 @@ class SandboxedSwarmTests(unittest.TestCase):
         ]
         return ledger, out
 
+    def publish_round_snapshots(self, out, parent):
+        def rows(path):
+            if not path.exists():
+                return []
+            return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+        statuses = [row for row in rows(out / "boredom_log.jsonl") if row.get("type") == "status"]
+        self.assertGreaterEqual(len(statuses), 3)
+        destination = parent / "incremental"
+        snapshots = []
+        for round_num in range(1, 4):
+            prefix = parent / f"prefix-{round_num}" / out.name
+            prefix.parent.mkdir(parents=True)
+            shutil.copytree(out, prefix)
+            end_ts = statuses[round_num - 1]["ts"]
+            for name in (
+                "assignments.jsonl", "ledger.jsonl", "boredom_log.jsonl",
+                "research_log.jsonl", "memory.jsonl", "memory_log.jsonl", "llm_log.jsonl",
+            ):
+                path = prefix / name
+                if not path.exists():
+                    continue
+                filtered = []
+                for record in rows(path):
+                    round_value = record.get("round")
+                    if name == "memory.jsonl":
+                        round_value = (record.get("metadata") or {}).get("round")
+                    if isinstance(round_value, int):
+                        keep = round_value <= round_num
+                    else:
+                        stamp = record.get("ts") or record.get("timestamp")
+                        keep = stamp is None or stamp <= end_ts
+                    filtered.append(record) if keep else None
+                path.write_text(
+                    "".join(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n"
+                            for record in filtered),
+                    encoding="utf-8",
+                )
+            for name in ("critic.tsv", "results.tsv"):
+                path = prefix / name
+                if path.exists():
+                    with path.open(encoding="utf-8", newline="") as stream:
+                        reader = csv.DictReader(stream, delimiter="\t")
+                        fields, filtered = reader.fieldnames, [
+                            row for row in reader if int(row.get("round") or 0) <= round_num
+                        ]
+                    with path.open("w", encoding="utf-8", newline="") as stream:
+                        writer = csv.DictWriter(stream, fieldnames=fields, delimiter="\t")
+                        writer.writeheader()
+                        writer.writerows(filtered)
+            run_artifact = json.loads((prefix / "run.json").read_text())
+            run_artifact["status"] = "running"
+            (prefix / "run.json").write_text(json.dumps(run_artifact), encoding="utf-8")
+            run_dir = export_viewer.publish(
+                prefix, destination, final=round_num == 3,
+                status="finished" if round_num == 3 else "running",
+            )
+            snapshot = parent / f"snapshot-{round_num}"
+            shutil.copytree(run_dir, snapshot)
+            snapshots.append(snapshot)
+        fresh_root = parent / "one-shot"
+        fresh_run = export_viewer.export(out, fresh_root)
+        self.assertEqual(
+            {p.relative_to(snapshots[-1]).as_posix(): p.read_bytes()
+             for p in snapshots[-1].rglob("*") if p.is_file()},
+            {p.relative_to(fresh_run).as_posix(): p.read_bytes()
+             for p in fresh_run.rglob("*") if p.is_file()},
+        )
+        return snapshots
+
     def test_fake_three_round_ledgers_match_with_real_docker_evaluator(self):
         with tempfile.TemporaryDirectory() as tmp:
-            first, _ = self.run_three_rounds(Path(tmp), "out-one")
+            first, first_out = self.run_three_rounds(Path(tmp), "out-one")
+            snapshots = self.publish_round_snapshots(first_out, Path(tmp))
             second, _ = self.run_three_rounds(Path(tmp), "out-two")
+            event_files = [(path / "events.ndjson").read_bytes() for path in snapshots]
+            for previous, current in zip(event_files, event_files[1:]):
+                self.assertTrue(current.startswith(previous))
+            manifests = [json.loads((path / "manifest.json").read_text()) for path in snapshots]
+            self.assertEqual([manifest["status"] for manifest in manifests],
+                             ["running", "running", "finished"])
+            event_rows = [
+                [json.loads(line) for line in data.decode().splitlines()]
+                for data in event_files
+            ]
+            self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[0]))
+            self.assertFalse(any(event["type"] == "run.finished" for event in event_rows[1]))
+            self.assertTrue(any(event["type"] == "run.finished" for event in event_rows[2]))
+            frames = [{path.name: path.read_bytes()
+                       for path in (snapshot / "keyframes").glob("*.json")}
+                      for snapshot in snapshots]
+            for previous, current in zip(frames, frames[1:]):
+                for name, data in previous.items():
+                    self.assertEqual(current[name], data)
         self.assertEqual(self.without_commits(first), self.without_commits(second))
         self.assertEqual(sum(row.get("kind") == "candidate" for row in first), 12)
+
+    def test_viewer_publish_failure_does_not_stop_swarm(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = self.create_repo(tmp, "publish-failure")
+            out = Path(tmp) / "out"
+            args = swarm.build_parser().parse_args([
+                "--task", "hadamard19", "--rounds", "1", "--llm", "fake",
+                "--no-push", "--out", str(out), "--repo", str(repo),
+            ])
+            env = {"EXA": "off", "MEMORY_BACKEND": "local"}
+            with patch.dict(os.environ, env), patch(
+                "export_viewer.publish", side_effect=RuntimeError("test publish failure")
+            ):
+                result = swarm.orchestrate(args)
+            self.assertEqual(result["arm"], "B")
+            entries = [json.loads(line) for line in (out / "viewer_publish_log.jsonl").read_text().splitlines()]
+            self.assertGreaterEqual(len(entries), 2)
+            ledger = [json.loads(line) for line in (out / "ledger.jsonl").read_text().splitlines()]
+            self.assertEqual(sum(row.get("kind") == "candidate" for row in ledger), 4)
 
 
 if __name__ == "__main__":

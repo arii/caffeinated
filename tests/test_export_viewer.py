@@ -6,6 +6,8 @@ from pathlib import Path
 
 import export_viewer
 
+PROFILE_PATH = Path(__file__).resolve().parents[1] / "testcases/hadamard19/boredom_profile.json"
+
 
 def write_jsonl(path, rows):
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
@@ -15,13 +17,22 @@ def autoresearch_run(root):
     out = root / "run-a"
     out.mkdir()
     (out / "run_id").write_text("abc123\n")
+    profile = export_viewer.meter.load_profile(PROFILE_PATH)
+    profile_data = {key: value for key, value in profile.items() if not key.startswith("_")}
+    (out / "boredom_profile.json").write_text(json.dumps(profile_data), encoding="utf-8")
+    (out / "run.json").write_text(json.dumps({
+        "profile_path": "boredom_profile.json",
+        "profile_sha256": profile["_hash"],
+        "status": "finished",
+    }), encoding="utf-8")
     write_jsonl(out / "assignments.jsonl", [
         {"type": "assignment", "ts": "2026-11-14T10:00:00Z", "round": 1, "swarm_B": 0.1, "regime": "EXPLOIT",
          "per_agent_B": {"worker-1": 0.2, "worker-2": 0.3},
-         "per_agent_boredom": {"worker-1": {"B": 0.2, "regime": "EXPLOIT", "novelty": 0.5}},
+         "profile_sha256": profile["_hash"],
          "roles": {"worker-1": "exploit", "worker-2": "divergent"}, "scouts": ["worker-2"], "rationale": "r1"},
         {"type": "assignment", "ts": "2026-11-14T10:10:00Z", "round": 2, "swarm_B": 0.8, "regime": "BOREDOM_SNAP",
          "per_agent_B": {"worker-1": 0.7, "worker-2": 0.9},
+         "profile_sha256": profile["_hash"],
          "roles": {"worker-1": "divergent", "worker-2": "divergent"}, "scouts": ["worker-1"], "rationale": "r2"},
     ])
     write_jsonl(out / "research_log.jsonl", [
@@ -52,9 +63,11 @@ def autoresearch_run(root):
         {"type": "status", "ts": "2026-11-14T10:05:00Z", "B": 0.8, "regime": "BOREDOM_SNAP", "frontier_stall": 2},
     ])
     write_jsonl(out / "ledger.jsonl", [
-        {"seq": 1, "round": 0, "kind": "baseline", "agent": "baseline", "status": "keep", "score": 1.0},
+        {"seq": 1, "round": 0, "kind": "baseline", "agent": "baseline", "status": "keep", "score": 1.0,
+         "descriptor": {"mechanism": "search", "method": "pair_flip"}},
         {"seq": 2, "round": 1, "kind": "candidate", "agent": "worker-1", "status": "keep", "score": 0.5,
-         "commit": "c1", "description": "tabu", "sources": ["S1"]},
+         "commit": "c1", "description": "tabu", "sources": ["S1"],
+         "descriptor": {"mechanism": "search", "method": "tabu"}},
         {"seq": 3, "round": 1, "kind": "critic", "agent": "critic", "status": "keep", "commit": "c1",
          "verdict": "confirmed", "accepted": True},
     ])
@@ -78,6 +91,14 @@ class ExportViewerTests(unittest.TestCase):
             run_dir, events, manifest, timeline, entities = self.export(out, root / "dest")
 
             self.assertEqual(manifest["schema"], "swarm-viewer/v1")
+            expected_profile = export_viewer.meter.load_profile(PROFILE_PATH)
+            self.assertEqual(
+                manifest["boredom"]["thresholds"]["eps"], expected_profile["eps"]
+            )
+            self.assertEqual(
+                manifest["boredom"]["thresholds"]["accept_margin"],
+                expected_profile.get("accept_margin", 0.0),
+            )
             uuid.UUID(manifest["run_id"])
             workers = {a["native_id"]: a for a in manifest["agents"]}
             self.assertEqual(workers["worker-1"]["agent_id"],
@@ -113,7 +134,11 @@ class ExportViewerTests(unittest.TestCase):
             final = json.loads((run_dir / "keyframes" / f"{timeline['keyframes'][-1]}.json").read_text())
             agent = next(a for a in final["agents"] if a["agent_id"] == workers["worker-1"]["agent_id"])
             self.assertEqual(agent["role"], "divergent")
-            self.assertEqual(agent["boredom"]["B"], 0.7)
+            profile = export_viewer.meter.load_profile(PROFILE_PATH)
+            expected_b = export_viewer.meter.status(
+                profile, export_viewer.meter.read_ledger(out / "ledger.jsonl"), agent="worker-1"
+            )["B"]
+            self.assertEqual(agent["boredom"]["B"], expected_b)
             self.assertEqual(agent["last_reward"]["value"], 50.0)
             self.assertEqual(final["swarm"]["best"]["metric_value"], 0.5)
 
@@ -172,6 +197,49 @@ class ExportViewerTests(unittest.TestCase):
                                                                if a["native_id"] == "volkov"))
             index = json.loads((root / "dest" / "index.json").read_text())
             self.assertEqual(index["runs"][0]["run_id"], manifest["run_id"])
+
+    def test_profile_sha_mismatch_fails_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            run_artifact = json.loads((out / "run.json").read_text())
+            run_artifact["profile_sha256"] = "0" * 64
+            (out / "run.json").write_text(json.dumps(run_artifact), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "profile"):
+                export_viewer.export(out, root / "dest")
+
+    def test_logged_per_agent_boredom_must_match_recomputation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            assignments = [
+                json.loads(line) for line in (out / "assignments.jsonl").read_text().splitlines()
+            ]
+            assignments[0]["per_agent_boredom"] = {"worker-1": {"B": 0.99}}
+            write_jsonl(out / "assignments.jsonl", assignments)
+            with self.assertRaisesRegex(ValueError, "per_agent_boredom mismatch"):
+                export_viewer.export(out, root / "dest")
+
+    def test_publish_conflict_leaves_all_published_files_untouched(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            dest = root / "dest"
+            run_dir = export_viewer.publish(out, dest, final=False, status="running")
+            events = run_dir / "events.ndjson"
+            data = events.read_bytes()
+            events.write_bytes(b"tampered" + data[8:])
+            before = {
+                path.relative_to(dest): path.read_bytes()
+                for path in dest.rglob("*") if path.is_file()
+            }
+            with self.assertRaises(export_viewer.PublishConflict):
+                export_viewer.publish(out, dest, final=False, status="running")
+            after = {
+                path.relative_to(dest): path.read_bytes()
+                for path in dest.rglob("*") if path.is_file()
+            }
+            self.assertEqual(after, before)
 
 
 if __name__ == "__main__":
