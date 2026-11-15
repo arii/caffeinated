@@ -62,7 +62,8 @@ def build_recording(native_manifest, native_events, entities, sample=True):
     manifest['sample']=sample
     llm=provenance.get('llm','unknown')
     try:
-        command=shlex.split(provenance.get('command',''))
+        command=provenance.get('command',[])
+        if isinstance(command,str):command=shlex.split(command)
         provider=next((part.split('=',1)[1] if '=' in part else command[i+1] for i,part in enumerate(command) if part=='--llm' or part.startswith('--llm=')),None)
         if provider:llm=provider
     except (ValueError,IndexError):pass

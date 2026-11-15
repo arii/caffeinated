@@ -112,7 +112,7 @@ class DirectoryReplayTests(unittest.TestCase):
             self.assertEqual(client.get('/api/recordings').json(), [])
             path = self.run_dir('.swarm_worktrees/B/conductor/experiments/swarm_B/viewer/run-1')
             manifest = json.loads((path / 'manifest.json').read_text())
-            manifest['provenance'] = {'llm': 'a-model', 'command': 'swarm.py --llm tinker'}
+            manifest['provenance'] = {'llm': 'a-model', 'command': ['swarm.py', '--llm', 'tinker']}
             (path / 'manifest.json').write_text(json.dumps(manifest))
             rows = client.get('/api/recordings').json()
             self.assertEqual([m['id'] for m in rows], ['run-1'])
