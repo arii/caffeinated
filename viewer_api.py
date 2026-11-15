@@ -20,7 +20,7 @@ import export_viewer
 COLLECTIONS = ("questions", "observations", "hypotheses", "experiments", "rewards", "diary", "memory",
                "llm_calls")
 KINDS = {kind.rstrip("s"): kind for kind in COLLECTIONS + ("sources", "discoveries")}
-KINDS.update(diary="diary", discovery="discoveries", memory="memory", entry="diary")
+KINDS.update(diary="diary", discovery="discoveries", hypothesis="hypotheses", memory="memory", entry="diary")
 TIMELINE_FIELDS = ("prompt", "response", "reasoning")
 HEARTBEAT_SECONDS = 15
 POLL_SECONDS = 1.0
