@@ -1,9 +1,11 @@
 import copy
+import io
 import json
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from testcases.ignobel import igjudge
 
@@ -94,6 +96,8 @@ class IgJudgeTests(unittest.TestCase):
             result = igjudge.judge_idea(idea, "model", "prompt", tmp, complete, prior)
             self.assertIsNone(result["error"])
             self.assertEqual(complete.call_count, 2)
+            prior.assert_called_with("Idea", task_dir=tmp)
+            self.assertEqual(len(list(Path(tmp).glob("*.json"))), 1)
             self.assertEqual(
                 result["prior_work"], [{"title": "Paper", "url": "https://example.org"}]
             )
@@ -149,21 +153,92 @@ class IgJudgeTests(unittest.TestCase):
             self.assertEqual(len(ideas), 1)
             self.assertEqual(ideas[0]["gate"], "passed")
 
-    def test_missing_key_and_non_tinker_fail_loudly(self):
+    def test_missing_openai_key_fails_loudly(self):
         with (
             patch.dict("os.environ", {}, clear=True),
-            self.assertRaisesRegex(RuntimeError, "TINKER_API_KEY"),
+            self.assertRaisesRegex(RuntimeError, "OPENAI_API_KEY"),
         ):
-            igjudge.require_tinker()
+            igjudge.require_openai()
         with (
-            patch.dict(
-                "os.environ",
-                {"TINKER_API_KEY": "fake", "TINKER_BASE_URL": "https://example.org"},
-                clear=True,
-            ),
-            self.assertRaisesRegex(RuntimeError, "Tinker-only"),
+            patch.dict("os.environ", {"OPENAI_API_KEY": " "}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "OPENAI_API_KEY"),
         ):
-            igjudge.require_tinker()
+            igjudge.complete_openai("model", "system", "user")
+
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=True)
+    def test_openai_request(self):
+        response = MagicMock()
+        response.__enter__.return_value = response
+        message = {"content": json.dumps(verdict())}
+        response.read.return_value = json.dumps({"choices": [{"message": message}]}).encode()
+        with patch.object(igjudge.urllib.request, "urlopen", return_value=response) as urlopen:
+            self.assertEqual(igjudge.complete_openai("gpt-5.5", "prompt", "idea"), message)
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.openai.com/v1/chat/completions")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
+        self.assertEqual(request.get_header("User-agent"), "caffeinated-igjudge")
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], 300)
+        self.assertEqual(
+            json.loads(request.data),
+            {
+                "model": "gpt-5.5",
+                "messages": [
+                    {"role": "system", "content": "prompt"},
+                    {"role": "user", "content": "idea"},
+                ],
+                "response_format": {"type": "json_object"},
+            },
+        )
+
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=True)
+    def test_openai_http_retry_once(self):
+        for status, calls in ((429, 2), (500, 2), (503, 2), (401, 1), (400, 1)):
+            with self.subTest(status=status):
+                errors = [
+                    urllib.error.HTTPError(
+                        "https://api.openai.com", status, "error", {}, io.BytesIO(b"failure")
+                    )
+                    for _ in range(2)
+                ]
+                with (
+                    patch.object(igjudge.urllib.request, "urlopen", side_effect=errors) as urlopen,
+                    patch.object(igjudge.time, "sleep") as sleep,
+                    self.assertRaisesRegex(RuntimeError, f"HTTP {status}: failure"),
+                ):
+                    igjudge.complete_openai("model", "prompt", "idea")
+                self.assertEqual(urlopen.call_count, calls)
+                self.assertEqual(sleep.call_count, calls - 1)
+
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=True)
+    def test_openai_network_error(self):
+        with (
+            patch.object(
+                igjudge.urllib.request, "urlopen", side_effect=urllib.error.URLError("offline")
+            ),
+            self.assertRaisesRegex(RuntimeError, "OpenAI endpoint request failed: offline"),
+        ):
+            igjudge.complete_openai("model", "prompt", "idea")
+
+    def test_cli_uses_openai_default_and_repo_cache(self):
+        self.assertEqual(igjudge.CACHE_DIR, Path(__file__).resolve().parents[1] / ".cache/igjudge")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "artifact.json"
+            with (
+                patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=True),
+                patch.object(
+                    igjudge, "load_ideas", return_value=("run", [{"study_id": "study:1"}])
+                ),
+                patch.object(
+                    igjudge,
+                    "judge_idea",
+                    return_value={"study_id": "study:1", "total": 70, "error": None},
+                ) as judge,
+            ):
+                self.assertEqual(igjudge.main([tmp, "--out", str(output), "--limit", "1"]), 0)
+                self.assertEqual(judge.call_args.args[1], "gpt-5.5")
+                self.assertEqual(len(judge.call_args.args), 3)
+                self.assertFalse((Path(tmp) / ".cache").exists())
 
 
 if __name__ == "__main__":

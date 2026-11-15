@@ -44,3 +44,4 @@ runs/
 
 
 /experiments/openai-demo*/
+/.cache/igjudge/
