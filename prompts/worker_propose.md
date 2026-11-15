@@ -16,7 +16,7 @@ Current task editable file (best commit {best_commit}):
 {candidate_source}
 ```
 Propose exactly one task-specific change. Do not repeat an idea memory shows already failed unless the variant is materially distinct. If you have a search direction, prefer a change in that cell.
-source_ids: cite only the ids of search results or lead sources that actually informed this change; leave it empty otherwise. If you use a lead, set lead_id and copy its source ids.
+Cite the sources that informed this change; include source IDs whenever the hard rules require them. If you use a lead, set lead_id and include its source IDs.
 Mechanism vocabulary (descriptor must use it; params.value = the new numeric value if you change one knob, else omit params): {vocab}
 If no listed kind of change fits, use mechanism "other" with method = a short lowercase snake_case slug (e.g. other/bootstrap_ci); it is logged as a vocabulary extension.
 JSON: {"descriptor": {"mechanism": str, "method": str, "params": {"value": float}}, "idea": str (one line), "rationale": str, "lead_id": str|null, "source_ids": [str], "predicted_delta": float, "edits": [{"old": str (exact unique substring of the editable file), "new": str}]}

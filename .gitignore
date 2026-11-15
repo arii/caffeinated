@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 dist/
 .DS_Store
 
@@ -41,3 +41,6 @@ runs/
 # Local run database, workspaces, and service environments
 .lab_data/
 .venv*/
+
+
+/experiments/openai-demo*/

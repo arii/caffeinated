@@ -18,6 +18,7 @@ export interface IntroConfig{
  sections:{about:string;event:string;tools:string;authors:string;boredom:string;trail:string};
  labels:{source:string;missingExa:string;recording:string;searches:string;sources:string;recalls:string;pastdev:string;localMemory:string;noCitations:string};
  results:{
+  citations?:{runId:string;studyId:string;category:string;text:string;note:string}[];
   proxyNote:string;noProxy:string;studyCount:string;passedCount:string;awardCount:string;awardFallback:string;creditErrorSuffix:string;noAwards:string;factualLine:string;noCommitteeSuffix:string;countLine:string;track3Line:string;memoryComparisonUrl:string;track3Url:string;bixbenchUrl:string;
   charts:{
    toolsCaption:string;sourceCaption:string;funnelCaption:string;
@@ -151,6 +152,13 @@ function memorySvg(c:IntroConfig,esc:(v:unknown)=>string){
  return `<svg class="chart-svg" viewBox="0 0 380 158" role="img" aria-label="Past.dev and local memory retrieval comparison">${hitRows}<line x1="4" y1="100" x2="365" y2="100" class="chart-divider"/><text x="4" y="119" class="chart-label">Median latency</text>${latencyRows}</svg>`;
 }
 
+function resultCitationHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
+ const finalist=researchFinalists(r)[0];
+ const citation=c.results.citations?.find(item=>item.runId===r.manifest.id&&item.studyId===finalist?.id);
+ if(!citation||!finalist)return '';
+ return `<section class="result-citation" aria-label="Research result in one sentence"><div class="eyebrow">${esc(citation.category)} · Research citation</div><p class="result-citation-line">${esc(citation.text)}</p><p class="chart-caption">${esc(finalist.dataset)} · ρ ${finalist.rho.toFixed(3)}. ${esc(citation.note)}</p></section>`;
+}
+
 export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string,summary=researchResults(r)){
  const charts=c.results.charts,tools=researchToolUsage(r),finalistSection=committeeResultsHtml(r,esc)||finalistHtml(c,r,esc),funnel=`<section class="result-chart"><h2>Ig Nobel test funnel</h2>${funnelSvg(summary,esc)}<p class="chart-caption">${esc(charts.funnelCaption)}</p></section>`;
  const bixbench=`<section class="result-chart"><h2>BixBench held-out</h2>${bixbenchSvg(c,esc)}<p class="chart-caption">${esc(charts.bixbench.caption)}</p></section>`;
@@ -159,5 +167,5 @@ export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown
  const counts=charts.funnelCaption?c.results.factualLine.replace('{N}',String(summary.registered)).replace('{R}',String(summary.ran)).replace('{C}',String(summary.confirmed)).replace('{K}',String(summary.underCurrentRules)).replace('{committeeSuffix}',summary.preCommittee?c.results.noCommitteeSuffix:''):'';
  const metric=r.manifest.metric?.description||summary.proxyNote||c.results.noProxy;
  const links=[externalLink(c.results.memoryComparisonUrl,'Memory comparison details',esc),externalLink(c.results.track3Url,'Track 3 results and caveats',esc),externalLink(c.results.bixbenchUrl,'BixBench held-out artifact',esc)];
- return `${toolUseHtml(c,tools,esc)}${finalistSection}${funnel}${bixbench}${track3}${memory}<details class="results-details"><summary>Details</summary><p>${esc(counts)}</p><p>${esc(c.results.track3Line)}</p><p class="metric-note"><strong>${esc(c.results.proxyNote)}:</strong> ${esc(metric)}</p><ul class="detail-links">${links.map(link=>`<li>${link}</li>`).join('')}</ul></details>`;
+ return `${resultCitationHtml(c,r,esc)}${toolUseHtml(c,tools,esc)}${finalistSection}${funnel}${bixbench}${track3}${memory}<details class="results-details"><summary>Details</summary><p>${esc(counts)}</p><p>${esc(c.results.track3Line)}</p><p class="metric-note"><strong>${esc(c.results.proxyNote)}:</strong> ${esc(metric)}</p><ul class="detail-links">${links.map(link=>`<li>${link}</li>`).join('')}</ul></details>`;
 }

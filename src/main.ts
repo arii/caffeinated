@@ -583,6 +583,7 @@ async function attachRecording(id:string,preserve=false){
   if(!preserve){playing=experienceStarted;announcedTick=target;}
   seek(target);if(preserve&&wasFollowing)announce();else if(!preserve)announcedTick=tick;renderControls();
   if(STATIC_SITE&&!preserve){staticRecordingReady=true;maybeStartStaticExperience();}
+  else if(!preserve)startExperience();
   const url=new URL(location.href);url.searchParams.set('recording',id);url.searchParams.delete('run');history.replaceState(null,'',url);
  }catch(e){
   $('connection').textContent='ARCHIVE UNAVAILABLE';toast((e as Error).message);

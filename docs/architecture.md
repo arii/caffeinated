@@ -161,6 +161,9 @@ For Exa it reports 119 calls, $0.761 total and 414 ms p50 latency. For past.dev
 it reports 157 recalls (577 ms p50) and 123 writes (340 ms p50); the API did not
 report a price, so cost is `null`. The past.dev-versus-local-memory accuracy
 comparison has not been run yet; it is blocked on Tinker credit.
+The JSON cost report also groups input, cached, output and reasoning tokens by
+role, round and agent, links waste totals to `llm_outcomes.jsonl`, and counts
+Exa searches plus past.dev recalls and writes; `--json` emits the machine report.
 
 ## Domains
 
