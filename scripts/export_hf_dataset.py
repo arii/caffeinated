@@ -191,6 +191,15 @@ Run artifacts behind the results of [arii/caffeinated](https://github.com/arii/c
 Jialin Feng, Neeraj Shah, Masha Baidachna). Exported from commit `{commit}` with
 `scripts/export_hf_dataset.py`.
 
+Our hypothesis is that existing AI scientist swarms get stuck because they are bored—trapped in
+repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a
+deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and
+overload to detect when the swarm is bored and trigger a seeking state—forcing a jump from
+routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on
+an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share
+memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and
+final IgJudge.
+
 All runs are real Kimi K3.1 Pro (Tinker) swarm runs; IgJudge scores come from gpt-5.5. No
 fake-LLM runs are included. Results are exploratory: see `docs/results.md` and
 `experiments/confirmatory/RESULTS.md` in the repository for caveats, deviations from the

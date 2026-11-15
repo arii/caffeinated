@@ -1,6 +1,8 @@
 # Reproducing the results
 
-Every number in [docs/results.md](docs/results.md) and
+Caffeinated tests whether a deterministic, psychology-grounded boredom meter keeps AI scientist
+swarms out of repetitive, low-payoff loops (see the [README](README.md#team)). Every number in
+[docs/results.md](docs/results.md) and
 [experiments/confirmatory/RESULTS.md](experiments/confirmatory/RESULTS.md) comes from run
 artifacts committed under `experiments/` and `data/`. There are three levels of reproduction:
 
