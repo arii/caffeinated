@@ -492,7 +492,7 @@ def export_autoresearch(out_dir, arm=None, title=None):
         "boredom": {"scale": [0, 1], "thresholds": {}, "regimes":
                     ["EXPLOIT", "BOREDOM_SNAP", "PARADIGM_BREAKOUT", "CONVERGED"]},
         "provenance": {"llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
-                       "gpu": "none (CPU only)", "exa": "live" if research else "off",
+                       "gpu": "none (CPU only)", "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
                        "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
                        "command": "", "swarm_commit": "", "native_run_id": native_run},
         "baseline": baseline,
