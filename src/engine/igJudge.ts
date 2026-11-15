@@ -18,7 +18,7 @@ export function igJudgeBoard(raw:unknown):IgJudgeBoard|null{
   const id=text(i.study_id);
   return {studyId:id,title:text(i.title)||id,hypothesis:text(i.hypothesis),gate:text(i.gate),committee:text(i.committee),scores,total:num(i.total),classification:text(i.classification),verdict:text(i.verdict),safeguards:arr(i.safeguards).map(text).filter(Boolean),priorWork:arr(i.prior_work).map(row).map(p=>({title:text(p.title),url:text(p.url)})).filter(p=>p.url),error:text(i.error),rank:ranks.get(id)??null};
  });
- if(!criteria.length||!ideas.length)return null;
+ if(!ideas.length)return null;
  ideas.sort((a,b)=>(a.rank??Infinity)-(b.rank??Infinity)||a.studyId.localeCompare(b.studyId));
  const winnerId=text(data.winner);
  return {model:text(data.model),criteria,ideas,winner:ideas.find(i=>i.studyId===winnerId&&i.total!=null)??null};

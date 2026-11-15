@@ -37,6 +37,7 @@ import {finaleReached,finaleSummary,improvementText} from './engine/finale';
 import {podium} from './engine/podium';
 import {podiumMetricHtml} from './engine/podiumView';
 import {igJudgeHtml} from './engine/igJudge';
+import {recordingPodiumHtml} from './engine/finalPodium';
 import {compactMarks,lanes,roundX,turns} from './engine/orchestration';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const rawEsc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -279,12 +280,13 @@ function renderOrchestration(){
 }
 function renderResultsPanel(){
  if(!recording){$('results-content').innerHTML='<p>No results available.</p>';return;}
+ const finalJudgeHtml=finaleReached(recording,tick)?recordingPodiumHtml(recording,tick,esc)+igJudgeHtml(recording.igjudge,esc):'';
  if(isIgnobelRecording(recording.manifest,recording)){
   const summary=researchResults(recording);
   const committeeScores=researchCommitteeScores(recording,tick),realAward=committeeScores.some(item=>item.score>=.5&&!item.rejected&&item.award&&!/committee/i.test(item.award));
   if(isPreCommitteeIgnobel(recording.manifest,recording)||!realAward){
    $('results-title').textContent='What the swarm found';
-   $('results-content').innerHTML=igJudgeHtml((recording as {igjudge?:unknown}).igjudge,esc)+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary);
+   $('results-content').innerHTML=finalJudgeHtml+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary);
    return;
   }
  }
@@ -296,7 +298,7 @@ function renderResultsPanel(){
   $('results-title').textContent='What the swarm found';
   const entryBlock=board.status==='awaiting'&&entries?`<details class="unscored-studies"><summary>${board.confirmed} confirmed studies, unscored</summary><ul class="podium-list">${entries}</ul></details>`:entries?`<ul class="podium-list">${entries}</ul>`:'';
   const metricNote=podiumMetricHtml(recording,esc);
-  $('results-content').innerHTML=`${igJudgeHtml((recording as {igjudge?:unknown}).igjudge,esc)}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary)}${badgeHtml}<h2>Ig Nobel podium</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
+  $('results-content').innerHTML=`${finalJudgeHtml}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary)}${badgeHtml}<h2>In-run committee results</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
   return;
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}

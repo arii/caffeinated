@@ -56,3 +56,21 @@
 }
 .igjudge{margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid #ffffff2a}.igjudge-note{color:#b5c8b3}.igjudge-winner{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;margin:12px 0;background:#f0d38f1f;border:1px solid #f0d38f80;border-radius:10px}.igjudge-trophy{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#f0d38f;color:#1d323d;font-weight:800;font-size:15px}.igjudge-kicker{margin:0;color:#f0d38f;font-weight:700;font-size:12px!important}.igjudge-winner-title{margin:2px 0;font-weight:700;font-size:15px!important;color:#fff3d6;overflow-wrap:anywhere}.igjudge-verdict{margin:4px 0 0}.igjudge-scroll{max-width:100%;overflow-x:auto;border:1px solid #ffffff22;border-radius:8px;background:#17232c}.igjudge-table{border-collapse:collapse;width:100%;min-width:640px;font-size:12px}.igjudge-table th,.igjudge-table td{padding:6px 7px;border-bottom:1px solid #ffffff14;text-align:center;vertical-align:top}.igjudge-table thead th{color:#b5c8b3;font-weight:600;white-space:nowrap}.igjudge-table thead small{display:block;font-weight:400;opacity:.75}.igjudge-table tbody th{text-align:left;font-weight:500;min-width:190px;max-width:280px;overflow-wrap:anywhere}.igjudge-table tr.igjudge-win{background:#f0d38f26}.igjudge-table tr.igjudge-win th{color:#fff3d6;font-weight:700}.igjudge-total{font-weight:700;color:#f2dfb7}.igjudge-idea{margin:6px 0;padding:6px 10px;background:#ffffff08;border-radius:8px}.igjudge-idea.igjudge-win{border-left:3px solid #f0d38f}.igjudge-idea summary{cursor:pointer;font-size:13px;padding:4px 0;overflow-wrap:anywhere}.igjudge-pill{display:inline-block;margin-left:4px;padding:0 7px;border-radius:9px;background:#f0d38f30;color:#f2dfb7;font-weight:700}.igjudge-criteria{padding-left:18px}.igjudge-status,.igjudge-safeguards,.igjudge-prior{color:#b5c8b3}.igjudge-prior a{color:#d9e8f2}.igjudge-error{color:#f2b7a8}
 @media(max-width:750px),(max-height:500px){.igjudge-table{min-width:600px;font-size:11px}.igjudge-table tbody th{min-width:150px}}
+
+.final-podium{margin:0 0 24px;padding:16px;border:1px solid #e3cba350;border-radius:12px;background:linear-gradient(160deg,#e3cba312,#101d24)}
+.podium-places{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:10px;margin-top:20px}
+.podium-place{min-width:0;background:#263c46;border:1px solid #ffffff35;border-radius:10px;overflow:hidden}
+.podium-place-1{grid-column:2;grid-row:1;border-color:#f0d38f;background:#4a4637}
+.podium-place-2{grid-column:1;grid-row:1;margin-top:28px}
+.podium-place-3{grid-column:3;grid-row:1;margin-top:48px}
+.podium-place summary{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:240px;padding:16px 10px;cursor:pointer;text-align:center;list-style:none}
+.podium-place summary::-webkit-details-marker{display:none}
+.podium-place summary:focus-visible{outline:3px solid #fff3d6;outline-offset:-4px}
+.podium-place summary:hover{background:#ffffff0a}
+.podium-medal{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#b9c9ce;color:#17232c;font-size:22px;font-weight:800}
+.podium-place-1 .podium-medal{background:#f0d38f}.podium-place-3 .podium-medal{background:#d9a87d}
+.podium-label{font-size:11px;color:#f2dfb7}.podium-title{font-size:14px;overflow-wrap:anywhere;line-height:1.5}
+.podium-score{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:auto}.podium-score small{display:block;font-size:10px;font-weight:400;color:#d1dcd6}
+.podium-inspect{font-size:11px;text-decoration:underline;color:#f2dfb7}.podium-place[open] .podium-inspect{display:none}
+.podium-description{padding:0 12px 14px;border-top:1px solid #ffffff30;overflow-wrap:anywhere}.podium-description small{color:#c1d0cd}
+@media(max-width:520px){.podium-places{grid-template-columns:1fr}.podium-place{grid-column:auto;grid-row:auto;margin-top:0}.podium-place summary{min-height:0}.podium-score{margin-top:0}}
