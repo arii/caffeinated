@@ -1,10 +1,11 @@
-# ignobel: a simulated research community
+# Artificial Scientist Swarms: Ig Nobel community
 
-About ten LLM agents, each an expert in a different field with a private lab, try to
-produce research worthy of an Ig Nobel prize: work that makes people laugh, then think.
-The only thing steering an agent during a run is its own private boredom meter. A
-committee scores every study after the run. Control arms test whether boredom-timed
-exploration beats randomly timed exploration.
+Biology, chemistry and physics departments found expert labs that do real research: they read
+real papers, load real public datasets and analyse them, aiming for work that makes people
+laugh, then think. Nobody directs them. Each lab chooses its own steps, its private boredom
+meter and its arm's policy select exploration, refinement or a study, and labs meet by chance.
+A separate committee scores study abstracts after the run. Control arms compare
+boredom-timed exploration with randomly timed exploration.
 
 ## Agents: mothers and daughters
 
@@ -64,13 +65,16 @@ MOCK=1 python validate.py                                            # judge che
 MOCK=1 pytest -q
 ```
 
-Running the same command twice gives a byte-identical `events.jsonl`. Add `--out DIR` to keep
-several runs, and `--resume` to continue a crashed run from its last saved round.
+With the same inputs and configuration, repeating the mock command gives byte-identical
+`events.jsonl`. A fresh run replaces the selected output directory; use `--out DIR` to
+keep several runs. `--resume` continues from the last saved round, truncating events
+from an incomplete round. `--rounds` is the target total round count.
 
 `MOCK=1` swaps in a fake LLM, seeded embeddings and canned search results. Study code never
 runs on the host: mock mode runs it in a local Docker container (no network, read-only, only the
-study's files and a copy of its dataset), real mode in a Modal sandbox (`IGNOBEL_SANDBOX=docker`
-keeps real runs in Docker). Docker must be running for mock runs and tests that run studies; if no sandbox is available the run stops with
+study's files and permitted dataset or requested measurements), real mode in a Modal sandbox
+(`IGNOBEL_SANDBOX=docker` keeps real runs in Docker). Docker must be running for
+mock runs and tests that run studies; if no sandbox is available the run stops with
 `lab.SandboxUnavailable`. Real runs read keys from the environment; see `.env.example`.
 
 Any OpenAI-compatible chat provider works: set `OPENAI_BASE_URL`, `OPENAI_API_KEY` and the `MODEL_*`
@@ -83,7 +87,7 @@ replies get cut off; cut-off replies are marked `_truncated` and not cached.
 
 | file | job |
 |---|---|
-| `events.py` | append one JSON line per action to `events.jsonl` (schema in `events.md`) |
+| `events.py` | append one JSON line per action to `events.jsonl` ([schema](events.md)) |
 | `llm.py` | JSON chat, embeddings, disk cache, token cap, prompt log, mock mode |
 | `agents.yaml`, `agents.py` | agent definitions and the six one-call LLM methods |
 | `memory.py` | private stores, shared store (control arm), past.dev backend, `share()` |
@@ -104,14 +108,24 @@ replies get cut off; cut-off replies are marked `_truncated` and not cached.
 | shared_memory | boredom | one store for all | no |
 | no_exchange | boredom | private | no |
 
-## Notes for whoever wires in real services
+The no_exchange arm disables item exchange, not conversations. All arms select from
+the same roster and policy configuration; the single arm always uses one agent.
+See the [datasets guide](data/README.md) for private instruments and committee fixtures.
 
-- `boredom_threshold` is 0.5 in `config.yaml`: an agent whose newest idea repeats its last ones
-  and whose studies are not failing is bored. Tune it after a small real run.
-- When an odd number of agents snap, the one left over talks to the farthest non-snapping agent.
+## Meter and implementation notes
+
+- `boredom_threshold` is 0.5 in `config.yaml`. For the flat roster, B is the clipped value of
+  0.5 × similarity + 0.5 × unsurprise − 0.5 × failure, rounded to four decimals
+  (daughters use the formula above).
+  Similarity compares the latest idea with up to five prior embedded ideas; unsurprise
+  uses the last five replicated studies, and failure the last five studies overall.
+  The full arm snaps when B is at least the threshold.
+- Nobody is paired by field or memory distance: an agent that snaps or wanders meets a
+  random free colleague, and stays alone that round if none is free.
 - `lab.py` real mode uses a Modal sandbox (120 s, no network, no secrets); the call matches the
   Modal 1.6 SDK but hasn't been run against Modal yet. `memory.PastDevMemory` follows the request shapes in the
   team's existing past.dev client and is also marked TODO pending the docs.
 - `data/winners.csv` and `data/controls.csv` hold placeholders; replace them with real abstracts.
-- Mock mode never writes to `data/seed_cache/`; real Exa results are cached there and committed so
-  every arm starts from the same libraries.
+- Mock mode never writes to `data/seed_cache/`. Real Exa results are cached there (or under
+  EXA_CACHE_DIR); reuse a chosen cache snapshot to compare arms. The search client writes
+  cache files but does not commit them.
