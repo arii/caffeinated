@@ -7,11 +7,26 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
-- **Experiment producer:** the Ig Nobel prize hunt is the swarm task `swarm.py --task ignobel` ([`testcases/README.md`](testcases/README.md), task files in `testcases/ignobel/`).
+- **Experiment producer:** the Ig Nobel task (`swarm.py --task ignobel`) checks known relationships in public teaching datasets; it has not produced discoveries ([`testcases/README.md`](testcases/README.md), task files in `testcases/ignobel/`).
 - **Backend-to-lab handoff:** [bundle and endpoint integration guide](docs/backend-integration.md).
 - **Artificial Scientist Swarms backend:** [CPU research swarm guide](docs/autoresearch-backend.md): `swarm.py`, the boredom meter, the CPU mini benchmarks, the Docker sandbox, the A/B harness and the live `/api/v1` viewer server; [swarm protocol](program.md).
 - **Backend architecture and results:** [how Exa and past.dev are used](docs/architecture.md#how-we-use-exa-and-pastdev) and [results so far (honest)](docs/results.md).
 - **Viewer contract:** [swarm-viewer/v1 data model and API](docs/swarm-viewer-api.md), with implementation status.
+
+## Results (with caveats)
+
+Track 3 has two orderings: preregistered primary (guard2, stopped early, guarded), B 0.26 > S
+0.24 > A 0.11; complete strict-guard set, headlined after seeing which set finished, S 0.30 >
+A 0.09 > B 0.06. Minimum sign-flip p = 0.25 (complete strict-guard set) and 0.5 (guard2
+primary); 3 runs (orchestration seeds; Kimi sampling is not seeded), neither ordering is
+significant. Under the earlier grader the means were A 0.093, B 0.056, S 0.074.
+See [full results](docs/results.md) and
+[judge Q&A](docs/judge-qa.md).
+
+The Ig Nobel run tested gate-passing correlations on public teaching datasets (Cars93, cats,
+sleepstudy, and others): known relationships, not discoveries. Of 21 studies registered and
+13 run, 10 are held; the |ρ| ≥ 0.1 floor was added post-hoc, and the ρ = 0.07 x/y coordinate
+study, registered twice, is the failure case. No committee score was run on the published recording.
 
 ## Run
 

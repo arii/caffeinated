@@ -1,6 +1,7 @@
 """Grade baseline and best accepted commits once on a benchmark's held-out split."""
 
 import argparse
+import hashlib
 import json
 import math
 import subprocess
@@ -61,30 +62,54 @@ def _git_show(repo, commit, target):
     return result.stdout
 
 
+def _grader_sha256(task_dir):
+    task_dir = Path(task_dir)
+    config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+    editable = Path(config["editable"])
+    digest = hashlib.sha256()
+    for grader in sorted(task_dir.rglob("*.py")):
+        relative = grader.relative_to(task_dir)
+        if relative == editable:
+            continue
+        name = relative.as_posix().encode("utf-8")
+        contents = grader.read_bytes()
+        digest.update(len(name).to_bytes(8, "big"))
+        digest.update(name)
+        digest.update(len(contents).to_bytes(8, "big"))
+        digest.update(contents)
+    return digest.hexdigest()
+
+
 def held_out_test(task_name, out_dir) -> dict:
     out_dir = Path(out_dir).resolve()
     task_dir = TESTCASES / task_name
     config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
     if not config.get("held_out_test"):
         raise ValueError(f"task {task_name!r} has no held-out test split")
+    run = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
+    checkpoint = json.loads((out_dir / "resume_checkpoint.json").read_text(encoding="utf-8"))
+    baseline_commit = run["swarm_commit"]
+    best_commit = checkpoint["best_commit"]
+    grader_sha256 = _grader_sha256(task_dir)
     artifact_path = out_dir / "held_out_test.json"
     if artifact_path.exists():
         result = json.loads(artifact_path.read_text(encoding="utf-8"))
         if result.get("task") != task_name or result.get("split") != "test":
             raise ValueError(f"existing held-out result does not match task {task_name!r}")
-        result["reference_test_loss"] = None
-        result["reference_note"] = config.get("reference_note", "")
-        _add_confidence_intervals(result, config)
-        artifact_path.write_text(
-            json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
-        return result
-    run = json.loads((out_dir / "run.json").read_text(encoding="utf-8"))
-    checkpoint = json.loads((out_dir / "resume_checkpoint.json").read_text(encoding="utf-8"))
+        if (
+            result.get("baseline_commit") == baseline_commit
+            and result.get("best_commit") == best_commit
+            and result.get("grader_sha256") == grader_sha256
+        ):
+            result["reference_test_loss"] = None
+            result["reference_note"] = config.get("reference_note", "")
+            _add_confidence_intervals(result, config)
+            artifact_path.write_text(
+                json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            return result
     repo = Path(run["repo"]).resolve()
     target = f"testcases/{task_name}/{config['editable']}"
-    baseline_commit = run["swarm_commit"]
-    best_commit = checkpoint["best_commit"]
     dev_loss = checkpoint["best_val"]
 
     def evaluate(commit):
@@ -96,6 +121,9 @@ def held_out_test(task_name, out_dir) -> dict:
     result = {
         "task": task_name,
         "split": "test",
+        "baseline_commit": baseline_commit,
+        "best_commit": best_commit,
+        "grader_sha256": grader_sha256,
         "n_items": baseline_result.get("n_items", 0),
         "baseline": {
             "commit": baseline_commit,
