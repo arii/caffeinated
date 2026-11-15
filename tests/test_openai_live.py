@@ -129,7 +129,7 @@ class IgNobelCommitteeOpenAITests(unittest.TestCase):
         committee = importlib.import_module("committee")
         sent = []
 
-        def fake_urlopen(req, timeout=0):
+        def fake_urlopen(req, **_kwargs):
             sent.append(json.loads(req.data))
             return io.BytesIO(
                 json.dumps(
