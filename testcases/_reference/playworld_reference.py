@@ -3,11 +3,12 @@
 memory=None remembers everything; memory=8 forgets map cells not seen in the last 8 frames
 (the stand-in "closed" record). Run this file to recompute the reference scores.
 """
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "playworld_mini"))
-import evaluate  # noqa: E402
+import evaluate
 
 FLOOR, WALL, SWITCH, LAMP_OFF, LAMP_ON, AGENT, OOB = range(7)
 MOVES = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}
@@ -48,7 +49,13 @@ def make_predict(memory=None):
         for a in future_actions:
             t += 1
             move(a, t)
-            frame = [[AGENT if (i, j) == (2, 2) else lookup((pos[0] + i - 2, pos[1] + j - 2), t) for j in range(5)] for i in range(5)]
+            frame = [
+                [
+                    AGENT if (i, j) == (2, 2) else lookup((pos[0] + i - 2, pos[1] + j - 2), t)
+                    for j in range(5)
+                ]
+                for i in range(5)
+            ]
             see(frame, t)
             out.append(frame)
         return out
@@ -57,6 +64,9 @@ def make_predict(memory=None):
 
 
 if __name__ == "__main__":
-    print("open baseline (copy last frame):", round(evaluate.evaluate(lambda f, a, fa: [f[-1]] * len(fa)), 4))
+    print(
+        "open baseline (copy last frame):",
+        round(evaluate.evaluate(lambda f, a, fa: [f[-1]] * len(fa)), 4),
+    )
     for m in (1, 2, 4, 8, None):
         print(f"map model, memory={m}:", round(evaluate.evaluate(make_predict(m)), 4))

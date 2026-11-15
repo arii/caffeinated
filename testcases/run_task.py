@@ -3,11 +3,12 @@
     python testcases/run_task.py hadamard19
     python testcases/run_task.py hadamard19 --results results.tsv --desc "anneal 2k steps" --status auto
 
-The row uses the autoresearch columns (commit, val_bpb, memory_gb, status, description)
-with the task's loss (lower is better) in the val_bpb column, so boredom.py,
+The row uses the autoresearch columns (commit, loss, status, description)
+with the task's loss (lower is better) in the loss column, so boredom.py,
 analyze.py and the trace exporter work unchanged. --status auto keeps the run only
 if it beats the best kept loss so far.
 """
+
 import argparse
 import csv
 import json
@@ -23,7 +24,7 @@ if str(ROOT) not in sys.path:
 from testcases import sandbox
 
 TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
-HEADER = ["commit", "val_bpb", "memory_gb", "status", "description"]
+HEADER = ["commit", "loss", "status", "description"]
 
 
 def score(task):
@@ -40,7 +41,7 @@ def best_kept(path):
     if not path.exists():
         return None
     rows = list(csv.DictReader(path.open(), delimiter="\t"))
-    kept = [float(r["val_bpb"]) for r in rows if r["status"] == "keep"]
+    kept = [float(r["loss"]) for r in rows if r["status"] == "keep"]
     return min(kept) if kept else None
 
 
@@ -61,18 +62,23 @@ def main():
     elif status == "auto":
         best = best_kept(path)
         status = "keep" if best is None or loss < best else "discard"
-    commit = subprocess.run(
-        ["git", "rev-parse", "--short=7", "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-    ).stdout.strip() or "nogit"
+    commit = (
+        subprocess.run(
+            ["git", "rev-parse", "--short=7", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        or "nogit"
+    )
     new = not path.exists()
     with path.open("a", newline="") as f:
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
         if new:
             w.writerow(HEADER)
-        w.writerow([commit, f"{loss if loss is not None else 0:.6f}", "0.0", status, args.desc.replace("\t", " ")])
+        w.writerow(
+            [commit, f"{loss if loss is not None else 0:.6f}", status, args.desc.replace("\t", " ")]
+        )
     print(f"logged: {commit} {status}")
 
 

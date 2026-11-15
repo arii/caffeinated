@@ -2,25 +2,24 @@
 """Search, inspect, and extract Exa sources. Set EXA_API_KEY for live requests."""
 
 import argparse
-from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import sys
 import time
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
-
 
 SOURCE_ID_RE = re.compile(r"^S(\d+)$")
 QUERY_ID_RE = re.compile(r"^Q(\d+)$")
 EXTRACT_ID_RE = re.compile(r"^E(\d+)$")
 DEFAULT_EXTRACT_QUESTION = (
-    "What concrete change to a small GPT training script does this propose? "
-    "Give the hyperparameters and the reported effect."
+    "What concrete, testable change for the task described by this source does it propose? "
+    "Give implementation details and the reported effect."
 )
 
 
@@ -221,9 +220,15 @@ def append_query_record(
     return record
 
 
-def query_payload(query, n, category=None, include_domains=None,
-                  exclude_domains=None, start_published_date=None,
-                  highlight_query=False):
+def query_payload(
+    query,
+    n,
+    category=None,
+    include_domains=None,
+    exclude_domains=None,
+    start_published_date=None,
+    highlight_query=False,
+):
     payload = {
         "query": query,
         "type": "auto",
@@ -243,8 +248,18 @@ def query_payload(query, n, category=None, include_domains=None,
     return payload
 
 
-def write_query_results(args, records, query_id, purpose, query, endpoint, payload,
-                        *, prior_art=False, extra_record=None):
+def write_query_results(
+    args,
+    records,
+    query_id,
+    purpose,
+    query,
+    endpoint,
+    payload,
+    *,
+    prior_art=False,
+    extra_record=None,
+):
     status, response_text, latency_ms = exa_request(args, endpoint, payload)
     if status >= 400:
         raise RuntimeError(f"Exa {endpoint.lstrip('/')} returned HTTP {status}")
@@ -302,7 +317,7 @@ def source_by_id(records, source_id):
 
 
 def command_query(args):
-    if args.command in ("search", "prior-art", "scout"):
+    if args.command in ("search", "prior-art", "scout", "worker-search"):
         return args.query
     if args.command in ("similar", "extract"):
         return args.source
@@ -317,6 +332,7 @@ def run_disabled(args):
         "list": "search",
         "prior-art": "prior-art",
         "scout": "scout",
+        "worker-search": "worker-search",
         "similar": "similar",
         "extract": "extract",
     }[args.command]
@@ -350,9 +366,7 @@ def run_search(args):
         args.n,
         category=None if args.category.casefold() == "none" else args.category,
     )
-    write_query_results(
-        args, records, query_id, "search", args.query, "/search", payload
-    )
+    write_query_results(args, records, query_id, "search", args.query, "/search", payload)
     return 0
 
 
@@ -362,9 +376,7 @@ def run_prior_art(args):
     check_budget(args)
     records = read_log(args.log)
     query_id = query_id_for(records)
-    payload = query_payload(
-        args.query, args.n, category="publication", highlight_query=True
-    )
+    payload = query_payload(args.query, args.n, category="publication", highlight_query=True)
     write_query_results(
         args,
         records,
@@ -400,8 +412,17 @@ def run_scout(args):
             include_domains=["github.com"],
             start_published_date=since,
         )
+    purpose = "worker-search" if args.command == "worker-search" else "scout"
+    cell = getattr(args, "cell", None)
     write_query_results(
-        args, records, query_id, "scout", args.query, "/search", payload
+        args,
+        records,
+        query_id,
+        purpose,
+        args.query,
+        "/search",
+        payload,
+        extra_record={"cell": cell} if cell else None,
     )
     return 0
 
@@ -435,24 +456,17 @@ def run_similar(args):
             if highlight_values and isinstance(highlight_values[0], str)
             else ""
         )
-        query = " ".join(
-            part for part in (str(source.get("title") or ""), first_highlight) if part
-        )
+        query = " ".join(part for part in (str(source.get("title") or ""), first_highlight) if part)
         domain = urlsplit(str(source.get("url") or "")).hostname
         if not domain:
             raise ValueError(f"source {args.source} has no valid URL domain")
         print(
-            f"similar: /findSimilar returned HTTP {status}; "
-            "falling back to /search",
+            f"similar: /findSimilar returned HTTP {status}; falling back to /search",
             file=sys.stderr,
         )
         endpoint = "/search"
-        payload = query_payload(
-            query, args.n, exclude_domains=[domain]
-        )
-        next_status, response_text, fallback_latency = exa_request(
-            args, endpoint, payload
-        )
+        payload = query_payload(query, args.n, exclude_domains=[domain])
+        next_status, response_text, fallback_latency = exa_request(args, endpoint, payload)
         latency_ms += fallback_latency
         status = next_status
     if status >= 400:
@@ -551,9 +565,7 @@ def run_extract(args):
 
 
 def run_list(args):
-    sources = [
-        record for record in read_log(args.log) if record.get("type") == "source"
-    ]
+    sources = [record for record in read_log(args.log) if record.get("type") == "source"]
     if not sources:
         print("No sources found.")
     else:

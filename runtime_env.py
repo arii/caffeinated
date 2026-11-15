@@ -1,8 +1,9 @@
 """Load the project's simple KEY=value environment file without executing shell code."""
+
 import os
-from pathlib import Path
 import re
 import shlex
+from pathlib import Path
 
 
 def load_local_env(path, environ=None):

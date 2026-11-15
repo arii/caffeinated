@@ -1,13 +1,12 @@
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
 import unittest
-
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "research.py"
@@ -36,7 +35,7 @@ class ExaStubHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def log_message(self, format_string, *args):
+    def log_message(self, _format_string, *args):
         pass
 
 
@@ -118,7 +117,7 @@ class ResearchCliTests(unittest.TestCase):
             result = self.run_cli(
                 server,
                 "search",
-                "small model training",
+                "task optimization approach",
                 "--n",
                 "2",
                 "--log",
@@ -134,7 +133,7 @@ class ResearchCliTests(unittest.TestCase):
             self.assertEqual(
                 server.request_body,
                 {
-                    "query": "small model training",
+                    "query": "task optimization approach",
                     "type": "auto",
                     "numResults": 2,
                     "category": "publication",
@@ -146,9 +145,7 @@ class ResearchCliTests(unittest.TestCase):
             printed_highlight = result.stdout.splitlines()[0].split(" | ")[-1]
             self.assertEqual(len(printed_highlight), 200)
 
-            records = [
-                json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
-            ]
+            records = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
             query = next(record for record in records if record.get("id") == "Q5")
             sources = [record for record in records if record.get("id") in ("S2", "S3")]
             self.assertEqual(query["purpose"], "search")
@@ -203,7 +200,7 @@ class ResearchCliTests(unittest.TestCase):
             result = self.run_cli(
                 server,
                 "scout",
-                "small GPT SwiGLU implementation",
+                "task implementation approach",
                 "--kind",
                 "code",
                 "--since",
@@ -217,9 +214,7 @@ class ResearchCliTests(unittest.TestCase):
                 env={"EXA_API_KEY": "test-api-key"},
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(
-                server.request_body["includeDomains"], ["github.com"]
-            )
+            self.assertEqual(server.request_body["includeDomains"], ["github.com"])
             self.assertEqual(server.request_body["startPublishedDate"], "2025-01-02")
             self.assertNotIn("category", server.request_body)
             self.assertEqual(
@@ -265,9 +260,7 @@ class ResearchCliTests(unittest.TestCase):
                 "Original title " + ("First evidence " * 30)[:300],
             )
             self.assertEqual(fallback["excludeDomains"], ["example.test"])
-            records = [
-                json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
-            ]
+            records = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
             query = next(record for record in records if record.get("type") == "query")
             self.assertEqual(query["endpoint"], "/search")
             self.assertEqual(query["find_similar_status"], 404)
@@ -304,8 +297,7 @@ class ResearchCliTests(unittest.TestCase):
             query = next(
                 record
                 for record in (
-                    json.loads(line)
-                    for line in log.read_text(encoding="utf-8").splitlines()
+                    json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
                 )
                 if record.get("type") == "query"
             )
@@ -386,16 +378,14 @@ class ResearchCliTests(unittest.TestCase):
                     "urls": ["https://example.test/paper"],
                     "summary": {
                         "query": (
-                            "What concrete change to a small GPT training script "
-                            "does this propose? Give the hyperparameters and the "
-                            "reported effect."
+                            "What concrete, testable change for the task described "
+                            "by this source does it propose? Give implementation "
+                            "details and the reported effect."
                         )
                     },
                 },
             )
-            records = [
-                json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
-            ]
+            records = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
             query = next(record for record in records if record.get("type") == "query")
             extract = next(record for record in records if record.get("type") == "extract")
             self.assertEqual(query["purpose"], "extract")
@@ -412,7 +402,7 @@ class ResearchCliTests(unittest.TestCase):
             log = Path(directory) / "research_log.jsonl"
             common = [
                 "prior-art",
-                "small GPT optimization",
+                "task optimization",
                 "--n",
                 "2",
                 "--log",
@@ -420,16 +410,12 @@ class ResearchCliTests(unittest.TestCase):
                 "--cache-dir",
                 str(cache_dir),
             ]
-            live = self.run_cli(
-                server, *common, env={"EXA_API_KEY": "test-api-key"}
-            )
+            live = self.run_cli(server, *common, env={"EXA_API_KEY": "test-api-key"})
             self.assertEqual(live.returncode, 0, live.stderr)
             replay = self.run_cli(server, *common, env={"EXA_REPLAY": "1"})
             self.assertEqual(replay.returncode, 0, replay.stderr)
             self.assertEqual(len(server.requests), 1)
-            records = [
-                json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()
-            ]
+            records = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
             replay_query = next(record for record in records if record.get("id") == "Q2")
             self.assertTrue(replay_query["replay"])
 
@@ -490,9 +476,7 @@ class ResearchCliTests(unittest.TestCase):
                 "--cache-dir",
                 str(Path(directory) / "cache"),
             ]
-            error = self.run_cli(
-                server, *common, env={"EXA_API_KEY": "test-api-key"}
-            )
+            error = self.run_cli(server, *common, env={"EXA_API_KEY": "test-api-key"})
             self.assertEqual(error.returncode, 2)
             self.assertIn("HTTP 500", error.stderr)
 

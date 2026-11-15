@@ -1,27 +1,78 @@
 [project]
 name = "autoresearch"
 version = "0.1.0"
-description = "Autonomous pretraining research swarm"
+description = "Autonomous CPU benchmark research swarm"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "kernels>=0.11.7",
-    "matplotlib>=3.10.8",
-    "numpy>=2.2.6",
-    "pandas>=2.3.3",
-    "pyarrow>=21.0.0",
-    "requests>=2.32.0",
-    "rustbpe>=0.1.0",
-    "tiktoken>=0.11.0",
-    "torch==2.9.1",
+    "pandas==2.2.3",
+    "openpyxl==3.1.5",
 ]
 
-[tool.uv.sources]
-torch = [
-    { index = "pytorch-cu128" },
+[project.optional-dependencies]
+tinker = [
+    "tinker==0.39.0; python_version >= '3.11'",
+    "tml-renderers==0.4.1; python_version >= '3.11'",
+]
+viewer = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "httpx>=0.27,<1",
+]
+dev = [
+    "ruff==0.17.5",
+    "vulture==2.16",
+    "deptry==0.25.1",
 ]
 
-[[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
-explicit = true
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["worktrees", ".swarm_worktrees", "runs", "results", "backend", "ignobel", "node_modules", "docs/backend-integration.md"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "PIE",  # flake8-pie
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "E501",   # long strings/prompts; ruff format handles code width
+    "B905",   # zip(strict=) would change behavior on uneven inputs
+    "RUF005", # [*a, b] vs a + [b] is style churn
+    "SIM300", # misreads uppercase locals (e.g. the meter value B) as constants
+    "RUF001", "RUF002", "RUF003",  # intentional unicode in prompts/docs
+]
+
+[tool.ruff.lint.per-file-ignores]
+# These scripts put the repo or boredom_meter/ on sys.path before importing local modules.
+"boredom.py" = ["E402"]
+"testcases/**/*.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["boredom", "experiments", "export_viewer", "llm", "memory", "meter", "research", "swarm", "testcases", "test_testcases", "viewer"]
+
+[tool.vulture]
+paths = [".", "vulture_whitelist.py"]
+exclude = ["worktrees/", ".swarm_worktrees/", "runs/", "results/", ".venv/", "backend/", "ignobel/", "node_modules/"]
+min_confidence = 60
+ignore_decorators = ["@app.get", "@app.exception_handler", "@app.middleware"]
+
+[tool.deptry]
+known_first_party = ["meter", "testcases", "test_export_viewer", "test_testcases", "viewer"]
+# testcases/ candidate and evaluator code runs inside the Docker sandbox image, whose deps live in testcases/Dockerfile.
+exclude = ["testcases", "\\.venv", "worktrees", "\\.swarm_worktrees", "backend", "ignobel", "node_modules", "docs/backend-integration.md"]
+optional_dependencies_dev_groups = ["dev"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = [
+    "httpx",     # required at test time by fastapi.testclient.TestClient
+    "openpyxl",  # pandas.read_excel engine used by swarm.preview_file
+]
