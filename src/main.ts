@@ -67,7 +67,7 @@ $('agent-list').onclick=e=>{const id=(e.target as HTMLElement).closest<HTMLEleme
 $('agent-interact').onclick=()=>{if(nearAgent)talk(nearAgent);};
 $('close-conversation').onclick=()=>{conversation.close();renderer.domElement.focus();};$('close-console').onclick=()=>evidence.close();$('close-guide').onclick=()=>guide.close();
 $('open-console').onclick=()=>{unlock();closeDrawer();renderEvidence();evidence.showModal();};$('open-guide').onclick=()=>{unlock();closeDrawer();guide.showModal();};
-$('play').onclick=()=>{if(!recording)return;if(!playing){conversation.close();if(tick>=recording.manifest.totalTicks)seek(0);if(walking)setWalking(false);}playing=!playing;renderControls();};
+$('play').onclick=()=>{if(!recording)return;if(!playing){conversation.close();if(!recording.manifest.live&&tick>=recording.manifest.totalTicks)seek(0);if(walking)setWalking(false);}playing=!playing;renderControls();};
 $('camera-mode').onclick=()=>setWalking(!walking);
 $('timeline').oninput=()=>{playing=false;seek(Number($<HTMLInputElement>('timeline').value));};
 $('pace').onchange=()=>{pace=Number($<HTMLSelectElement>('pace').value);};
