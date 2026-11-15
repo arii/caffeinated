@@ -2294,7 +2294,7 @@ def worker_attempts(
                         **common,
                         "problem": "Gate pre-check rejected the proposal: "
                         + "; ".join(precheck_reasons),
-                        "proposal": json.dumps(current_proposal, sort_keys=True),
+                        "proposal": json.dumps(strip_call_ids(current_proposal), sort_keys=True),
                     },
                 )
                 continue
@@ -2442,7 +2442,7 @@ def worker_attempts(
                     values={
                         **common,
                         "problem": f"Edit application failed: {error}",
-                        "proposal": json.dumps(current_proposal, sort_keys=True),
+                        "proposal": json.dumps(strip_call_ids(current_proposal), sort_keys=True),
                     },
                 )
                 continue
@@ -2578,7 +2578,7 @@ def worker_attempts(
                     **common,
                     "problem": "Gate rejected the candidate: "
                     + "; ".join(gate_record.get("reasons", [])),
-                    "proposal": json.dumps(current_proposal, sort_keys=True),
+                    "proposal": json.dumps(strip_call_ids(current_proposal), sort_keys=True),
                 },
             )
             continue
