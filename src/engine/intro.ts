@@ -26,8 +26,8 @@ export function researchTrail(r:Pick<Recording,'entities'|'events'>|null){
  return {citations,sources:sources.length,exaSearches:ev.filter(e=>e.type==='question.asked'&&/search|exa/.test(str((e.payload as Row|undefined)?.kind))).length,memoryRecalls:memory,pastdev};
 }
 
-export function researchResults(r:Recording|null){
- const cards=studyCards(r,Number.MAX_SAFE_INTEGER),awards=momentsBetween(r?.events||[],-1,Number.MAX_SAFE_INTEGER).filter(m=>m.kind==='award');
+export function researchResults(r:Recording|null,tick=Number.MAX_SAFE_INTEGER){
+ const cards=studyCards(r,tick),awards=momentsBetween(r?.events||[],-1,tick).filter(m=>m.kind==='award');
  const confirmed=cards.filter(s=>s.result?.confirmed===true||s.result?.replicated===true||s.replications.some(x=>x.confirmed===true||x.replicated===true));
  const underCurrentRules=confirmed.filter(s=>currentRules(s.result?{...s.result,direction:s.direction||undefined}:null,currentRuleThresholds(r?.manifest?.judging)).pass).length;
  const proxyNote=recordingProxyNote(r?.manifest,r)||'';

@@ -337,10 +337,11 @@ export function createWorld(): LabWorld {
       let w=workers.get(a.id);
       if(!w)w=researcher(a.position?.x??(index%3-1)*.6,a.position?.z??10.4+Math.floor(index/3)*.4,0,a.name,a.stationId,a.id);
       const slot=a.id.startsWith('worker-')?Number(a.id.match(/\d+$/)?.[0]||1)-1:index%4;
-      const goal=stationGoal(a.stationId,slot);
-      const target=`${a.stationId}:${slot}`;
+      const finale=state.finale===true,angle=index/Math.max(1,state.agents.length)*Math.PI*2;
+      const goal=finale?new THREE.Vector3(ROUNDTABLE.x+Math.cos(angle)*2.35,0,ROUNDTABLE.z+Math.sin(angle)*2.35):stationGoal(a.stationId,slot);
+      const target=finale?`finale:${index}`:`${a.stationId}:${slot}`;
       if(w.target!==target){w.target=target;w.station=a.stationId;w.path=findPath(w.group.position,goal,bounds,colliders);}
-      if(a.position){w.group.position.set(a.position.x,0,a.position.z);w.path=[];}
+      if(a.position&&!finale){w.group.position.set(a.position.x,0,a.position.z);w.path=[];}
       const fx=affect(a.boredom,state.reducedMotion),next=w.path[0];
       if(next){const dx=next.x-w.group.position.x,dz=next.z-w.group.position.z,d=Math.hypot(dx,dz);if(d<.07)w.path.shift();else{const speed=Math.min(d,dt*1.8*fx.walk);w.group.position.x+=dx/d*speed;w.group.position.z+=dz/d*speed;w.group.rotation.y=state.reducedMotion?Math.atan2(dx,dz):turnToward(w.group.rotation.y,Math.atan2(dx,dz),Math.max(.02,dt*6*fx.turn));}}
       else w.group.rotation.y=a.position?.heading??(a.stationId==='culture'?Math.atan2(ROUNDTABLE.x-w.group.position.x,ROUNDTABLE.z-w.group.position.z):Math.PI);
@@ -349,7 +350,7 @@ export function createWorld(): LabWorld {
       const moving=!!next||!!a.position?.moving,meterKey=`${a.boredom==null?'-':Math.round(a.boredom)}:${a.regime||''}`;
       if(w.meterKey!==meterKey){w.meterKey=meterKey;drawMeter(w.meter,a.boredom,regimeLabel(a.regime).label);}
       w.meter.position.set(w.group.position.x,2.5,w.group.position.z);
-      w.group.position.y=moving?Math.abs(Math.sin(time*fx.bobHz+index))*fx.bob:0;w.group.rotation.x=fx.slump;
+      w.group.position.y=finale?(state.reducedMotion?0:.12+Math.abs(Math.sin(time*3+index))*.18):moving?Math.abs(Math.sin(time*fx.bobHz+index))*fx.bob:0;if(finale&&!state.reducedMotion)w.group.rotation.y+=dt*.35;w.group.rotation.x=fx.slump;
       w.zzz.visible=fx.zzz&&!moving;w.zzz.position.set(w.group.position.x+.32,1.95+(state.reducedMotion?0:(time*.35+index*.3)%1*.35),w.group.position.z);(w.zzz.material as THREE.SpriteMaterial).opacity=state.reducedMotion?.9:1-((time*.35+index*.3)%1)*.6;
       if(Math.abs(w.tint-fx.saturation)>.02){w.tint=fx.saturation;w.group.traverse(o=>{if(o instanceof THREE.Mesh&&o.material instanceof THREE.MeshStandardMaterial&&o.material.userData.baseColor){const base=o.material.userData.baseColor as THREE.Color,grey=base.r*.3+base.g*.59+base.b*.11;o.material.color.setRGB(grey+(base.r-grey)*fx.saturation,grey+(base.g-grey)*fx.saturation,grey+(base.b-grey)*fx.saturation);}});}
       w.activity.visible=a.state!=='idle'&&!(a.stationId==='culture'&&a.discussionBrief);
