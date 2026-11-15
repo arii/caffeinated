@@ -241,7 +241,7 @@ def export_autoresearch(out_dir, arm=None, title=None):
                      file="boredom_log.jsonl", line=line, native_type="status",
                      payload={"scope": "swarm", "B": record.get("B"), "regime": record.get("regime"),
                               "frontier_stall": record.get("frontier_stall"),
-                              "best_metric": record.get("best_val_bpb"),
+                              "best_metric": record.get("best_loss", record.get("best_val_bpb")),
                               "directive": record.get("directive"), "shadow": arm == "A"})
         elif record.get("type") == "gate":
             commit = record.get("candidate_commit")

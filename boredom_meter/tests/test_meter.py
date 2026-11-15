@@ -8,21 +8,18 @@ sys.path.insert(0, str(ROOT))
 import meter  # noqa: E402
 
 BIO = ROOT / "profiles/biolab_growth.json"
-AUTORESEARCH = ROOT / "profiles/autoresearch_llm.json"
+HADAMARD = ROOT.parent / "testcases/hadamard19/boredom_profile.json"
 
-AUTORESEARCH_CELLS = [
+HADAMARD_CELLS = [
     ("baseline", "none"),
-    ("batch", "total_batch"),
-    ("lr_schedule", "warmup"),
-    ("optimizer", "matrix_lr"),
-    ("architecture", "depth"),
-    ("attention", "window"),
-    ("data", "ordering"),
+    ("search", "restarts"),
+    ("construction", "circulant"),
+    ("objective", "log_det"),
 ]
 
 
 def autoresearch_ledger(include_all=True):
-    cells = AUTORESEARCH_CELLS if include_all else AUTORESEARCH_CELLS[:-1]
+    cells = HADAMARD_CELLS if include_all else HADAMARD_CELLS[:-1]
     events = []
     for mechanism, method in cells:
         events.append(
@@ -41,7 +38,7 @@ def autoresearch_ledger(include_all=True):
                 "agent": "agent",
                 "status": "keep",
                 "score": 1.0,
-                "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+                "descriptor": {"mechanism": "search", "method": "restarts"},
             }
         )
     return events
@@ -191,7 +188,7 @@ class MeterTest(unittest.TestCase):
 
 class ConvergedTest(unittest.TestCase):
     def setUp(self):
-        self.profile = meter.load_profile(AUTORESEARCH)
+        self.profile = meter.load_profile(HADAMARD)
 
     def assert_audit_event_does_not_count(self, event):
         for events in ([], autoresearch_ledger()[:8]):
@@ -205,13 +202,13 @@ class ConvergedTest(unittest.TestCase):
     def test_reject_event_leaves_meter_unchanged(self):
         self.assert_audit_event_does_not_count({
             "status": "reject", "score": None,
-            "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+            "descriptor": {"mechanism": "search", "method": "restarts"},
         })
 
     def test_critic_event_leaves_meter_unchanged(self):
         self.assert_audit_event_does_not_count({
             "kind": "critic", "status": "keep", "score": 0.5,
-            "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+            "descriptor": {"mechanism": "search", "method": "restarts"},
         })
 
     def test_attempt_statuses_from_profile(self):
@@ -221,7 +218,7 @@ class ConvergedTest(unittest.TestCase):
         self.assertEqual(meter.status(self.profile, [event])["n_attempts"], 1)
 
     def test_required_mechanisms_from_profile(self):
-        self.profile["required_mechanisms"] = ["optimizer"]
+        self.profile["required_mechanisms"] = ["search"]
         self.assertEqual(
             meter.status(self.profile, autoresearch_ledger(include_all=False))["regime"],
             "CONVERGED",
@@ -229,8 +226,8 @@ class ConvergedTest(unittest.TestCase):
 
     def test_required_mechanisms_default_to_all_vocab(self):
         import tempfile
-        raw = json.loads(AUTORESEARCH.read_text())
-        del raw["required_mechanisms"]
+        raw = json.loads(HADAMARD.read_text())
+        raw.pop("required_mechanisms", None)
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "profile.json"
             path.write_text(json.dumps(raw))
@@ -261,8 +258,8 @@ class ConvergedTest(unittest.TestCase):
                 "seq": 17,
                 "agent": "agent",
                 "status": "keep",
-                "score": 0.995,
-                "descriptor": {"mechanism": "optimizer", "method": "matrix_lr"},
+                "score": 0.98,
+                "descriptor": {"mechanism": "search", "method": "restarts"},
             }
         )
         self.assertEqual(meter.status(self.profile, events)["regime"], "EXPLOIT")
@@ -274,7 +271,7 @@ class ConvergedTest(unittest.TestCase):
         rejected = meter.gate(
             self.profile,
             events,
-            {"mechanism": "batch", "method": "total_batch"},
+            {"mechanism": "construction", "method": "circulant"},
         )
         self.assertTrue(allowed["pass"])
         self.assertFalse(rejected["pass"])

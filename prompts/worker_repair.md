@@ -5,4 +5,4 @@ Return a corrected proposal in the same JSON shape. If the gate rejected it as t
 Suggested cells: {suggested_cells}
 Gate reasons: {reasons}
 Assigned cell (if not none, implement exactly this cell): {assigned_cell}
-Current train.py: {train_py}
+Current task source: {candidate_source}

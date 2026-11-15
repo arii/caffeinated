@@ -17,9 +17,9 @@ if str(METER_PATH) not in sys.path:
     sys.path.insert(0, str(METER_PATH))
 
 import meter as descriptor_meter
-from replay_autoresearch import classify as classify_descriptor
 
 
+DEFAULT_PROFILE = Path(__file__).resolve().parent / "testcases" / "hadamard19" / "boredom_profile.json"
 DEFAULT_WEIGHTS = (0.45, 0.45, 0.10)
 _DIGITS = r"\d(?:_?\d)*"
 NUMBER_PATTERN = rf"(?:{_DIGITS}(?:\.(?:{_DIGITS})?)?|\.(?:{_DIGITS}))(?:[eE][+-]?{_DIGITS})?"
@@ -55,7 +55,7 @@ def compute_meter(rows, zs, k=5, eps=0.0005, weights=DEFAULT_WEIGHTS, disabled=F
             "stagnation": 0.0,
             "overload": 0.0,
             "frontier_stall": 0,
-            "best_val_bpb": None,
+            "best_loss": None,
             "best_commit": None,
             "disabled": bool(disabled),
         }
@@ -74,7 +74,7 @@ def compute_meter(rows, zs, k=5, eps=0.0005, weights=DEFAULT_WEIGHTS, disabled=F
     for row in rows:
         status = row.get("status", "")
         try:
-            value = float(row.get("val_bpb", "nan"))
+            value = float(row.get("loss", "nan"))
         except (TypeError, ValueError):
             value = float("nan")
         if status != "crash" and math.isfinite(value) and best_val is None:
@@ -127,7 +127,7 @@ def compute_meter(rows, zs, k=5, eps=0.0005, weights=DEFAULT_WEIGHTS, disabled=F
         "stagnation": stagnation,
         "overload": overload,
         "frontier_stall": frontier_stall,
-        "best_val_bpb": best_val,
+        "best_loss": best_val,
         "best_commit": best_commit,
         "disabled": bool(disabled),
     }
@@ -137,7 +137,7 @@ def description_tokens(description):
     return {"desc:" + word.casefold() for word in WORD_RE.findall(description or "")}
 
 
-def parse_train_diff(diff_text):
+def parse_candidate_diff(diff_text):
     """Extract changed lines, line count, and word-level three-shingles."""
     changed_lines = []
     for line in diff_text.splitlines():
@@ -164,7 +164,7 @@ def parse_train_diff(diff_text):
 
 
 def representation_from_diff(diff_text, description):
-    shingles, diff_lines = parse_train_diff(diff_text)
+    shingles, diff_lines = parse_candidate_diff(diff_text)
     return shingles | description_tokens(description), diff_lines
 
 
@@ -172,7 +172,10 @@ def commit_representation(commit, description, repo):
     """Return a row's representation, falling back to description if unresolved."""
     try:
         result = subprocess.run(
-            ["git", "show", "--format=", "--unified=0", commit, "--", "train.py"],
+            [
+                "git", "show", "--format=", "--unified=0", commit,
+                "--", os.environ.get("AUTORESEARCH_TARGET", "candidate.py"),
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -242,18 +245,17 @@ def message_trailer(message, name):
 def descriptor_from_message(message, description, profile):
     value = message_trailer(message, "Descriptor")
     if value is None:
-        descriptor = classify_descriptor(description)
-    else:
-        match = re.fullmatch(
-            rf"([A-Za-z0-9_]+)/([A-Za-z0-9_]+)"
-            rf"(?:\s+value=({NUMBER_PATTERN}))?",
-            value,
-        )
-        if not match:
-            raise ValueError(f"invalid Descriptor trailer: {value}")
-        descriptor = dict(zip(profile["levels"], match.group(1, 2)))
-        if match.group(3) is not None:
-            descriptor["params"] = {"value": float(match.group(3))}
+        raise ValueError("missing Descriptor trailer")
+    match = re.fullmatch(
+        rf"([A-Za-z0-9_]+)/([A-Za-z0-9_]+)"
+        rf"(?:\s+value=({NUMBER_PATTERN}))?",
+        value,
+    )
+    if not match:
+        raise ValueError(f"invalid Descriptor trailer: {value}")
+    descriptor = dict(zip(profile["levels"], match.group(1, 2)))
+    if match.group(3) is not None:
+        descriptor["params"] = {"value": float(match.group(3))}
     descriptor_meter.validate_descriptor(profile, descriptor)
     return descriptor
 
@@ -277,7 +279,7 @@ def ledger_events(rows, repo, profile, errors=None):
         score = None
         if row.get("status") != "crash":
             try:
-                score = float(row.get("val_bpb", "nan"))
+                score = float(row.get("loss", "nan"))
             except (TypeError, ValueError):
                 score = None
         sources, _ = source_trailers(message)
@@ -394,7 +396,7 @@ def read_results(path):
         return []
     with path.open(newline="", encoding="utf-8") as results_file:
         reader = csv.DictReader(results_file, delimiter="\t")
-        required = {"commit", "val_bpb", "memory_gb", "status", "description"}
+        required = {"commit", "loss", "memory_gb", "status", "description"}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("results.tsv is missing required columns")
         return list(reader)
@@ -448,7 +450,7 @@ def status_record(rows, events, metrics, profile, disabled):
         "stagnation": metrics["stagnation"],
         "overload": metrics["overload"],
         "frontier_stall": metrics["frontier_stall"],
-        "best_val_bpb": metrics["best"],
+        "best_loss": metrics["best"],
         "best_commit": best_commit,
         "weights": list(profile["weights"]),
         "k": profile["k"],
@@ -487,9 +489,9 @@ def run_status(args):
         f"novelty={record['novelty']:.3f} stagnation={record['stagnation']:.3f} "
         f"overload={record['overload']:.3f} frontier_stall={record['frontier_stall']}"
     )
-    if record["best_val_bpb"] is not None:
+    if record["best_loss"] is not None:
         print(
-            f"best_val_bpb={record['best_val_bpb']:.6f} "
+            f"best_loss={record['best_loss']:.6f} "
             f"best_commit={record['best_commit']}"
         )
     print_directive(record["regime"], record["directive"])
@@ -683,7 +685,7 @@ def add_common_options(parser, suppress_defaults=False):
     parser.add_argument("--repo", default=default if suppress_defaults else ".")
     parser.add_argument(
         "--profile",
-        default=default if suppress_defaults else "boredom_meter/profiles/autoresearch_llm.json",
+        default=default if suppress_defaults else str(DEFAULT_PROFILE),
     )
     parser.add_argument("--k", type=int, default=default if suppress_defaults else None)
     parser.add_argument("--eps", type=float, default=default if suppress_defaults else None)

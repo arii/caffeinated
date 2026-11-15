@@ -1,7 +1,0 @@
-diff --git a/train.py b/train.py
-index 5383d0a..6bc81b2 100644
---- a/train.py
-+++ b/train.py
-@@ -433 +433 @@ class MuonAdamW(torch.optim.Optimizer):
--ASPECT_RATIO = 80       # model_dim = depth * ASPECT_RATIO
-+ASPECT_RATIO = 96       # model_dim = depth * ASPECT_RATIO
