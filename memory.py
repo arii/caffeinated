@@ -803,7 +803,8 @@ def pending_count(value):
     return 1 if value else 0
 
 
-def read_mirror(mirror):
+def read_mirror(mirror, *, strict=True):
+    """strict=False skips lines that are not JSON, e.g. a tail cut off by an interrupted append."""
     path = Path(mirror)
     if not path.exists():
         return []
@@ -815,7 +816,8 @@ def read_mirror(mirror):
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError as error:
-                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
+                if strict:
+                    raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
     return records
 
 

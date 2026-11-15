@@ -4076,7 +4076,7 @@ def _orchestrate(args, publish_state, cleanup):
     viewer_run_dir = None if viewer_dest is None else viewer_dest / viewer_run_id
     pre_resume_mirror = []
     if resume is not None:
-        pre_resume_mirror = memory.read_mirror(out_dir / "memory.jsonl")
+        pre_resume_mirror = memory.read_mirror(out_dir / "memory.jsonl", strict=False)
         restore_checkpoint(out_dir, resume["checkpoint"])
         if viewer_run_dir is not None:
             restore_viewer(viewer_run_dir, resume["checkpoint"]["viewer"])
