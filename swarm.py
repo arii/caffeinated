@@ -398,6 +398,8 @@ def append_assignment(
         "roles": assignment["roles"],
         "scouts": assignment["scouts"],
         "rationale": assignment["rationale"],
+        "frustration": assignment.get("frustration"),
+        "stuck_cells": assignment.get("stuck_cells", []),
         "ledger_sha256": assignment["ledger_sha256"],
         "profile_sha256": assignment["profile_sha256"],
         "provenance": provenance or {},
@@ -405,7 +407,7 @@ def append_assignment(
     append_jsonl(Path(out_dir) / "assignments.jsonl", record)
     recalled_record = dict(record)
     if arm == "A":
-        for key in ("swarm_B", "per_agent_B", "per_agent_boredom"):
+        for key in ("swarm_B", "per_agent_B", "per_agent_boredom", "frustration", "stuck_cells"):
             recalled_record.pop(key, None)
     write_memory_item(
         "assignment",
