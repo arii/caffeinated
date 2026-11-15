@@ -13,12 +13,13 @@ import shutil
 import subprocess
 import sys
 import uuid
-from contextlib import ExitStack, contextmanager, redirect_stdout
+from contextlib import ExitStack, contextmanager, redirect_stdout, suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
+import live_publish
 import llm
 import memory
 import research
@@ -80,6 +81,8 @@ def append_jsonl(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+    if path.name != "viewer_publish_log.jsonl":
+        live_publish.changed(path)
 
 
 def read_jsonl(path):
@@ -1807,7 +1810,9 @@ def add_result_event(profile, ledger_path, candidate, round_num, status, score):
     ):
         if candidate.get(key) is not None:
             event[key] = candidate[key]
-    return meter.submit(profile, ledger_path, event)
+    submitted = meter.submit(profile, ledger_path, event)
+    live_publish.changed(ledger_path)
+    return submitted
 
 
 def write_result_memory(
@@ -2109,6 +2114,10 @@ def _orchestrate(args, publish_state, cleanup):
         else (Path(args.viewer_dest).resolve() if args.viewer_dest else out_dir / "viewer")
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
+    publisher = live_publish.Publisher(
+        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs)
+    )
+    publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"
     if not run_id_path.exists():
         run_id_path.write_text(uuid.uuid4().hex + "\n", encoding="utf-8")
@@ -2230,6 +2239,10 @@ def _orchestrate(args, publish_state, cleanup):
                 provenance=provenance,
             )
             status["per_agent_B"] = allocation["per_agent_B"]
+            viewer_frontier(out_dir, round_num, "assign")
+            if viewer_dest:
+                live_publish.watch(out_dir, publisher.request)
+                publisher.request()
             leads = run_scouts(
                 allocation["scouts"],
                 profile=profile,
@@ -2286,6 +2299,8 @@ def _orchestrate(args, publish_state, cleanup):
                 }.get(allocation["regime"], "EXPLOIT")
                 candidate_records.append(candidate)
 
+            viewer_frontier(out_dir, round_num, "research")
+            publisher.request()
             judge_novelty(
                 candidate_records,
                 llm_client=llm_client,
@@ -2299,6 +2314,8 @@ def _orchestrate(args, publish_state, cleanup):
             pending_candidates = [
                 candidate for candidate in candidate_records if candidate.get("status") == "pending"
             ]
+            viewer_frontier(out_dir, round_num, "propose")
+            publisher.request()
             run_candidates = deduplicate_round_candidates(repo, pending_candidates, out_dir)
             commits = [candidate["commit"] for candidate in run_candidates]
             evaluation_results, _ = run_evaluations(repo, commits, out_dir / "runs")
@@ -2504,7 +2521,8 @@ def _orchestrate(args, publish_state, cleanup):
                 if event.get("kind") == "candidate" and event.get("round", 0) > 0
             )
             write_round_summary(events, candidates_done)
-            publish_viewer_state(out_dir, viewer_dest, final=False, status="running")
+            viewer_frontier(out_dir, round_num, "finish")
+            publisher.flush(final=False, status="running")
             if latest_candidate is not None and accepted:
                 print(
                     f"round {round_num}: accepted {latest_candidate['commit']} "
@@ -2550,6 +2568,10 @@ def orchestrate(args):
 
 def _finish_publish(publish_state, terminal_status):
     out_dir = publish_state.get("out_dir")
+    publisher = publish_state.get("publisher")
+    if publisher:
+        live_publish.unwatch(out_dir)
+        publisher.close()
     if out_dir:
         run_path = Path(out_dir) / "run.json"
         if run_path.exists():
@@ -2560,6 +2582,22 @@ def _finish_publish(publish_state, terminal_status):
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
         publish_viewer_state(out_dir, publish_state.get("dest"), final=True, status=terminal_status)
+
+
+def viewer_frontier(out_dir, round_num, phase):
+    import export_viewer
+
+    try:
+        export_viewer._atomic_write(
+            Path(out_dir) / "viewer_frontier.json",
+            json.dumps({"round": round_num, "phase": phase}).encode(),
+        )
+    except Exception as error:
+        with suppress(Exception):
+            append_jsonl(
+                Path(out_dir) / "viewer_publish_log.jsonl",
+                {"ts": timestamp(), "error": type(error).__name__, "message": str(error)},
+            )
 
 
 def build_parser():

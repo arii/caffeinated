@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import live_publish
 from runtime_env import load_local_env
 
 ROOT = Path(__file__).resolve().parent
@@ -64,6 +65,7 @@ def append_log(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+    live_publish.changed(path)
 
 
 def fill_placeholders(template, values):

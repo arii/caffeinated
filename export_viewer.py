@@ -275,6 +275,12 @@ def _recompute_boredom(out_dir, assignments, ledger, run_artifact):
 
 def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
+    frontier_path = out_dir / "viewer_frontier.json"
+    frontier = (
+        json.loads(frontier_path.read_text())
+        if not final and frontier_path.exists()
+        else {"round": 0, "phase": "finish"}
+    )
     assignments = read_jsonl(out_dir / "assignments.jsonl")
     ledger = read_jsonl(out_dir / "ledger.jsonl")
     boredom_log = read_jsonl(out_dir / "boredom_log.jsonl")
@@ -1022,6 +1028,14 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         "live": not final,
         "converged": bool(run_artifact.get("converged", False)),
     }
+    if not final and run_artifact.get("status") not in {"finished", "stopped"}:
+        boundary = (frontier["round"], run.phase_rank[frontier["phase"]])
+        # Phase barriers are written only after all producers of that phase join.
+        # Timestamps alone are not watermarks: parallel workers can log late.
+        run.raw = [event for event in run.raw if event["key"][:2] <= boundary]
+        run.live_round = (
+            frontier["round"] if frontier["phase"] != "finish" else frontier["round"] + 1
+        )
     return run, manifest_extra
 
 
@@ -1650,6 +1664,8 @@ def build(run, extra):
             or next_event["round"] != event["round"]
             or next_event["type"] == "run.finished"
         )
+        if event["round"] >= getattr(run, "live_round", float("inf")):
+            round_end = False
         if round_end or event["tick"] - last_keyframe >= KEYFRAME_EVERY:
             keyframes[event["tick"]] = snapshot(world)
             last_keyframe = event["tick"]

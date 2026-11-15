@@ -17,6 +17,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+import live_publish
 from boredom import commit_message, source_trailers
 from research import read_log
 
@@ -173,6 +174,7 @@ def append_jsonl(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as log_file:
         log_file.write(json.dumps(record, sort_keys=True) + "\n")
+    live_publish.changed(path)
 
 
 def memory_payload(mem_type, memory_id, content, author, metadata, timestamp):
@@ -595,6 +597,7 @@ def append_recall_log(path, record):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as log_file:
         log_file.write(json.dumps(record, sort_keys=True) + "\n")
+    live_publish.changed(path)
 
 
 def pending_count(value):
