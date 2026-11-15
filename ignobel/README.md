@@ -21,6 +21,8 @@ from a hidden recipe in the yaml) and private boredom meter.
 - Bored daughters meet: pairing prefers daughters from different mothers (`cross_family_bonus`).
 - `roster: flat` in `config.yaml` (or `--roster flat`) uses the old flat list in `agents.yaml`.
 
+`python trace.py <run_dir>` writes `<run_dir>/trace.html`: every event of a run on one page, filterable by agent and event type, with each study's stats, plot and code.
+
 ## Quick start (no keys)
 
 ```bash
