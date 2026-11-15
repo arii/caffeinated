@@ -327,72 +327,8 @@ def fake_assigned_proposal(cell, candidate_source, descriptor=None, fake_edits=(
     }
 
 
-def execution_schema(values):
-    """Constrain small workers to an executable patch or an explicit short rejection."""
-    vocab = json.loads(values.get("vocab") or "{}")
-    descriptor = {
-        "type": "object",
-        "properties": {
-            "mechanism": {"type": "string"},
-            "method": {"type": "string"},
-            "params": {
-                "type": "object",
-                "properties": {"value": {"type": "number"}},
-                "required": ["value"],
-                "additionalProperties": False,
-            },
-        },
-        "required": ["mechanism", "method"],
-        "additionalProperties": False,
-    }
-    if vocab:
-        descriptor["anyOf"] = [
-            {"properties": {"mechanism": {"const": mechanism}, "method": {"enum": methods}}}
-            for mechanism, methods in vocab.items()
-            if isinstance(methods, list) and methods
-        ]
-    properties = {
-        "descriptor": descriptor,
-        "idea": {"type": "string", "maxLength": 180},
-        "rationale": {"type": "string", "maxLength": 120},
-        "lead_id": {"type": "null"},
-        "source_ids": {"type": "array", "items": {"type": "string"}},
-        "predicted_delta": {"type": "number"},
-        "edits": {
-            "type": "array",
-            "minItems": 1,
-            "maxItems": 3,
-            "items": {
-                "type": "object",
-                "properties": {"old": {"type": "string"}, "new": {"type": "string"}},
-                "required": ["old", "new"],
-                "additionalProperties": False,
-            },
-        },
-    }
-    return {
-        "anyOf": [
-            {
-                "type": "object",
-                "properties": properties,
-                "required": list(properties),
-                "additionalProperties": False,
-            },
-            {
-                "type": "object",
-                "properties": {
-                    "status": {"const": "reject"},
-                    "reason": {"type": "string", "maxLength": 160},
-                },
-                "required": ["status", "reason"],
-                "additionalProperties": False,
-            },
-        ]
-    }
-
-
 class LLMError(RuntimeError):
-    """A model request failed after its retries; the caller may record it and go on."""
+    """A model request failed; the caller may record it and go on."""
 
 
 class LLMClient:
@@ -409,18 +345,16 @@ class LLMClient:
         fake_delay=0.0,
         worker_tokens=600,
         supervisor_tokens=4096,
-        ollama_context=8192,
+        max_cost_usd=1.0,
     ):
+        self.max_cost_usd = max_cost_usd
         self.mode = mode.casefold()
         self.worker_tokens = worker_tokens
         self.supervisor_tokens = supervisor_tokens
-        self.ollama_context = ollama_context
         self.supervised = bool((role_models or {}).get("SUPERVISOR"))
         self.worker_calls = {}
         if not 128 <= worker_tokens <= 4096 or not 256 <= supervisor_tokens <= 8192:
             raise ValueError("invalid worker/supervisor token limit")
-        if not 4096 <= ollama_context <= 32768:
-            raise ValueError("Ollama context must be 4096-32768")
         self.fake_delay = max(0.0, float(fake_delay))
         self.prompt_dir = Path(prompt_dir)
         self.log_path = Path(log_path)
@@ -453,8 +387,6 @@ class LLMClient:
         self.request_attempts = []
         if self.mode == "fake":
             self.model = self.model or "fake"
-        elif self.mode == "ollama":
-            self.model = model or "qwen3:4b"
         elif self.mode == "tinker":
             if not replay and not self.model:
                 raise ValueError("set --model or TINKER_MODEL for Tinker requests")
@@ -466,13 +398,13 @@ class LLMClient:
             if not os.environ.get("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY is required for OpenAI requests")
         elif self.mode != "openai":
-            raise ValueError("LLM mode must be openai, tinker, ollama, or fake")
+            raise ValueError("LLM mode must be openai, tinker, or fake")
 
     def call(self, role, *, agent, round_num, values):
         if self.supervised and role.upper().startswith("WORKER_") and not self.replay:
             key = (agent, round_num)
             if self.worker_calls.get(key, 0) >= 2:
-                raise LLMError(f"{agent}: local call budget reached (one execution + one repair)")
+                raise LLMError(f"{agent}: worker call budget reached (one execution + one repair)")
             self.worker_calls[key] = self.worker_calls.get(key, 0) + 1
         self.call_counter += 1
         call_id = f"{role.upper()}-r{round_num}-{agent}-{self.call_counter}"
@@ -514,16 +446,16 @@ class LLMClient:
             response = fake_response(role, prompt_values)
         else:
             try:
-                if self.mode == "ollama":
-                    response, usage = self._request_ollama(
-                        prompt, model=model, role=role, values=prompt_values
-                    )
-                elif self.mode == "tinker":
+                if self.mode == "tinker":
                     response, usage = self._request_tinker(prompt, model=model)
+                elif self.supervised:
+                    import openai_live
+
+                    response, usage = openai_live.request(self, prompt, model=model, role=role)
                 else:
                     response, usage = self._request(prompt, model=model)
             except RuntimeError as error:
-                if self.mode == "ollama":
+                if self.mode == "openai" and self.supervised:
                     record = {
                         "ts": timestamp(),
                         "call_id": call_id,
@@ -681,68 +613,6 @@ class LLMClient:
                     + str(error)
                     + "\nReturn a single valid JSON object only."
                 )
-
-    def _request_ollama(self, prompt, model=None, role="WORKER_PROPOSE", values=None):
-        """Local-only inference, with bounded output and reasoning only for the supervisor."""
-        from urllib.parse import urlparse
-
-        base = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
-        address = urlparse(base)
-        if address.scheme != "http" or address.hostname not in {"127.0.0.1", "localhost", "::1"}:
-            raise ValueError("--llm ollama requires a local HTTP OLLAMA_HOST")
-        thinking = role.upper() == "SUPERVISOR"
-        limit = self.supervisor_tokens if thinking else self.worker_tokens
-        # Leave space for the output; fail visibly instead of silently truncating task context.
-        if len(prompt) > (self.ollama_context - limit) * 3:
-            raise RuntimeError(
-                "Local prompt exceeds conservative context budget; reduce task context"
-            )
-        payload = {
-            "model": model or self.model,
-            "messages": [{"role": "user", "content": prompt}],
-            "format": execution_schema(values or {})
-            if role.upper().startswith("WORKER_")
-            else "json",
-            "stream": False,
-            "think": thinking,
-            "keep_alive": "10m",
-            "options": {"num_ctx": self.ollama_context, "num_predict": limit, "temperature": 0.2},
-        }
-        if self.sampling_seed is not None:
-            payload["options"]["seed"] = self.sampling_seed
-        request = Request(
-            f"{base}/api/chat",
-            data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urlopen(request, timeout=240) as response:
-                result = json.loads(response.read())
-        except (URLError, TimeoutError, json.JSONDecodeError) as error:
-            raise RuntimeError(f"Ollama request failed: {error}") from error
-        message = result.get("message", {})
-        usage = {
-            "prompt_tokens": result.get("prompt_eval_count", 0),
-            "completion_tokens": result.get("eval_count", 0),
-            "total_tokens": result.get("prompt_eval_count", 0) + result.get("eval_count", 0),
-            "reasoning_chars": len(message.get("thinking", "")),
-            "thinking_enabled": thinking,
-            "output_limit": limit,
-            "eval_duration_ns": result.get("eval_duration", 0),
-        }
-        self.request_attempts.append({"response": message.get("content", ""), "usage": usage})
-        if result.get("done_reason") == "length":
-            raise RuntimeError(
-                f"Ollama hit the {limit}-token limit; no partial proposal will be executed"
-            )
-        try:
-            parsed = json.loads(message.get("content", ""))
-        except (ValueError, TypeError) as error:
-            raise RuntimeError("Ollama returned invalid JSON") from error
-        if not isinstance(parsed, dict):
-            raise RuntimeError("Ollama completion must be a JSON object")
-        return parsed, usage
 
     def _request(self, prompt, model=None):
         api_key = os.environ.get("OPENAI_API_KEY")

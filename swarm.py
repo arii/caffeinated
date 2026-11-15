@@ -2337,10 +2337,9 @@ def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
     hook = (TASK or {}).get("post_run")
     if not hook:
         return False
-    if replay or llm_mode in {"fake", "ollama"} or not os.environ.get("TINKER_API_KEY"):
+    if replay or llm_mode in {"fake", "openai"} or not os.environ.get("TINKER_API_KEY"):
         print(
-            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
-            "not --replay)",
+            f"[post_run] {hook} skipped (needs --llm tinker and TINKER_API_KEY, not --replay)",
             flush=True,
         )
         return False
@@ -3215,7 +3214,7 @@ RESUMED_SETTINGS = (
     "supervisor_model",
     "worker_tokens",
     "supervisor_tokens",
-    "ollama_context",
+    "max_cost_usd",
     "exa",
     "literature",
     "memory_backend",
@@ -3228,7 +3227,7 @@ RUN_DEFAULTS = {
     "workers": 4,
     "worker_tokens": 600,
     "supervisor_tokens": 4096,
-    "ollama_context": 8192,
+    "max_cost_usd": 1.0,
 }
 
 
@@ -3298,7 +3297,7 @@ def resolve_run_args(args):
     return {"out_dir": out_dir, "run": run_artifact, "checkpoint": read_checkpoint(out_dir)}
 
 
-def plan_local_workers(
+def plan_supervised_workers(
     client,
     agents,
     round_num,
@@ -3400,8 +3399,8 @@ def _orchestrate(args, publish_state, cleanup):
     worker_count = getattr(args, "workers", None) or 4
     if not 1 <= worker_count <= 12:
         raise ValueError("--workers must be between 1 and 12")
-    if getattr(args, "supervisor_model", None) and args.llm != "ollama":
-        raise ValueError("--supervisor-model currently requires --llm ollama")
+    if getattr(args, "supervisor_model", None) and args.llm != "openai":
+        raise ValueError("--supervisor-model requires --llm openai")
     agents = (
         AGENTS[:1] if args.arm == "S" else tuple(f"worker-{n}" for n in range(1, worker_count + 1))
     )
@@ -3430,7 +3429,7 @@ def _orchestrate(args, publish_state, cleanup):
             "and PubMed search instead of Exa",
             file=sys.stderr,
         )
-    effective_no_push = args.no_push or args.llm in {"fake", "ollama"}
+    effective_no_push = args.no_push or args.llm == "fake"
     memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
     if memory_override:
         memory_backend = memory.selected_backend(memory_override, args.arm)
@@ -3563,7 +3562,7 @@ def _orchestrate(args, publish_state, cleanup):
         fake_delay=getattr(args, "fake_delay", 0.0) or 0.0,
         worker_tokens=args.worker_tokens or 600,
         supervisor_tokens=args.supervisor_tokens or 4096,
-        ollama_context=args.ollama_context or 8192,
+        max_cost_usd=args.max_cost_usd,
     )
     critic_model = llm_client.role_models.get("CRITIC", llm_client.model)
     provenance.update({"seed": args.seed, "model": llm_client.model, "critic_model": critic_model})
@@ -3576,7 +3575,7 @@ def _orchestrate(args, publish_state, cleanup):
             "supervisor_model": getattr(args, "supervisor_model", None),
             "worker_tokens": args.worker_tokens or 600,
             "supervisor_tokens": args.supervisor_tokens or 4096,
-            "ollama_context": args.ollama_context or 8192,
+            "max_cost_usd": args.max_cost_usd,
         }
     )
     _write_run_artifact(out_dir, run_artifact)
@@ -3734,7 +3733,7 @@ def _orchestrate(args, publish_state, cleanup):
             assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
             if llm_client.supervised:
-                status["supervisor_tasks"] = plan_local_workers(
+                status["supervisor_tasks"] = plan_supervised_workers(
                     llm_client,
                     agents,
                     round_num,
@@ -4203,9 +4202,7 @@ def build_parser():
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
     parser.add_argument("--out")
-    parser.add_argument(
-        "--llm", choices=("openai", "tinker", "ollama", "fake"), help="default openai"
-    )
+    parser.add_argument("--llm", choices=("openai", "tinker", "fake"), help="default openai")
     parser.add_argument(
         "--resume",
         metavar="OUT",
@@ -4220,12 +4217,16 @@ def build_parser():
     parser.add_argument(
         "--workers", type=int, help="worker identities (1-12, default 4); calls are queued"
     )
-    parser.add_argument("--supervisor-model", help="Ollama planning model; one plan per round")
-    parser.add_argument("--worker-tokens", type=int, help="Ollama output cap (default 600)")
     parser.add_argument(
-        "--supervisor-tokens", type=int, help="Ollama planning cap including thought (default 4096)"
+        "--max-cost-usd", type=float, help="Supervised OpenAI run ceiling, default $1"
     )
-    parser.add_argument("--ollama-context", type=int, help="local context window (default 8192)")
+    parser.add_argument("--supervisor-model", help="Planning model; one plan per round")
+    parser.add_argument("--worker-tokens", type=int, help="Worker output cap (default 600)")
+    parser.add_argument(
+        "--supervisor-tokens",
+        type=int,
+        help="Supervisor planning cap including thought (default 4096)",
+    )
     parser.add_argument("--critic-model", help="LLM model for critic roles (default: use --model)")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), help="default on")
