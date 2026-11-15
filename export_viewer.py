@@ -124,13 +124,14 @@ class Run:
         self.entities = {kind: {} for kind in ENTITY_KINDS}
         self.agents = {}
 
-    def agent(self, native, agent_type, label=None):
+    def agent(self, native, agent_type, label=None, **extra):
         if native not in self.agents:
             self.agents[native] = {
                 "agent_id": uid(self.run_id, native),
                 "native_id": native,
                 "type": agent_type,
                 "label": label or native,
+                **extra,
             }
         return self.agents[native]["agent_id"]
 
@@ -276,6 +277,20 @@ def _recompute_boredom(out_dir, assignments, ledger, run_artifact):
     return profile, computed
 
 
+def task_config(task):
+    path = Path(__file__).resolve().parent / "testcases" / str(task) / "task.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) if task else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def task_title(task):
+    """Display name of a swarm task: task.json "title" (e.g. "Ig Nobel Prize hunt"), else "autoresearch · <task>"."""
+    fallback = f"autoresearch · {task}" if task else "autoresearch"
+    return task_config(task).get("title") or fallback
+
+
 def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
     watermark = live_publish.watermark()
@@ -318,15 +333,22 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     first_ts = all_ts[0] if all_ts else native_run
     run_id = uid(NS_CAFFEINATED, f"autoresearch:{arm}:{out_dir.name}:{first_ts}")
     run = Run("autoresearch", run_id)
-    run.agent("conductor", "conductor", "Conductor")
+    named = task_config(run_artifact.get("task")).get("agents") or {}
+
+    def add_agent(native, agent_type, label):
+        meta = named.get(native) or {}
+        extra = {"named": True, "field": meta.get("family", "")} if meta.get("label") else {}
+        run.agent(native, agent_type, meta.get("label") or label, **extra)
+
+    add_agent("conductor", "conductor", "Conductor")
     run.agent("baseline", "baseline", "Baseline")
     workers = sorted(
         {agent for _, record in assignments for agent in record.get("roles", {})}
         | {record["agent"] for _, record in ledger if record.get("kind") == "candidate"}
     )
     for worker in workers:
-        run.agent(worker, "worker", worker.replace("worker-", "Worker "))
-    run.agent("critic", "critic", "Critic")
+        add_agent(worker, "worker", worker.replace("worker-", "Worker "))
+    add_agent("critic", "critic", "Critic")
 
     starts = sorted(
         (record["ts"], record["round"]) for _, record in assignments if record.get("ts")
@@ -999,7 +1021,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         (number(r.get("score")) for _, r in ledger if r.get("kind") == "baseline"), None
     )
     manifest_extra = {
-        "title": title or f"autoresearch · {out_dir.name}",
+        "title": title or f"{task_title(run_artifact.get('task'))} · {out_dir.name}",
         "arm": {
             "id": arm,
             "label": "boredom meter on" if arm == "B" else "meter shadow only",

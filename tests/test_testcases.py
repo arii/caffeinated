@@ -1,4 +1,5 @@
 import csv
+import io
 import json
 import os
 import re
@@ -8,6 +9,7 @@ import sys
 import tempfile
 import types
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -15,6 +17,9 @@ import swarm
 from boredom import descriptor_meter as meter
 from testcases import sandbox
 from testcases.bixbench_mini.evaluate import grade as grade_bixbench
+from testcases.ignobel import evaluate as ignobel
+from testcases.ignobel import round_context as ignobel_round_context
+from testcases.ignobel import score_run as ignobel_score_run
 from testcases.playworld_mini.evaluate import valid_frame as playworld_valid_frame
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -218,6 +223,7 @@ class EvaluatorTests(unittest.TestCase):
     def test_playworld_candidate_cannot_import_grader_or_reach_network(self):
         source = """
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 import socket
 import sys
@@ -297,6 +303,21 @@ def predict(context_frames, context_actions, future_actions):
 
 
 class SwarmTaskModeTests(unittest.TestCase):
+    def test_task_scout_settings_reach_prompts(self):
+        from llm import render_prompt
+
+        task = swarm.load_task("ignobel")
+        extra = {"recalled": "", "suggested_cells": "", "target_cell": "none", "sources": ""}
+        prompt = render_prompt("SCOUT_QUERY", {**task["prompt_values"], **extra})
+        self.assertIn("downloadable", prompt)
+        self.assertNotIn("{scout_", prompt)
+        self.assertIn("real data", render_prompt("SCOUT_PICK", {**task["prompt_values"], **extra}))
+        default = swarm.load_task("hadamard19")["prompt_values"]
+        for role in ("SCOUT_QUERY", "SCOUT_PICK"):
+            plain = render_prompt(role, {**default, **extra})
+            self.assertNotIn("Task-specific search focus", plain)
+            self.assertNotIn("{scout_", plain)
+
     def test_task_context_previews_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory)
@@ -387,6 +408,319 @@ class SwarmTaskModeTests(unittest.TestCase):
             for row in rows:
                 self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
+
+
+class IgnobelPreregTests(unittest.TestCase):
+    URL = "https://raw.githubusercontent.com/example/odd/main/socks.csv"
+
+    def setUp(self):
+        self.external, self.prepare = ignobel.external, ignobel.external.prepare
+        prepare = self.prepare
+        self.tmp = tempfile.TemporaryDirectory()
+        self.task_dir = Path(self.tmp.name)
+        for name in ("boredom_profile.json", "sources.json"):
+            shutil.copy(TESTCASES / "ignobel" / name, self.task_dir / name)
+        rows = ["rownames,Socks lost per month,Dryer age (years),Favourite colour"]
+        for i in range(200):
+            rows.append(f"{i},{i % 7 + i % 3},{i % 7},{'red' if i % 2 else 'blue'}")
+        self.csv = "\n".join(rows) + "\n"
+        self.log = self.task_dir / "run" / "research_log.jsonl"
+        self.log.parent.mkdir()
+        self.log.write_text(
+            "".join(
+                json.dumps(
+                    {"type": "source", "id": f"S{k}", "url": f"https://doi.org/10.1/socks{k}"}
+                )
+                + "\n"
+                for k in (1, 2)
+            )
+        )
+        for patcher in (
+            patch.dict(os.environ, {"IGNOBEL_JUDGE": "frozen"}),
+            patch.object(prepare, "fetch", return_value=self.csv),
+            patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("93.184.216.34", 443))]),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def prereg(self, **overrides):
+        dataset = {"url": self.URL, "x": "Dryer age (years)", "y": "Socks lost per month"}
+        dataset.update(overrides.pop("dataset", {}))
+        base = {
+            "field": "everyday_physics",
+            "study_type": "untested_prediction",
+            "question": "Do older dryers eat more socks?",
+            "hypothesis": "Sock loss rises with dryer age.",
+            "mechanism": "Worn drum seals open gaps that trap small garments.",
+            "citations": ["S1", "S2"],
+            "dataset": dataset,
+            "direction": "positive",
+            "predicted_rho": 0.6,
+        }
+        return {**base, **overrides}
+
+    def run_prereg(self, log=True, **overrides):
+        return ignobel.evaluate_source(
+            json.dumps(self.prereg(**overrides)),
+            task_dir=self.task_dir,
+            research_log=str(self.log) if log else None,
+        )
+
+    def test_confirmed_registration_scores(self):
+        result = self.run_prereg()
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        graded = result["graded"]
+        self.assertTrue(graded["confirmed"], graded)
+        self.assertTrue(graded["replicated"] and graded["significant"])
+        self.assertEqual(result["loss"], 0.0)
+        self.assertEqual(len(graded["halves"]), 2)
+        self.assertEqual(
+            graded["citations"], ["https://doi.org/10.1/socks1", "https://doi.org/10.1/socks2"]
+        )
+        self.assertIn(
+            'higher "Dryer age (years)" goes with higher "Socks lost per month"', graded["headline"]
+        )
+        self.assertIn("candidate_executed: false", result["stdout"])
+
+    def test_wrong_direction_fails(self):
+        graded = self.run_prereg(direction="negative")["graded"]
+        self.assertFalse(graded["significant"])
+        self.assertEqual(graded["score"], 0.0)
+
+    def test_citations_must_come_from_research_or_vetted_sources(self):
+        for citations in (
+            ["S1"],
+            ["S1", "S9"],
+            ["S1", "https://doi.org/10.1/made-up"],
+            ["S1", self.URL],
+        ):
+            with (
+                self.subTest(citations=citations),
+                patch.object(self.external, "doi_title", return_value=None),
+            ):
+                graded = self.run_prereg(citations=citations)["graded"]
+                self.assertEqual(graded["score"], 0.0)
+                self.assertIn("citations", graded["rejected"])
+        same_paper = ["doi:10.1002/bdm.414", "https://doi.org/10.1002/BDM.414"]
+        with patch.object(
+            self.external, "doi_title", return_value="A domain-specific risk-attitude scale"
+        ):
+            graded = self.run_prereg(log=False, citations=same_paper)["graded"]
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("got 1", graded["rejected"])
+        real_doi = ["S1", "https://doi.org/10.1038/294580a0"]
+        with patch.object(
+            self.external,
+            "doi_title",
+            return_value="Sexual activity reduces lifespan of male fruitflies",
+        ):
+            self.assertGreater(self.run_prereg(citations=real_doi)["graded"]["score"], 0)
+        vetted = [
+            "https://doi.org/10.1002/bdm.414",
+            "https://doi.org/10.1046/j.1360-0443.2002.00163.x",
+        ]
+        self.assertGreater(self.run_prereg(log=False, citations=vetted)["graded"]["score"], 0)
+
+    def test_one_registered_test_per_dataset_per_run(self):
+        self.assertGreater(self.run_prereg()["graded"]["score"], 0)
+        self.assertGreater(self.run_prereg()["graded"]["score"], 0)
+        for url in (self.URL, self.URL + "#again", self.URL + "?copy=1"):
+            with self.subTest(url=url):
+                other = self.run_prereg(
+                    dataset={"url": url, "x": "Favourite colour", "x_level": "red"}
+                )["graded"]
+                self.assertEqual(other["score"], 0.0)
+                self.assertIn("one confirmatory test per dataset", other["rejected"])
+
+    def test_prediction_is_frozen_at_first_registration(self):
+        first = self.run_prereg(predicted_rho=0.05)["graded"]
+        revised = self.run_prereg(predicted_rho=first["rho"])["graded"]
+        self.assertEqual(revised["predicted_rho"], 0.05)
+        self.assertEqual(revised["score"], first["score"])
+
+    def test_unknown_column_lists_usable_columns(self):
+        result = self.run_prereg(dataset={"y": "Socks"})
+        self.assertEqual(result["status"], "crash")
+        self.assertEqual(result["reason"], "invalid_output")
+        self.assertIn("Socks lost per month", result["stderr"])
+        self.assertNotIn("rownames", result["stderr"])
+
+    def test_invalid_registrations_fail_closed(self):
+        for overrides in (
+            {"field": "Astrology!"},
+            {"study_type": "fishing"},
+            {"predicted_rho": 0},
+            {"hypothesis": ""},
+            {"citations": [f"10.1/{k}" for k in range(9)]},
+        ):
+            with self.subTest(overrides=overrides):
+                result = self.run_prereg(**overrides)
+                self.assertEqual((result["status"], result["reason"]), ("crash", "invalid_output"))
+        result = ignobel.evaluate_source("print('the gravy did it')", task_dir=self.task_dir)
+        self.assertEqual((result["status"], result["score"]), ("crash", 0.0))
+
+    def test_labs_may_found_new_subfields(self):
+        result = self.run_prereg(field="myrmecology")
+        self.assertEqual(result["status"], "ok", result["stderr"])
+        self.assertTrue(result["graded"]["confirmed"])
+
+    def test_round_context_shows_the_lab_notebook(self):
+        self.run_prereg()
+        out = io.StringIO()
+        with patch.dict(os.environ, {"EXA": "off"}), redirect_stdout(out):
+            ignobel_round_context.main(["--out-dir", str(self.log.parent)])
+        text = out.getvalue()
+        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', text)
+        self.assertIn("REPLICATED", text)
+        self.assertIn("Datasets already tested this run", text)
+
+    def test_derived_rate_variables(self):
+        dataset = {"x": "Dryer age (years)", "x_per": "Socks lost per month"}
+        graded = self.run_prereg(dataset=dataset)["graded"]
+        self.assertIn('higher "Dryer age (years)" per "Socks lost per month"', graded["headline"])
+        self.assertTrue(graded["rejected"].startswith("trivial"))
+        self.assertNotEqual(
+            ignobel.test_hash(self.prereg(dataset=dataset)),
+            ignobel.test_hash(self.prereg(dataset={"x": "Dryer age (years)"})),
+        )
+        bad = self.run_prereg(dataset={"x_per": "Favourite colour"})
+        self.assertEqual((bad["status"], bad["reason"]), ("crash", "invalid_output"))
+
+    def test_delimiter_respects_quotes(self):
+        prepare = sys.modules["prepare"]
+        self.assertEqual(prepare.delimiter('"a,b,c"\t"d"'), "\t")
+        self.assertEqual(prepare.delimiter("a,b,c"), ",")
+
+    def test_trivial_pair_scores_zero(self):
+        graded = self.run_prereg(dataset={"x": "Socks lost per month"})["graded"]
+        self.assertEqual(graded["score"], 0.0)
+        self.assertIn("same variable", graded["rejected"])
+
+    def test_url_policy(self):
+        check = self.external.check_url
+        check(self.URL)
+        for url in (
+            "http://raw.githubusercontent.com/a.csv",
+            "https://127.0.0.1/a.csv",
+            "https://localhost/a.csv",
+            "https://evil.example.com/a.csv",
+        ):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                check(url, research_log=self.task_dir / "missing.jsonl")
+        log = self.task_dir / "cited.jsonl"
+        log.write_text(json.dumps({"url": "https://lab.example.org/raw/odd.csv"}) + "\n")
+        check("https://lab.example.org/raw/odd.csv", research_log=log)
+
+    def test_minimum_rows_counts_both_halves(self):
+        header = "a,b\n"
+        for n, ok in ((60, True), (59, False)):
+            body = "".join(f"{i % 5},{i % 3}\n" for i in range(n))
+            url = f"https://raw.githubusercontent.com/example/odd/main/rows{n}.csv"
+            with self.subTest(n=n), patch.object(self.prepare, "fetch", return_value=header + body):
+                if ok:
+                    self.assertEqual(self.external.ensure(url, self.task_dir)[1]["n_rows"], n)
+                else:
+                    with self.assertRaises(ValueError):
+                        self.external.ensure(url, self.task_dir)
+
+    def test_redirects_and_private_resolution_are_blocked(self):
+        with (
+            patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("10.0.0.5", 443))]),
+            self.assertRaises(ValueError),
+        ):
+            self.external.safe_url("https://raw.githubusercontent.com/a.csv")
+        handler = self.prepare.CheckedRedirect()
+        previous = self.prepare.URL_CHECK
+        self.prepare.URL_CHECK = self.external.safe_url
+        try:
+            for target in (
+                "http://raw.githubusercontent.com/a.csv",
+                "https://169.254.169.254/latest",
+            ):
+                with self.subTest(target=target), self.assertRaises(ValueError):
+                    handler.redirect_request(None, None, 302, "Found", {}, target)
+        finally:
+            self.prepare.URL_CHECK = previous
+
+    def test_dataset_is_frozen_and_split_deterministically(self):
+        name, entry = self.external.ensure(self.URL, self.task_dir)
+        first = (self.task_dir / entry["file"]).read_text()
+        hidden = (self.task_dir / ".cache" / "replication" / f"{name}.csv").read_text()
+        self.assertEqual(first.count("\n") + hidden.count("\n") - 2, 200)
+        self.assertEqual(self.external.ensure(self.URL, self.task_dir)[1], entry)
+        self.assertEqual(
+            {v["label"] for v in entry["variables"].values()},
+            {"Socks lost per month", "Dryer age (years)", "Favourite colour"},
+        )
+
+    def test_score_run_sends_only_replicated_studies_to_the_committee(self):
+        committee = ignobel_score_run.committee
+        self.run_prereg()
+        self.run_prereg(
+            dataset={"url": self.URL + "?other", "x": "Favourite colour", "x_level": "red"}
+        )
+        seen = []
+
+        def ask(model, system, user, task_dir):
+            seen.append(user)
+            laugh = 8 if "Ig Nobel" in system else 6
+            return {
+                "laugh": laugh,
+                "think": 7,
+                "targets_group": False,
+                "reason": "ok",
+                "model": model,
+            }
+
+        rows = ignobel_score_run.score_run(self.log.parent, self.task_dir, ask)
+        self.assertEqual(len(rows), 1)
+        self.assertAlmostEqual(rows[0]["committee"], 0.6)
+        self.assertEqual(len(seen), 2)
+        self.assertIn('higher "Dryer age (years)" goes with higher "Socks lost per month"', seen[0])
+        self.assertNotIn("Worn drum seals", seen[0])
+        self.assertTrue((self.log.parent / "scores.jsonl").is_file())
+        self.assertEqual(set(committee.models()), {"a", "b"})
+
+    def test_committee_rejects_jokes_about_groups(self):
+        def ask(model, system, user, task_dir):
+            return {
+                "laugh": 9,
+                "think": 9,
+                "targets_group": "Ig Nobel" in system,
+                "reason": "",
+                "model": model,
+            }
+
+        verdict = ignobel_score_run.committee.score_study("abstract", "title", self.task_dir, ask)
+        self.assertEqual(verdict["score"], 0.0)
+        self.assertTrue(verdict["rejected"])
+
+
+class IgnobelTaskTests(unittest.TestCase):
+    def test_committee_prompts_come_from_ignobel_project(self):
+        committee = ignobel_score_run.committee
+
+        prompts = committee.judge_prompts()
+        self.assertIn("LAUGH", prompts["a"])
+        self.assertIn("science journalist", prompts["b"])
+
+    def test_fields_match_profile(self):
+        fields = ignobel.load_fields()
+        self.assertIn("food_science", fields)
+        prereg = json.loads((TESTCASES / "ignobel" / "prereg.json").read_text())
+        self.assertIn(prereg["study_type"], fields[prereg["field"]])
+
+    def test_ignobel_baseline_registration_is_a_real_null(self):
+        result = evaluate("ignobel")
+        values = dict(re.findall(r"^([\w_ ]+): (.+)$", result.stdout, re.M))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(float(values["loss"]), 1.0)
+        self.assertEqual(values["significant"], "false")
+        self.assertEqual(values["confirmed"], "false")
+        self.assertEqual(values["citations"], "2 verified")
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ if str(ROOT) not in sys.path:
 
 from testcases import sandbox
 
-TASKS = ("hadamard19", "bixbench_mini", "playworld_mini")
+TASKS = tuple(sorted(path.parent.name for path in HERE.glob("*/task.json")))
 HEADER = ["commit", "loss", "status", "description"]
 
 
