@@ -108,14 +108,46 @@ class PublishRecoveryTests(unittest.TestCase):
             run_dir = export_viewer.publish(out, dest, final=False, status="running")
             after = (run_dir / "events.ndjson").read_bytes()
             self.assertTrue(after.startswith(before))
-            events, manifest, _ = read_bundle(run_dir)
+            events, manifest, entities = read_bundle(run_dir)
             self.assertEqual([e["tick"] for e in events], list(range(len(events))))
             self.assertEqual(events[-1]["refs"].get("question_id"), "question:Q9")
             self.assertEqual(manifest["publish_errors"][-1]["kind"], "recovered")
             rounds = [e["round"] for e in events]
             self.assertEqual(rounds, sorted(rounds))
+            question = entities["questions"]["question:Q9"]
+            self.assertEqual(question["round"], events[-1]["round"])
+            # Later publishes keep the pin and do not log the same recovery again.
+            export_viewer.publish(out, dest, final=False, status="running")
+            run_dir = export_viewer.publish(out, dest, final=False, status="running")
+            _, manifest, _ = read_bundle(run_dir)
+            kinds = [e["kind"] for e in manifest["publish_errors"]]
+            self.assertEqual(kinds, ["recovered"])
+            append_jsonl(
+                out / "research_log.jsonl",
+                {
+                    "type": "query",
+                    "id": "Q10",
+                    "agent": "worker-1",
+                    "query": "early too",
+                    "ts": "2026-11-14T10:00:31Z",
+                },
+            )
             final_dir = export_viewer.publish(out, dest, final=True, status="finished")
             self.assertTrue((final_dir / "events.ndjson").read_bytes().startswith(after))
+            _, manifest, _ = read_bundle(final_dir)
+            kinds = [e["kind"] for e in manifest["publish_errors"]]
+            self.assertEqual(kinds, ["recovered", "recovered"])
+
+    def test_scoring_status_is_live(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            run_dir = export_viewer.publish(out, root / "dest", final=False, status="scoring")
+            _, manifest, _ = read_bundle(run_dir)
+            self.assertEqual((manifest["status"], manifest["live"]), ("scoring", True))
+            run_dir = export_viewer.publish(out, root / "dest", final=True, status="stopped")
+            _, manifest, _ = read_bundle(run_dir)
+            self.assertEqual((manifest["status"], manifest["live"]), ("stopped", False))
 
     def test_round_context_sources_carry_ts_and_round(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -239,6 +271,17 @@ class ReadableExportTests(unittest.TestCase):
             events, _, _ = read_bundle(run_dir)
             self.assertEqual([e["type"] for e in events].count("award.issued"), 1)
 
+    def test_tsless_study_inherits_previous_ts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            late = {key: value for key, value in study("c1").items() if key != "ts"}
+            write_jsonl(out / "ignobel_studies.jsonl", [study("c1"), {**late, "commit": None}])
+            events, _, _ = read_bundle(export_viewer.export(out, root / "dest"))
+            studies = [e for e in events if e["type"].startswith("study.")]
+            self.assertEqual({e["ts"] for e in studies}, {studies[0]["ts"]})
+            self.assertIsNotNone(studies[0]["ts"])
+
     def test_ignobel_metric_label_comes_from_task(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -263,6 +306,15 @@ class ReadableExportTests(unittest.TestCase):
             self.assertTrue(experiment["log_tail"].endswith("END"))
             self.assertLessEqual(len(experiment["log_tail"]), export_viewer.LOG_TAIL_CHARS)
             self.assertTrue((run_dir / "artifacts" / "runs" / "c1.diff").is_file())
+
+    def test_missing_log_is_omitted_from_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = autoresearch_run(root)
+            _, _, entities = read_bundle(export_viewer.export(out, root / "dest"))
+            experiment = entities["experiments"]["experiment:c1"]
+            self.assertNotIn("log", experiment["artifacts"])
+            self.assertIsNone(experiment["log_tail"])
 
 
 class PublisherErrorTests(unittest.TestCase):
@@ -340,6 +392,33 @@ class SwarmOptionTests(unittest.TestCase):
             self.assertTrue(swarm.run_post_run_hook("out", "tinker"))
             run.return_value.returncode = 1
             self.assertFalse(swarm.run_post_run_hook("out", "tinker"))
+            started = []
+            run.reset_mock()
+            self.assertFalse(swarm.run_post_run_hook("out", "tinker", replay=True))
+            run.assert_not_called()
+            run.return_value.returncode = 0
+            swarm.run_post_run_hook("out", "tinker", on_start=lambda: started.append(1))
+            self.assertEqual(started, [1])
+
+    def test_interrupt_after_rounds_finishes_run(self):
+        def interrupted_scoring(args, publish_state, cleanup):
+            publish_state["completed"] = True
+            raise KeyboardInterrupt
+
+        def interrupted_rounds(args, publish_state, cleanup):
+            raise KeyboardInterrupt
+
+        for orchestrate, expected in (
+            (interrupted_scoring, "finished"),
+            (interrupted_rounds, "stopped"),
+        ):
+            with (
+                patch.object(swarm, "_orchestrate", orchestrate),
+                patch.object(swarm, "_finish_publish") as finish,
+                self.assertRaises(KeyboardInterrupt),
+            ):
+                swarm.orchestrate(None)
+            self.assertEqual(finish.call_args.args[1], expected)
 
 
 if __name__ == "__main__":

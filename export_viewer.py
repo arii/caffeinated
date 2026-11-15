@@ -126,6 +126,7 @@ class Run:
         self.entities = {kind: {} for kind in ENTITY_KINDS}
         self.agents = {}
         self.pinned = []
+        self.out_of_order = []
 
     def agent(self, native, agent_type, label=None, **extra):
         if native not in self.agents:
@@ -185,17 +186,22 @@ class Run:
                     "payload": raw["payload"],
                 }
             )
+        relabelled = self._after_pinned(events) if self.pinned else {}
         if self.pinned:
-            events = self._after_pinned(events)
-        tick_of = {}
+            events = relabelled.pop(None)
+        first_event = {}
         for event in events:
             for ref in event["refs"].values():
                 if isinstance(ref, str):
-                    tick_of.setdefault(ref, event["tick"])
+                    first_event.setdefault(ref, event)
         for table in self.entities.values():
             for entity_id, entity in table.items():
+                event = first_event.get(entity_id)
                 if "tick" in entity and entity["tick"] is None:
-                    entity["tick"] = tick_of.get(entity_id)
+                    entity["tick"] = event and event["tick"]
+                # An entity introduced by an appended (relabelled) event moves with it.
+                if event and event["event_id"] in relabelled and "round" in entity:
+                    entity["round"] = event["round"]
         return events
 
     def _after_pinned(self, events):
@@ -203,16 +209,33 @@ class Run:
 
         Used when a late record would otherwise sort into the published prefix:
         it is appended (never in an earlier round than the event before it).
+        Returns {event_id: round} for events whose round was raised, with the
+        merged event list under the key None; records the ids of events that
+        were out of order (sorted before a published event, or changed) in
+        self.out_of_order.
         """
         merged = [dict(event) for event in self.pinned]
-        published = {event["event_id"] for event in merged}
+        published = {event["event_id"]: event for event in merged}
+        last_published = max(
+            (i for i, event in enumerate(events) if event["event_id"] in published), default=-1
+        )
         floor = merged[-1]["round"] if merged else 0
-        for event in events:
-            if event["event_id"] in published:
+        relabelled = {}
+        self.out_of_order = []
+        for index, event in enumerate(events):
+            old = published.get(event["event_id"])
+            if old is not None:
+                if {**old, "tick": None} != json.loads(json.dumps({**event, "tick": None})):
+                    self.out_of_order.append(event["event_id"])
                 continue
+            if index < last_published:
+                self.out_of_order.append(event["event_id"])
+            if event["round"] < floor:
+                relabelled[event["event_id"]] = floor
             floor = max(floor, event["round"])
             merged.append({**event, "tick": len(merged), "round": floor})
-        return merged
+        relabelled[None] = merged
+        return relabelled
 
 
 def round_of_ts(starts, ts):
@@ -462,6 +485,8 @@ def task_title(task):
 
 def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
     out_dir = Path(out_dir)
+    requested_status = status  # `status` is reused for per-row statuses below
+    live_status = "scoring" if status == "scoring" else "running"
     watermark = live_publish.watermark()
     frontier_path = out_dir / "viewer_frontier.json"
     frontier = (
@@ -1248,7 +1273,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
 
     last_round = max([r for _, r in starts] + [0])
     export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_ts)
-    final_status = status or run_artifact.get("status", "finished")
+    final_status = requested_status or run_artifact.get("status", "finished")
     final_status = final_status if final_status in {"finished", "stopped"} else "finished"
     if final:
         run.emit(
@@ -1303,7 +1328,7 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         },
         "baseline": baseline,
         "profile": profile,
-        "status": final_status if final else "running",
+        "status": final_status if final else live_status,
         "live": not final,
         "converged": bool(run_artifact.get("converged", False)),
     }
@@ -1343,10 +1368,12 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
 def experiment_artifacts(out_dir, commit):
     if not commit:
         return {}
-    artifacts = {"log": f"runs/{commit}.log"}
-    if (Path(out_dir) / "runs" / f"{commit}.diff").is_file():
-        artifacts["diff"] = f"runs/{commit}.diff"
-    return artifacts
+    runs = Path(out_dir) / "runs"
+    return {
+        kind: f"runs/{commit}.{kind}"
+        for kind in ("log", "diff")
+        if (runs / f"{commit}.{kind}").is_file()
+    }
 
 
 def log_tail(out_dir, commit):
@@ -1381,10 +1408,9 @@ def export_studies(run, out_dir, starts, experiments_by_commit, last_round, all_
     """Ig Nobel preregistrations, results and committee awards (ignobel_studies.jsonl)."""
     rows = read_jsonl(Path(out_dir) / "ignobel_studies.jsonl")
     by_commit, by_prereg = {}, {}
-    for line, record in rows:
+    for line, record, ts in with_inherited_ts(rows, "ts"):
         prereg, result = record.get("prereg") or {}, record.get("result") or {}
         commit = record.get("commit")
-        ts = iso_ts(record.get("ts"))
         prereg_key = json.dumps(prereg, sort_keys=True)
         original = by_commit.get(commit) if commit else None
         if record.get("role") == "critic" or (not commit and prereg_key in by_prereg):
@@ -1910,13 +1936,15 @@ def _copy_artifacts(out_dir, run_dir, entities):
             shutil.copyfile(source, target)
 
 
-def export(out_dir, dest, arm=None, title=None, final=True, status=None, pinned=None):
+def export(out_dir, dest, arm=None, title=None, final=True, status=None, pinned=None, report=None):
     out_dir = Path(out_dir)
     run, extra = export_autoresearch(out_dir, arm, title, final, status)
     run.pinned = pinned or []
     manifest, timeline, events, keyframes = build(run, extra)
     run_dir = write(dest, manifest, timeline, events, keyframes, run.entities)
     _copy_artifacts(out_dir, run_dir, run.entities)
+    if report is not None:
+        report["out_of_order"] = run.out_of_order
     return run_dir
 
 
@@ -1928,7 +1956,12 @@ PUBLISH_LOG = "viewer_publish_log.jsonl"
 PUBLISH_ERRORS_SHOWN = 20
 
 
-def log_publish_issue(out_dir, *, kind, message, final=False, status=None):
+# (dest, out_dir) -> viewer run_id of bundles whose events are pinned after a recovery: later
+# publishes export with the published events pinned directly instead of exporting twice.
+_PINNED_TARGETS = {}
+
+
+def log_publish_issue(out_dir, *, kind, message, final=False, status=None, event_ids=None):
     """Append a publish error/recovery to the run's log (surfaced as manifest.publish_errors)."""
     record = {
         "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1936,6 +1969,7 @@ def log_publish_issue(out_dir, *, kind, message, final=False, status=None):
         "status": status,
         "final": final,
         "message": str(message)[:500],
+        **({"event_ids": event_ids} if event_ids else {}),
     }
     with (Path(out_dir) / PUBLISH_LOG).open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(record, sort_keys=True) + "\n")
@@ -1972,40 +2006,81 @@ def _atomic_write(path, data):
             temp_path.unlink()
 
 
+def _read_pinned(current_events, run_id):
+    try:
+        return [json.loads(line) for line in current_events.decode().splitlines() if line]
+    except ValueError as error:
+        raise PublishConflict(f"published events are unreadable for run {run_id}") from error
+
+
+def _logged_recoveries(out_dir):
+    return {
+        event_id
+        for _, record in read_jsonl(Path(out_dir) / PUBLISH_LOG)
+        if record.get("kind") == "recovered"
+        for event_id in record.get("event_ids") or ()
+    }
+
+
 def publish(out_dir, dest, *, final=False, status=None):
     out_dir, dest = Path(out_dir), Path(dest)
     final_status = status if status in {"finished", "stopped"} else "finished"
+    export_status = final_status if final else status
     with tempfile.TemporaryDirectory(prefix="swarm-viewer-export-") as temp:
+        pin_key = (str(dest.resolve()), str(out_dir.resolve()))
+        pinned_run = _PINNED_TARGETS.get(pin_key)
+        pinned_path = dest / str(pinned_run) / "events.ndjson"
+        pinned = None
+        if pinned_run and pinned_path.exists():
+            pinned = _read_pinned(pinned_path.read_bytes(), pinned_run)
+        report = {}
         fresh_root = Path(temp) / "export"
-        fresh_dir = export(out_dir, fresh_root, final=final, status=final_status)
+        fresh_dir = export(
+            out_dir, fresh_root, final=final, status=export_status, pinned=pinned, report=report
+        )
         run_id = fresh_dir.name
         target = dest / run_id
         fresh_events = (fresh_dir / "events.ndjson").read_bytes()
         current_path = target / "events.ndjson"
         current_events = current_path.read_bytes() if current_path.exists() else b""
-        recovered = not fresh_events.startswith(current_events)
-        if recovered:
+        if pinned is None and not fresh_events.startswith(current_events):
             # A late record sorted into the published prefix: keep every published
             # event as-is and append the new ones instead of wedging the live run.
-            try:
-                pinned = [json.loads(line) for line in current_events.decode().splitlines() if line]
-            except ValueError as error:
-                raise PublishConflict(
-                    f"published events are unreadable for run {run_id}"
-                ) from error
-            log_publish_issue(
-                out_dir,
-                kind="recovered",
-                final=final,
-                status=status,
-                message="published events were not a prefix; new events appended after tick "
-                f"{len(pinned) - 1}",
-            )
+            pinned = _read_pinned(current_events, run_id)
             fresh_root = Path(temp) / "recovered"
-            fresh_dir = export(out_dir, fresh_root, final=final, status=final_status, pinned=pinned)
+            fresh_dir = export(
+                out_dir,
+                fresh_root,
+                final=final,
+                status=export_status,
+                pinned=pinned,
+                report=report,
+            )
             fresh_events = (fresh_dir / "events.ndjson").read_bytes()
-            if not fresh_events.startswith(current_events):
-                raise PublishConflict(f"published events are not a prefix for run {run_id}")
+        if not fresh_events.startswith(current_events):
+            raise PublishConflict(f"published events are not a prefix for run {run_id}")
+        recovered = pinned is not None
+        if recovered:
+            _PINNED_TARGETS[pin_key] = run_id
+            logged = _logged_recoveries(out_dir)
+            late = [i for i in report.get("out_of_order", []) if i not in logged]
+            if late:
+                log_publish_issue(
+                    out_dir,
+                    kind="recovered",
+                    final=final,
+                    status=status,
+                    event_ids=late,
+                    message=f"{len(late)} out-of-order event(s) appended after published tick "
+                    f"{len(pinned) - 1}",
+                )
+                manifest_path = fresh_dir / "manifest.json"
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                manifest["publish_errors"] = publish_errors(out_dir)
+                manifest_path.write_text(
+                    json.dumps(manifest, indent=1, sort_keys=True, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
 
         fresh_keyframes = fresh_dir / "keyframes"
         keyframe_writes = []

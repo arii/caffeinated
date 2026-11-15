@@ -158,7 +158,8 @@ keys). Optional fields are absent, never `null`, unless the type says `| null`.
 
 ```ts
 type Swarm = 'autoresearch' | 'ignobel';  // 'ignobel': legacy recordings only; swarm.py --task ignobel exports 'autoresearch'
-type RunStatus = 'running' | 'completed' | 'failed' | 'stopped';
+type RunStatus = 'running' | 'completed' | 'failed' | 'stopped' | 'finished'
+  | 'scoring';  // live: rounds done, task post_run hook (ignobel committee) running
 
 interface RunManifest {
   schema: 'swarm-viewer/v1';
@@ -194,6 +195,11 @@ Live publishing is append-only: a republish keeps the published `events.ndjson` 
 prefix. If a late record would sort into the published prefix, the exporter pins the published
 events and appends the new ones after them (never in an earlier round) and logs a `recovered`
 issue instead of raising `PublishConflict`. Only unreadable published bytes still conflict.
+After a recovery the producer keeps the published events pinned for the rest of the run, so the
+published bundle's tick order (and the round of appended events) can differ from a fresh
+re-export of the same native logs. Consumers must treat the published bundle as authoritative.
+A `recovered` issue is logged at most once per out-of-order event (its `event_ids` are kept in
+`viewer_publish_log.jsonl`), so repeated publishes do not flood `publish_errors`.
 A failed final publish is retried once, then printed to stderr and kept in `publish_errors`.
 
 ### 3.2 Agents
@@ -297,9 +303,10 @@ interface Experiment {      // one ledger row (autoresearch) or study (ignobel)
   verdict?: { by_agent_id: string; verdict: string; why: string };
   reward: Reward | null;
   artifacts: Record<string, string>;      // log: runs/<commit>.log, diff: runs/<commit>.diff
-                                          // (diff capped at 20,000 chars); both copied
-                                          // under the bundle's artifacts/
-  log_tail?: string;                      // last 2,000 chars of the run log
+                                          // (diff capped at 20,000 chars); each key present
+                                          // only when the file exists; copied under the
+                                          // bundle's artifacts/
+  log_tail: string | null;                // last 2,000 chars of the run log; null when none
 }
 
 interface Study {           // ignobel_studies.jsonl: one per candidate study (critic re-runs
@@ -311,11 +318,13 @@ interface Study {           // ignobel_studies.jsonl: one per candidate study (c
              y?: string; y_level?: string; y_per?: string };
   dataset_id?: string; direction?: string;
   predicted_rho: number | null; rho: number | null; p: number | null; n: number | null;
-  halves: { rho: number; p: number; n: number }[] | null;
+  halves: { rho: number; p: number; n: number; problem: string | null }[] | null;
   significant: boolean | null; replicated: boolean | null; confirmed: boolean;
   headline: string | null;
   rejected: string | null;  // rejection reason (bad dataset, wrong direction, ...)
-  outcome: string;          // one readable line, e.g. "replicated: rho 0.31 vs predicted 0.2"
+  outcome: string;          // one readable line, e.g. "rho 0.065 (predicted 0.15), p 0.18,
+                            // n 428: not significant" ("...: REPLICATED", "...: significant
+                            // but did not replicate", "Rejected: <reason>", "Not run")
   citations: string[];
   replications: { rho; p; n; halves; significant; replicated; confirmed }[];  // critic re-runs
   committee: { score: number | null; rejected: string | null; verdicts: unknown } | null;
@@ -404,7 +413,7 @@ interface SwarmEvent<T extends EventType = EventType, P = unknown> {
 | `experiment.finished` | `Experiment` with `reward` | ledger row, `critic.tsv` | `study_result` |
 | `verdict.issued` | `{experiment_id, verdict, why}` | `critic.tsv`, `verdict` memory | — (committee is post-run) |
 | `memory.written` | `MemoryItem` | `memory.jsonl` / `memory_log` `write` | private store writes (idea, prediction, result) |
-| `message.sent` | `{to_agent_id, turn, text}`; autoresearch adds `kind: 'assignment' \| 'verdict'` | conductor→worker per `assignments.jsonl` role; critic→author per `critic.tsv` row (`refs.experiment_id`) | `talk` |
+| `message.sent` | `{kind: 'assignment' \| 'verdict', to_agent_id, text}` | conductor→worker per `assignments.jsonl` role; critic→author per `critic.tsv` row (`refs.experiment_id`) | `talk` |
 | `items.shared` | `{to_agent_id, offered, kept}`; autoresearch: `{kind: 'lead', to_agent_id, items, text}` | a claim whose `lead_id` is another agent's lead (actor = lead author) | `share` |
 | `study.registered` | `{field, question, x, y, predicted_rho, text}` | `ignobel_studies.jsonl` prereg (`refs.study_id`, `refs.experiment_id`) | — |
 | `study.result` | `{rho, predicted_rho, p, n, replicated, confirmed, rejected, headline, text}` | `ignobel_studies.jsonl` result | — |
@@ -628,8 +637,11 @@ Current CPU runs have closed several gaps from the original proposal:
    research_log sources carry `ts`, `round` and `agent: conductor`. Records without a ts
    inherit the previous record's ts and are placed in the newest round, never round 0.
 7. **Committee.** A swarm `ignobel` run invokes the task's `post_run` hook (`score_run.py`)
-   when it ran with a real LLM and `TINKER_API_KEY` is set; otherwise it prints a skip line
-   and no `award.issued` events appear.
+   when it ran with a real LLM (not `--llm fake` or `--replay`) and `TINKER_API_KEY` is set;
+   otherwise it prints a skip line and no `award.issued` events appear. While the hook runs
+   (up to 30 minutes) the live manifest has `status: 'scoring'` (`live: true`). The run's
+   rounds are complete by then, so an interrupted or failed hook (including its arm-branch
+   push) still ends the run as `finished`, not `stopped`.
 
 ## Out of scope
 

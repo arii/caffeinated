@@ -1721,19 +1721,24 @@ def set_task_context(task_context):
     )
 
 
-def run_post_run_hook(out_dir, llm_mode):
+def run_post_run_hook(out_dir, llm_mode, *, replay=False, on_start=None):
     """Run the task's post-run scorer (ignobel: the Ig Nobel committee) when it can call Tinker.
 
-    Returns True when the scorer ran successfully (its output should be recorded).
+    on_start is called just before the scorer starts. Returns True when the scorer ran
+    successfully (its output should be recorded).
     """
     hook = (TASK or {}).get("post_run")
     if not hook:
         return False
-    if llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
+    if replay or llm_mode == "fake" or not os.environ.get("TINKER_API_KEY"):
         print(
-            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY)", flush=True
+            f"[post_run] {hook} skipped (needs --llm tinker/openai and TINKER_API_KEY, "
+            "not --replay)",
+            flush=True,
         )
         return False
+    if on_start:
+        on_start()
     command = [sys.executable, str(TASK["dir"] / hook), "--run", str(out_dir)]
     try:
         proc = subprocess.run(
@@ -2248,7 +2253,12 @@ def _orchestrate(args, publish_state, cleanup):
     )
     publish_state.update({"out_dir": out_dir, "dest": viewer_dest})
     publisher = live_publish.Publisher(
-        lambda **kwargs: publish_viewer_state(out_dir, viewer_dest, **kwargs), settle=2.0
+        lambda **kwargs: publish_viewer_state(
+            out_dir,
+            viewer_dest,
+            **{"status": publish_state.get("live_status", "running"), **kwargs},
+        ),
+        settle=2.0,
     )
     publish_state["publisher"] = publisher
     run_id_path = out_dir / "run_id"
@@ -2678,10 +2688,20 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
 
-    if run_post_run_hook(out_dir, args.llm):
-        record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
-        if not effective_no_push:
-            git(conductor, "push", "origin", branch)
+    # The rounds are done: an interrupted or failed committee must not mark the run stopped.
+    publish_state["completed"] = True
+
+    def start_scoring():
+        publish_state["live_status"] = "scoring"
+        publisher.flush(final=False, status="scoring")
+
+    try:
+        if run_post_run_hook(out_dir, args.llm, replay=args.replay, on_start=start_scoring):
+            record_round_artifacts(publisher, out_dir, conductor, args.arm, "post-run")
+            if not effective_no_push:
+                git(conductor, "push", "origin", branch)
+    except Exception as error:
+        print(f"[post_run] failed: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
     return {
         "arm": args.arm,
         "branch": branch,
@@ -2699,7 +2719,8 @@ def orchestrate(args):
         try:
             return _orchestrate(args, publish_state, cleanup)
         except BaseException:
-            terminal_status = "stopped"
+            if not publish_state.get("completed"):
+                terminal_status = "stopped"
             raise
         finally:
             _finish_publish(publish_state, terminal_status)
