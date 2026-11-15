@@ -20,6 +20,7 @@ import re
 import threading
 import time
 import xml.etree.ElementTree as ET
+from datetime import date, timedelta
 from itertools import zip_longest
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -302,7 +303,10 @@ def run_search(args):
     if getattr(args, "kind", None) == "code" or not query:
         hits, status = [], {"skipped": "code search needs Exa" if query else "empty query"}
     else:
-        hits, status = search(query, args.n, cache_dir_for(args), getattr(args, "since", None))
+        since = getattr(args, "since", None)
+        if args.command == "scout" and not since:
+            since = (date.today() - timedelta(days=365)).isoformat()
+        hits, status = search(query, args.n, cache_dir_for(args), since)
     first = research.next_id(records, "source", research.SOURCE_ID_RE)
     sources = [
         {

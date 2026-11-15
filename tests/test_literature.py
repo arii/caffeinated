@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -39,6 +40,13 @@ class RecordedTestCase(unittest.TestCase):
 
 
 class SearchTests(RecordedTestCase):
+    def test_scouting_defaults_to_the_last_year_like_exa(self):
+        with patch.object(literature, "search", return_value=([], {})) as search:
+            self.call("scout", query=QUERY, n=2, kind="paper", since=None)
+            self.call("worker-search", query=QUERY, n=2)
+        self.assertEqual(search.call_args_list[0].args[3][:4], str(date.today().year - 1))
+        self.assertIsNone(search.call_args_list[1].args[3])
+
     def test_interleaves_providers_with_urls_from_the_apis(self):
         hits, status = literature.search(QUERY, INDEX["n"], self.out)
         self.assertEqual(status, {"openalex": 3, "arxiv": 2, "pubmed": 1})
