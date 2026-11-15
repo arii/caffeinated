@@ -14,7 +14,7 @@ npm run dev
 
 Open http://localhost:5175. This starts the API on 127.0.0.1:8765 and Vite on 127.0.0.1:5175. For separate terminals use `npm run dev:backend` and `npm run dev:frontend`. Refreshing automatically restores the selected or latest run; starting the server does not launch research.
 
-Choose **New research run**, select an execution profile, and start. Actual agent identities and assignments create characters in the room. The observatory and stations show the native ledger, findings, shared memory, provenance, and downloadable logs. Completed runs stay available in the run selector.
+Panels start hidden. Use the left sidebar to open Overview, Team, Runs, the observatory, or the guide. Under **Runs**, choose **New research run**, select an execution profile, and start. Actual agent identities and assignments create characters in the room. The observatory and stations show the native ledger, findings, shared memory, provenance, and downloadable logs. Completed runs stay available in the run selector.
 
 | Profile | Model calls | Evaluation |
 | --- | --- | --- |

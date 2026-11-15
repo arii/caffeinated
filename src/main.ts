@@ -9,13 +9,24 @@ import type {LabWorld,Station,StationId} from './engine/types';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const consoleDialog=$<HTMLDialogElement>('console'),configure=$<HTMLDialogElement>('configure'),guide=$<HTMLDialogElement>('guide');
 let world:LabWorld,renderer:THREE.WebGLRenderer,snapshot:RunSnapshot|null=null,capabilities:Capabilities|null=null;
+let currentDrawer:string|null=null;
 let connected=false,entered=false,near:Station|null=null,panel:StationId|'research'='research';
 let yaw=0,pitch=0,drag=false,lastPointer:{x:number;y:number}|null=null,toastTimer:ReturnType<typeof setTimeout>;
 const pressed=new Set<string>(),active=new Set(['queued','starting','running','stopping']);
 const esc=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 function toast(text:string){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
 function unlock(){if(document.pointerLockElement)document.exitPointerLock();pressed.clear();}
-function modal(){return consoleDialog.open||guide.open||configure.open;}
+function closeDrawer(){
+  if(currentDrawer)$(currentDrawer).hidden=true;currentDrawer=null;
+  for(const button of document.querySelectorAll<HTMLElement>('[data-drawer]'))button.setAttribute('aria-expanded','false');
+}
+for(const button of document.querySelectorAll<HTMLElement>('[data-drawer]'))button.onclick=()=>{
+  const id=button.dataset.drawer!,wasOpen=currentDrawer===id;unlock();closeDrawer();
+  if(!wasOpen){currentDrawer=id;$(id).hidden=false;button.setAttribute('aria-expanded','true');$(id).querySelector<HTMLButtonElement>('[data-close-drawer]')?.focus();}
+};
+for(const button of document.querySelectorAll<HTMLElement>('[data-close-drawer]'))button.onclick=()=>{const id=currentDrawer;closeDrawer();document.querySelector<HTMLButtonElement>(`[data-drawer="${id}"]`)?.focus();};
+window.addEventListener('keydown',e=>{if(e.code==='Escape'&&currentDrawer){closeDrawer();pressed.clear();}});
+function modal(){return consoleDialog.open||guide.open||configure.open||currentDrawer!==null;}
 function lock(){if(!entered||modal())return;try{renderer.domElement.requestPointerLock?.()?.catch(()=>{});}catch{}}
 const client=new ResearchClient(s=>{
   const previous=snapshot;snapshot=acceptSnapshot(snapshot,s);renderHUD();if(consoleDialog.open)renderPanel();
@@ -57,10 +68,10 @@ function renderPanel(){
   html+=`<h3>Provenance</h3><div class="artifact">Run ${esc(s.runId)}<br>Source commit ${esc(s.sourceCommit)}<br>Model ${esc(s.config.model||'fake')} · Seed ${s.config.seed} · Arm ${s.config.arm}<br>Metric ${esc(s.metric.name)} (${esc(s.metric.unit)}), ${esc(s.metric.direction)}<br>Exa off · Local memory · No Git pushes</div><div class="console-actions">${active.has(s.status)?'<button class="stop" data-action="stop">Stop run</button>':'<button data-action="new">New run →</button>'}<a href="/api/runs/${s.runId}/export" download="lab-run.json">Export full history ↓</a><button class="secondary" data-action="artifacts">Run artifacts ↗</button></div><div id="artifacts"></div>`;
   $('console-content').innerHTML=html;
 }
-function openPanel(which:typeof panel){unlock();panel=which;renderPanel();if(!consoleDialog.open)consoleDialog.showModal();}
+function openPanel(which:typeof panel){closeDrawer();unlock();panel=which;renderPanel();if(!consoleDialog.open)consoleDialog.showModal();}
 function modeDescription(){const selected=$<HTMLSelectElement>('mode').value;const mode=capabilities?.modes.find(m=>m.id===selected);$('mode-description').textContent=mode?.description||'Backend unavailable';$<HTMLInputElement>('model').disabled=selected==='offline';}
 async function setupRun(){
-  unlock();consoleDialog.close();$('run-error').textContent='';
+  closeDrawer();unlock();consoleDialog.close();$('run-error').textContent='';
   try{capabilities=await client.health();connected=true;renderHUD();
     $('mode').innerHTML=capabilities.modes.map(m=>`<option value="${m.id}" ${m.available?'':'disabled'}>${esc(m.name)}${m.available?'':' · setup required'}</option>`).join('');
     $<HTMLSelectElement>('mode').value=capabilities.modes.find(m=>m.available)?.id||'offline';
@@ -85,7 +96,7 @@ $('console-content').onclick=async e=>{const action=(e.target as HTMLElement).cl
   try{if(action==='new')await setupRun();if(action==='stop'&&snapshot){await client.stop(snapshot.runId);toast('Stop requested.');}if(action==='artifacts'&&snapshot){const artifacts=await request<{id:string;name:string;bytes:number}[]>(`/runs/${snapshot.runId}/artifacts`);$('artifacts').innerHTML=artifacts.map(a=>`<div class="artifact"><a href="/api/runs/${snapshot!.runId}/artifacts/${a.id.split('/').map(encodeURIComponent).join('/')}" download>${esc(a.name)} · ${a.bytes} bytes</a></div>`).join('')||'<p>No artifacts yet.</p>';}}catch(error){toast((error as Error).message);}
 };
 $('refresh-runs').onclick=()=>refreshRuns();$('run-picker').onchange=()=>{const id=$<HTMLSelectElement>('run-picker').value;if(id)attachRun(id);};
-$('open-guide').onclick=()=>{unlock();guide.showModal();};$('close-guide').onclick=()=>guide.close();
+$('open-guide').onclick=()=>{closeDrawer();unlock();guide.showModal();};$('close-guide').onclick=()=>guide.close();
 $('agent-list').onclick=e=>{const id=(e.target as HTMLElement).closest<HTMLElement>('[data-agent]')?.dataset.agent;const a=snapshot?.agents.find(a=>a.id===id);if(a){faceStation(a.stationId);toast(`${a.name} · ${a.role} · ${a.state}`);}};
 function blocked(x:number,z:number){const r=.34,b=world.bounds;if(x<b.minX+r||x>b.maxX-r||z<b.minZ+r||z>b.maxZ-r)return true;return world.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);}
 function faceStation(id:StationId){const s=world.stations.find(s=>s.id===id);if(!s)return;yaw=Math.atan2(-(s.position.x-world.camera.position.x),-(s.position.z-world.camera.position.z));pitch=0;}
