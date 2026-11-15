@@ -335,9 +335,10 @@ def export_autoresearch(out_dir, arm=None, title=None):
         author = item.get("author")
         agent = author if author in run.agents else ("conductor" if label == "assignment" else None)
         round_ = meta.get("round") if isinstance(meta.get("round"), int) else round_of_ts(starts, item.get("timestamp"))
-        mid = f"memory:{item.get('id') or item.get('sourceId') or line}"
+        mid = f"memory:{item.get('sourceId') or item.get('id') or line}"  # recalls report sourceId
         ts = item.get("timestamp")
-        run.put("memory", mid, {"author_agent_id": run.agent_id(agent), "author": author,
+        run.put("memory", mid, {"native_id": item.get("id"), "author_agent_id": run.agent_id(agent),
+                                "author": author,
                                 "type": label, "text": item.get("content"),
                                 "scope": item.get("audience") or "swarm", "tick": None,
                                 "round": round_, "metadata": meta, "recalled_by": []})
