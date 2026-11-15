@@ -1329,7 +1329,9 @@ def export_autoresearch(out_dir, arm=None, title=None, final=True, status=None):
         },
         "provenance": {
             "llm": next((r.get("model") for _, r in llm_log if r.get("model")), "unknown"),
-            "exa": "live" if any(not r.get("disabled") for _, r in research) else "off",
+            "exa": "live"
+            if any(r.get("type") == "query" and not r.get("disabled") for _, r in research)
+            else "off",
             "memory_backend": next((r.get("backend") for _, r in memory_log), "unknown"),
             "command": run_artifact.get("command", ""),
             "swarm_commit": run_artifact.get("swarm_commit", ""),

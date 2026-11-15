@@ -20,7 +20,7 @@ class ReplayTests(unittest.TestCase):
         for manifest in c.list():
             names=[a['display_name'] for a in manifest['agents'] if a['type'] not in {'baseline','world'}]
             self.assertEqual(len(names),len(set(names)))
-            for name in names:self.assertRegex(name,r'^[BCP][1-9][0-9]*$')
+            for name in (a['display_name'] for a in manifest['agents'] if a['type'] not in {'baseline','world'} and not a.get('named')):self.assertRegex(name,r'^[BCP][1-9][0-9]*$')
             self.assertTrue(all(a.get('original_display_name') for a in manifest['agents']))
         for m in c.list():
             b=c.get(m['id']);frames=b['frames'];initial=frames[0]['snapshot'];final=frames[-1]['snapshot']
@@ -48,11 +48,15 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(frames[2]['snapshot']['value'],1)
         self.assertEqual(frames[3]['snapshot']['value'],.5)
         self.assertEqual(frames[1]['snapshot']['results'][0]['value'],1)
-    def test_ignobel_metric_is_maximize_and_mock_sources_are_labeled(self):
+    def test_ignobel_sample_is_a_swarm_task_recording_with_real_sources(self):
         c=RecordingCatalog(ROOT/'data/replays/swarm-viewer-sample-runs.zip')
-        b=next(c.get(m['id']) for m in c.list() if m['swarm']=='ignobel')
-        s=b['frames'][-1]['snapshot'];self.assertEqual(s['metric']['direction'],'maximize');self.assertEqual(s['value'],8)
-        self.assertTrue(b['manifest']['sample']);self.assertIn('mock',b['manifest']['description'])
+        self.assertEqual({m['swarm'] for m in c.list()},{'autoresearch'})
+        b=next(c.get(m['id']) for m in c.list() if m['title'].startswith('Ig Nobel'))
+        self.assertIn('ignobel',b['manifest']['provenance']['command'])
+        self.assertEqual(b['frames'][-1]['snapshot']['metric']['direction'],'minimize')
+        self.assertTrue(b['manifest']['sample']);self.assertEqual(b['manifest']['description'],'Recorded research · no live model calls')
+        urls=[s['url'] for s in b['entities']['sources']]
+        self.assertTrue(urls);self.assertTrue(all(u.startswith('https://') and 'example.org' not in u for u in urls))
     def test_backend_team_can_select_a_bundle_without_replacing_sample_data(self):
         with tempfile.TemporaryDirectory() as d:
             archive=Path(d)/'backend-export.zip'

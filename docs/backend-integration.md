@@ -59,15 +59,15 @@ These values are illustrative contract data, not experimental findings. Replace 
 {
   "schema": "swarm-viewer/v1",
   "run_id": "b6d982f2-9404-4669-86ee-26d347736c21",
-  "swarm": "ignobel",
+  "swarm": "autoresearch",
   "title": "Mixing speed and foam height",
   "status": "completed",
   "live": false,
-  "arm": {"id": "full", "label": "Full research policy", "boredom_enabled": true, "policy": "full"},
-  "metric": {"name": "replicated_findings", "unit": "findings", "direction": "maximize"},
+  "arm": {"id": "B", "label": "boredom meter on", "boredom_enabled": true, "policy": "boredom_meter"},
+  "metric": {"name": "loss", "unit": "", "direction": "minimize"},
   "time": {"ticks": 7, "rounds": 1, "ts_start": null, "ts_end": null},
   "agents": [
-    {"agent_id": "agent-001", "native_id": "agent-001", "type": "researcher", "family": "chem"}
+    {"agent_id": "agent-001", "native_id": "worker-1", "type": "worker", "family": "chem"}
   ],
   "provenance": {"llm": "your-configured-model", "gpu": "none", "exa": "off", "memory_backend": "your-backend", "swarm_commit": ""}
 }
@@ -123,7 +123,7 @@ This produces C1, a “Mixing speed” lightbulb caption at tick 2, experiment a
 
 For an autoresearch-style scalar objective, supply a baseline experiment entity with `kind: "baseline"`. Its finished value becomes the reference. A candidate marked `keep` is provisional until its accepted verdict or confirmed discovery event; keep this distinction in the exporter.
 
-The legacy Ig Nobel special case is `swarm: "ignobel"` with metric `replicated_findings` (only the bundled sample recording and the example above use it; `swarm.py --task ignobel` exports as `swarm: "autoresearch"` with metric `loss`, minimize): unique experiments finishing with status `replicated` increase the count. Effect size, p-value, reward, and replicated-findings count are distinct fields. A new aggregate objective needs an explicit reducer rule in `backend/replay.py`; changing a metric label alone is insufficient. Scalar best comparisons already honor `minimize`/`maximize`.
+Every `swarm.py --task` (including `ignobel`) exports `swarm: "autoresearch"` with metric `loss`, minimize. Effect size, p-value and reward are distinct fields. A new aggregate objective needs an explicit reducer rule in `backend/replay.py`; changing a metric label alone is insufficient. Scalar best comparisons already honor `minimize`/`maximize`.
 
 ## 5. Identity, clocks, and evidence
 

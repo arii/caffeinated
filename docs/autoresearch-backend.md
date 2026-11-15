@@ -36,7 +36,10 @@ Candidate evaluation dependencies live separately in the Docker image.
 Before creating any branch or worktree, `swarm.py` checks the Docker sandbox
 image and the keys the chosen arm needs, and lists every missing piece with its
 fix. Arm B uses Exa and past.dev memory by default; `--exa off` and
-`--memory-backend local` run without those keys. `swarm.py` owns
+`--memory-backend local` run without those keys. Without Exa (`--exa off` or no
+`EXA_API_KEY`) research falls back to keyless OpenAlex, arXiv and PubMed paper
+search (`literature.py`, sources logged as `S<k>` like Exa's); `--llm fake` runs
+stay offline unless `--literature keyless`, and `--literature off` disables it. `swarm.py` owns
 `.swarm_worktrees/<arm>/`: it locks it against a concurrent run of the same arm,
 prunes deleted worktrees, discards leftovers of earlier runs (moving an
 uncommitted `experiments/swarm_<arm>/` aside to

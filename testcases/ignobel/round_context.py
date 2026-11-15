@@ -6,7 +6,8 @@ Prints two things every lab sees in its next proposal:
    so labs build on (and do not repeat) each other's work;
 2. real downloadable datasets found this round on Zenodo and Hugging Face for
    the least-explored fields, with their column names.
-Dataset search is skipped when EXA=off or IGNOBEL_DATASET_SEARCH=off (offline runs).
+Dataset search is skipped when IGNOBEL_DATASET_SEARCH=off, or when EXA=off without
+LITERATURE=keyless (offline runs).
 """
 
 import argparse
@@ -86,7 +87,8 @@ def log_source(out_dir, source_id, hit, round_num=0):
 
 
 def found_datasets(cells, skip, out_dir=None, round_num=0):
-    if os.environ.get("EXA") == "off" or os.environ.get("IGNOBEL_DATASET_SEARCH") == "off":
+    offline = os.environ.get("EXA") == "off" and os.environ.get("LITERATURE") != "keyless"
+    if offline or os.environ.get("IGNOBEL_DATASET_SEARCH") == "off":
         return []
     lines, seen = [], set(skip)
     for query in dict.fromkeys(q for q in map(field_query, cells) if q):
