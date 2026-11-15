@@ -1,0 +1,6 @@
+commit	val_bpb	memory_gb	status	description	agent	round	descriptor	kind
+7017194	0.995814	44.0	keep	baseline	baseline	0	"{""mechanism"": ""baseline"", ""method"": ""none""}"	baseline
+85109606b5d3f23065140baa1627049e0fd676f4	1.036876	66.5	discard	[EXPLOIT] Increase transformer depth from 8 to 10 for greater model capacity.	worker-1	1	"{""mechanism"": ""architecture"", ""method"": ""depth"", ""params"": {""value"": 10.0}}"	candidate
+096e3d6bf0b6afe5faa7a8533197646ab4131b77	0.996945	44.0	discard	[EXPLOIT] Extend LR warmdown from 50% to 60% of training	worker-2	1	"{""mechanism"": ""lr_schedule"", ""method"": ""warmdown"", ""params"": {""value"": 0.6}}"	candidate
+795ae7f8181ecc7a3506259e3847fb05b3489653	0.994992	44.0	discard	[EXPLOIT] Raise Muon matrix learning rate from 0.04 to 0.05	worker-3	1	"{""mechanism"": ""optimizer"", ""method"": ""matrix_lr"", ""params"": {""value"": 0.05}}"	candidate
+			reject	[EXPLOIT] proposal rejected after repair	worker-4	1	"{""mechanism"": ""baseline"", ""method"": ""none""}"	candidate
