@@ -1,0 +1,11 @@
+# Run-time knobs. Everything here is read once by config.load().
+boredom_threshold: 0.50      # B at or above this means SNAP under boredom_policy.
+                             # 0.5 = the newest idea just repeats the last ones and nothing is failing.
+random_snap_prob: 0.30       # random_policy snaps with this probability, ignoring B
+tell_prize: true             # whether the agent prompt mentions that a prize exists
+teams_enabled: false         # teams.py is a stub; leave false
+alpha: 0.05                  # base significance threshold before dividing by study count
+keep_similarity: 0.95        # share(): receiver drops items this similar to what it has
+max_share_items: 3
+talk_turns: 3
+seed_results_per_query: 5
