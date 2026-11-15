@@ -91,3 +91,123 @@ class ContinuousQueueTests(unittest.TestCase):
             for _ in range(20):
                 queue.next()
         self.assertEqual(counts["peak"], 4)
+
+
+class ContinuousIntegrationTests(unittest.TestCase):
+    def test_completed_jobs_keep_their_planning_research_counts(self):
+        import swarm
+
+        with tempfile.TemporaryDirectory() as tmp, Queue(Path(tmp), initial=2) as queue:
+            out = Path(tmp)
+            swarm.append_jsonl(out / "research_log.jsonl", {"type": "query", "endpoint": "search"})
+            counts = swarm.round_tool_counts(out, 0, 0)
+            for agent in queue.plan_agents():
+                queue.enqueue(
+                    work, {"agent": agent, "role": "worker"}, {"tool_counts": counts}, SlowClient()
+                )
+            for _ in range(2):
+                _, job = queue.next()
+                # No new search arrives while this already-completed job is collected.
+                self.assertEqual(swarm.round_tool_counts(out, 1, 0)["exa_searches"], 0)
+                swarm.assert_live_tool_use(
+                    out,
+                    round_num=job["job"],
+                    research_start=1,
+                    memory_start=0,
+                    expect_exa=True,
+                    expect_pastdev=False,
+                    counts=swarm.completed_job_tool_counts(out, job, 1, 0),
+                )
+
+    def test_accept_study_without_git_identity_preserves_history(self):
+        import os
+        from unittest.mock import patch
+
+        import swarm
+
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.dict(os.environ, {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}),
+        ):
+            repo = Path(tmp)
+            swarm.git(repo, "init", "-q")
+            target = repo / "prereg.json"
+            target.write_text('{"study": 1}\n')
+            swarm.git(repo, "add", ".")
+            identity = ("-c", "user.name=Test", "-c", "user.email=test@localhost")
+            swarm.git(repo, *identity, "commit", "-qm", "base")
+            base = swarm.git_text(repo, "rev-parse", "HEAD")
+            target.write_text('{"study": 2}\n')
+            swarm.git(repo, "add", ".")
+            swarm.git(repo, *identity, "commit", "-qm", "candidate")
+            candidate = swarm.git_text(repo, "rev-parse", "HEAD")
+            swarm.git(repo, "checkout", "--detach", base)
+            swarm.git(repo, *identity, "commit", "--allow-empty", "-qm", "keep artifact history")
+            artifact = swarm.git_text(repo, "rev-parse", "HEAD")
+            with patch.object(swarm, "TARGET_FILE", "prereg.json"):
+                swarm.accept_continuous_study(repo, candidate)
+            self.assertEqual(json.loads(target.read_text()), {"study": 2})
+            self.assertEqual(swarm.git_text(repo, "rev-parse", "HEAD^"), artifact)
+            self.assertEqual(swarm.git_text(repo, "log", "-1", "--format=%ae"), "swarm@localhost")
+
+    def test_budget_exception_returns_successful_cli_stop(self):
+        import io
+        from contextlib import redirect_stdout
+        from unittest.mock import patch
+
+        import llm
+        import swarm
+        from tests.test_export_viewer import autoresearch_run
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = autoresearch_run(Path(tmp))
+
+            def fail(_args, state, _cleanup):
+                state["out_dir"] = out
+                state["dest"] = out / "viewer"
+                raise llm.LLMError("Live run budget exhausted; no request sent")
+
+            output = io.StringIO()
+            with (
+                patch.object(swarm, "_orchestrate", side_effect=fail),
+                patch.object(swarm.signal, "signal"),
+                redirect_stdout(output),
+            ):
+                code = swarm.main(["--task", "ignobel", "--continuous"])
+            self.assertEqual(code, 0)
+            self.assertIn("budget_limit", output.getvalue())
+            native = json.loads((out / "run.json").read_text())
+            self.assertEqual(native["status"], "stopped")
+            self.assertEqual(native["stop_reason"], "budget_limit")
+
+    def test_user_stop_drains_and_publishes_stopped(self):
+        from unittest.mock import patch
+
+        import swarm
+        from tests.test_export_viewer import autoresearch_run
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = autoresearch_run(Path(tmp))
+
+            def stop_run(_args, state, cleanup):
+                state.update(out_dir=out, dest=out / "viewer")
+                queue = cleanup.enter_context(Queue(out, initial=2))
+                state["queue"] = queue
+                for agent in queue.plan_agents():
+                    queue.enqueue(work, {"agent": agent, "role": "worker"}, {}, SlowClient())
+                queue.next()
+                (out / "stop_requested").touch()
+                while queue.next() is not None:
+                    pass
+                self.assertEqual(queue.reason, "user_stop")
+                swarm.record_queue_stop(
+                    queue, out, json.loads((out / "run.json").read_text()), state
+                )
+                return {"out": str(out)}
+
+            with patch.object(swarm, "_orchestrate", side_effect=stop_run):
+                swarm.orchestrate(type("Args", (), {"continuous": True})())
+            self.assertEqual(json.loads((out / "run.json").read_text())["status"], "stopped")
+            manifests = list((out / "viewer").glob("*/manifest.json"))
+            self.assertEqual(len(manifests), 1)
+            self.assertEqual(json.loads(manifests[0].read_text())["status"], "stopped")

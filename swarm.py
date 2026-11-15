@@ -3203,6 +3203,37 @@ def copy_artifacts_to_arm_branch(out_dir, conductor, arm):
     return target
 
 
+def record_queue_stop(queue, out_dir, run_artifact, publish_state):
+    run_artifact["stop_reason"] = queue.reason or "queue_empty"
+    if queue.reason == "user_stop":
+        publish_state["terminal_status"] = "stopped"
+    _write_run_artifact(out_dir, run_artifact)
+
+
+def accept_continuous_study(conductor, commit):
+    """Copy the independent study while preserving the conductor's artifact history."""
+    git(conductor, "restore", "--source", commit, "--", TARGET_FILE)
+    git(conductor, "add", "--", TARGET_FILE)
+    git(
+        conductor,
+        "-c",
+        "user.name=Autoresearch Swarm",
+        "-c",
+        "user.email=swarm@localhost",
+        "commit",
+        "--allow-empty",
+        "-m",
+        f"Accept study {commit}",
+    )
+
+
+def completed_job_tool_counts(out_dir, job, research_start, memory_start):
+    """A queued result retains the research window of the plan that assigned it."""
+    if job is not None:
+        return job["tool_counts"]
+    return round_tool_counts(out_dir, research_start, memory_start)
+
+
 def assert_live_tool_use(
     out_dir,
     *,
@@ -4277,7 +4308,10 @@ def _orchestrate(args, publish_state, cleanup):
                         leads=all_leads,
                     )
             candidate_records = []
+            job = None
             if queue:
+                if planning_agents:
+                    batch_tool_counts = round_tool_counts(out_dir, research_start, memory_start)
                 for agent in planning_agents:
                     role = allocation["roles"][agent]
                     lead = lead_for_agent(agent, leads, all_leads)
@@ -4309,13 +4343,16 @@ def _orchestrate(args, publish_state, cleanup):
                             "replay": args.replay,
                             "pi_steer": pi_steers.get(agent, "none"),
                         },
-                        {"allocation": allocation, "status": status},
+                        {
+                            "allocation": allocation,
+                            "status": status,
+                            "tool_counts": batch_tool_counts,
+                        },
                         llm_client,
                     )
                 completed = queue.next()
                 if completed is None:
-                    run_artifact["stop_reason"] = queue.reason or "queue_empty"
-                    _write_run_artifact(out_dir, run_artifact)
+                    record_queue_stop(queue, out_dir, run_artifact, publish_state)
                     break
                 candidate, job = completed
                 round_num = job["job"]
@@ -4579,15 +4616,7 @@ def _orchestrate(args, publish_state, cleanup):
                     and git_text(conductor, "rev-parse", "HEAD") != event["commit"]
                 ):
                     if continuous:
-                        git(conductor, "restore", "--source", event["commit"], "--", TARGET_FILE)
-                        git(conductor, "add", "--", TARGET_FILE)
-                        git(
-                            conductor,
-                            "commit",
-                            "--allow-empty",
-                            "-m",
-                            f"Accept study {event['commit']}",
-                        )
+                        accept_continuous_study(conductor, event["commit"])
                         continue
                     merge_result = git(
                         conductor,
@@ -4622,7 +4651,7 @@ def _orchestrate(args, publish_state, cleanup):
                 memory_start=memory_start,
                 expect_exa=exa_enabled and not args.replay and os.environ.get("EXA_REPLAY") != "1",
                 expect_pastdev=memory_backend == "pastdev",
-                counts=tool_counts,
+                counts=completed_job_tool_counts(out_dir, job, research_start, memory_start),
             )
             events = write_results(ledger_path, results_path)
             _status_after, _status_record = append_status(out_dir, profile, events, args.arm)
@@ -4722,6 +4751,7 @@ def _orchestrate(args, publish_state, cleanup):
         "best_commit": best_metric_commit,
         "best_loss": best_val,
         "no_push": effective_no_push,
+        **({"stop_reason": queue.reason} if queue and queue.reason else {}),
     }
 
 
@@ -4734,6 +4764,7 @@ def orchestrate(args):
         except BaseException as error:
             if getattr(args, "continuous", False) and "budget exhausted" in str(error):
                 terminal_status = "stopped"
+                publish_state["stop_reason"] = "budget_limit"
                 print(
                     "Continuous run reached its budget; no further requests sent", file=sys.stderr
                 )
@@ -4744,7 +4775,7 @@ def orchestrate(args):
         finally:
             if publish_state.get("queue"):
                 publish_state["queue"].close()
-            _finish_publish(publish_state, terminal_status)
+            _finish_publish(publish_state, publish_state.get("terminal_status", terminal_status))
 
 
 def _finish_publish(publish_state, terminal_status):
@@ -4759,6 +4790,8 @@ def _finish_publish(publish_state, terminal_status):
             try:
                 run_artifact = json.loads(run_path.read_text(encoding="utf-8"))
                 run_artifact["status"] = terminal_status
+                if publish_state.get("stop_reason"):
+                    run_artifact["stop_reason"] = publish_state["stop_reason"]
                 _write_run_artifact(out_dir, run_artifact)
             except Exception as error:
                 print(f"viewer run status update failed: {error}", file=sys.stderr)
@@ -4880,6 +4913,9 @@ def main(argv=None):
     except (OSError, ValueError, RuntimeError, research.BudgetExceeded) as error:
         print(f"swarm.py: {error}", file=sys.stderr)
         return 2
+    if result.get("stop_reason"):
+        print(f"Run stopped: {result['stop_reason']}; out={result['out']}")
+        return 0
     print(
         f"arm {result['arm']} complete; best {result['best_commit']} "
         f"loss={result['best_loss']:.6f}; branch={result['branch']}; "
