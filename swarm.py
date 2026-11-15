@@ -1429,6 +1429,19 @@ def descriptor_trailer(descriptor):
     return f"{mechanism}/{method}" + (f" value={float(value):g}" if value is not None else "")
 
 
+def idea_trailer(descriptor):
+    extra = {
+        "idea": descriptor.get("idea"),
+        "params": {
+            name: value
+            for name, value in (descriptor.get("params") or {}).items()
+            if name != "value"
+        },
+    }
+    extra = {key: value for key, value in extra.items() if value}
+    return [f"Descriptor-Idea: {json.dumps(extra, sort_keys=True)}"] if extra else []
+
+
 def commit_candidate(
     *,
     repo,
@@ -1457,6 +1470,7 @@ def commit_candidate(
         f"Agent: {agent}",
         f"Round: {round_num}",
         f"Descriptor: {descriptor_trailer(proposal['descriptor'])}",
+        *idea_trailer(proposal["descriptor"]),
         f"Prior-art: {prior_art}",
         f"Source: {','.join(source_ids) if source_ids else 'none'}",
         f"Lead: {lead_id or 'none'}",

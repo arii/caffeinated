@@ -1974,6 +1974,17 @@ class IgnobelIdeaDescriptorTest(unittest.TestCase):
         )
         self.assertEqual(proposal["descriptor"]["params"], {"confidence": 0.62})
         meter.validate_descriptor(self.profile, proposal["descriptor"])
+        message = "\n".join(
+            [
+                "study",
+                "",
+                f"Descriptor: {swarm.descriptor_trailer(proposal['descriptor'])}",
+                *swarm.idea_trailer(proposal["descriptor"]),
+            ]
+        )
+        self.assertEqual(
+            boredom.descriptor_from_message(message, "", self.profile), proposal["descriptor"]
+        )
 
     def test_unparseable_prereg_leaves_the_descriptor_alone(self):
         proposal = {"descriptor": {"mechanism": "ecology", "method": "x"}, "edits": []}
