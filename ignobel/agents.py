@@ -136,9 +136,10 @@ class Agent:
         lines.append("Always answer with a single JSON object.")
         return "\n".join(lines)
 
-    def _call(self, kind: str, user: str, model: str = llm.MODEL_CHEAP, **ctx) -> llm.LLMResult:
-        return llm.chat_json(model, self.system_prompt(), user, kind=kind,
-                             seed=self.run_seed, mock_context=self._mock_ctx(**ctx))
+    def _call(self, kind: str, user: str, model: str = llm.MODEL_CHEAP, max_tokens: int = 900,
+              **ctx) -> llm.LLMResult:
+        return llm.chat_json(model, self.system_prompt(), user, kind=kind, seed=self.run_seed,
+                             max_tokens=max_tokens, mock_context=self._mock_ctx(**ctx))
 
     def _new_idea(self, data: dict, kind: str, round: int, source_urls: list[str]) -> Idea:
         text = str(data.get("idea") or data.get("title") or "untitled idea")
@@ -215,7 +216,7 @@ class Agent:
                 f"Prediction: {idea.prediction.model_dump() if idea else {}}\n{api}\n"
                 "Only lab_runtime and the standard library are available. No network.\n"
                 f"Return JSON {{code: string, requests: list}}. {req}")
-        res = self._call("study_code", user, model=llm.MODEL_STRONG, peers=peers)
+        res = self._call("study_code", user, model=llm.MODEL_STRONG, max_tokens=2500, peers=peers)
         code = str(res.data.get("code", ""))
         requests = res.data.get("requests") or []
         return {"code": code, "requests": requests if isinstance(requests, list) else []}, res
