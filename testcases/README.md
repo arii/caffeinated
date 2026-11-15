@@ -36,7 +36,9 @@ grader, hidden answers, simulator, reference implementations, repository, or
 home directory. Docker being unavailable is a crash; candidates are never run
 on the host as a fallback.
 
-For BixBench, `prepare.py` downloads the public question/data files and keeps
+For BixBench, `prepare.py` downloads the public question/data files from a
+pinned `futurehouse/BixBench` revision, verifies each file's sha256 (a cached
+file that no longer matches is downloaded again), and keeps
 the answer key under `.cache/` on the host. The candidate receives only
 `questions.json` and the declared public `data/` files. For Playworld, the host
 generates context frames/actions and future actions for evaluation; hidden
@@ -89,6 +91,18 @@ EXA=off MEMORY_BACKEND=local python3 swarm.py --task bixbench_mini --rounds 1 --
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task playworld_mini --rounds 1 --llm fake --no-push
 EXA=off MEMORY_BACKEND=local python3 swarm.py --task ignobel --rounds 1 --llm fake --no-push
 ```
+
+Each `task.json` lists `fake_edits`: a fixed trajectory of real edits to the
+editable file that the fake LLM applies in order, so a 15-round fake run
+improves the score and exercises the candidate `keep`, the critic and the
+fast-forward merge (`tests/test_testcases.py` runs one per task in CI):
+
+| task | baseline loss | reference loss | fake trajectory reaches |
+|---|---|---|---|
+| `hadamard19` | 0.0585 | 0 (known optimum) | 0 after 4 kept edits (tabu search scored by determinant ratios from the inverse, then budget, restarts and tenure) |
+| `bixbench_mini` | 0.882 | ≈ 0.477 (published accuracy 0.523) | 0 after 10 kept answer fixes (SEM, Cohen's d, Shapiro-Wilk, power, interaction F, logistic regressions) |
+| `playworld_mini` | 0.851 | 0.640 (8-frame memory) | 0.277 (persistent map with dead reckoning, unlimited memory, blocking, switch/lamp toggling) |
+| `ignobel` | 1 (rare-steak smokers, not significant) | none: open-ended | 0: fruity candies are liked less (FiveThirtyEight candy power ranking), confirmed on the real public data; a second real registration (FiveThirtyEight flying etiquette) cannot beat a confirmed 0 |
 
 `--task` edits `testcases/<task>/<editable>`, evaluates each commit in the
 Docker sandbox, loads `testcases/<task>/boredom_profile.json`, and uses the

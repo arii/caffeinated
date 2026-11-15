@@ -1461,7 +1461,9 @@ def worker_attempts(
                         "status": "reject",
                         "score": None,
                         "commit": "",
-                        "descriptor": common["assigned_descriptor"],
+                        "descriptor": common.get(
+                            "assigned_descriptor", {"mechanism": "baseline", "method": "none"}
+                        ),
                         "sources": [],
                         "lead": None,
                         "idea": "assigned cell has no buildable fake target",

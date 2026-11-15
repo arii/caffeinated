@@ -1,5 +1,7 @@
 import ast
 import csv
+import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -12,8 +14,9 @@ import types
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
+import llm
 import swarm
 from boredom import descriptor_meter as meter
 from testcases import sandbox
@@ -84,32 +87,45 @@ class EvaluatorTests(unittest.TestCase):
                     meter.validate_descriptor(loaded, {"mechanism": target[1], "method": target[2]})
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
-    def test_fake_edit_changes_each_task_score(self):
-        for task_name in ("hadamard19", "bixbench_mini", "playworld_mini"):
-            task_dir = TESTCASES / task_name
-            config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
-            source = (task_dir / config["editable"]).read_text(encoding="utf-8")
-            if task_name == "hadamard19":
-                candidates = [
-                    source.replace("CONSTRUCTION = 0", "CONSTRUCTION = 1", 1),
-                    source.replace("OBJECTIVE = 0", "OBJECTIVE = 1", 1),
-                ]
-            else:
-                index = 1 if task_name == "bixbench_mini" else 0
-                edit = config["fake_edits"][index]
-                candidates = [source.replace(edit["old"], edit["new"], 1)]
-            baseline = sandbox.evaluate_task(task_dir, source)
-            self.assertEqual(baseline["status"], "ok")
-            candidate_results = [
-                sandbox.evaluate_task(task_dir, candidate) for candidate in candidates
-            ]
-            self.assertTrue(
-                any(
-                    result["status"] == "ok" and result["loss"] != baseline["loss"]
-                    for result in candidate_results
-                ),
-                task_name,
-            )
+    def test_fake_edits_are_an_improving_trajectory(self):
+        final = {"hadamard19": 0.0, "bixbench_mini": 0.0, "playworld_mini": 0.28}
+        for task_name, final_loss in final.items():
+            with self.subTest(task=task_name):
+                task_dir = TESTCASES / task_name
+                config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+                eps = meter.load_profile(task_dir / "boredom_profile.json")["eps"]
+                source = (task_dir / config["editable"]).read_text(encoding="utf-8")
+                previous = sandbox.evaluate_task(task_dir, source)["loss"]
+                for index, edit in enumerate(config["fake_edits"]):
+                    for pair in llm.fake_edit_pairs(edit, source):
+                        source = source.replace(pair["old"], pair["new"], 1)
+                    applied = config["fake_edits"][: index + 1]
+                    self.assertFalse(any(llm.fake_edit_pairs(done, source) for done in applied))
+                    result = sandbox.evaluate_task(task_dir, source)
+                    self.assertEqual(result["status"], "ok", edit["idea"])
+                    self.assertLess(result["loss"], previous - eps, edit["idea"])
+                    previous = result["loss"]
+                self.assertLessEqual(previous, final_loss)
+
+    @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+    def test_ignobel_fake_registrations_confirm_on_real_datasets(self):
+        task_dir = TESTCASES / "ignobel"
+        config = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
+        baseline = (task_dir / "prereg.json").read_text(encoding="utf-8")
+        urls = {json.loads(baseline)["dataset"]["url"]}
+        for edit in config["fake_edits"]:
+            with self.subTest(idea=edit["idea"]), tempfile.TemporaryDirectory() as directory:
+                prereg = edit["replace_with"]
+                self.assertNotIn(prereg["dataset"]["url"], urls)
+                urls.add(prereg["dataset"]["url"])
+                [pair] = llm.fake_edit_pairs(edit, baseline)
+                result = sandbox.evaluate_task(
+                    task_dir,
+                    pair["new"],
+                    research_log=str(Path(directory) / "research_log.jsonl"),
+                )
+                self.assertEqual(result["status"], "ok", result["stderr"])
+                self.assertEqual(result["loss"], 0.0, result["stdout"])
 
     @unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
     def test_hadamard_baseline_score_is_unchanged(self):
@@ -405,7 +421,12 @@ class SwarmTaskModeTests(unittest.TestCase):
             with (out_dir / "results.tsv").open(newline="", encoding="utf-8") as stream:
                 rows = list(csv.DictReader(stream, delimiter="\t"))
             self.assertEqual(rows[0]["description"], "baseline")
-            self.assertEqual(len(rows), 5)
+            self.assertEqual(len(rows), 6)
+            self.assertTrue(rows[-1]["description"].startswith("critic second-evaluation"))
+            self.assertEqual(
+                [row["status"] for row in rows],
+                ["keep", "keep", "duplicate", "duplicate", "duplicate", "keep"],
+            )
             for row in rows:
                 self.assertLess(float(row["loss"]), 0.2)
             self.assertTrue(list((out_dir / "runs").rglob("*.log")))
@@ -762,6 +783,184 @@ class IgnobelTaskTests(unittest.TestCase):
         self.assertEqual(values["significant"], "false")
         self.assertEqual(values["confirmed"], "false")
         self.assertEqual(values["citations"], "2 verified")
+
+    def test_boredom_profile_is_complete(self):
+        profile = meter.load_profile(TESTCASES / "ignobel" / "boredom_profile.json")
+        self.assertEqual(profile["version"], 3)
+        self.assertEqual(profile["patience_unit"], "round")
+        self.assertEqual(profile["stuck"], {"window": 3, "min_fails": 2, "depth": 2})
+        self.assertEqual(profile["frontier_statuses"], ["keep"])
+        self.assertEqual(profile["trivial_statuses"], ["duplicate"])
+        self.assertNotIn("reject", profile["attempt_statuses"])
+        cell = {"mechanism": "food_science", "method": "new_population"}
+        events = [
+            {"seq": seq, "round": 1, "kind": "candidate", "status": status, "descriptor": cell}
+            for seq, status in enumerate(["reject", "crash", "reject", "crash", "keep"], 1)
+        ]
+        events.append({**events[-1], "seq": 6, "kind": "critic"})
+        self.assertEqual(
+            [event["status"] for event in meter.attempt_events(profile, events)],
+            ["crash", "crash", "keep"],
+        )
+        self.assertEqual(
+            meter.stuck_cells(profile, events), {"food_science/new_population": (2, 3)}
+        )
+
+
+class BixBenchPrepareTests(unittest.TestCase):
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location(
+            "bixbench_prepare", TESTCASES / "bixbench_mini" / "prepare.py"
+        )
+        prepare = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(prepare)
+        self.prepare = prepare
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.here = Path(directory.name)
+        patcher = patch.object(prepare, "HERE", self.here)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.name = "BixBench.jsonl"
+        self.data = b"pinned bytes"
+        self.pinned = patch.dict(prepare.SHA256, {self.name: hashlib.sha256(self.data).hexdigest()})
+        self.pinned.start()
+        self.addCleanup(self.pinned.stop)
+
+    def response(self, data):
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = data
+        return response
+
+    def test_downloads_are_pinned_to_one_revision_with_a_hash_per_file(self):
+        self.pinned.stop()
+        self.assertRegex(self.prepare.REVISION, r"^[0-9a-f]{40}$")
+        self.assertTrue(self.prepare.BASE.endswith("/resolve/" + self.prepare.REVISION))
+        files = {"BixBench.jsonl"} | {
+            f"CapsuleFolder-{uuid}.zip" for uuid, _ in self.prepare.CAPSULES.values()
+        }
+        self.assertEqual(set(self.prepare.SHA256), files)
+        self.pinned.start()
+
+    def test_fetch_verifies_downloads_before_caching(self):
+        with (
+            patch("urllib.request.urlopen", return_value=self.response(b"tampered")) as urlopen,
+            self.assertRaisesRegex(ValueError, "does not match pinned"),
+        ):
+            self.prepare.fetch(self.name)
+        self.assertIn(self.prepare.REVISION, urlopen.call_args.args[0])
+        self.assertFalse((self.here / ".cache" / self.name).exists())
+        with patch("urllib.request.urlopen", return_value=self.response(self.data)):
+            self.assertEqual(self.prepare.fetch(self.name), self.data)
+        self.assertEqual((self.here / ".cache" / self.name).read_bytes(), self.data)
+
+    def test_fetch_reuses_valid_cache_and_replaces_a_corrupt_one(self):
+        cache = self.here / ".cache" / self.name
+        cache.parent.mkdir()
+        cache.write_bytes(self.data)
+        with patch("urllib.request.urlopen") as urlopen:
+            self.assertEqual(self.prepare.fetch(self.name), self.data)
+        urlopen.assert_not_called()
+        cache.write_bytes(b"corrupt")
+        with patch("urllib.request.urlopen", return_value=self.response(self.data)):
+            self.assertEqual(self.prepare.fetch(self.name), self.data)
+        self.assertEqual(cache.read_bytes(), self.data)
+
+
+@unittest.skipUnless(DOCKER_AVAILABLE, DOCKER_SKIP_REASON)
+class FakeLongHorizonSmokeTests(unittest.TestCase):
+    """A 15-round offline fake run per task must improve, pass the critic and ff-merge."""
+
+    def run_fake_swarm(self, task_name, directory):
+        config = json.loads((TESTCASES / task_name / "task.json").read_text(encoding="utf-8"))
+        repo = Path(directory) / "repo"
+        (repo / "testcases" / task_name).mkdir(parents=True)
+        shutil.copy2(
+            TESTCASES / task_name / config["editable"],
+            repo / "testcases" / task_name / config["editable"],
+        )
+        (repo / ".gitignore").write_text(".swarm_worktrees/\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@example.test",
+                "commit",
+                "-qm",
+                "base",
+            ],
+            cwd=repo,
+            check=True,
+        )
+        out_dir = Path(directory) / "out"
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if not any(marker in key.upper() for marker in ("KEY", "TOKEN", "SECRET", "PASSWORD"))
+        }
+        env.update({"EXA": "off", "MEMORY_BACKEND": "local"})
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "swarm.py"),
+                "--task",
+                task_name,
+                "--rounds",
+                "15",
+                "--llm",
+                "fake",
+                "--exa",
+                "off",
+                "--memory-backend",
+                "local",
+                "--no-push",
+                "--repo",
+                str(repo),
+                "--out",
+                str(out_dir),
+            ],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=900,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr[-3000:] + result.stdout[-3000:])
+        ledger = meter.read_ledger(out_dir / "ledger.jsonl")
+        branch = re.search(r"branch=(\S+);", result.stdout).group(1)
+        return (
+            ledger,
+            lambda commit: (
+                subprocess.run(
+                    ["git", "merge-base", "--is-ancestor", commit, branch], cwd=repo, check=False
+                ).returncode
+                == 0
+            ),
+        )
+
+    def test_fake_runs_keep_critic_and_merge(self):
+        for task_name in ("hadamard19", "bixbench_mini", "playworld_mini", "ignobel"):
+            with self.subTest(task=task_name), tempfile.TemporaryDirectory() as directory:
+                ledger, on_branch = self.run_fake_swarm(task_name, directory)
+                baseline = next(event for event in ledger if event.get("kind") == "baseline")
+                keeps = [
+                    event
+                    for event in ledger
+                    if event.get("kind") == "candidate" and event.get("status") == "keep"
+                ]
+                verdicts = [event for event in ledger if event.get("kind") == "critic"]
+                self.assertTrue(keeps)
+                self.assertTrue(verdicts)
+                self.assertTrue(all(event.get("verdict") for event in verdicts))
+                accepted = [event for event in verdicts if event.get("accepted")]
+                self.assertTrue(accepted)
+                self.assertTrue(all(on_branch(event["commit"]) for event in accepted))
+                self.assertLess(min(event["score"] for event in keeps), baseline["score"])
 
 
 if __name__ == "__main__":
