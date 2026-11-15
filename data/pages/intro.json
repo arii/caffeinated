@@ -36,6 +36,7 @@
     "noCitations": "No study citations in this recording yet."
   },
   "results": {
+    "citations": [{"runId": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929", "studyId": "study:14", "category": "Transport", "text": "Kitchen Physics Lab — for confirming that heavier cars get fewer city miles per gallon.", "note": "Strongest absolute correlation among eligible studies; not a prize award."}],
     "proxyNote": "Metric / proxy",
     "noProxy": "No proxy note is present in this recording.",
     "studyCount": "Ig Nobel studies",

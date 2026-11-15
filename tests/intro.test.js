@@ -66,3 +66,12 @@ test('the compact first screen and static assets contain no satire intro copy',(
  assert.match(files,/id="open-results"/);
  assert.match(files,/id="open-about"/);
 });
+
+ test('ending citation is grounded in this recording and does not leak into another run',()=>{
+ const html=preCommitteeResultsHtml(config,recording,esc);
+ assert.match(html,/Kitchen Physics Lab — for confirming that heavier cars get fewer city miles per gallon/);
+ assert.ok(html.indexOf('Research result in one sentence')<html.indexOf('Tools used in this run'));
+ assert.match(html,/Committee verdict: no award/);
+ const other={...recording,manifest:{...recording.manifest,id:'another-run'}};
+ assert.doesNotMatch(preCommitteeResultsHtml(config,other,esc),/Research result in one sentence/);
+});
