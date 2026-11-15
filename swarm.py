@@ -32,6 +32,8 @@ from testcases import sandbox
 
 ROOT = Path(__file__).resolve().parent
 AGENTS = tuple(f"worker-{number}" for number in range(1, 5))
+# Arm S is the single-agent baseline: one worker, no meter, no scouts, no critic.
+METER_OFF_ARMS = ("A", "S")
 BOREDOM_COMPONENTS = (
     "B",
     "regime",
@@ -339,7 +341,7 @@ def prepare_agent_worktree(repo, agents_root, arm, agent, base_commit, round_num
 
 def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     swarm_status = meter.status(profile, events)
-    regime = "EXPLOIT" if arm == "A" else swarm_status["regime"]
+    regime = "EXPLOIT" if arm in METER_OFF_ARMS else swarm_status["regime"]
     agent_status = {agent: meter.status(profile, events, agent=agent) for agent in agents}
     per_agent = {agent: agent_status[agent]["B"] for agent in agents}
     bored = sorted(
@@ -352,7 +354,10 @@ def allocate_roles(profile, events, agents=AGENTS, arm="B", exa_enabled=True):
     def divergent_worker():
         return bored[0] if bored else min(agents, key=lambda agent: (per_agent[agent], agent))
 
-    if arm == "A":
+    if arm == "S":
+        roles = dict.fromkeys(agents, "exploit")
+        rationale = "Arm S runs one worker with no meter, scouts or critic."
+    elif arm == "A":
         roles = dict.fromkeys(agents, "exploit")
         scout = agents[0]
         roles[scout] = "divergent"
@@ -450,7 +455,7 @@ def write_results(ledger_path, results_path):
 
 def append_status(out_dir, profile, events, arm):
     status = meter.status(profile, events)
-    disabled = arm == "A"
+    disabled = arm in METER_OFF_ARMS
     record = {
         "type": "status",
         "ts": timestamp(),
@@ -582,7 +587,7 @@ def append_assignment(
     }
     append_jsonl(Path(out_dir) / "assignments.jsonl", record)
     recalled_record = dict(record)
-    if arm == "A":
+    if arm in METER_OFF_ARMS:
         for key in ("swarm_B", "per_agent_B", "per_agent_boredom", "frustration", "stuck_cells"):
             recalled_record.pop(key, None)
     write_memory_item(
@@ -928,7 +933,7 @@ def run_scouts(
 ):
     leads = {}
     scout = (TASK or {}).get("scout", {})
-    cells = [] if arm == "A" else suggest_cells(profile, events)
+    cells = [] if arm in METER_OFF_ARMS else suggest_cells(profile, events)
     targets = direction_cells(cells) or ["none"]
     for scout_number, agent in enumerate(scouts):
         target_cell = targets[scout_number % len(targets)]
@@ -1655,7 +1660,7 @@ def worker_attempts(
         if gate_pass:
             return candidate
         common["reasons"] = "; ".join(gate_record.get("reasons", []))
-        if attempt == 2 and arm != "A":
+        if attempt == 2 and arm not in METER_OFF_ARMS:
             events = meter.read_ledger(Path(out_dir) / "ledger.jsonl")
             reserved = assigned_cells if assigned_cells is not None else []
             cells = meter.suggest(profile, events, n=len(meter.all_cells(profile, 2)))
@@ -2367,7 +2372,7 @@ def arm_environment(
         os.environ["MEMORY_BACKEND"] = "local"
     else:
         os.environ["MEMORY_BACKEND"] = "pastdev"
-    if arm == "A":
+    if arm in METER_OFF_ARMS:
         os.environ["BOREDOM"] = "off"
     else:
         os.environ.pop("BOREDOM", None)
@@ -2525,8 +2530,9 @@ def _orchestrate(args, publish_state, cleanup):
     if args.rounds < 1 or args.rounds > 50:
         raise ValueError("--rounds must be between 1 and 50")
     prompt_dir = configure_task(args)
-    if args.arm not in {"A", "B", "C", "D"}:
-        raise ValueError("--arm must be A, B, C, or D")
+    if args.arm not in {"A", "B", "C", "D", "S"}:
+        raise ValueError("--arm must be A, B, C, D, or S")
+    agents = AGENTS[:1] if args.arm == "S" else AGENTS
     repo = Path(args.repo).resolve()
     git_text(repo, "rev-parse", "--show-toplevel")
     profile_path = TASK["profile"].resolve()
@@ -2648,7 +2654,7 @@ def _orchestrate(args, publish_state, cleanup):
                 "status": "running",
                 "seed": args.seed,
                 "rounds": args.rounds,
-                "workers": len(AGENTS),
+                "workers": len(agents),
                 "llm": args.llm,
                 "exa": "on" if exa_enabled else "off",
                 "literature": args.literature,
@@ -2768,7 +2774,7 @@ def _orchestrate(args, publish_state, cleanup):
 
         for round_num in range(first_round, args.rounds + 1):
             events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(profile, events, AGENTS, args.arm, research_source != "off")
+            allocation = allocate_roles(profile, events, agents, args.arm, research_source != "off")
             status = {
                 **allocation,
                 "ledger_sha256": allocation["ledger_sha256"],
@@ -2787,7 +2793,9 @@ def _orchestrate(args, publish_state, cleanup):
                 )
                 break
             events_for_scouts = list(events)
-            cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
+            cell_suggestions = (
+                [] if args.arm in METER_OFF_ARMS else suggest_cells(profile, events_for_scouts)
+            )
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
             append_assignment(
@@ -2828,7 +2836,7 @@ def _orchestrate(args, publish_state, cleanup):
             claims = []
             assigned_cells = []
             base_commit = git_text(conductor, "rev-parse", "HEAD")
-            for agent in AGENTS:
+            for agent in agents:
                 role = allocation["roles"][agent]
                 lead = lead_for_agent(agent, leads, all_leads)
                 try:
@@ -2914,7 +2922,13 @@ def _orchestrate(args, publish_state, cleanup):
             )
             critic_event = None
             accepted = False
-            if provisional_best is not None:
+            if provisional_best is not None and args.arm == "S":
+                accepted = True
+                provisional_best["status"] = "keep"
+                best_val = float(provisional_best["score"])
+                best_metric_commit = provisional_best["commit"]
+                latest_candidate = provisional_best
+            elif provisional_best is not None:
                 previous_best_val = best_val
                 previous_best_commit = best_metric_commit
                 critic_dir = out_dir / "runs" / "critic_confirmation"
@@ -3219,7 +3233,9 @@ def viewer_frontier(out_dir, round_num, phase):
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arm", choices=("A", "B", "C", "D"), help="experiment arm (default B)")
+    parser.add_argument(
+        "--arm", choices=("A", "B", "C", "D", "S"), help="experiment arm (default B)"
+    )
     parser.add_argument("--rounds", type=int, help="total rounds, 1-50 (default 10)")
     parser.add_argument("--seed", type=int, help="seed LLM sampling; task evaluators stay fixed")
     parser.add_argument("--repo", default=".")
