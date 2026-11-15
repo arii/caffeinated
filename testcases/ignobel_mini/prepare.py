@@ -137,6 +137,9 @@ def load(spec):
     names = [c["source"] for c in tables[0][0]]
     merged = []
     for columns, rows in tables:
+        if [c["source"] for c in columns] == names:
+            merged.extend(rows)
+            continue
         position = {c["source"]: i for i, c in enumerate(columns)}
         merged.extend([row[position[n]] if position.get(n) is not None and position[n] < len(row) else "" for n in names] for row in rows)
     return tables[0][0], merged
@@ -168,9 +171,12 @@ def build(name, spec):
     for position, (index, column, values, numeric, distinct) in enumerate(keep):
         vid = f"v{position + 1:02d}"
         members = groups[column["group"]]
-        multi_select = len(members) > 1 and not numeric and len(distinct) == 1
-        if multi_select:
-            answered = [any(keep[m][2][r] for m in members) for r in range(len(rows))]
+        checkbox = len(members) > 1 or "select all that apply" in column["group"].lower()
+        if checkbox and not numeric and len(distinct) == 1:
+            if len(members) > 1:
+                answered = [any(keep[m][2][r] for m in members) for r in range(len(rows))]
+            else:
+                answered = [any(k[2][r] for k in keep) for r in range(len(rows))]
             values = [v or ("(not selected)" if answered[r] else "") for r, v in enumerate(values)]
             distinct = sorted(set(v for v in values if v))
         variables[vid] = {
