@@ -1,6 +1,8 @@
 import os
+import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -32,9 +34,12 @@ class OpenAILaunchTests(unittest.TestCase):
             self.assertEqual(c.post("/api/openai-runs", json={}).status_code, 422)
             self.assertEqual(c.post("/api/openai-runs", json={"rounds": 6}).status_code, 422)
             os.environ["OPENAI_API_KEY"] = "test-key-not-real"
-            process = MagicMock()
+            process = MagicMock(pid=4242)
             process.poll.return_value = None
-            with patch.object(openai_launch.subprocess, "Popen", return_value=process) as popen:
+            with (
+                patch.object(openai_launch.subprocess, "Popen", return_value=process) as popen,
+                patch.object(openai_launch.os, "killpg") as killpg,
+            ):
                 r = c.post("/api/openai-runs", json={"rounds": 2})
                 self.assertEqual(r.status_code, 201)
                 self.assertEqual(r.json()["maxCostUsd"], 10.0)
@@ -44,6 +49,25 @@ class OpenAILaunchTests(unittest.TestCase):
                 self.assertTrue(env["OPENAI_RUN_OUT"].startswith("experiments/openai-ignobel-"))
                 self.assertEqual(c.post("/api/openai-runs", json={}).status_code, 409)
                 self.assertTrue(c.get("/api/health").json()["openaiLaunch"]["running"])
+                c.__exit__(None, None, None)
+                killpg.assert_called_once_with(4242, openai_launch.signal.SIGTERM)
+
+    def test_local_env_file_cannot_raise_launcher_budget(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "scripts").mkdir()
+            script = root / "scripts" / "run_openai_ignobel.sh"
+            body = openai_launch.SCRIPT.read_text().split("exec .venv/bin/python")[0]
+            script.write_text(body + 'echo "$OPENAI_MAX_COST_USD $OPENAI_API_KEY"\n')
+            (root / ".env.openai.local").write_text(
+                "OPENAI_MAX_COST_USD=500\nOPENAI_API_KEY=from-file\n"
+            )
+            env = {**os.environ, "OPENAI_MAX_COST_USD": "20.0"}
+            env.pop("OPENAI_API_KEY", None)
+            out = subprocess.run(
+                ["bash", str(script)], env=env, capture_output=True, text=True, check=True
+            ).stdout
+            self.assertEqual(out.strip(), "20.0 from-file")
 
     def test_preview_origin_allowlist(self):
         self.assertTrue(allowed_origin("localhost"))
