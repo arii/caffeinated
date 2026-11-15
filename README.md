@@ -50,7 +50,7 @@ The backend scans this checkout's `.swarm_worktrees/*/conductor/experiments/*/vi
 
 Happy cartoon androids use a deterministic set of head, face, antenna, and accessory variations, with cream shells and blue/orange accents. Characters use gender-neutral family numbers: B for Bio, C for Chem, P for Physics. Source identities remain stable internally. These recordings do not supply scientific families, so the current groups are deterministic display assignments; later backend records can provide the actual family.
 
-The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample includes mock prior-art URLs and is labeled accordingly; its supplied provenance is not proof of live scientific validation.
+The room’s movement is illustrative. Metric values, event order, agent identities, and statements come from source records. Pausing freezes the replay; walking and looking do not advance research. Rewinding discards later state. The Ig Nobel sample is an offline `swarm.py --task ignobel` run (fake LLM) whose prior-art sources come from keyless OpenAlex/arXiv/PubMed search; its supplied provenance is not proof of live scientific validation.
 
 ## Data and future integration
 

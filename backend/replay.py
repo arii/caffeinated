@@ -57,17 +57,16 @@ def build_recording(native_manifest, native_events, entities, sample=True):
     last_tick=max((e['tick'] for e in events),default=0)
     live=manifest.get('status') in {'running','live'} or bool(manifest.get('live'))
     manifest.update({'id':manifest['run_id'],'totalTicks':last_tick,'tickDurationMs':700,'live':live})
-    mock_sources='example.org/mock' in json.dumps(entities)
     provenance=manifest.get('provenance',{})
     manifest['sample']=sample
-    llm=provenance.get('llm','unknown')
+    llm=provenance.get('llm_mode') or provenance.get('llm','unknown')
     try:
         command=provenance.get('command',[])
         if isinstance(command,str):command=shlex.split(command)
         provider=next((part.split('=',1)[1] if '=' in part else command[i+1] for i,part in enumerate(command) if part=='--llm' or part.startswith('--llm=')),None)
-        if provider:llm=provider
+        if provider and not provenance.get('llm_mode'):llm=provider
     except (ValueError,IndexError):pass
-    manifest['description']=('Recorded sample · mock prior-art sources' if mock_sources else 'Recorded research · no live model calls') if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
+    manifest['description']=('Recorded offline run · fake LLM (scripted agents)' if llm=='fake' else 'Recorded research · no live model calls') if sample else ('Live swarm run' if live else 'Swarm run')+' · '+('fake LLM' if llm=='fake' else f'{llm} model calls' if llm!='unknown' else 'unknown LLM provenance')
     created=manifest.get('time',{}).get('ts_start')
     created_at=datetime.fromisoformat(created.replace('Z','+00:00')).timestamp() if created else 0
     agents=[]
@@ -96,7 +95,7 @@ def build_recording(native_manifest, native_events, entities, sample=True):
        'agents':agents,'findings':[],'results':[],'sources':[],'error':None,'metric':manifest['metric'],
        'provenance':{'llm':provenance.get('llm','unknown'),'gpu':provenance.get('gpu','unknown'),'exa':provenance.get('exa','unknown'),'memory':provenance.get('memory_backend','unknown'),'execution':'recorded'},'discoveries':[]}
     maps={name:entity_map(rows) for name,rows in entities.items()}
-    result_by_id={};accepted=set();replications=set();frames=[{'tick':-1,'snapshot':deepcopy(s)}]
+    result_by_id={};accepted=set();frames=[{'tick':-1,'snapshot':deepcopy(s)}]
     def best(value):
         if value is None:return
         if s['value'] is None:s['value']=value
@@ -143,16 +142,13 @@ def build_recording(native_manifest, native_events, entities, sample=True):
             result_by_id[eid]=row;s['results'].append(row)
             if a:a['lastResult']=row;a['counters']['experiments']+=1;a['counters']['keeps']+=int(row['status'] in {'keep','replicated'})
             if row['kind']=='baseline':s['reference']=value;best(value)
-            elif manifest.get('swarm')=='ignobel' and row['status']=='replicated':
-                replications.add(eid)
-                s['value']=len(replications) if s['metric']['name']=='replicated_findings' else value
             elif eid in accepted:best(value)
         elif kind=='verdict.issued' and p.get('accepted'):
             eid=refs.get('experiment_id');accepted.add(eid)
             if eid in result_by_id:best(result_by_id[eid]['value'])
         elif kind=='discovery.made':
             discovery={**p,'tick':tick,'agentId':aid,**refs};s['discoveries'].append(discovery)
-            if manifest.get('swarm')!='ignobel':best(number(p.get('metric_value')))
+            best(number(p.get('metric_value')))
         elif kind=='memory.written' and a:a['counters']['memory_writes']+=1
         elif kind in {'message.sent','items.shared'} and a:
             partner=p.get('to_agent_id')

@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/Cd/NeB71qx28/fpdz2Ma227OIu4</id>
+  <title>arXiv Query: search_query=all:coffee AND all:spill&amp;id_list=&amp;start=0&amp;max_results=3</title>
+  <updated>2026-11-15T05:46:03Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:coffee+AND+all:spill&amp;start=0&amp;max_results=3&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+  <opensearch:totalResults>2</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/1711.08558v1</id>
+    <title>A Case Study in Non-Commutative Topology</title>
+    <updated>2017-11-23T02:59:58Z</updated>
+    <link href="https://arxiv.org/abs/1711.08558v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1711.08558v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This is an expository note focused upon one example, the irrational rotation $C^*$-algebra. We discuss how this algebra arises in nature - in quantum mechanics, group actions, and foliations, and we explain how $K$-theory is used to get information out of it.
+  Our goal is to write as if we are sitting in Starbucks and explaining an idea to a good friend (on napkins, of course). So we are interested in getting an idea across but not at all interested in the technical details that, in any event, would be lost if the coffee spilled. So come with us for a drink at Starbucks!</summary>
+    <category term="math.OA" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2017-11-23T02:59:58Z</published>
+    <arxiv:comment>A lot of the best mathematics that I have learned I learned at Starbucks and similar places. Conversations in such places have fairly well-set rules - you are allowed to simplify, lie slightly, explain "the main point" without worrying about pesky details like proofs. There are no actual lies (that I know of) in this paper. There should be more Starbucks papers: here is one</arxiv:comment>
+    <arxiv:primary_category term="math.OA"/>
+    <author>
+      <name>Claude L. Schochet</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2111.00464v3</id>
+    <title>Changing the flow profile and resulting drying pattern of dispersion droplets via contact angle modification</title>
+    <updated>2024-10-31T15:29:31Z</updated>
+    <link href="https://arxiv.org/abs/2111.00464v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2111.00464v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Spilling tea or coffee leads to a tell-tale circular stain after the droplet dries, known as the "coffee ring effect". The evaporation of suspension droplets is a complex physical process, and predicting and controlling the particle deposit patterns from sessile droplet evaporation are essential for many industrial processes, such as ink-jet printing and crop-care applications. In this article, we systematically investigate the effect of surface wettability on the evaporation dynamics of a particle-laden droplet, focussing on the contact line stick-slip behaviour, the hydrodynamic flow of the suspended particles, and the resulting particle deposit after evaporation. We use substrates with different wettabilities, ranging from hydrophilic to hydrophobic, and quantify the internal flow during the evaporation by tracking (fluorescent) tracer particles. We find that the internal flow shifts from a predominantly outward flow towards the contact line for low contact angles to an inward flow for large contact angles. Correspondingly, the particle deposit transitions from the typical coffee-ring pattern to a central stain as the substrates's hydrophobicity increases. Finally, we corroborate these experimental findings with dynamic density functional theory, modelling the droplet evaporation process and stick-slip behaviour of the contact line. Our investigation suggests that the wettability of the substrate can significantly alter hydrodynamic flow within drying droplets, thereby affecting the resulting particle deposit.</summary>
+    <category term="physics.flu-dyn" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cond-mat.soft" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2021-10-31T10:52:58Z</published>
+    <arxiv:comment>10 pages, 7 figures</arxiv:comment>
+    <arxiv:primary_category term="physics.flu-dyn"/>
+    <author>
+      <name>Carmen Morcillo Perez</name>
+    </author>
+    <author>
+      <name>Benjamin D. Goddard</name>
+    </author>
+    <author>
+      <name>Theo Reid</name>
+    </author>
+    <author>
+      <name>Schon Fusco</name>
+    </author>
+    <author>
+      <name>Miguel A. Rodríguez-Valverde</name>
+    </author>
+    <author>
+      <name>Marcel Rey</name>
+    </author>
+    <author>
+      <name>Job H. J. Thijssen</name>
+    </author>
+  </entry>
+</feed>

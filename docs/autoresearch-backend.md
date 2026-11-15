@@ -36,7 +36,13 @@ Candidate evaluation dependencies live separately in the Docker image.
 Before creating any branch or worktree, `swarm.py` checks the Docker sandbox
 image and the keys the chosen arm needs, and lists every missing piece with its
 fix. Arm B uses Exa and past.dev memory by default; `--exa off` and
-`--memory-backend local` run without those keys. `swarm.py` owns
+`--memory-backend local` run without those keys. Under `--exa off` research falls
+back to keyless OpenAlex, arXiv and PubMed paper search (`literature.py`, sources
+logged as `S<k>` like Exa's); `--llm fake` runs stay offline unless
+`--literature keyless`, and `--literature off` disables it. A missing
+`EXA_API_KEY` fails preflight unless `--literature keyless` or `--literature auto`
+is given, so an arm never switches research source silently; `run.json` and the
+viewer manifest's `provenance.research` record `exa`, `keyless` or `off`. `swarm.py` owns
 `.swarm_worktrees/<arm>/`: it locks it against a concurrent run of the same arm,
 prunes deleted worktrees, discards leftovers of earlier runs (moving an
 uncommitted `experiments/swarm_<arm>/` aside to
@@ -49,10 +55,10 @@ required. Agent attempts run in detached worktrees, so a run creates one branch
 
 Per-round arm commits hold only the small, append-only research state
 (ledger, results, critic, memory, assignments, boredom log, score cache).
-The viewer export, `runs/`, `exa_cache/`, `llm_log.jsonl` and
+The viewer export, `runs/`, `exa_cache/`, `literature_cache/`, `llm_log.jsonl` and
 `research_log.jsonl` stay out of them; when the run ends one final commit adds
-`llm_log.jsonl.gz`, `research_log.jsonl.gz`, `runs.tar.gz` and
-`exa_cache.tar.gz` (after any `post_run` scoring commit). Rebuild a viewer
+`llm_log.jsonl.gz`, `research_log.jsonl.gz`, `runs.tar.gz`, `exa_cache.tar.gz` and
+`literature_cache.tar.gz` (after any `post_run` scoring commit). Rebuild a viewer
 export with `export_viewer.py <out>` from the out dir, or from the arm branch's
 `experiments/swarm_<arm>/` checkout: the exporter reads `llm_log.jsonl.gz` and
 `research_log.jsonl.gz` when the raw logs are absent (extract `runs.tar.gz`

@@ -22,6 +22,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import boredom
+import literature
 import live_publish
 import llm
 import memory
@@ -122,6 +123,24 @@ def unique_tag(repo, base):
 SANDBOX_BUILD = f"docker build -t {sandbox.SANDBOX_IMAGE} -f testcases/Dockerfile testcases"
 
 
+def resolve_research_source(args):
+    """exa, keyless (OpenAlex/arXiv/PubMed via literature.py) or off. Arm C never researches.
+
+    With Exa requested but EXA_API_KEY unset, only an explicit --literature keyless|auto falls
+    back to keyless; by default the run stays on Exa and preflight reports the missing key.
+    """
+    if args.arm == "C":
+        return "off"
+    mode = getattr(args, "literature", None)
+    keyless = mode == "keyless" or (mode in (None, "auto") and args.llm != "fake")
+    exa_requested = os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
+    if exa_requested and (
+        args.replay or os.environ.get("EXA_API_KEY") or not keyless or mode is None
+    ):
+        return "exa"
+    return "keyless" if keyless else "off"
+
+
 def preflight(args, memory_backend, exa_enabled):
     """Fail before any branch or worktree exists when the run cannot start."""
     problems = []
@@ -144,7 +163,7 @@ def preflight(args, memory_backend, exa_enabled):
         if exa_enabled and not os.environ.get("EXA_API_KEY"):
             problems.append(
                 f"EXA_API_KEY is required for Exa search (arm {args.arm}); set it in the "
-                "environment or .env, or pass --exa off"
+                "environment or .env, or pass --literature keyless (or --exa off)"
             )
     if not sandbox.docker_available():
         problems.append("Docker is not running; candidate code is scored in a Docker sandbox")
@@ -626,7 +645,10 @@ def research_call(
         domains=domains,
     )
     if os.environ.get("EXA", "").casefold() == "off":
-        research.run_disabled(args)
+        if os.environ.get("LITERATURE", "").casefold() == "keyless":
+            literature.RUNNERS[command](args)
+        else:
+            research.run_disabled(args)
     else:
         runner = {
             "prior-art": research.run_prior_art,
@@ -2081,6 +2103,7 @@ ROUND_UNTRACKED = (
     "viewer",
     "runs",
     "exa_cache",
+    "literature_cache",
     "llm_log.jsonl",
     "research_log.jsonl",
     "viewer_publish_log.jsonl",
@@ -2091,6 +2114,7 @@ FINAL_ARCHIVES = {
     "research_log.jsonl": "research_log.jsonl.gz",
     "runs": "runs.tar.gz",
     "exa_cache": "exa_cache.tar.gz",
+    "literature_cache": "literature_cache.tar.gz",
 }
 
 
@@ -2308,12 +2332,15 @@ def critic_lesson_memory(
 
 
 @contextmanager
-def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None, rollbacks=None):
+def arm_environment(
+    arm, exa_enabled, memory_backend=None, run_id=None, rollbacks=None, keyless=False
+):
     names = (
         "AUTORESEARCH_ARM",
         "AUTORESEARCH_RUN_ID",
         "AUTORESEARCH_RUN_ROLLBACKS",
         "EXA",
+        "LITERATURE",
         "BOREDOM",
         "PRIOR_ART",
         "GROUNDING",
@@ -2328,6 +2355,10 @@ def arm_environment(arm, exa_enabled, memory_backend=None, run_id=None, rollback
     else:
         os.environ.pop("AUTORESEARCH_RUN_ROLLBACKS", None)
     os.environ["EXA"] = "on" if exa_enabled else "off"
+    if keyless and not exa_enabled:
+        os.environ["LITERATURE"] = "keyless"
+    else:
+        os.environ.pop("LITERATURE", None)
     if memory_backend:
         os.environ["MEMORY_BACKEND"] = memory_backend
     elif arm == "D":
@@ -2424,7 +2455,7 @@ def publish_viewer_state(out_dir, dest, *, final=False, status="running"):
             raise
 
 
-RESUMED_SETTINGS = ("task", "arm", "seed", "llm", "model", "exa", "memory_backend")
+RESUMED_SETTINGS = ("task", "arm", "seed", "llm", "model", "exa", "literature", "memory_backend")
 RUN_DEFAULTS = {"arm": "B", "rounds": 10, "llm": "openai", "exa": "on"}
 
 
@@ -2454,6 +2485,8 @@ def resolve_run_args(args):
             raise ValueError(f"--{key.replace('_', '-')} {given} conflicts with the run's {stored}")
         if given is None:
             setattr(args, key, stored)
+    if "literature" not in run_artifact and args.literature is None:
+        args.literature = "off"  # runs from before --literature never researched keylessly
     if args.rounds is None:
         args.rounds = run_artifact.get("rounds", RUN_DEFAULTS["rounds"])
     if args.viewer_dest is None and run_artifact.get("viewer_dest"):
@@ -2509,9 +2542,14 @@ def _orchestrate(args, publish_state, cleanup):
             )
     else:
         start_commit = git_text(repo, "rev-parse", "HEAD")
-    exa_enabled = (
-        args.arm != "C" and os.environ.get("EXA", "").casefold() != "off" and args.exa != "off"
-    )
+    research_source = resolve_research_source(args)
+    exa_enabled = research_source == "exa"
+    if research_source == "keyless" and args.exa == "on" and args.arm != "C":
+        print(
+            "swarm.py: EXA_API_KEY is not set; researching with keyless OpenAlex, arXiv "
+            "and PubMed search instead of Exa",
+            file=sys.stderr,
+        )
     effective_no_push = args.no_push or args.llm == "fake"
     memory_override = args.memory_backend or os.environ.get("MEMORY_BACKEND")
     if memory_override:
@@ -2611,6 +2649,8 @@ def _orchestrate(args, publish_state, cleanup):
                 "workers": len(AGENTS),
                 "llm": args.llm,
                 "exa": "on" if exa_enabled else "off",
+                "literature": args.literature,
+                "research": research_source,
                 "profile_path": "boredom_profile.json",
                 "profile_sha256": profile["_hash"],
                 "repo": str(repo),
@@ -2665,7 +2705,12 @@ def _orchestrate(args, publish_state, cleanup):
     TASK["prompt_values"]["baseline_loss"] = f"{baseline_val:.6f}"
 
     with arm_environment(
-        args.arm, exa_enabled, memory_backend, run_id=run_id, rollbacks=memory_rollbacks
+        args.arm,
+        exa_enabled,
+        memory_backend,
+        run_id=run_id,
+        rollbacks=memory_rollbacks,
+        keyless=research_source == "keyless",
     ):
         if not meter.read_ledger(ledger_path):
             meter.submit(
@@ -2721,7 +2766,7 @@ def _orchestrate(args, publish_state, cleanup):
 
         for round_num in range(first_round, args.rounds + 1):
             events = meter.read_ledger(ledger_path)
-            allocation = allocate_roles(profile, events, AGENTS, args.arm, exa_enabled)
+            allocation = allocate_roles(profile, events, AGENTS, args.arm, research_source != "off")
             status = {
                 **allocation,
                 "ledger_sha256": allocation["ledger_sha256"],
@@ -2743,7 +2788,6 @@ def _orchestrate(args, publish_state, cleanup):
             cell_suggestions = [] if args.arm == "A" else suggest_cells(profile, events_for_scouts)
             allocation["suggested_cells"] = cell_suggestions
             status["suggested_cells"] = cell_suggestions
-            refresh_round_context(out_dir, round_num, cell_suggestions)
             append_assignment(
                 allocation,
                 out_dir=out_dir,
@@ -2754,6 +2798,8 @@ def _orchestrate(args, publish_state, cleanup):
                 round_num=round_num,
                 provenance=provenance,
             )
+            # After the assignment so sources it logs fall in this round of the viewer timeline.
+            refresh_round_context(out_dir, round_num, cell_suggestions)
             status["per_agent_B"] = allocation["per_agent_B"]
             viewer_frontier(out_dir, round_num, "assign")
             if viewer_dest:
@@ -3190,6 +3236,12 @@ def build_parser():
     parser.add_argument("--model")
     parser.add_argument("--memory-backend", choices=("none", "local", "pastdev"))
     parser.add_argument("--exa", choices=("on", "off"), help="default on")
+    parser.add_argument(
+        "--literature",
+        choices=("auto", "keyless", "off"),
+        help="keyless OpenAlex/arXiv/PubMed research: by default only under --exa off (and not "
+        "with --llm fake); keyless or auto also stand in for Exa when EXA_API_KEY is unset",
+    )
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--no-push", action="store_true")
     parser.add_argument(
