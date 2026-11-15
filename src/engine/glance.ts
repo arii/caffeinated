@@ -60,7 +60,7 @@ export function tileMetrics(results:readonly GlanceResult[],agentId:string,agent
    const span=runBest-baseline;
    progress=span===0?0:clamp((best-baseline)/span);
   }else if(worst!=null){
-   const span=runBest-worst;
+   const span=Math.abs(runBest-worst);
    progress=span===0?1:clamp(direction==='maximize'?(best-worst)/span:(worst-best)/span);
   }
  }

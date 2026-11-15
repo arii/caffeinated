@@ -51,6 +51,15 @@ test('tileMetrics handles minimum and maximum metrics, baselines, counts, IDs an
  assert.equal(baselineRelative.progress,.5);
 });
 
+test('tileMetrics calculates baseline-free progress for either metric direction',()=>{
+ const minRows=[{agent:'A',status:'keep',tick:1,value:.5},{agent:'B',status:'keep',tick:2,value:.75},{agent:'C',status:'keep',tick:3,value:1}];
+ const minProgress=agent=>tileMetrics(minRows,agent,agent,{name:'loss',direction:'minimize'},.5,null).progress;
+ assert.equal(minProgress('A'),1);assert.equal(minProgress('B'),.5);assert.equal(minProgress('C'),0);
+ const maxRows=[{agent:'A',status:'keep',tick:1,value:1},{agent:'B',status:'keep',tick:2,value:.75},{agent:'C',status:'keep',tick:3,value:.5}];
+ const maxProgress=agent=>tileMetrics(maxRows,agent,agent,{name:'score',direction:'maximize'},1,null).progress;
+ assert.equal(maxProgress('A'),1);assert.equal(maxProgress('B'),.5);assert.equal(maxProgress('C'),0);
+});
+
 test('sparklinePath makes a compact SVG path and ignores undersized input',()=>{
  assert.equal(sparklinePath([2],40,10),'');
  assert.equal(sparklinePath([0,2,1],20,10),'M0.00 10.00L10.00 0.00L20.00 5.00');
