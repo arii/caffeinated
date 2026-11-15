@@ -301,7 +301,8 @@ def export_autoresearch(out_dir, arm=None, title=None):
     for line, record in memory_log:
         if record.get("type") != "recall":
             continue
-        ts, round_ = record.get("ts"), round_of_ts(starts, ts)
+        ts = record.get("ts")
+        round_ = round_of_ts(starts, ts)
         native = record.get("agent")
         agent = native if native in run.agents else None
         qid, oid = f"question:recall-{line}", f"observation:recall-{line}"
