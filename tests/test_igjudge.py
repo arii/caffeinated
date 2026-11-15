@@ -133,7 +133,9 @@ class IgJudgeTests(unittest.TestCase):
         self.assertEqual(len(ideas), 21)
         self.assertTrue(ideas[0]["hypothesis"])
         self.assertTrue(ideas[0]["gate"].startswith("rejected:"))
-        self.assertTrue(all(i["committee"] == "not judged" for i in ideas))
+        statuses = {i["committee"] for i in ideas}
+        self.assertIn("not judged", statuses)
+        self.assertTrue(any(status.startswith("score ") for status in statuses))
 
     def test_run_dir_skips_critic_duplicates(self):
         record = {
