@@ -140,13 +140,24 @@ literature search off for the task.
 
 `memory.py::write` sends memory writes to past.dev's ingest endpoint, and
 `memory.py::_recall` retrieves memories. `swarm.py` calls these through
-`write_memory_item` and `recall_memory`. `memory.py::audience_for_arm` assigns
-each arm its own `arm-<x>` audience (and corresponding `swarm-arm-<x>`
-identity). Run scope tags include the arm and run ID, and include the task
-when it is set. Recall filtering drops foreign-task and other out-of-scope
-records; it deliberately reuses same-arm, same-task lessons, verdicts and
-failed results across runs, while claims, leads, assignments and kept results
-remain run-scoped.
+`write_memory_item` and `recall_memory`. Scope is enforced by past.dev itself:
+`memory.py::ensure_native_scope` gives each arm's run a reader identity
+`reader-<arm>-<run>` with `arm`, `run` and `task` traits, and two rule audiences.
+`run-<arm>-<run>` (arm and run must match) holds claims, leads, assignments and
+kept results; `lab-<arm>-<task>` (arm and task must match) holds what later runs
+of the same arm and task may reuse: lessons, verdicts, failed results and
+hypotheses. Recall runs as the reader identity, so other arms', tasks' and
+runs' memories never come back. The recall-side scope filter
+(`scoped_pastdev_response`) is kept only for data written before rule
+audiences existed. Arm-less writes fall back to the fixed `arm-<x>` audience.
+
+Each idea is also a `hypothesis` memory with one stable id
+(`swarm.py::hypothesis_id`): the claim writes "being tested" and the result
+replaces it with "confirmed", "refuted", "crashed" and so on, so past.dev keeps
+one current status per idea. `memory.py recall` accepts `--query-timestamp`,
+`--occurred-from`, `--occurred-to` and `--chronological`, passed to past.dev's
+recall as `queryTimestamp`, `occurredFrom`, `occurredTo` and `sort`, and prints
+past.dev's verbatim evidence excerpt for each source.
 
 The selectable backends are `pastdev`, `local` and `none`. If past.dev is
 explicitly selected without `PAST_API_KEY` (or an arm-specific key),

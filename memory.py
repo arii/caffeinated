@@ -25,8 +25,17 @@ DATA_IDENTITY = "autoresearch-agent"
 RECALL_IDENTITY = "autoresearch"
 REGIME_RE = re.compile(r"^\[(EXPLOIT|SNAP|BREAKOUT)\]")
 RESULT_COLUMNS = {"commit", "loss", "status", "description"}
-MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment"}
+MEMORY_TYPES = {"lead", "claim", "result", "verdict", "lesson", "assignment", "hypothesis"}
+# Types whose id stays the same across updates, so past.dev replaces the old version.
+STABLE_TYPES = {"hypothesis"}
 _ENSURED_AUDIENCES = set()
+_ENSURED_SCOPES = {}
+
+
+class PastDevHTTPError(RuntimeError):
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
 
 
 def utc_now():
@@ -137,6 +146,133 @@ def ensure_arm_audience(arm=None, api_key=None):
     return slug, identity
 
 
+def scope_slug(value):
+    return re.sub(r"[^a-z0-9-]+", "-", str(value).casefold()).strip("-") or "none"
+
+
+def native_scope_names(scope):
+    """past.dev identity and audiences for one arm's run: the reader and who may see what."""
+    arm, run = scope_slug(scope["arm"]), scope_slug(scope["run_id"])[:12]
+    names = {
+        "reader": f"reader-{arm}-{run}",
+        "run_audience": f"run-{arm}-{run}",
+        "lab_audience": None,
+        "solo_audience": None,
+        "traits": {"arm": arm, "run": run},
+    }
+    if scope.get("agent"):
+        solo = f"solo-{arm}-{run}-{scope_slug(scope['agent'])}"
+        names["reader"] = solo
+        names["solo_audience"] = solo
+        names["traits"] = {
+            "arm": arm,
+            "run": f"{run}.{scope_slug(scope['agent'])}",
+        }
+    elif scope.get("task"):
+        names["traits"]["task"] = scope_slug(scope["task"])
+        names["lab_audience"] = f"lab-{arm}-{scope_slug(scope['task'])}"
+    return names
+
+
+def spawned_worker(agent):
+    match = re.fullmatch(r"worker-(\d+)", str(agent or ""))
+    if not match:
+        return False
+    try:
+        initial_workers = int(os.environ.get("AUTORESEARCH_INITIAL_WORKERS", "20"))
+    except ValueError:
+        initial_workers = 20
+    return int(match.group(1)) > initial_workers
+
+
+def _trait_rule(traits):
+    return {
+        "match": "all",
+        "conditions": [
+            {"trait": trait, "operator": "is", "values": [value]} for trait, value in traits.items()
+        ],
+    }
+
+
+def ensure_native_scope(scope, api_key):
+    """Create the reader identity and rule audiences so past.dev enforces the scope.
+
+    run-<arm>-<run> holds this run's notes (claims, leads, assignments, kept results) and only
+    identities with the same arm and run traits can recall them. lab-<arm>-<task> holds what
+    later runs of the same arm and task may reuse (lessons, verdicts, failed results, hypotheses).
+    """
+    names = native_scope_names(scope)
+    base_url = os.environ.get("PAST_BASE_URL", "https://api.past.dev").rstrip("/")
+    cache_key = (base_url, hashlib.sha256(api_key.encode("utf-8")).hexdigest(), names["reader"])
+    if cache_key in _ENSURED_SCOPES:
+        return _ENSURED_SCOPES[cache_key]
+    traits = names["traits"]
+    api_request(
+        "PUT", f"/identities/{quote(names['reader'], safe='')}", {"traits": traits}, api_key=api_key
+    )
+    api_request(
+        "PUT",
+        f"/audiences/{quote(names['run_audience'], safe='')}",
+        {
+            "kind": "rule",
+            "name": names["run_audience"],
+            "rule": _trait_rule(
+                {
+                    "arm": traits["arm"],
+                    "run": scope_slug(scope["run_id"])[:12],
+                }
+            ),
+        },
+        api_key=api_key,
+    )
+    if names["solo_audience"]:
+        solo_run = traits["run"]
+        api_request(
+            "PUT",
+            f"/audiences/{quote(names['solo_audience'], safe='')}",
+            {
+                "kind": "rule",
+                "name": names["solo_audience"],
+                "rule": {
+                    "match": "any",
+                    "conditions": [
+                        {"trait": "run", "operator": "is", "values": [solo_run]},
+                        {
+                            "trait": "run",
+                            "operator": "is",
+                            "values": [solo_run.rsplit(".", 1)[0]],
+                        },
+                    ],
+                },
+            },
+            api_key=api_key,
+        )
+    if names["lab_audience"]:
+        api_request(
+            "PUT",
+            f"/audiences/{quote(names['lab_audience'], safe='')}",
+            {
+                "kind": "rule",
+                "name": names["lab_audience"],
+                "rule": _trait_rule({"arm": traits["arm"], "task": traits["task"]}),
+            },
+            api_key=api_key,
+        )
+    _ENSURED_SCOPES[cache_key] = names
+    return names
+
+
+def audience_for_record(mem_type, metadata, names):
+    if names.get("solo_audience"):
+        return names["solo_audience"]
+    reusable = mem_type in CROSS_RUN_TYPES or (
+        mem_type == "result" and metadata.get("status") in CROSS_RUN_FAILED_STATUSES
+    )
+    if reusable and names.get("lab_audience"):
+        return names["lab_audience"]
+    return names["run_audience"]
+
+
 def selected_backend(backend=None, arm=None):
     backend = backend or os.environ.get("MEMORY_BACKEND")
     if backend is None:
@@ -163,6 +299,9 @@ def arm_run_scope(arm=None, run_id=None):
     if not run_id:
         raise ValueError("arm-scoped pastdev memory requires --run-id or AUTORESEARCH_RUN_ID")
     scope = {"arm": str(arm).upper(), "run_id": run_id}
+    agent = os.environ.get("AUTORESEARCH_AGENT")
+    if spawned_worker(agent):
+        scope["agent"] = agent
     task = os.environ.get("AUTORESEARCH_TASK")
     if task:
         scope["task"] = task
@@ -351,9 +490,11 @@ def api_request(method, path, payload=None, api_key=None):
         with urlopen(request, timeout=30) as response:
             response_body = response.read().decode("utf-8")
     except HTTPError as error:
-        raise RuntimeError(f"past.dev returned HTTP {error.code}") from error
+        raise PastDevHTTPError(f"past.dev returned HTTP {error.code}", error.code) from error
     except URLError as error:
         raise RuntimeError(f"past.dev request failed: {safe_text(error.reason)}") from error
+    if not response_body.strip():
+        return {}
     try:
         result = json.loads(response_body)
     except json.JSONDecodeError as error:
@@ -423,6 +564,7 @@ def write(
     log=None,
     arm=None,
     run_id=None,
+    agent=None,
 ):
     mem_type = type
     memory_id = id
@@ -435,10 +577,12 @@ def write(
         scope = arm_run_scope(
             arm, run_id or os.environ.get("AUTORESEARCH_RUN_ID") or metadata.get("run_id")
         )
+        if spawned_worker(agent or author):
+            scope = {**(scope or {}), "agent": agent or author}
         if scope:
             rollbacks = scope.pop("rollbacks", [])
             payload["metadata"].update(scope, run_epoch=len(rollbacks), written_at=utc_now())
-        if scope and not memory_id.startswith("run:"):
+        if scope and not memory_id.startswith("run:") and mem_type not in STABLE_TYPES:
             payload["id"] = f"{memory_id}@{scope['run_id'][:12]}"
     ingestion_id = None
     completed_ms = None
@@ -456,9 +600,13 @@ def write(
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
-        audience_scope = ensure_arm_audience(arm, api_key)
-        if audience_scope:
-            audience = audience_scope[0]
+        if scope and audience_for_arm(scope["arm"]):
+            names = ensure_native_scope(scope, api_key)
+            audience = audience_for_record(mem_type, payload["metadata"], names)
+        else:
+            audience_scope = ensure_arm_audience(arm, api_key)
+            audience = audience_scope[0] if audience_scope else None
+        if audience:
             payload["audience"] = audience
         started_at = time.monotonic()
         response = api_request("POST", "/ingest", payload, api_key=api_key)
@@ -484,6 +632,82 @@ def write(
         "latency_ms": latency_ms,
         "completed_ms": completed_ms,
     }
+
+
+def delete_data_points(ids, api_key=None):
+    """Delete data points by source id; ids past.dev no longer has are skipped."""
+    ids = list(dict.fromkeys(str(item) for item in ids if item))
+    deleted = []
+    for start in range(0, len(ids), 100):
+        batch = ids[start : start + 100]
+        try:
+            api_request("POST", "/data-points/delete", {"ids": batch}, api_key=api_key)
+            deleted.extend(batch)
+            continue
+        except PastDevHTTPError as error:
+            if error.code != 404:
+                raise
+        for source_id in batch:  # one id was missing; the batch is all-or-nothing
+            try:
+                api_request("DELETE", f"/data-points/{quote(source_id, safe='')}", api_key=api_key)
+                deleted.append(source_id)
+            except PastDevHTTPError as error:
+                if error.code != 404:
+                    raise
+    return deleted
+
+
+def rollback_memories(mirror=None, rollbacks=None, *, arm=None, log=None, records=None):
+    """On resume, remove from past.dev what the rolled-back rounds wrote.
+
+    A stable-id memory (a hypothesis) that had a version before the checkpoint gets that
+    version back; anything else written after the checkpoint is deleted. `records` is the
+    mirror as it was before the checkpoint restore truncated it.
+    """
+    rollbacks = run_rollbacks() if rollbacks is None else rollbacks
+    mirror_path = selected_mirror(mirror)
+    versions = {}
+    for record in read_mirror(mirror_path) if records is None else records:
+        source_id = str(record.get("sourceId") or record.get("id") or "")
+        if source_id:
+            versions.setdefault(source_id, []).append(record)
+    to_delete, to_restore = [], []
+    for source_id, records in versions.items():
+        if not any(rolled_back(r.get("metadata") or {}, rollbacks) for r in records):
+            continue
+        kept = [r for r in records if not rolled_back(r.get("metadata") or {}, rollbacks)]
+        if kept:
+            to_restore.append(kept[-1])
+        else:
+            to_delete.append(source_id)
+    if not to_delete and not to_restore:
+        return {"deleted": [], "restored": []}
+    api_key = api_key_for_arm(arm)
+    if not api_key:
+        raise RuntimeError("PAST_API_KEY is required for pastdev backend")
+    deleted = delete_data_points(to_delete, api_key=api_key)
+    for record in to_restore:
+        payload = {
+            key: record[key]
+            for key in ("content", "label", "timestamp", "metadata")
+            if key in record
+        }
+        payload.update(id=record["sourceId"], identity=record.get("author"))
+        if record.get("audience"):
+            payload["audience"] = record["audience"]
+        api_request("POST", "/ingest", payload, api_key=api_key)
+    restored = [record["sourceId"] for record in to_restore]
+    append_jsonl(
+        selected_log(log),
+        {
+            "type": "rollback",
+            "ts": utc_now(),
+            "backend": "pastdev",
+            "deleted": deleted,
+            "restored": restored,
+        },
+    )
+    return {"deleted": deleted, "restored": restored}
 
 
 def remember(args):
@@ -634,7 +858,8 @@ def pending_count(value):
     return 1 if value else 0
 
 
-def read_mirror(mirror):
+def read_mirror(mirror, *, strict=True):
+    """strict=False skips lines that are not JSON, e.g. a tail cut off by an interrupted append."""
     path = Path(mirror)
     if not path.exists():
         return []
@@ -646,7 +871,8 @@ def read_mirror(mirror):
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError as error:
-                raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
+                if strict:
+                    raise ValueError(f"invalid JSON in {path}, line {line_number}") from error
     return records
 
 
@@ -706,15 +932,21 @@ def is_before_query_timestamp(value, query_timestamp):
     return occurred_at is None or occurred_at <= query_timestamp
 
 
-def local_recall_results(query, limit, query_timestamp, mirror):
+def local_recall_results(
+    query, limit, query_timestamp, mirror, *, solo_author=None, solo_audience=None
+):
     query_words = word_tokens(query)
-    records = [
-        record
-        for record in read_mirror(mirror)
+    latest = {}
+    for record in read_mirror(mirror):
+        if solo_audience and record.get("audience") != solo_audience:
+            continue
+        if solo_author and not solo_audience and record.get("author") != solo_author:
+            continue
         if is_before_query_timestamp(
             record.get("timestamp") or record.get("occurred_at"), query_timestamp
-        )
-    ]
+        ):
+            latest[str(record.get("sourceId") or record.get("id"))] = record
+    records = list(latest.values())
     documents = [word_tokens(record.get("content")) for record in records]
     document_frequency = {
         word: sum(word in document for document in documents) for word in query_words
@@ -777,6 +1009,9 @@ def normalize_pastdev_results(response, mirror):
                 "author": author,
                 "type": mem_type,
             }
+            excerpts = [str(item) for item in source.get("excerpts") or [] if item]
+            if excerpts:
+                normalized["excerpt"] = excerpts[0]
             if source.get("scope"):
                 normalized["scope"] = source["scope"]
             sources.append(normalized)
@@ -787,12 +1022,17 @@ def normalize_pastdev_results(response, mirror):
                 "kind": artifact.get("kind", "unknown"),
                 "occurred_at": result.get("occurredAt") or "",
                 "sources": sources,
+                **(
+                    {"superseded_at": artifact["supersededAt"]}
+                    if artifact.get("supersededAt")
+                    else {}
+                ),
             }
         )
     return results
 
 
-CROSS_RUN_TYPES = {"lesson", "verdict"}
+CROSS_RUN_TYPES = {"lesson", "verdict", "hypothesis"}
 CROSS_RUN_FAILED_STATUSES = {"discard", "crash", "reject", "duplicate"}
 
 
@@ -877,12 +1117,17 @@ def _recall(
     log=None,
     arm=None,
     run_id=None,
+    caller_agent=None,
     log_agent=None,
+    occurred_from=None,
+    occurred_to=None,
+    sort=None,
 ):
     backend = selected_backend(backend, arm)
     mirror_path = selected_mirror(mirror)
     log_path = selected_log(log)
     cutoff = timestamp_value(query_timestamp)
+    caller_agent = caller_agent or (agent if spawned_worker(agent) else None)
     started_at = time.monotonic()
     pending = 0
     raw_response = None
@@ -897,21 +1142,38 @@ def _recall(
         results = []
         used_tokens = 0
     elif backend == "local":
-        results, used_tokens = local_recall_results(query, limit, cutoff, mirror_path)
+        results, used_tokens = local_recall_results(
+            query,
+            limit,
+            cutoff,
+            mirror_path,
+            solo_author=caller_agent if spawned_worker(caller_agent) else None,
+        )
     else:
         scope = arm_run_scope(arm, run_id)
+        if spawned_worker(caller_agent):
+            scope = {**(scope or {}), "agent": caller_agent}
         api_key = api_key_for_arm(arm)
         if not api_key:
             raise RuntimeError("PAST_API_KEY is required for pastdev backend")
-        audience_scope = ensure_arm_audience(arm, api_key)
-        if audience_scope:
-            audience, recall_identity = audience_scope
-        response = api_request(
-            "POST",
-            "/recall",
-            {"query": query, "identity": recall_identity, "limit": limit},
-            api_key=api_key,
-        )
+        if scope and audience_for_arm(scope["arm"]):
+            names = ensure_native_scope(scope, api_key)
+            audience = names.get("solo_audience") or names["run_audience"]
+            recall_identity = names["reader"]
+        else:
+            audience_scope = ensure_arm_audience(arm, api_key)
+            if audience_scope:
+                audience, recall_identity = audience_scope
+        request_body = {"query": query, "identity": recall_identity, "limit": limit}
+        for key, value in (
+            ("queryTimestamp", query_timestamp),
+            ("occurredFrom", occurred_from),
+            ("occurredTo", occurred_to),
+            ("sort", sort),
+        ):
+            if value:
+                request_body[key] = value
+        response = api_request("POST", "/recall", request_body, api_key=api_key)
         if scope:
             raw_sources = [
                 source
@@ -948,7 +1210,13 @@ def _recall(
         pending = pending_count(response.get("pending"))
         if scope:
             local_results, _ = local_recall_results(
-                query, len(read_mirror(mirror_path)) or limit, cutoff, mirror_path
+                query,
+                len(read_mirror(mirror_path)) or limit,
+                cutoff,
+                mirror_path,
+                solo_audience=(
+                    names.get("solo_audience") if scope and spawned_worker(caller_agent) else None
+                ),
             )
             local_index = mirror_source_index(mirror_path)
             local_results = [
@@ -996,7 +1264,7 @@ def _recall(
     log_record = {
         "type": "recall",
         "ts": utc_now(),
-        "agent": log_agent or agent,
+        "agent": log_agent or caller_agent or agent,
         "backend": backend,
         "query": query,
         "latency_ms": latency_ms,
@@ -1043,7 +1311,11 @@ def recall(
     log=None,
     arm=None,
     run_id=None,
+    caller_agent=None,
     log_agent=None,
+    occurred_from=None,
+    occurred_to=None,
+    sort=None,
 ):
     result = _recall(
         query,
@@ -1055,7 +1327,11 @@ def recall(
         log=log,
         arm=arm,
         run_id=run_id,
+        caller_agent=caller_agent,
         log_agent=log_agent,
+        occurred_from=occurred_from,
+        occurred_to=occurred_to,
+        sort=sort,
     )
     result.pop("_raw_response", None)
     return result
@@ -1072,6 +1348,9 @@ def recall_command(args):
         log=args.log,
         arm=args.arm,
         run_id=args.run_id,
+        occurred_from=args.occurred_from,
+        occurred_to=args.occurred_to,
+        sort="chronological" if args.chronological else None,
     )
     raw_response = result.pop("_raw_response", None)
     if result["pending"]:
@@ -1095,6 +1374,8 @@ def recall_command(args):
             print(f"#{item['rank']} {occurred_at} [{item['kind']}] {content}")
             for source in item.get("sources") or []:
                 print(f"   from: {source.get('sourceId', '')} — {source.get('label', '')}")
+                if source.get("excerpt"):
+                    print(f'   evidence: "{str(source["excerpt"])[:200]}"')
     return 0
 
 
@@ -1174,6 +1455,9 @@ def build_parser():
     recall_parser.add_argument("--agent")
     recall_parser.add_argument("--arm")
     recall_parser.add_argument("--query-timestamp")
+    recall_parser.add_argument("--occurred-from")
+    recall_parser.add_argument("--occurred-to")
+    recall_parser.add_argument("--chronological", action="store_true")
     add_backend_options(recall_parser)
     recall_parser.set_defaults(func=recall_command)
     return parser

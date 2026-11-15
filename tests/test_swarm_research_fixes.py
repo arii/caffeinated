@@ -686,6 +686,62 @@ class LocalPrecheckTests(unittest.TestCase):
         self.assertEqual(outcomes[0]["reasons"], reasons)
 
 
+class SpawnPlanningTests(unittest.TestCase):
+    def test_stuck_or_bored_workers_spawn_with_cooldown_and_cap(self):
+        agents = [f"worker-{number}" for number in range(1, 5)]
+        plans = swarm.spawn_candidates(
+            {"per_agent_B": dict.fromkeys(agents, 0.1)},
+            {"worker-2": []},
+            agents,
+            round_num=3,
+            last_spawn_round=2,
+            max_workers=8,
+        )
+        self.assertEqual([plan["agent"] for plan in plans], ["worker-5", "worker-6"])
+        self.assertEqual(plans[0]["trigger"], ["worker-2"])
+
+        capped = swarm.spawn_candidates(
+            {"per_agent_B": {"worker-3": 0.5}},
+            {},
+            agents,
+            round_num=4,
+            last_spawn_round=3,
+            max_workers=5,
+        )
+        self.assertEqual([plan["agent"] for plan in capped], ["worker-5"])
+        self.assertEqual(
+            swarm.spawn_candidates(
+                {"per_agent_B": {"worker-3": 0.9}},
+                {},
+                agents,
+                round_num=4,
+                last_spawn_round=4,
+                max_workers=8,
+            ),
+            [],
+        )
+        self.assertEqual(
+            swarm.spawn_candidates(
+                {"per_agent_B": {"worker-3": 0.9}},
+                {},
+                agents,
+                round_num=4,
+                last_spawn_round=None,
+                max_workers=8,
+                arm="S",
+            ),
+            [],
+        )
+
+    def test_spawn_defaults_only_enable_for_fresh_ignobel_runs(self):
+        ignobel = swarm.build_parser().parse_args(["--task", "ignobel", "--llm", "fake"])
+        swarm.resolve_run_args(ignobel)
+        other = swarm.build_parser().parse_args(["--task", "hadamard19", "--llm", "fake"])
+        swarm.resolve_run_args(other)
+        self.assertEqual(ignobel.spawn, "on")
+        self.assertEqual(other.spawn, "off")
+
+
 class PISteeringTests(unittest.TestCase):
     def setUp(self):
         swarm.configure_task(SimpleNamespace(task="bixbench_mini"))
@@ -759,6 +815,207 @@ class PISteeringTests(unittest.TestCase):
             )
         self.assertEqual(steers, {})
         recall.assert_not_called()
+
+    def test_fake_pi_spawn_reaches_worker_and_checkpoint_restores_it(self):
+        class Client:
+            def __init__(self):
+                self.call_ids = []
+                self.values = None
+
+            def call(self, role, *, agent, round_num, values):
+                self.call_ids.append("PI-r3-pi-1")
+                self.values = values
+                return {
+                    "steers": [],
+                    "spawn": [
+                        {
+                            "focus": "Explore an alternative normalization",
+                            "cite": ["D1_1"],
+                            "lead_id": None,
+                        }
+                    ],
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            out.joinpath("research_log.jsonl").write_text(
+                json.dumps({"type": "source", "id": "D1_1", "title": "Dataset notes"}) + "\n",
+                encoding="utf-8",
+            )
+            agents = tuple(f"worker-{number}" for number in range(1, 5))
+            spawn_records = []
+            client = Client()
+            with patch.object(swarm, "recall_memory", return_value={"results": []}):
+                pi_steers = swarm.run_pi_steering(
+                    enabled=True,
+                    profile=self.profile,
+                    events=self.events,
+                    status={
+                        "swarm_B": 0.6,
+                        "regime": "BOREDOM_SNAP",
+                        "per_agent_B": {
+                            agent: 0.6 if agent == "worker-1" else 0 for agent in agents
+                        },
+                    },
+                    roles=dict.fromkeys(agents, "divergent"),
+                    agents=agents,
+                    out_dir=out,
+                    llm_client=client,
+                    backend="local",
+                    mirror=out / "memory.jsonl",
+                    memory_log=out / "memory_log.jsonl",
+                    arm="B",
+                    round_num=3,
+                    best_commit="abc123",
+                    best_val=0.5,
+                    leads=[],
+                    research_start=0,
+                    spawn_plans=[{"agent": "worker-5", "trigger": ["worker-1"]}],
+                    spawn_records=spawn_records,
+                )
+            agents = swarm.apply_pi_spawns(agents, pi_steers, spawn_records, out)
+            self.assertEqual(client.values["pi_spawn_slots"], 1)
+            self.assertIn("worker-5", agents)
+            self.assertEqual(
+                pi_steers["worker-5"],
+                "Explore an alternative normalization (suggested sources: D1_1)",
+            )
+
+            base_commit = swarm.git_text(ROOT, "rev-parse", "HEAD")
+            source = swarm.git(ROOT, "show", f"{base_commit}:{swarm.TARGET_FILE}").stdout
+            proposal = llm.fake_response(
+                "WORKER_PROPOSE",
+                {
+                    "agent": "worker-5",
+                    "candidate_source": source,
+                    "fake_edits": swarm.TASK.get("fake_edits", []),
+                    "fake_targets": swarm.TASK.get("fake_targets", []),
+                },
+            )
+            captured_values = []
+
+            class WorkerClient:
+                def __init__(self):
+                    self.call_ids = ["WORKER_PROPOSE-r3-worker-5-1"]
+                    self.last_call_id = self.call_ids[0]
+
+                def call(self, role, *, agent, round_num, values):
+                    captured_values.append(values)
+                    return json.loads(json.dumps(proposal))
+
+            with (
+                patch.object(swarm, "recall_memory", return_value={"results": []}),
+                patch.object(swarm, "local_candidate_precheck", return_value=[]),
+                patch.object(swarm, "research_call", return_value=[]),
+                patch.object(swarm, "write_memory_item"),
+                patch.object(
+                    swarm,
+                    "commit_candidate",
+                    return_value={
+                        "commit": "candidate-commit",
+                        "branch": "agent/test",
+                        "worktree": ROOT,
+                    },
+                ),
+                patch.object(swarm, "gate_candidate", return_value=(True, {"reasons": []})),
+            ):
+                candidate = swarm.worker_attempts(
+                    agent="worker-5",
+                    round_num=3,
+                    arm="B",
+                    role="exploit",
+                    agent_b=0.0,
+                    status={"swarm_B": 0.6, "regime": "BOREDOM_SNAP"},
+                    best_commit=base_commit,
+                    best_val=1.0,
+                    profile=self.profile,
+                    profile_path=swarm.TASK["profile"],
+                    events=self.events,
+                    out_dir=out,
+                    repo=ROOT,
+                    agents_root=ROOT / ".swarm_worktrees",
+                    base_commit=base_commit,
+                    llm_client=WorkerClient(),
+                    backend="local",
+                    mirror=out / "memory.jsonl",
+                    memory_log=out / "memory_log.jsonl",
+                    lead=None,
+                    all_leads=[],
+                    claims=[],
+                    replay=False,
+                    assigned_cells=[],
+                    pi_steer=pi_steers["worker-5"],
+                )
+            self.assertEqual(candidate["agent"], "worker-5")
+            self.assertIn(
+                "PI guidance for you this round: Explore an alternative normalization",
+                llm.render_prompt("WORKER_PROPOSE", captured_values[0]),
+            )
+
+            spawned_event = next(
+                event for event in llm.read_log(out / "pi.jsonl") if event.get("type") == "pi_spawn"
+            )
+            self.assertEqual(spawned_event["type"], "pi_spawn")
+            self.assertEqual(spawned_event["agent"], "worker-5")
+            self.assertEqual(spawned_event["trigger"], ["worker-1"])
+            swarm.write_checkpoint(
+                out,
+                round_num=3,
+                arm_commit="abc123",
+                best_val=0.5,
+                best_commit="abc123",
+                viewer_dir=None,
+            )
+            swarm.append_jsonl(
+                out / "pi.jsonl",
+                {
+                    "type": "pi_spawn",
+                    "agent": "worker-6",
+                    "round": 4,
+                    "trigger": ["worker-1"],
+                    "focus": None,
+                },
+            )
+            swarm.restore_checkpoint(out, swarm.read_checkpoint(out))
+            restored_agents = swarm.restore_spawned_agents(
+                tuple(f"worker-{number}" for number in range(1, 5)), out
+            )
+        self.assertIn("worker-5", restored_agents)
+        self.assertNotIn("worker-6", restored_agents)
+
+    def test_pi_spawn_validation_filters_ids_and_limits_slots(self):
+        spawns = swarm.validate_pi_spawns(
+            {
+                "spawn": [
+                    {
+                        "focus": "  Try   another route  ",
+                        "cite": ["S1", "invalid", "S1"],
+                        "lead_id": "lead-1",
+                    },
+                    {
+                        "focus": "x" * 240,
+                        "cite": ["missing"],
+                        "lead_id": "unknown",
+                    },
+                    {"focus": "This suggestion exceeds the free slots"},
+                ]
+            },
+            2,
+            {"S1"},
+            [{"id": "lead-1"}],
+        )
+        self.assertEqual(len(spawns), 2)
+        self.assertEqual(
+            spawns[0],
+            {
+                "focus": "Try another route",
+                "cite": ["S1"],
+                "lead_id": "lead-1",
+            },
+        )
+        self.assertEqual(len(spawns[1]["focus"]), 200)
+        self.assertEqual(spawns[1]["cite"], [])
+        self.assertIsNone(spawns[1]["lead_id"])
 
     def test_stuck_agent_receives_batched_guidance_and_unknown_citation_is_dropped(self):
         class Client:
