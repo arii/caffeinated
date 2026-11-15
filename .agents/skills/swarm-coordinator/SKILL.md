@@ -18,6 +18,7 @@ You are the agent that runs `swarm.py` and supplies every LLM decision through q
 ## 1. Launch
 
 ```sh
+mkdir -p ../out
 python3 swarm.py --task <hadamard19|bixbench_mini|playworld_mini> --arm B --rounds <R> \
   --llm queue --memory-backend pastdev --exa on --no-push --out ../out/<task> > ../out/<task>.log 2>&1 &
 ```
@@ -66,7 +67,7 @@ Reply with **exactly one JSON object** matching the schema at the end of the pro
 - Add no new dependencies and stay within the time limit stated in the prompt.
 - `old` must be an exact, unique substring of the current best file. The safest choice is the whole file; see section 5.
 - `mechanism` and `method` must come from the prompt's vocabulary. Set `params.value` only for a one-knob change.
-- Set `lead_id` and `source_ids` **only if you actually implemented that lead**; otherwise use `null`. Lead reuse is a measured past.dev metric.
+- Set `lead_id` and `source_ids` **only if you actually implemented that lead**; otherwise use `"lead_id": null, "source_ids": []` (`source_ids` must always be a list). Lead reuse is a measured past.dev metric.
 - `predicted_delta` is negative when you expect the loss to drop.
 - Give the 4 workers in a round 4 *different* ideas.
 
