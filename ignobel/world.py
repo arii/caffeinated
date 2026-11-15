@@ -222,10 +222,16 @@ class World:
             partner_of[x.name], partner_of[y.name] = y.name, x.name
         reviewers = [(a, self._statistician(a)) for a in self.agents if actions[a.name] == Action.REVIEW]
         reviews = [(a, s) for a, s in reviewers if s is not None]
+        for a, s in reviewers:
+            if s is None:  # no statistician in this community: carry on without a review
+                actions[a.name] = policy_mod._work(a)
 
         convs = await self._gather([(lambda p=p: self._converse(*p)) for p in pairs]
                                    + [(lambda a=a, s=s: self._converse(a, s, f"design review: {self._topic(a)}"))
                                       for a, s in reviews])
+        advice = {}
+        for (a, s), turns in zip(reviews, convs[len(pairs):]):
+            advice[a.name] = "\n".join(f"{sp.name}: {text}" for sp, _, _, text, _ in turns if sp is s)
         for turns in convs:
             for speaker, other, i, text, res in turns:
                 self.log.append(r, speaker.name, "talk", {"partner": other.name, "turn": i, "text": text},
@@ -256,7 +262,7 @@ class World:
             self._record_idea(a, idea, res, r)
 
         refiners = [a for a in self.agents if actions[a.name] in (Action.REFINE, Action.REVIEW)]
-        refined = await self._gather([(lambda a=a: a.refine(r)) for a in refiners])
+        refined = await self._gather([(lambda a=a: a.refine(r, advice.get(a.name, ""))) for a in refiners])
         for a, (idea, res) in zip(refiners, refined):
             self._record_idea(a, idea, res, r)
 

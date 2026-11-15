@@ -193,7 +193,7 @@ class Agent:
         res = self._call("propose", user, **ctx)
         return self._new_idea(res.data, "propose", round, urls, cross_field=bool(breakout), partner=partner), res
 
-    def refine(self, round: int) -> tuple[Idea, llm.LLMResult]:
+    def refine(self, round: int, advice: str = "") -> tuple[Idea, llm.LLMResult]:
         """Refine the current idea into a sharper, more testable version."""
         cur = self.current_idea()
         prior = cur.text if cur else "no prior idea"
@@ -203,6 +203,8 @@ class Agent:
             s = last[-1]
             outcome = (f"\nLast study on it: ok={s.ok}, replicated={s.replicated}, "
                        f"actual effect={s.actual_effect} ({s.actual_direction}).")
+        if advice:
+            outcome += f"\nStatistician's design review:\n{advice}"
         user = (f"Refine this idea into a better, still funny-then-thoughtful study: {prior}{outcome}\n"
                 "Return JSON with keys: title, idea, hypothesis, method, prediction {direction, effect_size}.")
         res = self._call("refine", user)
