@@ -199,7 +199,7 @@ class RunCostTests(unittest.TestCase):
                 json.dumps(
                     {
                         "kind": "candidate",
-                        "round": 2,
+                        "round": 1,
                         "agent": "a",
                         "status": "discard",
                         "score": 0.4,

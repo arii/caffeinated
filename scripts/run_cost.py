@@ -196,7 +196,7 @@ def _pi_steer_followed_by_accepted_attempt(pi_records, ledger_records):
         for record in pi_records
         if record.get("type") == "pi_steer"
         and record.get("steer")
-        and (record.get("agent"), record.get("round", 0) + 1) in accepted_attempts
+        and (record.get("agent"), record.get("round", 0)) in accepted_attempts
     )
 
 
