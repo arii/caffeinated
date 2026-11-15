@@ -13,6 +13,7 @@ import {STATIC_SITE,staticPath} from './engine/staticSite';
 import {aboutHtml,researchTrail,researchResults,researchCommitteeScores,preCommitteeResultsHtml,type IntroConfig} from './engine/intro';
 import introConfig from '../data/pages/intro.json';
 import judgingCopy from '../data/pages/judging.json';
+import followQr from './assets/follow-qr.png';
 import {nextCoach} from './engine/introProgress';
 import {initialRecordingId,sortedRecordings,recordingCopy,playbackContinues,recordingChanged,frameAt,advanceTick,eventsThrough,loadRecording,anonymizeExcerpt,type Recording,type RecordingManifest,type ReplayEvent} from './engine/replay';
 import {boredomColor,boredomPercent,boredomComponents,regimeLabel,latestBoredom} from './engine/boredom';
@@ -39,6 +40,7 @@ import {finaleReached,finaleSummary,improvementText} from './engine/finale';
 import {podium} from './engine/podium';
 import {podiumMetricHtml} from './engine/podiumView';
 import {igJudgeHtml} from './engine/igJudge';
+import {recordingPodiumHtml} from './engine/finalPodium';
 import {compactMarks,lanes,roundX,turns} from './engine/orchestration';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const rawEsc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -148,7 +150,7 @@ function setBarCollapsed(collapsed:boolean){
  $('collapse-bar').setAttribute('aria-expanded',String(!collapsed));
  $('collapse-bar').textContent=collapsed?'▴':'▾';
  $('collapse-bar').setAttribute('aria-label',collapsed?'Expand playback panel':'Collapse playback panel');
- $('tick-label').textContent=collapsed?`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+ $('tick-label').textContent=collapsed?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
 }
 function updateDockAutoCollapse(){
  const contextOpen=modal(),shouldCollapse=contextOpen||bubbleExpanded;
@@ -180,7 +182,7 @@ function renderControls(){
  const live=liveButton(recording?.manifest,tick,playing,recording?.events||[]);$('go-live').hidden=live.hidden;$('go-live').textContent=live.label;$('go-live').classList.toggle('at-edge',live.atEdge);$('go-live').setAttribute('aria-label',live.atEdge?'Following live':'Jump to the live edge');
  $('play').textContent=playing?'Ⅱ Pause':'▶ Play';$('play').setAttribute('aria-label',playing?'Pause':'Play');
  $('camera-mode').textContent=walking?'Lab view ↗':'Walk inside ↗';$<HTMLButtonElement>('camera-mode').disabled=!recording||playing;
- $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=document.body.classList.contains('bar-collapsed')?`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+ $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=document.body.classList.contains('bar-collapsed')?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
  $<HTMLInputElement>('timeline').setAttribute('aria-valuetext',`Round ${snapshot?.round??1} of ${snapshot?.config.rounds??recording?.manifest.time?.rounds??0}`);
  $<HTMLSelectElement>('replay-mode').value=playbackMode;
  const e=recording&&frameAt(recording.events,tick) as InspectEvent|undefined|null,caption=$('activity-caption'),eid=e?.refs?.experiment_id;
@@ -191,13 +193,13 @@ function renderRunMeta(){
  if(!recording)return;
  const rounds=recording.manifest.time?.rounds||snapshot?.config.rounds||0,raw=String(snapshot?.regime||'').toUpperCase();
  const activity=/BOREDOM_SNAP/.test(raw)?'Bored — trying new directions':/PARADIGM_BREAKOUT/.test(raw)?'Breakout':'Refining';
- $('run-meta').innerHTML=`<span class="status-chip">${playing?'Replaying recorded run':'Recorded run'}</span><span>Round ${snapshot?.round??1}${rounds?` of ${rounds}`:''}</span><span>${activity}</span>`;
+ $('run-meta').innerHTML=`<span class="status-chip">${playing?'Replaying recorded run':'Recorded run'}</span><span>${recording.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}${rounds?` of ${rounds}`:''}`}</span><span>${activity}</span>`;
 }
 function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();if(resultsDialog.open)renderResultsPanel();if(!CINEMA&&!finaleAutoOpened&&finaleReached(recording,tick)){finaleAutoOpened=true;renderResultsPanel();if(!resultsDialog.open){resultsDialog.showModal();updateDockAutoCollapse();}}}
 function renderHUD(){
  $('agent-count').textContent=`${people().length} AGENTS`;
  renderAgentList();
- $('run-label').textContent=snapshot?`Round ${snapshot.round}${snapshot.config.rounds?` of ${snapshot.config.rounds}`:''}`:'Waiting for the recorded run';
+ $('run-label').textContent=snapshot?(recording?.manifest.continuous?'Continuous session':`Round ${snapshot.round}${snapshot.config.rounds?` of ${snapshot.config.rounds}`:''}`):'Waiting for the recorded run';
  renderStatusStrip();
 }
 type StatusTileView={agent:ArchivedAgent;kind:'staff';label:string;help:string}|{agent:ArchivedAgent;kind:'scientist';metricText:string;metricTitle?:string;turn?:string};
@@ -276,7 +278,7 @@ function renderOrchestration(){
   return `<text x="8" y="${y+4}" class="orch-name">${esc(lane.name)}</text><line x1="${left}" y1="${y}" x2="${width-12}" y2="${y}" class="orch-lane"/>${marks}`;
  }).join('');
  const closes=view.roundCloses.filter(c=>c.tick>0).map(c=>`<line x1="${x(c.tick,c.round)}" y1="${top-20}" x2="${x(c.tick,c.round)}" y2="${height}" class="orch-close"><title>Round ${c.round} closed</title></line>`).join('');
- const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*cellWidth}" y="13" class="orch-round">Round ${r}</text>`).join('');
+ const rounds=view.rounds.map((r,i)=>`<text x="${left+(i+.5)*cellWidth}" y="13" class="orch-round">${recording?.manifest.continuous?'Session':`Round ${r}`}</text>`).join('');
  const playhead=`<line x1="${x(tick)}" y1="${top-20}" x2="${x(tick)}" y2="${height}" class="orch-playhead"/>`;
  const legendTitles:Record<string,string>={breakout:'Breakout conditions assign three refining slots and one exploring slot.',boredom:'A boredom shift assigns one refining slot and three exploring slots; the novelty screen rejects close repeats.',keep:'Kept means retained as a current best; baseline is the unmodified reference.'};
  const legend=[['idea','Idea'],['scout','Search'],['memory','Memory'],['boredom','Boredom shift'],['critic','Review'],['veto','Veto'],['keep','Kept']].map(([kind,label])=>`<span${legendTitles[kind]?` title="${esc(legendTitles[kind])}"`:''}><i style="--mark:${colors[kind]}"></i>${label}</span>`).join('')+`<span class="orchestration-legend-note"><span title="${esc(legendTitles.breakout)}">Breakout</span>: 3 refine + 1 explore; <span title="${esc(legendTitles.boredom)}">Boredom shift</span>: 1 refine + 3 explore; close repeats are screened out.</span>`;
@@ -284,12 +286,13 @@ function renderOrchestration(){
 }
 function renderResultsPanel(){
  if(!recording){$('results-content').innerHTML='<p>No results available.</p>';return;}
+ const finalJudgeHtml=finaleReached(recording,tick)?recordingPodiumHtml(recording,tick,esc)+igJudgeHtml(recording.igjudge,esc):'';
  if(isIgnobelRecording(recording.manifest,recording)){
   const summary=researchResults(recording);
   const committeeScores=researchCommitteeScores(recording,tick),realAward=committeeScores.some(item=>item.score>=.5&&!item.rejected&&item.award&&!/committee/i.test(item.award));
   if(isPreCommitteeIgnobel(recording.manifest,recording)||!realAward){
    $('results-title').textContent='What the swarm found';
-   $('results-content').innerHTML=igJudgeHtml((recording as {igjudge?:unknown}).igjudge,esc)+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary);
+   $('results-content').innerHTML=finalJudgeHtml+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary);
    return;
   }
  }
@@ -301,7 +304,7 @@ function renderResultsPanel(){
   $('results-title').textContent='What the swarm found';
   const entryBlock=board.status==='awaiting'&&entries?`<details class="unscored-studies"><summary>${board.confirmed} confirmed studies, unscored</summary><ul class="podium-list">${entries}</ul></details>`:entries?`<ul class="podium-list">${entries}</ul>`:'';
   const metricNote=podiumMetricHtml(recording,esc);
-  $('results-content').innerHTML=`${igJudgeHtml((recording as {igjudge?:unknown}).igjudge,esc)}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary)}${badgeHtml}<h2>Ig Nobel podium</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
+  $('results-content').innerHTML=`${finalJudgeHtml}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary)}${badgeHtml}<h2>In-run committee results</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
   return;
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}
@@ -565,6 +568,7 @@ $('results-content').addEventListener('click',e=>{
  if((e.target as Element).closest('[data-open-evidence]')){resultsDialog.close();$('open-console').click();}
 });
 $('close-conversation').onclick=()=>{conversation.close();renderer.domElement.focus();};$('close-console').onclick=()=>evidence.close();$('close-guide').onclick=()=>guide.close();
+const qrDialog=$<HTMLDialogElement>('qr-dialog');($('qr-image') as HTMLImageElement).src=followQr;$('close-qr').onclick=()=>qrDialog.close();$('open-qr').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();qrDialog.showModal();updateDockAutoCollapse();};
 $('open-console').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();renderEvidence();evidence.showModal();updateDockAutoCollapse();};$('open-guide').onclick=()=>{playing=false;renderControls();unlock();closeDrawer();guide.showModal();updateDockAutoCollapse();};
 $('play').onclick=()=>{if(!recording)return;if(!playing){conversation.close();if(!recording.manifest.live&&tick>=recording.manifest.totalTicks){const startTick=STATIC_SITE&&playbackMode==='highlights'?firstScientistTick(recording):0;highlightElapsed=0;seek(startTick);}if(walking)setWalking(false);}playing=!playing;renderControls();};
 $('camera-mode').onclick=()=>setWalking(!walking);
@@ -606,8 +610,8 @@ async function attachRecording(id:string,preserve=false){
 }
 async function loadRecordings(){try{const items=sortedRecordings(await request<RecordingManifest[]>('/recordings'));recordingManifests=items;$('run-picker').innerHTML=pickerOptions(items,esc)||'<option>No artificial scientist swarm recordings available</option>';if(recording)$<HTMLSelectElement>('run-picker').value=recording.manifest.id;else if(items.length){const selected=new URL(location.href).searchParams.get('recording');await attachRecording(initialRecordingId(items,selected)!);}else if(!items.length){$('connection').textContent='NO SWARM RECORDINGS';$('replay-title').textContent='No artificial scientist swarm recordings available';}}catch(e){$('connection').textContent='ARCHIVE UNAVAILABLE';$('replay-title').textContent='Archive unavailable';toast((e as Error).message);}}
 $('refresh-runs').onclick=()=>loadRecordings();
-async function loadLaunch(){if(STATIC_SITE)return;try{const l=(await request<Capabilities>('/health')).openaiLaunch;$('openai-launch').hidden=!l?.enabled;const b=$<HTMLButtonElement>('launch-openai');b.disabled=!l?.available||!!l?.running;b.textContent=l?.running?`Live run in progress (${l.current})`:`Start live Ig Nobel run (Sol + Luna, up to $${l?.maxCostUsd??10})`;}catch{$('openai-launch').hidden=true;}}
-$('launch-openai').onclick=async()=>{if(!confirm('Start a live Sol + Luna Ig Nobel run? It calls the OpenAI API and may spend up to the server cost cap.'))return;try{const r=await request<{name:string}>('/openai-runs',{method:'POST',body:JSON.stringify({rounds:3})});toast(`Started ${r.name}; it appears in RUNS once round 1 begins.`);}catch(e){toast((e as Error).message);}loadLaunch();};
+async function loadLaunch(){if(STATIC_SITE)return;try{const l=(await request<Capabilities>('/health')).openaiLaunch;$('openai-launch').hidden=!l?.enabled;const b=$<HTMLButtonElement>('launch-openai');b.disabled=!l?.available;b.dataset.running=String(!!l?.running);b.textContent=l?.running?`Stop live swarm (${l.current})`:`Start live swarm (8–20 Luna workers, up to $${l?.maxCostUsd??10})`;}catch{$('openai-launch').hidden=true;}}
+$('launch-openai').onclick=async()=>{if($('launch-openai').dataset.running==='true'){try{await request('/openai-runs/stop',{method:'POST'});toast('Stopping: current work will finish; no new work will start.');}catch(e){toast((e as Error).message);}return;}if(!confirm('Start a live Sol + Luna Ig Nobel run? It calls the OpenAI API and may spend up to the server cost cap.'))return;try{const r=await request<{name:string}>('/openai-runs',{method:'POST',body:JSON.stringify({minutes:30})});toast(`Started ${r.name}; it appears in RUNS as workers start.`);}catch(e){toast((e as Error).message);}loadLaunch();};
 loadLaunch();if(!STATIC_SITE)setInterval(loadLaunch,10000);$('run-picker').onchange=()=>attachRecording($<HTMLSelectElement>('run-picker').value);
 let polling=false;
 if(STATIC_SITE){$('refresh-runs').hidden=true;document.body.classList.add('static-site');}

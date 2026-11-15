@@ -9,13 +9,13 @@ from pathlib import Path
 
 _listeners = {}
 _listeners_lock = threading.Lock()
-_log_lock = threading.Lock()
+log_lock = threading.Lock()
 
 
 def append_records(path, records, timestamp_field="ts"):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with _log_lock, path.open("a", encoding="utf-8") as stream:
+    with log_lock, path.open("a", encoding="utf-8") as stream:
         for record in records:
             record[timestamp_field] = (
                 datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
@@ -25,7 +25,7 @@ def append_records(path, records, timestamp_field="ts"):
 
 
 def watermark():
-    with _log_lock:
+    with log_lock:
         return (
             (datetime.now(timezone.utc) - timedelta(seconds=2))
             .isoformat(timespec="microseconds")

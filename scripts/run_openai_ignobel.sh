@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Live Ig Nobel hunt: one Sol supervisor, eight Luna labs, Sol judges, one shared USD ceiling.
+# Live Ig Nobel hunt: one Sol supervisor, up to 20 Luna workers, Sol judges, one shared USD ceiling.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Backend-only credential. Never use a VITE_ prefix or pass it to the browser.
 # Launcher-provided limits win over the local file, so it cannot raise the spending ceiling.
 launch_env=()
-for name in OPENAI_MAX_COST_USD OPENAI_RUN_ROUNDS OPENAI_RUN_OUT; do
+for name in OPENAI_MAX_COST_USD OPENAI_RUN_MINUTES OPENAI_RUN_OUT; do
   if [[ -n "${!name+x}" ]]; then launch_env+=("$name=${!name}"); fi
 done
 if [[ -f .env.openai.local ]]; then
@@ -22,7 +22,7 @@ export IGNOBEL_JUDGE_B_MODEL="${IGNOBEL_JUDGE_B_MODEL:-gpt-6-sol}"
 research=(--exa off --literature keyless)
 if [[ -n "${EXA_API_KEY:-}" ]]; then research=(--exa on); fi
 exec .venv/bin/python swarm.py \
-  --task ignobel --arm B --rounds "${OPENAI_RUN_ROUNDS:-5}" --workers 8 \
+  --task ignobel --arm B --continuous --max-minutes "${OPENAI_RUN_MINUTES:-30}" --workers 8 --max-workers 20 \
   --llm openai --model gpt-6-luna --supervisor-model gpt-6.1-sol \
   --critic-model gpt-6-luna --worker-tokens 1200 --supervisor-tokens 4096 \
   --max-cost-usd "${OPENAI_MAX_COST_USD:-10}" "${research[@]}" --memory-backend local \

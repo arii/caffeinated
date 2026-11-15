@@ -6,7 +6,7 @@
     {"kind": "memory", "name": "past.dev", "detail": "Shared memory helps agents recall earlier attempts and share what they learn.", "localSuffix": "(local memory in this recording)", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
     {"name": "Devin", "detail": "Built and tested the swarm, the Lab and this site alongside the team."}
   ],
-  "authors": {"placeholder": true, "names": ["[AUTHORS — names to come]"]},
+  "authors": {"project": "Ig Nobel Prize Winning ASS (Artificial Scientist Swarms)", "team": "Team caffeinated", "names": ["Ariel Anders", "Jialin Feng", "Neeraj Shah", "Masha Baidachna"]},
   "boredom": {
     "title": "Why a boredom meter?",
     "paragraphs": [

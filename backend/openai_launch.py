@@ -55,10 +55,20 @@ class Launcher:
             "running": self.running(),
             "current": self.current,
             "maxCostUsd": cost_cap(),
-            "maxRounds": 5,
+            "maxWorkers": 20,
+            "maxMinutes": 30,
+            "concurrency": 4,
+            "mode": "continuous",
         }
 
-    def start(self, rounds):
+    def stop(self):
+        with self.lock:
+            if self.running() and self.current:
+                (self.root / "experiments" / self.current).mkdir(parents=True, exist_ok=True)
+                (self.root / "experiments" / self.current / "stop_requested").touch()
+        return {"stopping": self.running()}
+
+    def start(self, minutes=30):
         with self.lock:
             if self.running():
                 raise RuntimeError("busy")
@@ -67,7 +77,7 @@ class Launcher:
             name = time.strftime("openai-ignobel-%Y%m%d-%H%M%S")
             env = {
                 **os.environ,
-                "OPENAI_RUN_ROUNDS": str(rounds),
+                "OPENAI_RUN_MINUTES": str(minutes),
                 "OPENAI_RUN_OUT": f"experiments/{name}",
                 "OPENAI_MAX_COST_USD": str(cost_cap()),
             }
@@ -82,4 +92,10 @@ class Launcher:
                     start_new_session=True,
                 )
             self.current = name
-            return {"name": name, "rounds": rounds, "maxCostUsd": cost_cap()}
+            return {
+                "name": name,
+                "mode": "continuous",
+                "maxWorkers": 20,
+                "maxMinutes": minutes,
+                "maxCostUsd": cost_cap(),
+            }

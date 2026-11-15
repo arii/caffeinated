@@ -1,0 +1,56 @@
+{
+  "repo_notes": [
+    {
+      "content": "Skip generated and run-artifact paths when reading the code: results/, experiments/**/results/, docs/recordings/, data/pages/viewer/, docs/assets/, and large *.jsonl or *.ndjson files (ledgers, memory mirrors, event streams). They are run outputs or built bundles, not source."
+    },
+    {
+      "content": "The deterministic Boredom Meter in boredom_meter/meter.py decides the swarm regime (EXPLOIT, BOREDOM_SNAP, PARADIGM_BREAKOUT, CONVERGED). Repository rules live in AGENTS.md and .agents/skills/caffeinated-workflow/SKILL.md."
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "What the project is: an autoresearch-style swarm with a Boredom Meter, CPU testcases, and the Lab replay viewer; how the pieces fit."
+    },
+    {
+      "title": "Swarm orchestration",
+      "purpose": "swarm.py, llm.py, runtime_env.py and prompts/: conductor, workers, critic, rounds, ledger and resume."
+    },
+    {
+      "title": "Boredom Meter",
+      "purpose": "boredom_meter/ and boredom.py: descriptor novelty, stagnation, regimes, gates and task boredom profiles."
+    },
+    {
+      "title": "Research and memory",
+      "purpose": "research.py, literature.py and memory.py: Exa research, past.dev and local memory, arm isolation."
+    },
+    {
+      "title": "Sandboxed testcases",
+      "purpose": "testcases/ and held_out.py: the Docker sandbox, hadamard19, bixbench_mini, playworld_mini and held-out grading."
+    },
+    {
+      "title": "Ig Nobel task",
+      "purpose": "testcases/ignobel/: pre-registration, citation checks, split-half consistency and the judging committee."
+    },
+    {
+      "title": "Viewer export and live publishing",
+      "purpose": "export_viewer.py, live_publish.py and viewer/: the swarm-viewer/v1 bundle and its live API."
+    },
+    {
+      "title": "Lab backend",
+      "purpose": "backend/: recording catalog, replay adapter and launch endpoints."
+    },
+    {
+      "title": "Lab frontend",
+      "purpose": "src/, index.html and vite.config.ts: the Lab replay UI, live follow, score chart and boredom views."
+    },
+    {
+      "title": "Experiments and results",
+      "purpose": "experiments/ and docs/results.md: A/B harness, confirmatory runs and memory comparison, read from the README and RESULTS docs."
+    },
+    {
+      "title": "Pages site and tooling",
+      "purpose": "scripts/, Makefile and .github/workflows/: make check, Pages build and CI."
+    }
+  ]
+}

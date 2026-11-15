@@ -1,0 +1,6 @@
+results/
+experiments/**/results/
+docs/recordings/
+data/pages/viewer/
+*.jsonl
+*.ndjson

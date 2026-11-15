@@ -45,7 +45,7 @@ class RunConfig(BaseModel):
 
 class OpenAIRunConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    rounds: int = Field(default=3, ge=1, le=5)
+    minutes: int = Field(default=30, ge=1, le=30)
 
 
 def preview_hosts():
@@ -403,11 +403,15 @@ def create_app(data_dir=None, runner=True, execution_enabled=False):
         if not openai_launch.enabled():
             raise HTTPException(409, "Sol/Luna launching is disabled on this server.")
         try:
-            return holder["openai"].start(config.rounds)
+            return holder["openai"].start(config.minutes)
         except RuntimeError as error:
             raise HTTPException(409, "A Sol/Luna run is already active.") from error
         except LookupError as error:
             raise HTTPException(422, str(error)) from error
+
+    @app.post("/api/openai-runs/stop")
+    def stop_openai():
+        return holder["openai"].stop()
 
     @app.get("/api/recordings")
     def recordings():
