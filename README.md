@@ -11,7 +11,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 Our hypothesis is that existing AI scientist swarms get stuck because they are bored—trapped in repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and overload to detect when the swarm is bored and trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and final IgJudge.
 
 - Live demo: https://arii.github.io/caffeinated
-- About and 64-second demo video: https://arii.github.io/caffeinated/about.html
+- About and 85-second demo video: https://arii.github.io/caffeinated/about.html
 - Repository: https://github.com/arii/caffeinated
 
 ## Hackathon results

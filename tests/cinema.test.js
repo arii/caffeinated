@@ -48,6 +48,7 @@ test('cinema time maps monotonically onto recorded ticks and lands the beats',()
  for(let t=0;t<=CINEMA_DURATION;t+=.25){const tick=cinemaTickAt(plan,t);assert.ok(tick>=last);last=tick;}
  assert.equal(cinemaTickAt(plan,0),0);assert.equal(cinemaTickAt(plan,46),91);assert.equal(cinemaTickAt(plan,CINEMA_DURATION),99);
  assert.ok(cinemaTickAt(plan,23)>50);assert.ok(cinemaTickAt(plan,19)<50);
+ assert.equal(cinemaPhaseAt(0).caption,'AI researchers get stuck.');
  assert.equal(cinemaPhaseAt(30).phase,'snap');assert.equal(cinemaPhaseAt(60).phase,'proof');
 });
 

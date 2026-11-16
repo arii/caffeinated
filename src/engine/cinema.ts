@@ -4,7 +4,7 @@ import type {ReplayEvent} from './replay';
 export const CINEMA_DURATION=64;
 export type CinemaPhase='hook'|'trap'|'snap'|'breakthrough'|'proof';
 export const CINEMA_PHASES:readonly {phase:CinemaPhase;start:number;caption:string}[]=[
- {phase:'hook',start:0,caption:'AI scientists can\'t get bored.'},
+ {phase:'hook',start:0,caption:'AI researchers get stuck.'},
  {phase:'trap',start:6,caption:'Local tweaks. Rising boredom.'},
  {phase:'snap',start:20,caption:'Boredom triggers real scouting.'},
  {phase:'breakthrough',start:36,caption:'Verified breakthrough.'},
