@@ -221,7 +221,7 @@ def convert(export):
                 {"to_agent_id": boss},
             )
         elif kind == "devin_thoughts":
-            key = f"diary:{e['event_id']}"
+            key = f"diary:{native}:{e['event_id']}"
             entity(
                 "diary",
                 key,
@@ -238,7 +238,7 @@ def convert(export):
                 {"diary_id": key},
             )
         elif kind == "shell_process_started":
-            key = f"question:{c.get('process_id') or e['event_id']}"
+            key = f"question:{native}:{c.get('process_id') or e['event_id']}"
             text = clip(c.get("command"), 500)
             entity(
                 "questions",
@@ -262,8 +262,8 @@ def convert(export):
                 {"question_id": key},
             )
         elif kind == "shell_process_completed":
-            qid = f"question:{c.get('process_id') or e['event_id']}"
-            key = f"observation:{e['event_id']}"
+            qid = f"question:{native}:{c.get('process_id') or e['event_id']}"
+            key = f"observation:{native}:{e['event_id']}"
             first = next(
                 (ln for ln in str(c.get("output_trunc") or "").splitlines() if ln.strip()), ""
             )
@@ -296,7 +296,7 @@ def convert(export):
             for n, update in enumerate(c.get("file_updates") or []):
                 path = Path(str(update.get("file_path") or "?")).name
                 text = f"Edited {path} (+{update.get('lines_added', 0)} −{update.get('lines_removed', 0)})"
-                key = f"memory:{e['event_id']}:{n}"
+                key = f"memory:{native}:{e['event_id']}:{n}"
                 entity(
                     "memory",
                     key,
@@ -323,7 +323,7 @@ def convert(export):
         elif kind == "git_push":
             sha = str(c.get("head_sha") or "")[:7]
             text = clip(f"Pushed {c.get('branch') or 'branch'} at {sha}", 300)
-            key = f"memory:{e['event_id']}"
+            key = f"memory:{native}:{e['event_id']}"
             entity(
                 "memory",
                 key,

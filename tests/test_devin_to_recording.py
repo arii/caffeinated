@@ -70,6 +70,22 @@ class DevinToRecordingTest(unittest.TestCase):
         manifest = convert(export)[0]
         self.assertEqual([a["type"] for a in manifest["agents"]], ["world", "worker"])
 
+    def test_sessions_reusing_ids_keep_separate_entities(self):
+        export = load()
+        child = export["sessions"][1]
+        child["events"] += [
+            {**e, "created_at": f"2026-11-16T03:01:5{i}Z"}
+            for i, e in enumerate(export["sessions"][0]["events"])
+            if e["event_id"] in {"e2", "e4", "e5"}
+        ]
+        entities = convert(export)[3]
+        self.assertEqual(len(entities["diary"]), 2)
+        self.assertEqual(len(entities["questions"]), 2)
+        for question in entities["questions"].values():
+            self.assertEqual(len(question["answered_by"]), 1)
+            [answer] = question["answered_by"]
+            self.assertEqual(entities["observations"][answer]["agent_id"], question["agent_id"])
+
     def test_rejects_other_schemas(self):
         with self.assertRaises(ValueError):
             convert({**load(), "schema": "other"})
