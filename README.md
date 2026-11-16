@@ -11,6 +11,7 @@ Backend team: start with the [integration guide](docs/backend-integration.md) fo
 Our hypothesis is that existing AI scientist swarms get stuck because they are bored—trapped in repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and overload to detect when the swarm is bored and trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and final IgJudge.
 
 - Live demo: https://arii.github.io/caffeinated
+- About and 64-second demo video: https://arii.github.io/caffeinated/about.html
 - Repository: https://github.com/arii/caffeinated
 
 ## Hackathon results
@@ -61,8 +62,16 @@ score was run on the published recording.
 
 [REPRODUCE.md](REPRODUCE.md) explains how to recompute every published number from the
 committed artifacts, regrade the winning candidates in the sandbox, and rerun experiments.
-Releases publish a pinned image to `ghcr.io/arii/caffeinated`. The run artifacts are on Hugging
-Face at [onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs). The quickest check needs only Docker:
+Releases publish a pinned image to `ghcr.io/arii/caffeinated` (see
+[releases](https://github.com/arii/caffeinated/releases) for digests). The run artifacts are on
+Hugging Face at [onasafari/caffeinated-runs](https://huggingface.co/datasets/onasafari/caffeinated-runs).
+The quickest check needs only Docker:
+
+```sh
+docker run --rm ghcr.io/arii/caffeinated:v1.0.0
+```
+
+To build the image from source instead:
 
 ```sh
 docker build -t caffeinated-repro . && docker run --rm caffeinated-repro

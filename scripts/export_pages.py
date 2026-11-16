@@ -214,10 +214,49 @@ def _is_gate_only_ignobel(recording):
     return not _has_committee_data(in_run)
 
 
+def zip_judge_for_run(data, rid):
+    """Scope the combined report to one replay, retaining the judge's scores/order."""
+    prefix = rid + "/"
+    ideas = [dict(idea) for idea in data.get("ideas", []) if idea["study_id"].startswith(prefix)]
+    if not ideas:
+        return None
+    for idea in ideas:
+        idea["source_study_id"] = idea["study_id"]
+        idea["study_id"] = idea["study_id"][len(prefix) :]
+    ranked = [
+        entry for entry in data.get("leaderboard", []) if entry["study_id"].startswith(prefix)
+    ]
+    ranked.sort(key=lambda entry: entry["rank"])
+    leaderboard = [
+        {
+            **entry,
+            "source_rank": entry["rank"],
+            "rank": index + 1,
+            "study_id": entry["study_id"][len(prefix) :],
+        }
+        for index, entry in enumerate(ranked)
+    ]
+    return {
+        **data,
+        "run_id": rid,
+        "source_run_id": data.get("run_id"),
+        "source_report": "data/igjudge/ignobel-real-runs/results-zip.md",
+        "ideas": ideas,
+        "leaderboard": leaderboard,
+        "winner": leaderboard[0]["study_id"] if leaderboard else None,
+    }
+
+
 def _attach_igjudge(recording, rid, igjudge_dir):
     path = Path(igjudge_dir) / f"{rid}.json"
     if path.is_file():
         recording["igjudge"] = json.loads(path.read_text(encoding="utf-8"))
+        return
+    combined = ROOT / "data" / "igjudge" / "ignobel-real-runs" / "results-zip.json"
+    if combined.is_file():
+        judged = zip_judge_for_run(json.loads(combined.read_text(encoding="utf-8")), rid)
+        if judged:
+            recording["igjudge"] = judged
 
 
 def export(viewer_dir, out_dir, igjudge_dir=None, replay_archive=None):
