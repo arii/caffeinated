@@ -59,7 +59,7 @@
     "countLine": "{N} registered · {M} confirmed ({K} under the post-hoc |ρ| ≥ 0.1 floor)",
     "track3Line": "Track 3 check (exploratory, 3 runs each): preregistered primary (guard2, stopped early, guarded) B 0.26 > S 0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06. B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two runs.",
     "memoryComparisonLine": "past.dev vs local memory on 419 real memories: hit@1 0.65 vs 0.30, 562 ms vs 15 ms (hand-written probes)",
-    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/memory-comparison/README.md",
+    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/memory-comparison/README.md",
     "bixbenchLine": "BixBench held-out: baseline 1/7 → swarm best 6/7 (one run; 95% CI 0.49–0.97)"
   }
 }
