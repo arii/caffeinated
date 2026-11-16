@@ -69,6 +69,8 @@ Write a converter from Devin session events (child sessions, tool calls, commits
 to `swarm-viewer/v1`. The Lab and Pages build then replay any multi-session Devin job without
 new model calls. This also gives direction 1 a viewer for free.
 
+Status: `scripts/devin_to_recording.py`, documented in `docs/devin-replay.md`.
+
 ### 4. Publish the reusable pieces
 
 - `boredom_meter` as a standalone package with its own tests and a short README example.
