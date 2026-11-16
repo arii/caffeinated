@@ -218,8 +218,9 @@ level: `report_strict_guard.json` (from `report.py`), `truncated_partial_runs.js
 `truncated.py`) and `heldout_by_grader.tsv`. Worktrees, caches and logs are not included.
 
 ## Commit references
-Every SHA cited here is reachable from `agent/devin/eval-swarm` and `agent/devin/overnight`
-(`git merge-base --is-ancestor <sha> origin/agent/devin/overnight` succeeds for a6b2a67, 7442255,
-2f7d634, c31ab55, a0d4fcd, 09e0416 and 18dea09). Full SHAs: a6b2a67e9e9e1fed4fb84f6b364a90e615d8e753,
+Every SHA cited here is reachable from `main` and the `sf-ai-research-hack-2026` tag
+(`git merge-base --is-ancestor <sha> sf-ai-research-hack-2026` succeeds for a6b2a67, 7442255,
+2f7d634, c31ab55, a0d4fcd, 09e0416 and 18dea09); the original `agent/devin/eval-swarm` and
+`agent/devin/overnight` branches have been deleted. Full SHAs: a6b2a67e9e9e1fed4fb84f6b364a90e615d8e753,
 744225543f79f0fba97f34194a7b0b4e075ccbbb, c31ab553ebc1916550cbaf20bf63979f379b64b8,
 a0d4fcdb14d1f1a368c6071e65fd323e0a09c65d.

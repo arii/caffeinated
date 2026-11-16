@@ -261,8 +261,8 @@ run, each written as "being tested" and then its final status.
   over 180 s. The stable-id benchmark arm did not finish for that reason.
 - **`supersededAt` not observed.** We did not see `supersededAt` in our earlier probe
   responses; the latest version was returned instead.
-- **Daughter labs are on a separate branch.** The mother/daughter-lab runtime is not on
+- **Daughter labs are not on `main`.** The mother/daughter-lab runtime is not on
   `main`. Its past.dev version (one identity, private audience and inbox per lab, sharing only
-  through `share()`) is on `agent/devin/families-pastdev`.
+  through `share()`) is archived at the tag `archive/families-pastdev`.
 - **The local mirror still exists.** It fills recalls while a write is still ingesting. The
   scope filter also still runs for records written before audiences existed.

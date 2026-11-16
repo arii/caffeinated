@@ -49,9 +49,9 @@
     "noCommitteeSuffix": "; no committee score yet",
     "countLine": "{N} registered · {M} confirmed ({K} under the post-hoc |ρ| ≥ 0.1 floor)",
     "track3Line": "Track 3 check (exploratory, 3 runs each): preregistered primary (guard2, stopped early, guarded) B 0.26 > S 0.24 > A 0.11; complete strict-guard set, picked after it finished, S 0.30 > A 0.09 > B 0.06. B leads S on mean only because S scored 0 on run 3001, where the guard rejected its candidate for the known integer-loop-bound false positive (unguarded 0.333); S beats B on the other two runs.",
-    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/memory-comparison/README.md",
-    "track3Url": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/confirmatory/RESULTS.md",
-    "bixbenchUrl": "https://github.com/arii/caffeinated/blob/agent/devin/overnight/experiments/real-runs/bixbench_mini-v2/held_out_test.json",
+    "memoryComparisonUrl": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/memory-comparison/README.md",
+    "track3Url": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/confirmatory/RESULTS.md",
+    "bixbenchUrl": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/real-runs/bixbench_mini-v2/held_out_test.json",
     "charts": {
       "toolsCaption": "Live calls recorded in this run (Kimi + Exa + past.dev)",
       "sourceCaption": "Source cards; some papers repeat.",
