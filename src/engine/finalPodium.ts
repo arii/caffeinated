@@ -22,10 +22,10 @@ export function finalPodiumHtml(ideas:readonly FinalIdea[],esc:(value:unknown)=>
  const cards=top.map((idea,index)=>`<details class="podium-place podium-place-${index+1}"><summary><span class="podium-stage"><span class="podium-contestant">${idea.agent?`${podiumAgentSvg(idea.agent.id)}<span class="podium-agent-name">${esc(idea.agent.name)}</span>`:'<span class="podium-agent-unknown">Agent not recorded</span>'}</span><span class="podium-step"><span class="podium-medal">${index+1}</span><span class="podium-score">${esc(idea.score)}<small>Final judge score</small></span></span></span><span class="podium-idea-label"><span class="podium-label">${index===0?'Ig Nobel Prize winner':index===1?'Second place':'Third place'}</span><strong class="podium-title">${esc(idea.title||idea.id)}</strong><span class="podium-inspect">Inspect idea <span aria-hidden="true">↗</span></span></span></summary><div class="podium-description">${idea.agent?`<p class="podium-author">Researcher: ${esc(idea.agent.name)}</p>`:''}<p>${esc(idea.description||'No additional idea description was supplied.')}</p>${idea.verdict?`<p>${esc(idea.verdict)}</p>`:''}<p><strong>Final score: ${esc(idea.score)}</strong></p><small>Idea ${esc(idea.id)}</small></div></details>`).join('');
  return `<section class="final-podium" aria-label="Final top three ideas"><h2>Ig Nobel podium</h2><p>Final judge ranking · Select an idea to explore its details.</p>${top.length<3?`<p>Only ${top.length} scored ${top.length===1?'idea is':'ideas are'} available.</p>`:''}<div class="podium-places">${cards}</div></section>`;
 }
-/** Join by recorded IDs, never by a title or position in the roster. */
+/** Join by recorded IDs, never by a title or position in the roster. Only judge-ranked ideas can place. */
 export function recordingFinalIdeas(recording:Recording):FinalIdea[]{
  const board=igJudgeBoard(recording.igjudge);
- return board?.ideas.map(i=>{
+ return board?.ideas.filter(i=>i.rank!=null).map(i=>{
   const study=recording.entities?.studies?.find(s=>{const r=s as Record<string,unknown>;return (r.id??r.study_id)===i.studyId;}) as Record<string,unknown>|undefined;
   const agentId=i.agentId||(typeof study?.agent_id==='string'?study.agent_id:'');
   const manifestAgent=recording.manifest.agents?.find(a=>a.agent_id===agentId||a.native_id===agentId);

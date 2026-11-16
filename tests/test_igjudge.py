@@ -114,7 +114,7 @@ class IgJudgeTests(unittest.TestCase):
 
     def test_leaderboard_empty_errors_and_ties(self):
         ideas = [
-            {"study_id": sid, "total": total, "error": error}
+            {"study_id": sid, "total": total, "error": error, "gate": "passed"}
             for sid, total, error in (
                 ("study:2", 70, None),
                 ("study:1", 70, None),
@@ -127,6 +127,19 @@ class IgJudgeTests(unittest.TestCase):
         self.assertEqual(igjudge.build_artifact("run", "m", "p", [])["winner"], "")
         self.assertEqual(igjudge.build_artifact("run", "m", "p", ideas[2:])["leaderboard"], [])
 
+    def test_baseline_and_gate_failures_cannot_rank_or_win(self):
+        ideas = [
+            {"study_id": "study:1", "total": 90, "error": None, "gate": "passed", "baseline": True},
+            {"study_id": "study:2", "total": 80, "error": None, "gate": "rejected: p 0.2"},
+            {"study_id": "study:3", "total": 40, "error": None, "gate": "passed"},
+            {"study_id": "study:4", "total": 30, "error": None, "gate": "pending"},
+        ]
+        result = igjudge.build_artifact("run", "model", "prompt", ideas)
+        self.assertEqual(result["winner"], "study:3")
+        self.assertEqual([r["study_id"] for r in result["leaderboard"]], ["study:3"])
+        self.assertEqual(len(result["ideas"]), 4)
+        self.assertEqual(igjudge.build_artifact("run", "m", "p", ideas[:2])["winner"], "")
+
     def test_recording_ingestion_includes_failed_gates(self):
         recording = (
             Path(__file__).resolve().parents[1]
@@ -137,6 +150,8 @@ class IgJudgeTests(unittest.TestCase):
         self.assertEqual(len(ideas), 21)
         self.assertTrue(ideas[0]["hypothesis"])
         self.assertTrue(ideas[0]["gate"].startswith("rejected:"))
+        self.assertTrue(ideas[0]["baseline"])
+        self.assertFalse(any(i["baseline"] for i in ideas[1:]))
         statuses = {i["committee"] for i in ideas}
         self.assertIn("not judged", statuses)
         self.assertTrue(any(status.startswith("score ") for status in statuses))
@@ -152,6 +167,21 @@ class IgJudgeTests(unittest.TestCase):
             _, ideas = igjudge.load_ideas(tmp)
             self.assertEqual(len(ideas), 1)
             self.assertEqual(ideas[0]["gate"], "passed")
+            self.assertFalse(ideas[0]["baseline"])
+
+    def test_run_dir_marks_baseline_commit(self):
+        records = [
+            {"commit": "47be227", "prereg": {"question": "Seed"}, "result": {"confirmed": True}},
+            {"commit": "0e2d9dc6302", "prereg": {"question": "Agent"}, "result": {}},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "ignobel_studies.jsonl").write_text("\n".join(map(json.dumps, records)))
+            (Path(tmp) / "results.tsv").write_text(
+                "commit\tloss\tstatus\tdescription\n47be227\t1.0\tkeep\tbaseline\n"
+                "0e2d9dc6302\t0.0\tkeep\t[EXPLOIT] idea\n"
+            )
+            _, ideas = igjudge.load_ideas(tmp)
+            self.assertEqual([i["baseline"] for i in ideas], [True, False])
 
     def test_missing_openai_key_fails_loudly(self):
         with (

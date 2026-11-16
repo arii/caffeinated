@@ -105,6 +105,11 @@
     "value": {
       "scale": "ratio",
       "ratio": 4
+    },
+    "confidence": {
+      "scale": "linear",
+      "min": 0,
+      "max": 1
     }
   },
   "attempt_statuses": [
@@ -124,8 +129,40 @@
   ],
   "directives": {
     "EXPLOIT": "Stay in your field; pick a sharper prediction from the same literature on a different real dataset (each dataset gets one test per run) and predict the effect size you expect.",
-    "BOREDOM_SNAP": "Switch field. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a prediction on a public CSV/TSV that the papers or data portals point to.",
-    "PARADIGM_BREAKOUT": "Pick a study type nobody has used (resolve two conflicting published findings, or test a published effect in a new population) and find a dataset that can answer it.",
+    "BOREDOM_SNAP": "Switch field and change the idea, not just the label: new variables and a new dataset. Use Exa to read real papers and past Ig Nobel winners in a field nobody has tried, then pre-register a surprising prediction that could fail on a public CSV/TSV the papers or data portals point to.",
+    "PARADIGM_BREAKOUT": "Pick a study type nobody has used (resolve two conflicting published findings, or test a published effect in a new population), combine it with another agent's surprising variable, and find a dataset that can answer it.",
     "CONVERGED": "Re-register the best finding's mechanism on an independent real dataset to check that it holds elsewhere."
-  }
+  },
+  "weights": [
+    0.4,
+    0.4,
+    0.2
+  ],
+  "idea_weight": 0.7,
+  "idea_fields": {
+    "tags": [
+      {
+        "path": "dataset.url",
+        "tag": "data"
+      },
+      {
+        "path": "dataset.x",
+        "tag": "var",
+        "words": true
+      },
+      {
+        "path": "dataset.y",
+        "tag": "var",
+        "words": true
+      }
+    ],
+    "params": {
+      "confidence": "predicted_rho"
+    }
+  },
+  "safe_param": {
+    "name": "confidence",
+    "above": 0.5
+  },
+  "peer_directive": "Build on a colleague: {peer} last tried \"{idea}\". Cross it with your own field, test the strangest consequence that could prove it wrong, or carry its surprising variable to a new dataset. Do not re-test their variables or dataset."
 }

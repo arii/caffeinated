@@ -224,6 +224,7 @@ body.prestart .sidebar,body.prestart .replay-bar,body.prestart #status-strip,bod
 @media(prefers-reduced-motion:reduce){.intro *{scroll-behavior:auto!important}.intro-start,.intro-section{transition:none}}
 .top-right{max-width:72vw}
 .provenance-badge{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;font-size:12px;line-height:1.35;letter-spacing:.02em}
+.about-video-link{display:inline-flex;margin:10px 0 4px;font-size:12px;color:var(--accent);border-bottom:1px solid #e3cba366;padding-bottom:3px}
 .header-provenance{max-width:min(44vw,410px)}
 .provenance-badge-label,.provenance-badge-chip{display:inline-flex;align-items:center;border:1px solid #b5c8c0;border-radius:999px;padding:4px 7px;background:#263e47;color:#f4f2e9;font-size:12px;font-weight:600}
 .provenance-badge-chip{border-color:#93a79e;background:#172c35;color:#e1ebe6}

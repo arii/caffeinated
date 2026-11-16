@@ -37,6 +37,12 @@ test('replay hides final results until the finale, and live uses the same compon
  live.events=[{type:'run.finished',tick:10}];
  assert.equal(recordingPodiumHtml(live,10,esc),recordingPodiumHtml(recording,10,esc));
 });
+test('ideas the judge left unranked never fill podium places',()=>{
+ const judged={...artifact,ideas:[...artifact.ideas,{study_id:'seed',title:'Seed',hypothesis:'Baseline seed',total:99}]};
+ assert.doesNotMatch(recordingPodiumHtml({...recording,igjudge:judged},10,esc),/Baseline seed/);
+ const none={...recording,igjudge:{...judged,leaderboard:[],winner:null}};
+ assert.doesNotMatch(recordingPodiumHtml(none,10,esc),/Prize winner/);
+});
 test('late judge scores can arrive through a live delta',()=>{
  const pending={...recording,igjudge:undefined};
  assert.match(recordingPodiumHtml(pending,10,esc),/Awaiting/);
@@ -68,11 +74,12 @@ test('real scored replay renders the recorded winners and their actual owners',a
  const {recordingFinalIdeas}=await import('../src/engine/finalPodium.ts');
  const r=JSON.parse(gunzipSync(readFileSync(new URL('../docs/recordings/50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929.json.gz',import.meta.url))));
  assert.deepEqual(topIdeas(recordingFinalIdeas(r)).map(i=>[i.id,i.score,i.agent.name]),[
-  ['study:1',58.5,'Baseline'],['study:18',54,'Kitchen Physics Lab'],['study:22',47,'Animal Behaviour Lab']
+  ['study:22',47,'Animal Behaviour Lab'],['study:2',42,'Kitchen Physics Lab'],['study:10',41.5,'Kitchen Physics Lab']
  ]);
  const html=recordingPodiumHtml(r,r.manifest.totalTicks,esc);
  assert.equal((html.match(/class="podium-agent"/g)||[]).length,3);
- assert.match(html,/Do heavier cabbages shortchange you on vitamin C/);
+ assert.match(html,/Do shell-dwelling fish become more aggressive/);
+ assert.doesNotMatch(html,/steak rare/);
  assert.doesNotMatch(html,/Agent not recorded/);
 });
 

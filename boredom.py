@@ -254,6 +254,18 @@ def descriptor_from_message(message, description, profile):
     descriptor = dict(zip(profile["levels"], match.group(1, 2)))
     if match.group(3) is not None:
         descriptor["params"] = {"value": float(match.group(3))}
+    extra = message_trailer(message, "Descriptor-Idea")
+    if extra is not None:
+        try:
+            extra = json.loads(extra)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"invalid Descriptor-Idea trailer: {error}") from error
+        if not isinstance(extra, dict):
+            raise ValueError("Descriptor-Idea trailer must be a JSON object")
+        if "idea" in extra:
+            descriptor["idea"] = extra["idea"]
+        if isinstance(extra.get("params"), dict):
+            descriptor.setdefault("params", {}).update(extra["params"])
     descriptor_meter.validate_descriptor(profile, descriptor)
     return descriptor
 

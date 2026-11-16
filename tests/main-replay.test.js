@@ -79,7 +79,7 @@ test('play is a no-op when no recording is attached',()=>{
 
 test('finale opens results once; closing with X returns to agents without reopening on refresh',()=>{
  const elements=new Map();let opens=0;
- const context={recording:{manifest:{totalTicks:10}},tick:0,snapshot:null,finaleAutoOpened:false,inspected:null,playing:false,
+ const context={recording:{manifest:{totalTicks:10}},tick:0,snapshot:null,finaleAutoOpened:false,CINEMA:false,inspected:null,playing:false,
   frameAt:()=>({snapshot:{}}),finaleReached:(_recording,tick)=>tick>=10,
   renderControls(){},renderHUD(){},renderEvidence(){},renderConversation(){},renderInspector(){},renderResultsPanel(){},updateDockAutoCollapse(){},unlock(){},
   evidence:{open:false},conversation:{open:false},inspector:{open:false,close(){},addEventListener(){}},
