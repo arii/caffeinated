@@ -13,6 +13,21 @@ Our hypothesis is that existing AI scientist swarms get stuck because they are b
 - Live demo: https://arii.github.io/caffeinated
 - Repository: https://github.com/arii/caffeinated
 
+## Hackathon results
+
+Built at the SF AI Research Hack (Nov 14–15, 2026, hosted by Iterate). Over 1,000 people
+applied and 150 were admitted. The four of us worked together as a team for the first time
+at this event.
+
+- Top two teams in the AI autoresearch track.
+- Second place in the past.dev sponsor challenge.
+
+The code as submitted is tagged
+[`sf-ai-research-hack-2026`](https://github.com/arii/caffeinated/tree/sf-ai-research-hack-2026)
+(`main` at `0b880e2`). Anything on `main` after that tag is post-hackathon work. The results
+below and the live demo come from the hackathon runs. What we plan next, and which parts are
+worth reusing, is in [docs/roadmap.md](docs/roadmap.md).
+
 ## Project components
 
 - **Lab viewer:** the first-person research replay described below.
