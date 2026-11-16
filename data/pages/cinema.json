@@ -1,0 +1,14 @@
+{
+ "repo": "github.com/arii/caffeinated",
+ "pilot": {
+  "title": "Pilot A/B · control vs boredom",
+  "source": "experiments/confirmatory/RESULTS.md, section 4 (earlier exploratory pilot)",
+  "rows": [
+   {"task": "hadamard19", "result": "Tie"},
+   {"task": "bixbench_mini", "result": "Control 2 of 3"},
+   {"task": "playworld_mini", "result": "Within noise"},
+   {"task": "ignobel", "result": "Control confirmed more"}
+  ],
+  "note": "3 runs per task · no significant boredom benefit yet"
+ }
+}
