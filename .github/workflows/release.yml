@@ -59,8 +59,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          repro=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG")
-          sandbox=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE-testcases:$TAG")
+          digests() { docker inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$1:$TAG" | grep "^$1@"; }
+          repro=$(digests "$IMAGE")
+          sandbox=$(digests "$IMAGE-testcases")
           gh release upload "$TAG" "dist/caffeinated-dataset-$TAG.tar.gz" --clobber
           body=$(gh release view "$TAG" --json body -q .body)
           printf '%s\n\n## Reproduction images\n\n- `%s`\n- `%s` (tag it `%s` before running the swarm)\n\nSee REPRODUCE.md.\n' \
