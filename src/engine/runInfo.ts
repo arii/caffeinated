@@ -35,15 +35,26 @@ export function runStatus(m:RecordingManifest,now=Date.now(),staleMs=90_000):{st
 function publishErrorCount(m:RecordingManifest){const e=m.publish_errors;return Array.isArray(e)?e.length:typeof e==='number'?e:0;}
 export function publishWarning(m:RecordingManifest){const n=publishErrorCount(m);return n?`${n} publish error${n===1?'':'s'}`:'';}
 function started(m:RecordingManifest){const t=Date.parse(m.time?.ts_start||'');return Number.isFinite(t)?new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';}
-export function pickerLabel(m:RecordingManifest){
+function runRounds(m:RecordingManifest){return [m.time?.rounds,m.run?.rounds,m.rounds].find(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0);}
+function roundsLabel(m:RecordingManifest){const count=runRounds(m);return count===undefined?'':`${count} round${count===1?'':'s'}`;}
+export function selectedRunSummary(m:RecordingManifest){
+ const state=runStatus(m),status=state.status==='sample'||/\btest run\b/i.test(m.title||'')?'Test recording':state.status==='finished'?'Finished':state.status==='live'?'Live':state.status==='stale'?'Stalled':'Stopped';
+ return [taskTitle(m)||m.description,[roundsLabel(m),status].filter(Boolean).join(' · ')].filter(Boolean).join('\n');
+}
+export function pickerLabel(m:RecordingManifest,index?:number){
  const status=runStatus(m);
+ if(index!==undefined){
+  const date=new Date(m.time?.ts_start||''),day=Number.isFinite(date.getTime())?date.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'}):'';
+  const suffix=/\btest run\b/i.test(m.title||'')?'Test':{sample:'Test',stopped:'Stopped',live:'Live',stale:'Stalled',finished:''}[status.status];
+  return [`Run ${index}`,roundsLabel(m),day,suffix].filter(Boolean).join(' · ');
+ }
  const prefix=m.sample===false?recordingPrefix({...m,stale:status.status==='stale',live:status.status==='live'}):'';
  const title=taskTitle(m),extra=title===m.title?'':(m.title||'').split(' · ').slice(2).join(' · ');
  return [prefix+title,extra,m.sample===false&&status.status==='stopped'?status.label.toLowerCase():'',m.sample===false?started(m):''].filter(Boolean).join(' · ');
 }
 /** Grouped picker markup, in the sortedRecordings order. */
-export function pickerOptions(items:RecordingManifest[],esc:(v:unknown)=>string){
+export function pickerOptions(items:RecordingManifest[],esc:(v:unknown)=>string,compact=false){
  const groups:[string,RecordingManifest[]][]=[['Live now',items.filter(m=>m.sample===false&&m.live)],['Swarm runs',items.filter(m=>m.sample===false&&!m.live)],['Recorded samples',items.filter(m=>m.sample!==false)]];
- const option=(m:RecordingManifest)=>`<option value="${esc(m.id)}">${esc(pickerLabel(m))}</option>`;
+ const option=(m:RecordingManifest)=>`<option value="${esc(m.id)}">${esc(pickerLabel(m,compact?items.indexOf(m)+1:undefined))}</option>`;
  return groups.filter(([,rows])=>rows.length).map(([label,rows])=>`<optgroup label="${label}">${rows.map(option).join('')}</optgroup>`).join('');
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import {entityRows} from '../src/engine/inspect.ts';
-import {researchCommitteeScores,researchFinalists,researchResults,researchToolUsage,preCommitteeResultsHtml} from '../src/engine/intro.ts';
+import {aboutHtml,researchTrail,researchCommitteeScores,researchFinalists,researchResults,researchToolUsage,preCommitteeResultsHtml} from '../src/engine/intro.ts';
 
 const config=JSON.parse(readFileSync(new URL('../data/pages/intro.json',import.meta.url),'utf8'));
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -11,6 +11,14 @@ const catalog=JSON.parse(readFileSync(new URL('../docs/recordings/index.json',im
 const entry=catalog.find(item=>item.id==='50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929');
 assert.ok(entry,'committed Ig Nobel recording is present');
 const {igjudge:finalJudge,...recording}=JSON.parse(gunzipSync(readFileSync(new URL(`../docs/recordings/${entry.id}.json.gz`,import.meta.url))));
+
+test('About separates a fixed title and close control from its named scrollable body',()=>{
+ const html=aboutHtml(config,researchTrail(null),esc,null,null);
+ assert.match(html,/class="about-heading"><h2>About this project<\/h2><button[^>]*aria-label="Close About"/);
+ assert.match(html,/class="about-body" tabindex="0" role="region" aria-label="About this research lab"/);
+ assert.ok(html.indexOf('Close About')<html.indexOf('class="about-body"'));
+ assert.match(html,/https:\/\/github.com\/arii\/caffeinated/);
+});
 
 test('scored recordings retain the study summary until final rankings are shown',()=>{
  const judged={...recording,igjudge:finalJudge};
