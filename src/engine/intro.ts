@@ -4,6 +4,7 @@ import {momentsBetween} from './moments.ts';
 import {hasCreditError,provenanceBadge} from './provenanceBadge.ts';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './proxyNote.ts';
 import {currentRules,currentRuleThresholds} from './currentRules.ts';
+import {igJudgeBoard} from './igJudge.ts';
 
 type Row=Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v as Row[]:v&&typeof v==='object'?Object.values(v as Row) as Row[]:[];
@@ -122,7 +123,7 @@ function toolUseHtml(c:IntroConfig,usage:ReturnType<typeof researchToolUsage>,es
 
 function finalistHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
  const finalists=researchFinalists(r);
- return `<section class="finalists"><h2>Finalists — awaiting committee judging</h2><div class="finalist-grid">${finalists.map(item=>`<article class="finalist-card"><h3 title="${esc(item.question)}">${esc(item.question)}</h3><div class="finalist-meta"><span>${esc(item.dataset)}</span><span>Lab · ${esc(item.lab)}</span></div><div class="finalist-rho"><svg viewBox="0 0 180 14" role="img" aria-label="Absolute correlation ${Math.abs(item.rho).toFixed(3)}"><rect x="0" y="4" width="170" height="6" rx="3" fill="#ffffff25"/><rect x="0" y="4" width="${Math.max(1,Math.abs(item.rho)*170).toFixed(1)}" height="6" rx="3" fill="#e3cba3"/></svg><span>ρ ${item.rho.toFixed(3)}</span></div></article>`).join('')}</div>${finalists.length?'':'<p>No studies passed both filters.</p>'}</section>`;
+ return `<section class="finalists"><h2>Finalists: awaiting committee judging</h2><div class="finalist-grid">${finalists.map(item=>`<article class="finalist-card"><h3 title="${esc(item.question)}">${esc(item.question)}</h3><div class="finalist-meta"><span>${esc(item.dataset)}</span><span>Lab · ${esc(item.lab)}</span></div><div class="finalist-rho"><svg viewBox="0 0 180 14" role="img" aria-label="Absolute correlation ${Math.abs(item.rho).toFixed(3)}"><rect x="0" y="4" width="170" height="6" rx="3" fill="#ffffff25"/><rect x="0" y="4" width="${Math.max(1,Math.abs(item.rho)*170).toFixed(1)}" height="6" rx="3" fill="#e3cba3"/></svg><span>ρ ${item.rho.toFixed(3)}</span></div></article>`).join('')}</div>${finalists.length?'':'<p>No studies passed both filters.</p>'}</section>`;
 }
 function committeeResultsHtml(r:Recording,esc:(v:unknown)=>string){
  const rows=researchCommitteeScores(r),noAward=rows.length>0&&rows.every(item=>item.score<.5);
@@ -160,6 +161,10 @@ function resultCitationHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
 }
 
 export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string,summary=researchResults(r)){
+ if(igJudgeBoard(r.igjudge)?.ideas.some(idea=>idea.total!=null&&!idea.error)){
+  const committee=committeeResultsHtml(r,esc);
+  return `${toolUseHtml(c,researchToolUsage(r),esc)}${committee||'<section class="committee-results"><h2>In-run committee data</h2><p>No in-run committee scores were recorded. Final rankings use the post-run final judge scores.</p></section>'}`;
+ }
  if(r.manifest.continuous){
   const verdict=committeeResultsHtml(r,esc)||finalistHtml(c,r,esc);
   return `${verdict}<section class="result-chart"><h2>This session's studies</h2>${funnelSvg(summary,esc)}<p>${summary.registered} registered · ${summary.ran} tested · ${summary.confirmed} confirmed</p></section><p class="metric-note">${esc(r.manifest.metric?.description||summary.proxyNote||c.results.noProxy)}</p>`;

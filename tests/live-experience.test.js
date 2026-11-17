@@ -69,6 +69,7 @@ test('score series keeps every candidate and builds a best-so-far line with new-
  assert.deepEqual(s.best,[[1,1],[4,2]]);
  assert.deepEqual(s.newBest,[[4,2]]);
  const svg=scoreChartSvg(s,{name:'det_ratio',direction:'maximize'},5,esc);
+ assert.match(svg,/<svg[^>]*role="group"/);
  assert.match(svg,/best-line/);
  assert.equal((svg.match(/class="new-best"/g)||[]).length,1);
  assert.equal((svg.match(/class="pt /g)||[]).length,4);
@@ -94,9 +95,9 @@ test('activity and event labels are humanized and placeholder messages are not q
  assert.equal(humanizeActivity('writing_diary'),'writing notes');
  assert.equal(humanizeActivity('new_thing'),'new thing');
  assert.equal(eventCaption({type:'experiment.finished',message:'experiment · finished'},'B1'),'Experiment finished · B1');
- assert.equal(eventCaption({type:'discovery.made',message:'Found a better matrix'}),'New best — Found a better matrix');
+ assert.equal(eventCaption({type:'discovery.made',message:'Found a better matrix'}),'New best: Found a better matrix');
  assert.ok(eventCaption({type:'x.y',message:'a'.repeat(300)}).length<130);
- assert.equal(eventCaption({type:'discovery.made',message:'[EXPLOIT] Lengthen tabu runs'}),'New best — [EXPLOIT] Lengthen tabu runs');
+ assert.equal(eventCaption({type:'discovery.made',message:'[EXPLOIT] Lengthen tabu runs'}),'New best: [EXPLOIT] Lengthen tabu runs');
  assert.equal(eventCaption({type:'x.y',message:'[1, 2]'}),'X y');
  assert.equal(eventCaption({type:'memory.written',message:'{"ledger_sha256":"abc"}'},'B1'),'Memory saved · B1');
 });

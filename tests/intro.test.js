@@ -10,7 +10,29 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const catalog=JSON.parse(readFileSync(new URL('../docs/recordings/index.json',import.meta.url),'utf8'));
 const entry=catalog.find(item=>item.id==='50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929');
 assert.ok(entry,'committed Ig Nobel recording is present');
-const recording=JSON.parse(gunzipSync(readFileSync(new URL(`../docs/recordings/${entry.id}.json.gz`,import.meta.url))));
+const {igjudge:finalJudge,...recording}=JSON.parse(gunzipSync(readFileSync(new URL(`../docs/recordings/${entry.id}.json.gz`,import.meta.url))));
+
+test('final judge scores replace pending finalists and empty committee funnels',()=>{
+ const judged={...recording,entities:{},events:[],igjudge:finalJudge};
+ const html=preCommitteeResultsHtml(config,judged,esc);
+ assert.match(html,/Final rankings use the post-run final judge scores/);
+ assert.match(html,/No in-run committee scores were recorded/);
+ assert.doesNotMatch(html,/awaiting committee judging|class="finalists"|Ig Nobel test funnel/);
+});
+
+test('final judge results preserve recorded committee scores as separate evidence',()=>{
+ const html=preCommitteeResultsHtml(config,{...recording,igjudge:finalJudge},esc);
+ assert.match(html,/Committee verdict: no award/);
+ assert.doesNotMatch(html,/awaiting committee judging|class="finalists"|Ig Nobel test funnel/);
+});
+
+test('empty and unscored final judge artifacts leave the pre-committee results intact',()=>{
+ for(const igjudge of [null,{schema:'igjudge/v1',ideas:[]},{schema:'igjudge/v1',ideas:[{study_id:'s1',error:'Judge unavailable'}]}]){
+  const html=preCommitteeResultsHtml(config,{...recording,igjudge},esc);
+  assert.match(html,/Ig Nobel test funnel/);
+  assert.doesNotMatch(html,/Final rankings use/);
+ }
+});
 
 test('Ig Nobel results count distinct studies without counting the critic rerun',()=>{
  const summary=researchResults(recording);
@@ -42,7 +64,7 @@ test('the real run shows ten ranked finalists and the recorded no-award committe
  assert.ok(finalists.every(item=>item.lab&&item.dataset&&Math.abs(item.rho)>=.1));
  const html=preCommitteeResultsHtml(config,recording,esc);
  assert.ok(html.indexOf('Tools used in this run')<html.indexOf('Committee verdict: no award'));
- assert.doesNotMatch(html,/Finalists — awaiting committee judging/);
+ assert.doesNotMatch(html,/Finalists: awaiting committee judging/);
  assert.equal(researchCommitteeScores(recording).length,11);
  assert.match(html,/openai\/gpt-oss-20b/);assert.match(html,/minimaxai\/minimax-m3\.1-flash/);
  assert.match(html,/119/);assert.match(html,/357/);assert.match(html,/157/);assert.match(html,/123/);
@@ -62,7 +84,7 @@ test('committee scores replace the pending section with a ranked no-award chart'
  const scores=researchCommitteeScores(judged),html=preCommitteeResultsHtml(config,judged,esc);
  assert.deepEqual(scores.map(item=>item.score),[.2,.1]);
  assert.match(html,/Committee verdict: no award/);
- assert.doesNotMatch(html,/Finalists — awaiting committee judging|Ig Nobel podium|winner|runner-up|gold|silver|bronze/i);
+ assert.doesNotMatch(html,/Finalists: awaiting committee judging|Ig Nobel podium|winner|runner-up|gold|silver|bronze/i);
  assert.match(html,/openai\/gpt-oss-20b/);assert.match(html,/minimaxai\/minimax-m3\.1-flash/);
 });
 
@@ -78,7 +100,7 @@ test('the compact first screen and static assets contain no satire intro copy',(
 
  test('ending citation is grounded in this recording and does not leak into another run',()=>{
  const html=preCommitteeResultsHtml(config,recording,esc);
- assert.match(html,/Kitchen Physics Lab — for confirming that heavier cars get fewer city miles per gallon/);
+ assert.match(html,/Kitchen Physics Lab: for confirming that heavier cars get fewer city miles per gallon/);
  assert.ok(html.indexOf('Research result in one sentence')<html.indexOf('Tools used in this run'));
  assert.match(html,/Committee verdict: no award/);
  const other={...recording,manifest:{...recording.manifest,id:'another-run'}};

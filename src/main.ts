@@ -17,6 +17,7 @@ import followQr from './assets/follow-qr.png';
 import {nextCoach} from './engine/introProgress';
 import {initialRecordingId,sortedRecordings,recordingCopy,playbackContinues,recordingChanged,frameAt,advanceTick,eventsThrough,loadRecording,anonymizeExcerpt,type Recording,type RecordingManifest,type ReplayEvent} from './engine/replay';
 import {boredomColor,boredomPercent,boredomComponents,regimeLabel,latestBoredom} from './engine/boredom';
+import {boredomMeterAttributes} from './engine/boredomMeter';
 import {agentIdentity,humanizeActivity,humanizeRole,eventCaption,eventLabel,teamRoster,meaningfulMessage,agentDescriptor,descriptorText,whosWho} from './engine/agentIdentity';
 import {openingTick,reloadTick,following,liveButton,eventsAfter} from './engine/liveFollow';
 import {prefersReducedMotion} from './engine/affect';
@@ -71,12 +72,13 @@ function avatar(a:ArchivedAgent){const id=identityOf(a);return `<span class="age
 function agentLine(a:ArchivedAgent){const id=identityOf(a),d=recording&&!id.staff?descriptorText(agentDescriptor(recording.events,a.id,tick),id.familyLabel):'';return [id.familyLabel,id.staff?'':d||(a.role!==a.type?humanizeRole(a.role):''),a.standby?'standing by':humanizeActivity(a.activity||a.state)].filter(Boolean).map(v=>rawEsc(v)).join(' · ');}
 /** Always-visible boredom meter for a roster row. */
 function rowMeter(a:ArchivedAgent){if(identityOf(a).staff)return '';const b=a.boredom==null?null:boredomPercent(a.boredom),r=regimeLabel(a.boredomSpectrum?.regime);return `<span class="row-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i><b>${b==null?'not measured':`bored ${Math.round(b)}%`}</b>${r.label?`<em class="regime-chip" data-tone="${r.tone}" title="${esc(r.description)}">${esc(r.label)}</em>`:''}</span>`;}
-function stripMeter(a:ArchivedAgent){const b=a.boredom==null?null:boredomPercent(a.boredom);return `<span class="strip-meter" role="meter" aria-label="${esc(a.name)} boredom" aria-valuemin="0" aria-valuemax="100"${b==null?'':` aria-valuenow="${Math.round(b)}"`}><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i></span>`;}
+function stripMeter(a:ArchivedAgent){const b=a.boredom==null?null:boredomPercent(a.boredom);return `<span class="strip-meter"><i style="width:${b??0}%;background:${b==null?'transparent':boredomColor(b)}"></i></span>`;}
+function syncBoredomMeter(el:HTMLElement,value:number|null,label:string){for(const [key,attribute] of Object.entries(boredomMeterAttributes(value,label))){if(attribute==null)el.removeAttribute(key);else if(el.getAttribute(key)!==attribute)el.setAttribute(key,attribute);}}
 function renderWhosWho(){const rows=whosWho(recording?.manifest.agents||[]);$('whos-who').hidden=!rows.length;$('whos-who').innerHTML=rows.length?`<summary>Who's who</summary><dl>${rows.map(r=>`<dt>${rawEsc(r.title)}<small>${esc(r.names.join(', '))}</small></dt><dd>${rawEsc(r.does)}</dd>`).join('')}</dl>`:'';}
 /** Live runs never call their events recorded. */
 function said(){return recording?.manifest.live?'Published':'Recorded';}
 function isFollowing(){return following(recording?.manifest,tick,playing);}
-function showMoment(m:Moment,more:number){const name=agentName(m.agentId,'');if(m.kind==='regime'){toast(`${m.title}${name?` · ${name}`:''} — ${m.detail}`);return;}const box=$('moment');box.dataset.kind=m.kind;box.innerHTML=`<span>${m.kind==='award'?'IG NOBEL COMMITTEE':'DISCOVERY · TICK '+m.tick}</span><strong>${esc(m.title)}</strong><p>${esc([name,m.detail].filter(Boolean).join(' · '))}${more?` · +${more} more`:''}</p>`;box.hidden=false;document.body.classList.add('lab-moment');clearTimeout(momentTimer);momentTimer=setTimeout(()=>{box.hidden=true;document.body.classList.remove('lab-moment');},5200);}
+function showMoment(m:Moment,more:number){const name=agentName(m.agentId,'');if(m.kind==='regime'){toast(`${m.title}${name?` · ${name}`:''}: ${m.detail}`);return;}const box=$('moment');box.dataset.kind=m.kind;box.innerHTML=`<span>${m.kind==='award'?'IG NOBEL COMMITTEE':'DISCOVERY · TICK '+m.tick}</span><strong>${esc(m.title)}</strong><p>${esc([name,m.detail].filter(Boolean).join(' · '))}${more?` · +${more} more`:''}</p>`;box.hidden=false;document.body.classList.add('lab-moment');clearTimeout(momentTimer);momentTimer=setTimeout(()=>{box.hidden=true;document.body.classList.remove('lab-moment');},5200);}
 /** Announce moments crossed by playback or live follow; scrubbing only moves the bookmark. */
 function announce(){if(!recording)return;if(tick>announcedTick){const moments=momentsBetween(recording.events,announcedTick,tick,recording.manifest.metric);const loud=moments.filter(m=>m.kind!=='regime');if(loud.length)showMoment(loud.at(-1)!,loud.length-1);else if(moments.length)showMoment(moments.at(-1)!,0);}announcedTick=tick;}
 function people(){return replayPeople(snapshot?.agents as ArchivedAgent[]||[],tick,presence);}
@@ -174,7 +176,7 @@ function renderControls(){
    $('replay-kicker').textContent=playing?'Replaying recorded run':'Recorded run';$('connection').hidden=STATIC_SITE;$('header-actions').hidden=false;
    $('open-results').textContent='Results';renderRunMeta();
    const value=snapshot?.boredom==null?null:Math.round(boredomPercent(snapshot.boredom)),gauge=$('boredom-gauge');
-   gauge.setAttribute('aria-valuenow',String(value??0));gauge.setAttribute('aria-label',value==null?'Swarm boredom not yet measured':`Swarm boredom ${value}%`);
+   syncBoredomMeter(gauge,value,'Swarm boredom');
    gauge.querySelector<HTMLElement>('span')!.style.width=`${value??0}%`;
    gauge.dataset.tone=value==null?'unknown':value>=65?'high':value>=35?'medium':'low';
   }
@@ -192,7 +194,7 @@ function renderControls(){
 function renderRunMeta(){
  if(!recording)return;
  const rounds=recording.manifest.time?.rounds||snapshot?.config.rounds||0,raw=String(snapshot?.regime||'').toUpperCase();
- const activity=/BOREDOM_SNAP/.test(raw)?'Bored — trying new directions':/PARADIGM_BREAKOUT/.test(raw)?'Breakout':'Refining';
+ const activity=/BOREDOM_SNAP/.test(raw)?'Bored: trying new directions':/PARADIGM_BREAKOUT/.test(raw)?'Breakout':'Refining';
  $('run-meta').innerHTML=`<span class="status-chip">${playing?'Replaying recorded run':'Recorded run'}</span><span>${recording.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}${rounds?` of ${rounds}`:''}`}</span><span>${activity}</span>`;
 }
 function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();if(resultsDialog.open)renderResultsPanel();if(!CINEMA&&!finaleAutoOpened&&finaleReached(recording,tick)){finaleAutoOpened=true;renderResultsPanel();if(!resultsDialog.open){resultsDialog.showModal();updateDockAutoCollapse();}}}
@@ -224,9 +226,7 @@ function patchStatusTile(tile:HTMLButtonElement,item:StatusTileView){
  if(name.textContent!==agent.name)name.textContent=agent.name;
  const meter=tile.querySelector<HTMLElement>('.strip-meter')!;
  const boredom=agent.boredom==null?null:boredomPercent(agent.boredom);
- const meterLabel=`${agent.name} boredom`,value=boredom==null?null:String(Math.round(boredom));
- if(meter.getAttribute('aria-label')!==meterLabel)meter.setAttribute('aria-label',meterLabel);
- if(meter.getAttribute('aria-valuenow')!==(value??null)){if(value==null)meter.removeAttribute('aria-valuenow');else meter.setAttribute('aria-valuenow',value);}
+ syncBoredomMeter(meter,boredom,`${agent.name} boredom`);
  const bar=meter.querySelector<HTMLElement>('i')!,width=`${boredom??0}%`,color=boredom==null?'transparent':boredomColor(boredom);
  if(bar.style.width!==width)bar.style.width=width;if(bar.style.background!==color)bar.style.background=color;
  const metric=tile.querySelector<HTMLElement>('.tile-metric')!;
@@ -308,7 +308,7 @@ function renderResultsPanel(){
   return;
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}
- const value=(v:number|null)=>v==null?'—':formatValue(v),interval=(v:{low:number;high:number}|null)=>v?`${v.low.toFixed(2)}–${v.high.toFixed(2)}`:'';
+ const value=(v:number|null)=>v==null?'–':formatValue(v),interval=(v:{low:number;high:number}|null)=>v?`${v.low.toFixed(2)}–${v.high.toFixed(2)}`:'';
  const heldValue=(score:{fraction:string|null;score:number|null;loss:number|null})=>score.fraction||value(score.score??score.loss);
  const held=summary.heldOut?`<section class="held-out"><h3>Held-out test</h3><p>Baseline ${heldValue(summary.heldOut.baseline)} → best ${heldValue(summary.heldOut.best)}</p>${summary.heldOut.best.wilson?`<p>95% Wilson CI: ${interval(summary.heldOut.best.wilson)} (baseline ${interval(summary.heldOut.baseline.wilson)})</p>`:''}${summary.heldOut.proxyNote?`<p>${esc(summary.heldOut.proxyNote)}</p>`:''}${summary.heldOut.referenceNote?`<p>${esc(summary.heldOut.referenceNote)}</p>`:''}</section>`:'<p class="no-held-out">no held-out split for this task</p>';
  const delta=summary.delta==null?'':` · ${improvementText(summary.delta,value)}`;
@@ -469,7 +469,7 @@ function graph(){if(!recording||!snapshot)return '<p>No measurements yet.</p>';c
 function resultMeasurement(r:{value:number|null;effectSize?:number|null;pValue?:number|null;reward?:number|null},metricName=evidenceMetricLabel(snapshot?.metric)){
  const metricValue=metricValueLabel(r.value,r.reward,metricName,formatValue);
  const fields=[r.effectSize==null?'':`Effect ${esc(r.effectSize)}`,r.pValue==null?'':`p = ${esc(r.pValue)}`,metricValue?esc(metricValue):''].filter(Boolean);
- return fields.length?fields.join('<br>'):esc(r.value??'—');
+ return fields.length?fields.join('<br>'):esc(r.value??'–');
 }
 function renderEvidence(){
  const s=snapshot;
@@ -488,7 +488,7 @@ function renderEvidence(){
  const previousContent=$('console-content'),failuresOpen=previousContent.querySelector<HTMLDetailsElement>('.evidence-failures')?.open??false,rawOpen=previousContent.querySelector<HTMLDetailsElement>('.evidence-raw')?.open??false;
  $('console-content').innerHTML=`<h2>The question so far.</h2><p>Source evidence through tick ${Math.floor(tick)}. Kept findings and candidates appear first; failures remain available below.</p>${studySection}${evidenceKey}${proxyNote?`<p class="proxy-note"><b>About this benchmark:</b> ${esc(proxyNote)}</p>`:''}${graph()}${tableHead}${renderRows([...kept,...other])}${tableTail}${failures.length?`<details class="evidence-failures"${failuresOpen?' open':''}><summary>Failures (${failures.length})</summary>${tableHead}${renderRows(failures)}${tableTail}</details>`:''}<h3>${said()} findings</h3>${renderFindings(shortFindings)}${rawFindings.length?`<details class="evidence-raw"${rawOpen?' open':''}><summary>Full recorded findings (${rawFindings.length})</summary>${renderFindings(rawFindings)}</details>`:''}${inspectionSections(false)}`;
 }
-function inspectionSections(includeStudies=true){const studies=includeStudies?studyCards(recording,tick):[],sources=sourceCards(recording,tick),dialogue=dialogueThrough(events(),tick);return `${studies.length?`<h3>Ig Nobel studies</h3>${studyCardsHtml(studies,viewContext())}`:''}${dialogue.length?`<h3>Lab dialogue</h3><div class="dialogue-scroll">${dialogueHtml(dialogue,viewContext())}</div>`:''}${sources.length||entityCount('sources')?`<h3>Research sources</h3>${sourceCardsHtml(sources,viewContext())}`:''}`;}
+function inspectionSections(includeStudies=true){const studies=includeStudies?studyCards(recording,tick):[],sources=sourceCards(recording,tick),dialogue=dialogueThrough(events(),tick);return `${studies.length?`<h3>Ig Nobel studies</h3>${studyCardsHtml(studies,viewContext())}`:''}${dialogue.length?`<h3>Lab dialogue</h3><div class="dialogue-scroll" role="region" aria-label="Recorded lab dialogue" tabindex="0">${dialogueHtml(dialogue,viewContext())}</div>`:''}${sources.length||entityCount('sources')?`<h3>Research sources</h3>${sourceCardsHtml(sources,viewContext())}`:''}`;}
 let conversationTopic='now';
 function whyContext(){return {name:(id:string|null)=>agentName(id),metric:snapshot?.metric,best:snapshot?.value??null};}
 function renderConversation(){const a=people().find(a=>a.id===selectedAgent);if(!a){conversation.close();return;}
@@ -602,7 +602,7 @@ async function attachRecording(id:string,preserve=false){
   seek(target);if(preserve&&wasFollowing)announce();else if(!preserve)announcedTick=tick;renderControls();
   if(STATIC_SITE&&!preserve){staticRecordingReady=true;maybeStartStaticExperience();}
   else if(!preserve)startExperience();
-  const url=new URL(location.href);url.searchParams.set('recording',id);url.searchParams.delete('run');history.replaceState(null,'',url);
+  if(!STATIC_SITE){const url=new URL(location.href);url.searchParams.set('recording',id);url.searchParams.delete('run');history.replaceState(null,'',url);}
  }catch(e){
   $('connection').textContent='ARCHIVE UNAVAILABLE';toast((e as Error).message);
   if(STATIC_SITE&&!preserve){staticRecordingReady=true;maybeStartStaticExperience();}

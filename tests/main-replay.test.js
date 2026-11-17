@@ -29,6 +29,12 @@ test('first discovered recording uses the requested selection when present',asyn
  await h.context.loadRecordings();
  assert.deepEqual(h.attached,['selected']);
 });
+test('first discovered recording resolves a unique shared prefix without rewriting the location',async()=>{
+ const h=harness([{id:'first',title:'First'},{id:'selected-full-id',title:'Selected'}],null,'?recording=selected');
+ await h.context.loadRecordings();
+ assert.deepEqual(h.attached,['selected-full-id']);
+ assert.equal(h.context.location.href,'http://localhost/?recording=selected');
+});
 test('default selection falls back to newest live swarm when the default ZIP run is absent',async()=>{
  const h=harness([{id:'sample',title:'Sample',sample:true},{id:'older',title:'Older',sample:false,live:true,time:{ts_start:'2025-01-01'}},{id:'newest',title:'Newest',sample:false,live:true,time:{ts_start:'2026-01-01'}}]);
  await h.context.loadRecordings();

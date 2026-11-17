@@ -29,7 +29,7 @@ export function eventCaption(e:{type:string;message?:string},agentName?:string,m
  const head=[eventLabel(e.type),agentName].filter(Boolean).join(' · ');
  if(!meaningfulMessage(e.message))return head;
  const body=e.message!.replace(/\s+/g,' ').trim();
- return `${head} — ${body.length>max?body.slice(0,max-1)+'…':body}`;
+ return `${head}: ${body.length>max?body.slice(0,max-1)+'…':body}`;
 }
 /** Present researchers plus staff (conductor, critic) who have not acted yet, shown on standby. */
 export function teamRoster<T extends {id:string;type?:string}>(agents:readonly T[],present:readonly T[]):(T&{standby?:boolean})[]{
