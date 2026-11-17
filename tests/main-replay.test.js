@@ -29,6 +29,12 @@ test('first discovered recording uses the requested selection when present',asyn
  await h.context.loadRecordings();
  assert.deepEqual(h.attached,['selected']);
 });
+test('first discovered recording resolves a unique shared prefix without rewriting the location',async()=>{
+ const h=harness([{id:'first',title:'First'},{id:'selected-full-id',title:'Selected'}],null,'?recording=selected');
+ await h.context.loadRecordings();
+ assert.deepEqual(h.attached,['selected-full-id']);
+ assert.equal(h.context.location.href,'http://localhost/?recording=selected');
+});
 test('default selection falls back to newest live swarm when the default ZIP run is absent',async()=>{
  const h=harness([{id:'sample',title:'Sample',sample:true},{id:'older',title:'Older',sample:false,live:true,time:{ts_start:'2025-01-01'}},{id:'newest',title:'Newest',sample:false,live:true,time:{ts_start:'2026-01-01'}}]);
  await h.context.loadRecordings();
@@ -83,12 +89,13 @@ test('finale opens results once; closing with X returns to agents without reopen
   frameAt:()=>({snapshot:{}}),finaleReached:(_recording,tick)=>tick>=10,
   renderControls(){},renderHUD(){},renderEvidence(){},renderConversation(){},renderInspector(){},renderResultsPanel(){},updateDockAutoCollapse(){},unlock(){},
   evidence:{open:false},conversation:{open:false},inspector:{open:false,close(){},addEventListener(){}},
-  resultsDialog:{open:false,showModal(){this.open=true;opens++;},close(){this.open=false;}},
+  resultsDialog:{open:false,scrollTop:500,showModal(){this.open=true;opens++;},close(){this.open=false;}},
   $:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);}};
  runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith('function seek('))),context);
  runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith("$('close-inspector').onclick"))),context);
  context.seek(9);assert.equal(opens,0);
  context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,true);
+ assert.equal(context.resultsDialog.scrollTop,0);
  elements.get('close-results').onclick();assert.equal(context.resultsDialog.open,false);
  context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,false);
  elements.get('open-results').onclick();assert.equal(opens,2);assert.equal(context.resultsDialog.open,true);

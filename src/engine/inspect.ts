@@ -109,5 +109,5 @@ export function dialogueThrough(events:InspectEvent[],tick:number,agentId?:strin
   return {tick:e.tick,from:e.agentId||null,to,kind:text(p.kind),text:text(p.text)||text(e.message)||''};}).filter(m=>m.text&&(!agentId||m.from===agentId||m.to.includes(agentId))).slice(-limit);
 }
 
-export const signed=(v:number|null,d=3)=>v==null?'—':(v>0?'+':'')+v.toFixed(d);
-export const pValue=(v:number|null)=>v==null?'—':v<1e-300?'<1e-300':String(Number(v.toPrecision(2)));
+export const signed=(v:number|null,d=3)=>v==null?'–':(v>0?'+':'')+v.toFixed(d);
+export const pValue=(v:number|null)=>v==null?'–':v<1e-300?'<1e-300':String(Number(v.toPrecision(2)));

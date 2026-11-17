@@ -59,7 +59,7 @@ export function staffStripLabel(type:string,events:readonly ReplayEvent[],tick:n
  if(type==='conductor'){
   const round=reached.filter(e=>e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
   if(typeof regime!=='string')return 'Conductor · awaiting assignment';
-  const normalized=regime.toUpperCase(),label=/BOREDOM_SNAP|EXPLORE|DIVERG/.test(normalized)?'Bored — trying new directions':/BREAKOUT|NOVEL/.test(normalized)?'Breakout':'Refining';
+  const normalized=regime.toUpperCase(),label=/BOREDOM_SNAP|EXPLORE|DIVERG/.test(normalized)?'Bored: trying new directions':/BREAKOUT|NOVEL/.test(normalized)?'Breakout':'Refining';
   return `Conductor · ${label}`;
  }
  if(type==='critic'){
@@ -73,7 +73,7 @@ export function staffStripHelp(type:string,events:readonly ReplayEvent[],tick:nu
  const round=events.filter(e=>e.tick<=tick&&e.type==='round.started').reduce<ReplayEvent|undefined>((latest,event)=>!latest||event.tick>=latest.tick?event:latest,undefined),regime=round?.payload?.regime;
  return typeof regime==='string'?regimeLabel(regime).description:'';
 }
-export function tileBestLabel(best:number|null){return best==null?'best —':`best ${formatValue(best)}`;}
+export function tileBestLabel(best:number|null){return best==null?'best n/a':`best ${formatValue(best)}`;}
 export function tileMetrics(results:readonly GlanceResult[],agentId:string,agentName:string,metric:{name:string;direction:string},runBest:number|null,baseline:number|null):TileMetric{
  const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;
  const rows=results.filter(r=>matching(r)&&outcomeOf(r.status,r.kind)!=='baseline').slice().sort((a,b)=>(a.tick??0)-(b.tick??0));

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Swarm knowledge graph</title>
+<title>Swarm knowledge graph</title><link rel="icon" href="data:,">
 <style>
 :root{--bg:#0f1117;--panel:#171a23;--ink:#e8e8ee;--mute:#9a9fb0;--line:#2a2f3d}
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:1fr 380px;grid-template-rows:auto 1fr;height:100vh}
@@ -13,6 +13,8 @@ label{color:var(--mute);cursor:pointer}input[type=search]{background:var(--panel
 #filters label{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
 g[role=button]:focus-visible circle{stroke:#fff;stroke-width:4px}
 svg{width:100%;height:100%;cursor:grab;display:block}svg:active{cursor:grabbing}
+#side:focus-visible{outline:3px solid var(--accent,#f2c14e);outline-offset:-3px}
+#graph-view{min-width:0;min-height:0}#graph-view svg{width:100%;height:100%}
 #side{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px 16px}
 #side h2{font-size:15px;margin:0 0 6px}.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;margin:0 4px 4px 0;background:#262b38}
 .ev{border-left:3px solid var(--line);padding:3px 0 3px 8px;margin:4px 0;font-size:13px}.ev small{color:var(--mute)}
@@ -24,8 +26,8 @@ text{fill:var(--ink);font-size:10px;pointer-events:none;paint-order:stroke;strok
 <header><h1 id="title"></h1><div id="stats"></div>
 <div id="controls"><button id="fit" type="button" style="background:#262b38;color:inherit;border:1px solid #2a2f3d;border-radius:6px;padding:4px 10px">Fit</button><input type="search" id="q" placeholder="Search nodes…" aria-label="Search nodes"><span id="filters"></span></div>
 <div class="legend" id="legend"></div></header>
-<svg id="g" role="group" aria-label="Knowledge graph of agents, studies, datasets and sources"></svg>
-<aside id="side"></aside>
+<main id="graph-view" aria-label="Swarm knowledge graph"><svg id="g" role="group" aria-label="Knowledge graph of agents, studies, datasets and sources"></svg></main>
+<aside id="side" role="region" aria-label="Graph node details" tabindex="0"></aside>
 <script>
 const G=__GRAPH__;
 const COLORS={agent:'#f2c14e',confirmed:'#4cc38a',rejected:'#e5484d','not significant':'#f76b15',pending:'#8e8e8e',dataset:'#3e9bff',citation:'#b18cff','prior work':'#6b7280'};
@@ -46,26 +48,30 @@ for(const kind of ['study','dataset','citation','prior work'])for(const n of nod
 const radius=n=>n.kind==='agent'?16:n.kind==='study'?6+(n.score??20)/8:n.kind==='dataset'?6:4;
 const svg=document.getElementById('g'),NS='http://www.w3.org/2000/svg';
 const root=document.createElementNS(NS,'g');svg.appendChild(root);
-let view={x:0,y:0,k:1};const apply=()=>{const b=svg.getBoundingClientRect();root.setAttribute('transform',`translate(${b.width/2+view.x},${b.height/2+view.y}) scale(${view.k})`)};
+const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let view={x:0,y:0,k:1};const apply=()=>{const b=svg.getBoundingClientRect();root.setAttribute('transform',`translate(${b.width/2+view.x},${b.height/2+view.y}) scale(${view.k})`);nodeEls.forEach((g,i)=>{const t=g.querySelector('text');if(!t)return;const n=nodes[i],right=n.x*view.k+view.x>0,limit=b.width<600?24:48;t.style.fontSize=`${11/view.k}px`;t.style.strokeWidth=`${3/view.k}px`;t.setAttribute('text-anchor',right?'end':'start');t.setAttribute('x',(radius(n)+3)*(right?-1:1));t.textContent=(n.winner?'★ ':'')+(n.label.length>limit?n.label.slice(0,limit-2)+'…':n.label)})};
 const lineEls=edges.map(e=>{const l=document.createElementNS(NS,'line');l.setAttribute('stroke',e.kind==='directed'?'#f2c14e55':'#ffffff22');l.setAttribute('stroke-width',e.kind==='proposed'?1.6:1);root.appendChild(l);return l});
 const nodeEls=nodes.map(n=>{const g=document.createElementNS(NS,'g');g.style.cursor='pointer';const c=document.createElementNS(NS,'circle');c.setAttribute('r',radius(n));c.setAttribute('fill',color(n));if(n.winner){c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',3)}if(n.baseline){c.setAttribute('stroke-dasharray','3 2');c.setAttribute('stroke','#fff')}g.appendChild(c);
  if(n.kind==='agent'||n.winner||n.rank&&n.rank<=3){const t=document.createElementNS(NS,'text');t.setAttribute('x',radius(n)+3);t.setAttribute('y',4);t.textContent=(n.winner?'★ ':'')+(n.label.length>48?n.label.slice(0,46)+'…':n.label);g.appendChild(t)}
  const tt=document.createElementNS(NS,'title');tt.textContent=n.label;g.appendChild(tt);root.appendChild(g);g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',n.kind+': '+n.label);g.addEventListener('click',ev=>{ev.stopPropagation();select(n)});g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();g.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});g.addEventListener('pointerdown',ev=>{ev.stopPropagation();drag=n;n.fixed=true});return g});
 const visible=n=>show.has(n.kind);let query='';const match=n=>!query||(n.label+' '+(n.hypothesis||'')).toLowerCase().includes(query);
-function refresh(){nodes.forEach((n,i)=>{nodeEls[i].style.display=visible(n)?'':'none';nodeEls[i].style.opacity=match(n)?1:.15});edges.forEach((e,i)=>{lineEls[i].style.display=visible(e.s)&&visible(e.t)?'':'none'});heat=1}
+function refresh(){nodes.forEach((n,i)=>{nodeEls[i].style.display=visible(n)?'':'none';nodeEls[i].style.opacity=match(n)?1:.15});edges.forEach((e,i)=>{lineEls[i].style.display=visible(e.s)&&visible(e.t)?'':'none'});heat=1;if(reducedMotion)settle()}
 document.getElementById('filters').addEventListener('change',e=>{const k=e.target.dataset.k;e.target.checked?show.add(k):show.delete(k);refresh()});
 document.getElementById('q').addEventListener('input',e=>{query=e.target.value.toLowerCase();refresh()});
 let heat=1,drag=null,pan=null,fitted=false;
 function fit(){const vs=nodes.filter(visible);if(!vs.length)return;const b=svg.getBoundingClientRect(),xs=vs.map(n=>n.x),ys=vs.map(n=>n.y),w=Math.max(...xs)-Math.min(...xs)+80,h=Math.max(...ys)-Math.min(...ys)+80;view.k=Math.min(2,Math.max(.2,Math.min(b.width/w,b.height/h)));view.x=-(Math.max(...xs)+Math.min(...xs))/2*view.k;view.y=-(Math.max(...ys)+Math.min(...ys))/2*view.k;apply()}
-function tick(){const vs=nodes.filter(visible);if(heat>0.01){
+function step(){const vs=nodes.filter(visible);if(heat>0.01){
  for(let i=0;i<vs.length;i++)for(let j=i+1;j<vs.length;j++){const a=vs[i],b=vs[j];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+1;if(d2>90000)continue;const f=350/d2*heat;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f}
  for(const e of edges){if(!visible(e.s)||!visible(e.t))continue;const dx=e.t.x-e.s.x,dy=e.t.y-e.s.y,d=Math.hypot(dx,dy)||1,want=e.kind==='proposed'?60:e.kind==='directed'?260:30,f=(d-want)/d*(e.kind==='directed'?0.01:0.08)*heat;e.s.vx+=dx*f;e.s.vy+=dy*f;e.t.vx-=dx*f;e.t.vy-=dy*f}
- for(const n of vs){n.vx-=n.x*0.004*heat;n.vy-=n.y*0.004*heat;if(!n.fixed){n.x+=n.vx;n.y+=n.vy}n.vx*=.6;n.vy*=.6}heat*=.985;if(heat<0.08&&!fitted){fitted=true;fit()}}
+ for(const n of vs){n.vx-=n.x*0.004*heat;n.vy-=n.y*0.004*heat;if(!n.fixed){n.x+=n.vx;n.y+=n.vy}n.vx*=.6;n.vy*=.6}heat*=.985;if(heat<0.08&&!fitted){fitted=true;fit()}}}
+function paint(){
  edges.forEach((e,i)=>{const l=lineEls[i];l.setAttribute('x1',e.s.x);l.setAttribute('y1',e.s.y);l.setAttribute('x2',e.t.x);l.setAttribute('y2',e.t.y)});
- nodes.forEach((n,i)=>nodeEls[i].setAttribute('transform',`translate(${n.x},${n.y})`));requestAnimationFrame(tick)}
+ nodes.forEach((n,i)=>nodeEls[i].setAttribute('transform',`translate(${n.x},${n.y})`));}
+function tick(){step();paint();requestAnimationFrame(tick)}
+function settle(){while(heat>0.01)step();fitted=true;fit();paint()}
 const toGraph=ev=>{const b=svg.getBoundingClientRect();return{x:(ev.clientX-b.left-b.width/2-view.x)/view.k,y:(ev.clientY-b.top-b.height/2-view.y)/view.k}};
 svg.addEventListener('pointerdown',ev=>{pan={x:ev.clientX-view.x,y:ev.clientY-view.y}});
-window.addEventListener('pointermove',ev=>{if(drag){const p=toGraph(ev);drag.x=p.x;drag.y=p.y;heat=Math.max(heat,.3)}else if(pan){view.x=ev.clientX-pan.x;view.y=ev.clientY-pan.y;apply()}});
+window.addEventListener('pointermove',ev=>{if(drag){const p=toGraph(ev);drag.x=p.x;drag.y=p.y;if(reducedMotion)paint();else heat=Math.max(heat,.3)}else if(pan){view.x=ev.clientX-pan.x;view.y=ev.clientY-pan.y;apply()}});
 window.addEventListener('pointerup',()=>{drag=null;pan=null});
 svg.addEventListener('wheel',ev=>{ev.preventDefault();view.k=Math.min(4,Math.max(.2,view.k*(ev.deltaY<0?1.1:.9)));apply()},{passive:false});
 window.addEventListener('resize',apply);document.getElementById('fit').addEventListener('click',fit);
@@ -87,6 +93,6 @@ function select(n){const nb=neighbours(n);let h=`<h2>${esc(n.label)}</h2><span c
 side.addEventListener('click',ev=>{const id=ev.target.dataset?.id;if(id){ev.preventDefault();const n=byId.get(id);show.add(n.kind);document.querySelector(`[data-k="${n.kind}"]`).checked=true;refresh();select(n)}});
 svg.addEventListener('click',()=>{nodes.forEach((m,i)=>nodeEls[i].querySelector('circle').setAttribute('opacity',1))});
 side.innerHTML=`<h2>What the agents did</h2><p>Each gold node is an agent; click one to replay its journey round by round: role assignments, boredom, hypotheses, novelty gates, preregistrations, results and awards.</p><p>Studies are coloured by outcome and sized by IgJudge score. ★ marks the IgJudge winner${S.winner?`: <b>${esc(S.winner)}</b>`:''}. Dashed outline marks the human-written seed.</p><p>Toggle “prior work” to see the Exa papers IgJudge checked each study against.</p><p class="stat">Run ${esc(S.run)} · ${esc(S.model)}</p>`;
-apply();refresh();tick();setTimeout(()=>{fitted=true;fit()},2500);
+apply();refresh();if(!reducedMotion){tick();setTimeout(()=>{fitted=true;fit()},2500)}
 const pick=decodeURIComponent(location.hash.slice(1));if(pick){const n=nodes.find(m=>m.label===pick||m.id===pick);if(n)select(n)}
 </script></body></html>
