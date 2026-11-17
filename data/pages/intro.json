@@ -1,5 +1,5 @@
 {
-  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Our hypothesis is that existing AI scientist swarms get stuck because they are bored—trapped in repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and overload to detect when the swarm is bored and trigger a seeking state—forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and final IgJudge."},
+  "event": {"title": "SF AI Research Hack", "dates": "Nov 14–15", "host": "Iterate", "summary": "Our hypothesis is that existing AI scientist swarms get stuck because they are bored, trapped in repetitive, low-payoff loops. Artificial Scientist Swarms (ASS) fixes this by adding a deterministic boredom meter grounded in psychology. It tracks stagnation, novelty deficit, and overload to detect when the swarm is bored and trigger a seeking state, forcing a jump from routine exploitation to paradigm breakout. Validated on known benchmarks, we put the swarm on an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and get ranked by a two-judge committee and final IgJudge."},
   "tools": [
     {"kind": "llm", "name": "Language model", "tinkerName": "Tinker", "detail": "{model} powers the researchers' language-model calls.", "tinkerDetail": "{model} runs through Tinker, the researchers' language-model provider.", "fakeName": "LLM", "fakeDetail": "A simulated model drives the researchers for this plumbing demo.", "fakeSuffix": "(fake LLM in this recording)", "unverifiedDetail": "A language model helps researchers plan and evaluate ideas.", "unknownSuffix": "(model not verified in this recording)"},
     {"kind": "exa", "name": "Exa", "detail": "Searches prior work and public datasets when enabled; each source card links to the Exa result it came from.", "offSuffix": "(off in this recording)", "unknownSuffix": "(not verified in this recording)"},
@@ -36,7 +36,7 @@
     "noCitations": "No study citations in this recording yet."
   },
   "results": {
-    "citations": [{"runId": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929", "studyId": "study:14", "category": "Transport", "text": "Kitchen Physics Lab — for confirming that heavier cars get fewer city miles per gallon.", "note": "Strongest absolute correlation among eligible studies; not a prize award."}],
+    "citations": [{"runId": "50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929", "studyId": "study:14", "category": "Transport", "text": "Kitchen Physics Lab: for confirming that heavier cars get fewer city miles per gallon.", "note": "Strongest absolute correlation among eligible studies; not a prize award."}],
     "proxyNote": "Metric / proxy",
     "noProxy": "No proxy note is present in this recording.",
     "studyCount": "Ig Nobel studies",
@@ -44,7 +44,7 @@
     "awardCount": "Prizes awarded: {N}",
     "awardFallback": "Award issued",
     "creditErrorSuffix": " (Tinker credit ran out)",
-    "noAwards": "No prizes awarded yet — this run stopped before committee judging.",
+    "noAwards": "No prizes awarded yet: this run stopped before committee judging.",
     "factualLine": "Real result so far: {C} of {R} tests that ran passed their preregistered gates; {K} also pass the |ρ| ≥ 0.1 floor added after the run ({N} registered){committeeSuffix}",
     "noCommitteeSuffix": "; no committee score yet",
     "countLine": "{N} registered · {M} confirmed ({K} under the post-hoc |ρ| ≥ 0.1 floor)",
@@ -53,7 +53,7 @@
     "track3Url": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/confirmatory/RESULTS.md",
     "bixbenchUrl": "https://github.com/arii/caffeinated/blob/sf-ai-research-hack-2026/experiments/real-runs/bixbench_mini-v2/held_out_test.json",
     "charts": {
-      "toolsCaption": "Live calls recorded in this run (Kimi + Exa + past.dev)",
+      "toolsCaption": "Calls recorded in this run (Kimi + Exa + past.dev)",
       "sourceCaption": "Source cards; some papers repeat.",
       "funnelCaption": "Known relationships in teaching datasets, not discoveries.",
       "bixbench": {
@@ -93,7 +93,7 @@
           {"arm": "S", "label": "single agent"},
           {"arm": "A", "label": "meter off"}
         ],
-        "caption": "3 runs each — neither ordering is significant."
+        "caption": "3 runs each: neither ordering is significant."
       },
       "memory": {
         "pastdev": {

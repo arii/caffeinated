@@ -16,3 +16,9 @@ test('the committed Pages build is replay-only, bundled, and never live',{skip:!
  assert.ok(existsSync(new URL('../docs/.nojekyll',import.meta.url)));
  assert.match(readFileSync(new URL('../docs/index.html',import.meta.url),'utf8'),/\/caffeinated\/assets\//);
 });
+test('the Pages bundle never writes recording selections into browser history',()=>{
+ const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+ const script=html.match(/src="\/caffeinated\/(assets\/[^" ]+\.js)"/)[1];
+ const bundle=readFileSync(new URL(`../docs/${script}`,import.meta.url),'utf8');
+ assert.doesNotMatch(bundle,/history\.(?:replaceState|pushState)\(/);
+});

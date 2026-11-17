@@ -33,7 +33,7 @@ test('bubble controls have labels and predicted values are formatted',()=>{
 
 test('tile score labels format long floating point values',()=>{
  assert.equal(tileBestLabel(.014136217422224159),'best 0.01414');
- assert.equal(tileBestLabel(null),'best —');
+ assert.equal(tileBestLabel(null),'best n/a');
 });
 
 test('tileMetrics handles minimum and maximum metrics, baselines, counts, IDs and names',()=>{
@@ -82,7 +82,7 @@ test('staff strip labels follow reached rounds and critic reviews',()=>{
   {tick:9,type:'verdict.issued'}
  ];
  assert.equal(staffStripLabel('conductor',events,5),'Conductor · Refining');
- assert.equal(staffStripLabel('conductor',events,10),'Conductor · Bored — trying new directions');
+ assert.equal(staffStripLabel('conductor',events,10),'Conductor · Bored: trying new directions');
  assert.equal(staffStripHelp('conductor',events,5),'After a significant improvement or before min_attempts: most workers refine; one explores.');
  assert.equal(staffStripHelp('conductor',events,10),'B ≥ 0.70: one worker refines while the others explore; the novelty gate rejects near-duplicates.');
  assert.equal(staffStripLabel('critic',events,3),'Critic · 0 reviews');

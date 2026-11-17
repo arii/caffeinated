@@ -123,7 +123,7 @@ test('dialogue history keeps reached message.sent lines with recipients',()=>{
  assert.equal(dialogueHtml([],ctx),'');
 });
 
-test('number formatting',()=>{assert.equal(signed(0.1234),'+0.123');assert.equal(signed(null),'—');assert.equal(pValue(4.423953331693384e-32),'4.4e-32');assert.equal(pValue(0.0001),'0.0001');assert.equal(pValue(1e-301),'<1e-300');});
+test('number formatting',()=>{assert.equal(signed(0.1234),'+0.123');assert.equal(signed(null),'–');assert.equal(pValue(4.423953331693384e-32),'4.4e-32');assert.equal(pValue(0.0001),'0.0001');assert.equal(pValue(1e-301),'<1e-300');});
 
 test('empty baseline gate placeholders are not shown as a gate check and rejected studies sort last',()=>{
  const r={entities:{experiments:[{id:'b',kind:'baseline',gate:{attempts:0,reasons:[]}}]},events:[{tick:0,type:'experiment.started',refs:{experiment_id:'b'}},{tick:1,type:'experiment.finished',refs:{experiment_id:'b'},payload:{status:'keep'}},

@@ -4,6 +4,7 @@ import {momentsBetween} from './moments.ts';
 import {hasCreditError,provenanceBadge} from './provenanceBadge.ts';
 import {isIgnobelRecording,isPreCommitteeIgnobel,recordingProxyNote} from './proxyNote.ts';
 import {currentRules,currentRuleThresholds} from './currentRules.ts';
+import {igJudgeBoard} from './igJudge.ts';
 
 type Row=Record<string,unknown>;
 const rows=(v:unknown):Row[]=>Array.isArray(v)?v as Row[]:v&&typeof v==='object'?Object.values(v as Row) as Row[]:[];
@@ -122,7 +123,7 @@ function toolUseHtml(c:IntroConfig,usage:ReturnType<typeof researchToolUsage>,es
 
 function finalistHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
  const finalists=researchFinalists(r);
- return `<section class="finalists"><h2>Finalists — awaiting committee judging</h2><div class="finalist-grid">${finalists.map(item=>`<article class="finalist-card"><h3 title="${esc(item.question)}">${esc(item.question)}</h3><div class="finalist-meta"><span>${esc(item.dataset)}</span><span>Lab · ${esc(item.lab)}</span></div><div class="finalist-rho"><svg viewBox="0 0 180 14" role="img" aria-label="Absolute correlation ${Math.abs(item.rho).toFixed(3)}"><rect x="0" y="4" width="170" height="6" rx="3" fill="#ffffff25"/><rect x="0" y="4" width="${Math.max(1,Math.abs(item.rho)*170).toFixed(1)}" height="6" rx="3" fill="#e3cba3"/></svg><span>ρ ${item.rho.toFixed(3)}</span></div></article>`).join('')}</div>${finalists.length?'':'<p>No studies passed both filters.</p>'}</section>`;
+ return `<section class="finalists"><h2>Finalists: awaiting committee judging</h2><div class="finalist-grid">${finalists.map(item=>`<article class="finalist-card"><h3 title="${esc(item.question)}">${esc(item.question)}</h3><div class="finalist-meta"><span>${esc(item.dataset)}</span><span>Lab · ${esc(item.lab)}</span></div><div class="finalist-rho"><svg viewBox="0 0 180 14" role="img" aria-label="Absolute correlation ${Math.abs(item.rho).toFixed(3)}"><rect x="0" y="4" width="170" height="6" rx="3" fill="#ffffff25"/><rect x="0" y="4" width="${Math.max(1,Math.abs(item.rho)*170).toFixed(1)}" height="6" rx="3" fill="#e3cba3"/></svg><span>ρ ${item.rho.toFixed(3)}</span></div></article>`).join('')}</div>${finalists.length?'':'<p>No studies passed both filters.</p>'}</section>`;
 }
 function committeeResultsHtml(r:Recording,esc:(v:unknown)=>string){
  const rows=researchCommitteeScores(r),noAward=rows.length>0&&rows.every(item=>item.score<.5);
@@ -148,8 +149,8 @@ function track3Svg(c:IntroConfig,esc:(v:unknown)=>string){
 function memorySvg(c:IntroConfig,esc:(v:unknown)=>string){
  const {pastdev,local}=c.results.charts.memory,rows=[{label:'Hit@1',a:pastdev.hitAt1,b:local.hitAt1,y:30},{label:'Hit@8',a:pastdev.hitAt8,b:local.hitAt8,y:66}],latency=[{label:'past.dev',value:pastdev.medianLatencyMs,color:'#99c6b3'},{label:'Local',value:local.medianLatencyMs,color:'#e3cba3'}];
  const hitRows=rows.map(({label,a,b,y})=>`<text x="4" y="${y+4}" class="chart-label">${esc(label)}</text><text x="60" y="${y-2}" class="chart-mini-label">past.dev</text><rect x="126" y="${y-12}" width="${(a*150).toFixed(1)}" height="10" rx="3" fill="#99c6b3"/><text x="282" y="${y-3}" class="chart-value">${fmt(a)}</text><text x="60" y="${y+12}" class="chart-mini-label">Local</text><rect x="126" y="${y+2}" width="${(b*150).toFixed(1)}" height="10" rx="3" fill="#e3cba3"/><text x="282" y="${y+11}" class="chart-value">${fmt(b)}</text>`).join('');
- const latencyRows=latency.map((item,i)=>{const y=123+i*16;return `<text x="60" y="${y+3}" class="chart-mini-label">${esc(item.label)}</text><rect x="126" y="${y-7}" width="${Math.max(2,item.value/600*150).toFixed(1)}" height="10" rx="3" fill="${item.color}"/><text x="282" y="${y+2}" class="chart-value">${item.value} ms</text>`;}).join('');
- return `<svg class="chart-svg" viewBox="0 0 380 158" role="img" aria-label="Past.dev and local memory retrieval comparison">${hitRows}<line x1="4" y1="100" x2="365" y2="100" class="chart-divider"/><text x="4" y="119" class="chart-label">Median latency</text>${latencyRows}</svg>`;
+ const latencyRows=latency.map((item,i)=>{const y=137+i*20;return `<text x="60" y="${y+3}" class="chart-mini-label">${esc(item.label)}</text><rect x="126" y="${y-7}" width="${Math.max(2,item.value/600*150).toFixed(1)}" height="10" rx="3" fill="${item.color}"/><text x="282" y="${y+2}" class="chart-value">${item.value} ms</text>`;}).join('');
+ return `<svg class="chart-svg" viewBox="0 0 380 178" role="img" aria-label="Past.dev and local memory retrieval comparison">${hitRows}<line x1="4" y1="100" x2="365" y2="100" class="chart-divider"/><text x="4" y="119" class="chart-label">Median latency</text>${latencyRows}</svg>`;
 }
 
 function resultCitationHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
@@ -159,7 +160,11 @@ function resultCitationHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string){
  return `<section class="result-citation" aria-label="Research result in one sentence"><div class="eyebrow">${esc(citation.category)} · Research citation</div><p class="result-citation-line">${esc(citation.text)}</p><p class="chart-caption">${esc(finalist.dataset)} · ρ ${finalist.rho.toFixed(3)}. ${esc(citation.note)}</p></section>`;
 }
 
-export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string,summary=researchResults(r)){
+export function preCommitteeResultsHtml(c:IntroConfig,r:Recording,esc:(v:unknown)=>string,summary=researchResults(r),finalRankingsShown=false){
+ if(finalRankingsShown&&igJudgeBoard(r.igjudge)?.ideas.some(idea=>idea.total!=null&&!idea.error)){
+  const committee=committeeResultsHtml(r,esc);
+  return `${toolUseHtml(c,researchToolUsage(r),esc)}${committee||'<section class="committee-results"><h2>In-run committee data</h2><p>No in-run committee scores were recorded. Final rankings use the post-run final judge scores.</p></section>'}`;
+ }
  if(r.manifest.continuous){
   const verdict=committeeResultsHtml(r,esc)||finalistHtml(c,r,esc);
   return `${verdict}<section class="result-chart"><h2>This session's studies</h2>${funnelSvg(summary,esc)}<p>${summary.registered} registered · ${summary.ran} tested · ${summary.confirmed} confirmed</p></section><p class="metric-note">${esc(r.manifest.metric?.description||summary.proxyNote||c.results.noProxy)}</p>`;

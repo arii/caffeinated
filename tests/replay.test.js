@@ -108,3 +108,12 @@ test('ZIP run 3 is the default, explicit links override it, missing archives fal
  assert.equal(initialRecordingId([{id:'fallback'}],null),'fallback');
  assert.equal(initialRecordingId([],null),undefined);
 });
+
+test('shared recording links accept unique prefixes but not ambiguous or empty ones',()=>{
+ const rows=[{id:DEFAULT_REPLAY_ID},{id:'abc-first'},{id:'abc-second'},{id:'xyz-only'},{id:'xyz-only-longer'}];
+ assert.equal(initialRecordingId(rows,'abc-f'),'abc-first');
+ assert.equal(initialRecordingId(rows,'xyz-only'),'xyz-only');
+ assert.equal(initialRecordingId(rows,'f8fa53cc'),DEFAULT_REPLAY_ID);
+ for(const requested of ['abc','xyz','',null,'missing'])assert.equal(initialRecordingId(rows,requested),DEFAULT_REPLAY_ID);
+ assert.equal(initialRecordingId([], 'f8fa53cc'),undefined);
+});
