@@ -1,7 +1,9 @@
 # Backend reference: implementation map and formula sources
 
+Historical scope: November 2026 implementation map pinned to the revisions below, not current source line numbers.
+
 This reference locates the code, formulas and thresholds described in the
-[backend entry point](../README.md#boredom-meter).
+[backend entry point](../README.md#how-it-works).
 Local line numbers refer to upstream source baseline `a3c21cc`, merged in `58ff460`.
 Ig Nobel citations retain pinned main revision `be658b6`; PR refs describe separate
 implementations, not the CPU backend. These `ignobel/` citations are historical: the

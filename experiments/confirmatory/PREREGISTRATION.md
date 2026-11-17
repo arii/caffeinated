@@ -1,5 +1,7 @@
 # Confirmatory A/B/S evaluation of swarm.py (preregistered)
 
+Historical scope: November 2026 preregistration and dated amendments, preserved as the experiment record; outcomes and deviations are in [RESULTS.md](RESULTS.md).
+
 Written 2026-11-15 ~01:00 PST, after launch and before any confirmatory result was inspected.
 Exploratory pilot/rerun results (3 seeds, v1 sandbox, BixBench research on) are not pooled with these.
 
