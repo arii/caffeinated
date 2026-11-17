@@ -224,7 +224,7 @@ body.prestart .sidebar,body.prestart .replay-bar,body.prestart #status-strip,bod
 @media(prefers-reduced-motion:reduce){.intro *{scroll-behavior:auto!important}.intro-start,.intro-section{transition:none}}
 .top-right{max-width:72vw}
 .provenance-badge{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap;font-size:12px;line-height:1.35;letter-spacing:.02em}
-.about-video-link{display:inline-flex;margin:10px 0 4px;font-size:12px;color:var(--accent);border-bottom:1px solid #e3cba366;padding-bottom:3px}
+.about-credit{font-size:12px;line-height:1.7;color:var(--muted);margin:6px 0 0}.about-credit a{color:var(--accent);border-bottom:1px solid #e3cba366}.about-video-link{display:inline-flex;margin:10px 0 4px;font-size:12px;color:var(--accent);border-bottom:1px solid #e3cba366;padding-bottom:3px}
 .header-provenance{max-width:min(44vw,410px)}
 .provenance-badge-label,.provenance-badge-chip{display:inline-flex;align-items:center;border:1px solid #b5c8c0;border-radius:999px;padding:4px 7px;background:#263e47;color:#f4f2e9;font-size:12px;font-weight:600}
 .provenance-badge-chip{border-color:#93a79e;background:#172c35;color:#e1ebe6}
@@ -274,7 +274,7 @@ header{height:72px;padding:8px 24px;gap:12px;background:#172c35;color:#f4f3ec}
 .top-right{gap:8px}
 .connection{display:none}
 .header-actions{display:flex;gap:6px}
-.header-actions button{min-width:44px;min-height:44px;padding:0 12px;border:1px solid #ffffff35;border-radius:9px;background:#172c35;color:#f4f3ec;font-size:14px}
+.header-actions a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 12px;border:1px solid #ffffff35;border-radius:9px;background:#172c35;color:#f4f3ec;font-size:14px}.header-actions button{min-width:44px;min-height:44px;padding:0 12px;border:1px solid #ffffff35;border-radius:9px;background:#172c35;color:#f4f3ec;font-size:14px}
 .header-provenance{max-width:340px}
 .shade{background:linear-gradient(0deg,#12202b45,transparent 35%)}
 body.bar-collapsed #status-strip{display:flex!important}
@@ -300,7 +300,7 @@ body.bar-collapsed #tick-label{font-size:12px}
  .brand>span+span{font-size:18px}
  .top-right{width:100%;justify-content:flex-end;gap:5px}
  .header-provenance{display:none}
- .header-actions button{min-height:44px;padding:0 10px}
+ .header-actions button,.header-actions a{min-height:44px;padding:0 10px}
  .sidebar{top:98px}
  body.bar-collapsed .replay-bar{left:6px;right:6px;width:auto!important;grid-template-columns:auto minmax(42px,1fr) auto auto auto;grid-template-areas:"play timeline round boredom expand";gap:4px}
  body.bar-collapsed .replay-controls label{display:none}
