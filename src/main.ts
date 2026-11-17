@@ -197,7 +197,7 @@ function renderRunMeta(){
  const activity=/BOREDOM_SNAP/.test(raw)?'Bored: trying new directions':/PARADIGM_BREAKOUT/.test(raw)?'Breakout':'Refining';
  $('run-meta').innerHTML=`<span class="status-chip">${playing?'Replaying recorded run':'Recorded run'}</span><span>${recording.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}${rounds?` of ${rounds}`:''}`}</span><span>${activity}</span>`;
 }
-function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();if(resultsDialog.open)renderResultsPanel();if(!CINEMA&&!finaleAutoOpened&&finaleReached(recording,tick)){finaleAutoOpened=true;renderResultsPanel();if(!resultsDialog.open){resultsDialog.showModal();updateDockAutoCollapse();}}}
+function seek(value:number){if(!recording)return;tick=Math.max(0,Math.min(recording.manifest.totalTicks,value));snapshot=frameAt(recording.frames,tick)?.snapshot||null;renderControls();renderHUD();if(evidence.open)renderEvidence();if(conversation.open)renderConversation();if(inspector.open)renderInspector();if(resultsDialog.open)renderResultsPanel();if(!CINEMA&&!finaleAutoOpened&&finaleReached(recording,tick)){finaleAutoOpened=true;renderResultsPanel();if(!resultsDialog.open){resultsDialog.showModal();resultsDialog.scrollTop=0;updateDockAutoCollapse();}}}
 function renderHUD(){
  $('agent-count').textContent=`${people().length} AGENTS`;
  renderAgentList();
@@ -292,7 +292,7 @@ function renderResultsPanel(){
   const committeeScores=researchCommitteeScores(recording,tick),realAward=committeeScores.some(item=>item.score>=.5&&!item.rejected&&item.award&&!/committee/i.test(item.award));
   if(isPreCommitteeIgnobel(recording.manifest,recording)||!realAward){
    $('results-title').textContent='What the swarm found';
-   $('results-content').innerHTML=finalJudgeHtml+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary);
+   $('results-content').innerHTML=finalJudgeHtml+preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary,Boolean(finalJudgeHtml));
    return;
   }
  }
@@ -304,7 +304,7 @@ function renderResultsPanel(){
   $('results-title').textContent='What the swarm found';
   const entryBlock=board.status==='awaiting'&&entries?`<details class="unscored-studies"><summary>${board.confirmed} confirmed studies, unscored</summary><ul class="podium-list">${entries}</ul></details>`:entries?`<ul class="podium-list">${entries}</ul>`:'';
   const metricNote=podiumMetricHtml(recording,esc);
-  $('results-content').innerHTML=`${finalJudgeHtml}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary)}${badgeHtml}<h2>In-run committee results</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
+  $('results-content').innerHTML=`${finalJudgeHtml}${preCommitteeResultsHtml(introConfig as IntroConfig,recording,esc,summary,Boolean(finalJudgeHtml))}${badgeHtml}<h2>In-run committee results</h2>${noAwards}<p class="results-count">${esc(counts)}</p>${metricNote}${entryBlock}<details class="judging-details"><summary>${esc(judgingCopy.title)}</summary><ol>${judgingCopy.steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol></details>`;
   return;
  }
  const summary=finaleSummary(recording,tick);if(!summary){$('results-content').innerHTML='<p>No results available.</p>';return;}

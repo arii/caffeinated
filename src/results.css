@@ -130,3 +130,7 @@
 .inspector :is(p,li,small,th,td,.dialog-heading,.muted,code,summary,.artifact-links a,.artifact-text,.inspect-card,.pill,.chip,.badge,.study-card dt,.lifecycle>li>b,.timeline-list ul,.bubble cite,.inspect-link),.about-drawer :is(.chip,code,.about-provenance-note){font-size:11px}
 
 .dialogue-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:520px){
+ .results-dialog .chart-svg :is(.chart-label,.chart-value,.chart-group){font-size:17px}
+ .results-dialog .chart-svg .chart-mini-label{font-size:15px}
+}

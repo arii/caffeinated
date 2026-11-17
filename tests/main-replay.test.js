@@ -89,12 +89,13 @@ test('finale opens results once; closing with X returns to agents without reopen
   frameAt:()=>({snapshot:{}}),finaleReached:(_recording,tick)=>tick>=10,
   renderControls(){},renderHUD(){},renderEvidence(){},renderConversation(){},renderInspector(){},renderResultsPanel(){},updateDockAutoCollapse(){},unlock(){},
   evidence:{open:false},conversation:{open:false},inspector:{open:false,close(){},addEventListener(){}},
-  resultsDialog:{open:false,showModal(){this.open=true;opens++;},close(){this.open=false;}},
+  resultsDialog:{open:false,scrollTop:500,showModal(){this.open=true;opens++;},close(){this.open=false;}},
   $:id=>{if(!elements.has(id))elements.set(id,{});return elements.get(id);}};
  runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith('function seek('))),context);
  runInNewContext(ts.transpile(source.split('\n').find(line=>line.startsWith("$('close-inspector').onclick"))),context);
  context.seek(9);assert.equal(opens,0);
  context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,true);
+ assert.equal(context.resultsDialog.scrollTop,0);
  elements.get('close-results').onclick();assert.equal(context.resultsDialog.open,false);
  context.seek(10);assert.equal(opens,1);assert.equal(context.resultsDialog.open,false);
  elements.get('open-results').onclick();assert.equal(opens,2);assert.equal(context.resultsDialog.open,true);

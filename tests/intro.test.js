@@ -12,23 +12,32 @@ const entry=catalog.find(item=>item.id==='50bbe2bb-0a86-50d9-9ef8-be8aa5fa3929')
 assert.ok(entry,'committed Ig Nobel recording is present');
 const {igjudge:finalJudge,...recording}=JSON.parse(gunzipSync(readFileSync(new URL(`../docs/recordings/${entry.id}.json.gz`,import.meta.url))));
 
-test('final judge scores replace pending finalists and empty committee funnels',()=>{
+test('scored recordings retain the study summary until final rankings are shown',()=>{
+ const judged={...recording,igjudge:finalJudge};
+ for(const finalRankingsShown of [undefined,false]){
+  const html=preCommitteeResultsHtml(config,judged,esc,undefined,finalRankingsShown);
+  assert.match(html,/Ig Nobel test funnel/);
+  assert.doesNotMatch(html,/Final rankings use the post-run final judge scores/);
+ }
+});
+
+test('visible final judge rankings replace pending finalists and empty committee funnels',()=>{
  const judged={...recording,entities:{},events:[],igjudge:finalJudge};
- const html=preCommitteeResultsHtml(config,judged,esc);
+ const html=preCommitteeResultsHtml(config,judged,esc,undefined,true);
  assert.match(html,/Final rankings use the post-run final judge scores/);
  assert.match(html,/No in-run committee scores were recorded/);
  assert.doesNotMatch(html,/awaiting committee judging|class="finalists"|Ig Nobel test funnel/);
 });
 
 test('final judge results preserve recorded committee scores as separate evidence',()=>{
- const html=preCommitteeResultsHtml(config,{...recording,igjudge:finalJudge},esc);
+ const html=preCommitteeResultsHtml(config,{...recording,igjudge:finalJudge},esc,undefined,true);
  assert.match(html,/Committee verdict: no award/);
  assert.doesNotMatch(html,/awaiting committee judging|class="finalists"|Ig Nobel test funnel/);
 });
 
 test('empty and unscored final judge artifacts leave the pre-committee results intact',()=>{
  for(const igjudge of [null,{schema:'igjudge/v1',ideas:[]},{schema:'igjudge/v1',ideas:[{study_id:'s1',error:'Judge unavailable'}]}]){
-  const html=preCommitteeResultsHtml(config,{...recording,igjudge},esc);
+  const html=preCommitteeResultsHtml(config,{...recording,igjudge},esc,undefined,true);
   assert.match(html,/Ig Nobel test funnel/);
   assert.doesNotMatch(html,/Final rankings use/);
  }
