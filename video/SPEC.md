@@ -1,5 +1,7 @@
 # Demo video spec (lead-authored; implement exactly)
 
+Historical scope: November 2026 production brief for the 120-second Remotion cut; the published About video is the 85-second cut.
+
 Format: 1920x1080, 30 fps, ~120 s, Remotion 4 (stable), project in `video/` at repo root
 (own package.json; do NOT add remotion deps to the root package.json). Output: `video/out/demo.mp4`
 (H.264, < 50 MB). Do NOT commit the mp4 or raw captures; commit only the Remotion source plus a
@@ -13,8 +15,8 @@ Facts are fixed; do not change numbers or wording meaning. Pull authors/tools/ev
 from `video/src/intro.json`, kept in sync with the repository's `data/pages/intro.json`.
 
 ## Scenes
-1. 0–8 s · Hook. Keep the satirical headline visibly labeled as satire, then "The secret: making
-   AI less boring." The truthful disclosure must remain visible with the headline.
+1. 0–8 s · Hook. Keep the satirical headline visibly labeled as satire, then "The secret: swarms
+   that never stay bored." The truthful disclosure must remain visible with the headline.
 2. 8–16 s · Hackathon. "SF AI Research Hack · Nov 14–15 · hosted by Iterate". Sub: "Built in
    one weekend: an artificial scientist swarm that notices when it is bored."
 3. 16–26 s · Tools (one card each, staggered): "Thinking Machines Tinker — Kimi K3.1 Pro runs

@@ -234,7 +234,7 @@ function Hook() {
         {hookParts[2]}
       </FadeBeat>
       <FadeBeat from={174} to={240} fontSize={73}>
-        The secret: making AI less boring.
+        The secret: swarms that never stay bored.
       </FadeBeat>
       <div
         style={{

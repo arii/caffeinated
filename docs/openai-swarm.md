@@ -1,6 +1,6 @@
 # OpenAI supervised live runner
 
-This branch replaces the local Ollama mode with OpenAI. One `gpt-6.1-sol`
+The supervised runner uses OpenAI. One `gpt-6.1-sol`
 supervisor plans each round at low reasoning effort. Eight `gpt-6-luna`
 workers execute short assignments with reasoning effort `none`; critic roles
 also use Luna. Worker calls are queued, with at most one execution and one
@@ -30,10 +30,15 @@ Tinker-funded prize committee. It does not claim to award an Ig Nobel prize.
 The Runs panel also supports the live Ig Nobel launcher. Enable it with
 `LAB_OPENAI_LAUNCH=1`, a backend `OPENAI_API_KEY`, and
 `LAB_OPENAI_MAX_COST_USD=10` for a small test. The server caps the configurable
-ceiling at $10. The button runs three rounds with eight Luna labs and Sol
-supervision/committee judging. Model and committee requests share the run's
-budget ledger. It is idle until explicitly started. The equivalent CLI is
-`scripts/run_openai_ignobel.sh` (defaults to five rounds and a $10 cap).
+ceiling at $10. The button starts a continuous session with eight Luna workers initially, growing
+up to twenty, and Sol supervision/committee judging. The default admission window
+is 30 minutes; the UI accepts 1–30 minutes. Model and committee requests share the
+run's budget ledger. It is idle until explicitly started. The equivalent CLI is
+`scripts/run_openai_ignobel.sh`, with `OPENAI_RUN_MINUTES` and
+`OPENAI_MAX_COST_USD` controlling the default 30-minute window and $10 cap.
+Admission stops before the cap to reserve confirmation work; in-flight work may
+finish after the window closes. The Stop button stops new work and lets current
+work finish.
 
 The default replay is run 3 (`f8fa53cc-6afd-5e98-9596-0c7b8711e718`) from the
 bundled `data/replays/ignobel-real-runs.zip`. Explicit `?recording=` links
@@ -60,6 +65,8 @@ estimated costs (including reported cache writes, ignoring cache discounts)
 are in `llm_log.jsonl`. Do not delete the ledger when resuming a run.
 
 ## Verified trial, 2026-11-15
+
+Historical scope: this trial and its test counts describe the November 15, 2026 implementation, not the current test suite or continuous launcher.
 
 Recording `37d16cd0-1cc1-5a80-949d-7c3186925683`: one Sol call and eight Luna
 calls, eight valid executable patches, no improvement over the 0.202360

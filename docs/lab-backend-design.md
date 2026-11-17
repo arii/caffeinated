@@ -1,12 +1,12 @@
 # Lab Environment: replay and backend handoff
 
-This branch is a read-only research replay. The research backend team owns future experiment execution and Tinker submission. The chosen lab, timeline, cameras, and archived agent interactions consume recorded state and do not select or execute future research objectives.
+The Lab viewer consumes research recordings. Experiment execution and model submission belong to the research backend, not the replay clock. The chosen lab, timeline, cameras, and archived agent interactions consume recorded state and do not select or execute future research objectives.
 
 For exact integration steps and producer payloads, see [Backend integration](backend-integration.md).
 
 ## Source and reference
 
-- Supplied `data/replays/swarm-viewer-sample-runs.zip`, schema `swarm-viewer/v1`: four recordings, including the Ig Nobel sample.
+- Default archive `data/replays/ignobel-real-runs.zip`, schema `swarm-viewer/v1`. Pages merges these recordings with the older `out-ignobel` recording through `scripts/export_pages.py`.
 - Canonical proposal: [swarm-viewer-api.md](swarm-viewer-api.md), obtained from the team’s `agent/devin/swarm-viewer-api` branch. The ZIP itself contains no Markdown file.
 - Timeline interaction reference: [History in 3D](https://github.com/mashathepotato/history-in-3D), especially `src/engine/timeline.js` and `ui.js`.
 
@@ -42,7 +42,7 @@ The supplied keyframe zero contains later-run state. The adapter therefore recon
 
 The default replay camera is elevated inside the laboratory. Playback shows recorded agent activity through lightbulbs, bubbles, and evaluation symbols. Pause permits first-person exploration. Interacting with a researcher opens a speech popup above that character with source-based conversation topics and that agent’s recorded boredom; no global boredom widget is displayed.
 
-Conversation is an archival inspection, not a new model response or a continuation of the experiment. Only logged proposals, rationale, observations, results, and notes are used. Nothing in this branch attempts to generate or expose unlogged reasoning.
+Conversation is an archival inspection, not a new model response or a continuation of the experiment. Only logged proposals, rationale, observations, results, and notes are used. The replay does not attempt to generate or expose unlogged reasoning.
 
 Movement between stations is illustrative and deterministic under seeking. Camera position and avatar animation never change scientific data. The central table is a visual team display, not a biological solver.
 
@@ -50,13 +50,13 @@ Movement between stations is illustrative and deterministic under seeking. Camer
 
 The default service rejects live run creation. Playback and interaction require no API key and make no paid calls. The existing execution code remains in source for later integration but is not connected to the replay UI.
 
-All archive provenance is supplied provenance, not independently rerun validation. In particular, the Ig Nobel sample is an offline `swarm.py --task ignobel` run with a fake LLM; its sources are real keyless literature hits, but its studies are not model research. The archive lacks candidate executables and the referenced SVG plot files; graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
+All archive provenance is supplied provenance, not independently rerun validation. The default ZIP contains real research recordings; the older fake Ig Nobel sample is not the default. A recording's manifest and events determine its model and source provenance. Graphs in the viewer are derived from recorded measurements, not invented plot artifacts.
 
 Future Ig Nobel objectives should supply their own manifests, metric units/direction, identities, events, scientific artifacts, and provenance. The backend team can change experiment content while keeping replay controls and world interactions stable.
 
 ## Verification
 
-Backend checks exercise all four archive folds, absence of later results at earlier ticks, recorded per-agent boredom, critic acceptance, maximize metrics, source-sample labels, cache behavior, and rejection of execution. Frontend checks cover time lookup and advance, backward seeking, snapshot compatibility, navigable stations, and unchanged character poses at the same paused tick. Browser verification checks the timeline, archive selection, pace, indoor/first-person views, evidence, and character interaction.
+Backend checks exercise archive folds, absence of later results at earlier ticks, recorded per-agent boredom, critic acceptance, maximize metrics, source-sample labels, cache behavior, and rejection of execution. Frontend checks cover time lookup and advance, backward seeking, snapshot compatibility, navigable stations, and unchanged character poses at the same paused tick. Browser verification checks the timeline, archive selection, pace, indoor/first-person views, evidence, and character interaction.
 
 ## Character display identity
 

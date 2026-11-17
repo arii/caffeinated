@@ -1,5 +1,7 @@
 # Cinema Mode (`?cinema=1`)
 
+Historical scope: November 2026 Cinema implementation handoff and check results; the in-app timeline is 64 seconds, while the published About video is 85 seconds.
+
 Branch: `devin/1794773716-cinema-mode`. Replay-first 64 s cut (user feedback: less text, replay almost end to end).
 
 ## Done

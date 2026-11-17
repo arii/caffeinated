@@ -1,5 +1,7 @@
 # Judge Q&A: artificial scientist swarm
 
+Recording scope: the pre-committee replay counts and answers below refer to the older `out-ignobel` run, not the default ZIP run 3. Separate [IgJudge rankings for ZIP-run ideas](../data/igjudge/ignobel-real-runs/results-zip.md) are published; rankings are not a prize award.
+
 Prepared answers to the hardest questions from two hostile-judge reviews. Every number links to a
 committed artifact. Where the answer is unfavourable we say so.
 
@@ -127,7 +129,10 @@ Islands, quality-diversity and novelty search are prior art. Our addition is a p
 motivated, deterministic boredom signal any agent can audit, plus a Lab that replays the full
 agent trace. The descriptor space is hand-designed and LLM-self-labelled.
 
-**One more day?**
+**One more day? (Hackathon-time answer, November 2026)**
+
+This answer records the event-time plan. The current [roadmap](roadmap.md) uses Devin sessions only and does not resume paid model runs.
+
 Restore Tinker credit; committee-score the Ig Nobel studies; give S the same acceptance rule as the
 swarm; run 6+ paired seeds with an output-based guard; add a local embedding baseline to the memory
 comparison.

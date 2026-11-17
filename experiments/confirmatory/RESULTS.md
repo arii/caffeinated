@@ -1,5 +1,7 @@
 # Confirmatory results (Kimi K3.1 via Tinker, research off for BixBench): exploratory after deviations
 
+Historical scope: November 2026 experiments and post-run analysis, preserved with their deviations; these are not results from the current checkout.
+
 **Label: the whole confirmatory set is exploratory after deviations.** The primary set, the guard and
 the held-out grader all changed after the preregistration (see "Deviations from preregistration and
 their direction"). Nothing below is a confirmatory test.

@@ -1,7 +1,6 @@
 # Artificial Scientist Swarm demo video
 
-This is a 120-second, silent Remotion 4 composition at 1920×1080 and 30 fps.
-The text and numbers follow [`SPEC.md`](SPEC.md).
+This directory contains the historical November 2026, 120-second silent Remotion 4 composition at 1920×1080 and 30 fps, following [`SPEC.md`](SPEC.md). It is separate from the 64-second in-app Cinema Mode timeline documented in [CINEMA_STATUS.md](CINEMA_STATUS.md). The published [About page](../docs/about.html) uses the externally edited 85-second cut at `docs/media/demo_cinema_v1.mp4`, not the Remotion output.
 
 The project embeds the Lab intro data at `src/intro.json`, copied from the
 repository's `../data/pages/intro.json`. Event details, tool names, author
