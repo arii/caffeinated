@@ -101,8 +101,10 @@
  .final-podium>h2{margin:0;font-size:16px}
  .final-podium>p{margin:2px 0;font-size:11px}
  .podium-places{margin-top:8px}
- .podium-contestant{display:none}
- .podium-stage{height:76px}
+ .podium-contestant{padding-bottom:10px}
+ .podium-agent{display:none}
+ .podium-agent-name{position:static;padding:2px 8px}
+ .podium-stage{height:104px}
  .podium-place{--step-height:60px}
  .podium-place-1{--step-height:76px}
  .podium-place-3{--step-height:52px}
