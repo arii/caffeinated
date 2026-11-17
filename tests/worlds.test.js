@@ -76,5 +76,15 @@ test('each avatar carries a boredom badge, and drowsy robots doze, droop and slo
  world.update(1,{progress:0,boredom:0,running:true,replay:true,agents:[{...base,boredom:92,regime:'BOREDOM_SNAP'},{...base,id:'w2',name:'Worker 2',boredom:5,position:{x:1,z:0,heading:0}}]});
  const meters=[],zzz=[];world.scene.traverse(o=>{if(o.name==='boredom-meter')meters.push(o);if(o.name==='boredom-zzz')zzz.push(o);});
  assert.equal(meters.length,2);
+ assert.ok(meters.every(meter=>meter.visible));
  assert.deepEqual(zzz.map(z=>z.visible),[true,false]);
+});
+
+test('3D boredom badges are hidden until a finite measurement exists and hide again when unknown',()=>{
+ const world=createWorld(),agent={id:'w1',name:'Worker 1',role:'worker',state:'working',stationId:'analyzer',position:{x:0,z:0,heading:0}};
+ for(const boredom of [null,NaN,Infinity,0,65,null]){
+  world.update(0,{progress:0,boredom:0,running:false,replay:true,agents:[{...agent,boredom}]});
+  const meters=[];world.scene.traverse(o=>{if(o.name==='boredom-meter')meters.push(o)});
+  assert.equal(meters.length,1);assert.equal(meters[0].visible,boredom!=null&&Number.isFinite(boredom));
+ }
 });

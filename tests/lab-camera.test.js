@@ -1,9 +1,21 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {LabCameraRig,mouseLook,keyboardLook,MAX_LOOK_PITCH} from '../src/engine/labCamera.ts';
+import {LabCameraRig,mouseLook,keyboardLook,MAX_LOOK_PITCH,portraitLabFrame} from '../src/engine/labCamera.ts';
 const direction=camera=>camera.getWorldDirection(new THREE.Vector3());
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
+
+test('portrait framing keeps a full robot visible from inside the laboratory',()=>{
+ for(const aspect of [.35,360/740,390/844,.8])for(const z of [-10,0,10]){
+  const subject=new THREE.Vector3(4,0,z),view=portraitLabFrame(subject,aspect,62),camera=new THREE.PerspectiveCamera(62,aspect,.08,110);
+  camera.position.copy(view.position);camera.lookAt(view.target);camera.updateMatrixWorld();
+  assert.ok(camera.position.y<4.8&&Math.abs(camera.position.z)<12,'camera stays below the ceiling and inside the facade');
+  for(const x of [-.7,.7])for(const y of [0,2.65]){
+   const point=subject.clone().add(new THREE.Vector3(x,y,0)).project(camera);
+   assert.ok(Math.abs(point.x)<.85&&Math.abs(point.y)<.65,'robot and name fit in the usable portrait area');
+  }
+ }
+});
 
 test('lab drag and ground mouse look turn right and down with identical angles',()=>{
  const camera=new THREE.PerspectiveCamera(),rig=new LabCameraRig(camera);

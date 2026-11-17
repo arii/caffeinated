@@ -1,7 +1,8 @@
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const mark=(e.target as Element).closest?.<SVGElement>('[data-orch-tick]');if(mark){e.preventDefault();mark.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
 import * as THREE from 'three';
-import {LabCameraRig,mouseLook,keyboardLook} from './engine/labCamera';
+import {LabCameraRig,mouseLook,keyboardLook,portraitLabFrame} from './engine/labCamera';
 import {ideaBrief} from './engine/ideaBrief';
+import {showReplayIntro} from './engine/replayIntro';
 import './style.css';
 import './results.css';
 import './accessibility.css';
@@ -49,6 +50,7 @@ const esc=(v:unknown)=>rawEsc(aliasText(String(v??'')));
 const evidence=$<HTMLDialogElement>('console'),conversation=$<HTMLDialogElement>('conversation'),guide=$<HTMLDialogElement>('guide'),inspector=$<HTMLDialogElement>('inspector'),resultsDialog=$<HTMLDialogElement>('results-dialog');
 let world:LabWorld,renderer:THREE.WebGLRenderer,labControls:LabCameraRig,recording:Recording|null=null,snapshot:RunSnapshot|null=null;
 let recordingManifests:RecordingManifest[]=[];
+let portraitFocusId='';
 let tick=0,playing=false,walking=false,pace=4,playbackMode:'highlights'|'full'=STATIC_SITE?'highlights':'full',highlightElapsed=0,highlightList:HighlightStop[]=[],currentDrawer:string|null=null,selectedAgent='',nearAgent='',bubbleAgent='',bubblePinned=false,bubbleExpanded=false,bubbleDismissedAgent='',bubbleRenderKey='',loadGeneration=0,experienceStarted=false,growActive=false,growStarted=0,coachId='',finaleAutoOpened=false;
 let barManuallyToggled=false,barAutoCollapsed=false,barStateBeforeAutoCollapse=false,coachDismissCleanup:(()=>void)|null=null;
 let yaw=0,pitch=0,drag=false,lastPointer={x:0,y:0},pointerStart:{x:number;y:number;canvas:boolean;pointerType:string}|null=null,toastTimer:ReturnType<typeof setTimeout>,momentTimer:ReturnType<typeof setTimeout>,coachTimer:ReturnType<typeof setTimeout>,announcedTick=0;
@@ -257,8 +259,8 @@ function renderStatusStrip(){
  syncKeyedNodes(strip,tiles,'.status-tile[data-agent]');
  let hint=strip.querySelector<HTMLElement>('.status-scroll-hint');
  if(scientistCount){
-  if(!hint){hint=document.createElement('span');hint.className='status-scroll-hint';strip.appendChild(hint);}
-  const text=`${scientistCount} scientist${scientistCount===1?'':'s'} ›`;if(hint.textContent!==text)hint.textContent=text;
+  if(!hint){hint=document.createElement('span');hint.className='status-scroll-hint';hint.setAttribute('aria-hidden','true');strip.appendChild(hint);}
+  if(hint.textContent!=='›')hint.textContent='›';
   if(strip.lastElementChild!==hint)strip.appendChild(hint);
  }else hint?.remove();
  strip.hidden=!roster.length;alignStatusStrip();
@@ -315,7 +317,10 @@ function renderResultsPanel(){
  $('results-title').textContent=`RUN RESULTS · ${summary.status.toUpperCase()}`;
  $('results-content').innerHTML=`${badgeHtml}<h2>${esc(taskTitle(recording.manifest))}</h2><p class="result-metric">${esc(summary.metric)} · ${summary.direction==='maximize'?'higher is better':'lower is better'}</p><p class="result-baseline">Baseline ${value(summary.baseline)} → best dev result ${value(summary.best)}${delta}</p>${summary.winner?.commit?`<section class="result-winner"><h3>Winning change</h3><p><code>${esc(summary.winner.commit)}</code> · ${esc(summary.winner.agent)}</p><p class="result-winner-description">${esc(summary.winner.description)}</p></section>`:'<p>Baseline is the best result so far.</p>'}${held}<p class="result-totals">Kept ${summary.totals.kept} · discarded ${summary.totals.discarded} · crashed ${summary.totals.crashed}</p>${summary.proxyNote&&!summary.heldOut?.proxyNote?`<p class="proxy-note">${esc(summary.proxyNote)}</p>`:''}${summary.referenceNote&&!summary.heldOut?.referenceNote?`<p class="reference-note">${esc(summary.referenceNote)}</p>`:''}`;
 }
-function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();if(innerHeight<=500&&innerWidth>innerHeight){const sidebar=document.querySelector<HTMLElement>('.sidebar'),header=document.querySelector<HTMLElement>('header'),left=Math.max(8,(sidebar?.getBoundingClientRect().right??0)+8);strip.style.left=`${left}px`;strip.style.width=`${Math.max(0,innerWidth-left-8)}px`;strip.style.top=`${Math.max(68,(header?.getBoundingClientRect().bottom??58)+8)}px`;}else{const height=strip.getBoundingClientRect().height||56;strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-height-8)}px`;}strip.style.bottom='auto';strip.style.transform='none';}
+function updateStatusScrollCue(){const strip=$('status-strip');strip.dataset.scrollable=String(strip.scrollWidth>strip.clientWidth+1&&strip.scrollLeft+strip.clientWidth<strip.scrollWidth-1);}
+function alignStatusStrip(){const bar=document.querySelector<HTMLElement>('.replay-bar'),strip=$('status-strip');if(!bar||!strip)return;const rect=bar.getBoundingClientRect();if(innerHeight<=500&&innerWidth>innerHeight){const sidebar=document.querySelector<HTMLElement>('.sidebar'),header=document.querySelector<HTMLElement>('header'),left=Math.max(8,(sidebar?.getBoundingClientRect().right??0)+8);strip.style.left=`${left}px`;strip.style.width=`${Math.max(0,innerWidth-left-8)}px`;strip.style.top=`${Math.max(68,(header?.getBoundingClientRect().bottom??58)+8)}px`;}else{const height=strip.getBoundingClientRect().height||56;strip.style.left=`${rect.left}px`;strip.style.width=`${rect.width}px`;strip.style.top=`${Math.max(0,rect.top-height-8)}px`;}strip.style.bottom='auto';strip.style.transform='none';updateStatusScrollCue();}
+$('status-strip').addEventListener('scroll',updateStatusScrollCue,{passive:true});
+$('replay-intro').addEventListener('close',()=>{$('play').focus();updateDockAutoCollapse();});
 const replayBar=document.querySelector<HTMLElement>('.replay-bar');if(replayBar)new ResizeObserver(alignStatusStrip).observe(replayBar);
 window.addEventListener('resize',alignStatusStrip);
 function renderBubble(){
@@ -428,6 +433,11 @@ function startExperience(){
   setBarCollapsed(true);
  }
  renderControls();renderHUD();renderer.domElement.focus();
+ if(STATIC_SITE&&!CINEMA){
+  playing=false;renderControls();
+  showReplayIntro($<HTMLDialogElement>('replay-intro'),$<HTMLButtonElement>('intro-play'),$<HTMLButtonElement>('dismiss-replay-intro'),Boolean(recording),()=>{playing=true;renderControls();if(people().length)showNextCoach();scheduleAutoPin();});
+  return;
+ }
  if(people().length)showNextCoach();
  if(STATIC_SITE)scheduleAutoPin();
 }
@@ -437,7 +447,7 @@ function maybeStartStaticExperience(){
  setTimeout(()=>{$('loading').hidden=true;startExperience();},380);
 }
 function scheduleAutoPin(){
- if(!STATIC_SITE||autoPinTimer)return;
+ if(!STATIC_SITE||autoPinTimer||world.camera.aspect<.85)return;
  const events=['pointerdown','keydown','touchstart'] as const;
  const cancel=()=>{clearTimeout(autoPinTimer!);autoPinTimer=null;events.forEach(type=>document.removeEventListener(type,cancel,true));};
  events.forEach(type=>document.addEventListener(type,cancel,true));
@@ -535,7 +545,22 @@ function frameOnScientist(position:THREE.Vector3,wide=false){
  world.camera.position.z=THREE.MathUtils.clamp(world.camera.position.z,-12,11);
  world.camera.lookAt(focus);labControls.syncFromCamera();
 }
+function framePortraitReplay(blend=1){
+ if(!STATIC_SITE||world.camera.aspect>=.85||!portraitFocusId||walking||modal())return;
+ const poses=posesAt();
+ if(!poses.has(portraitFocusId)){
+  const subject=(people() as ArchivedAgent[]).find(agent=>!isSupportAgent(agent)&&poses.has(agent.id));
+  if(!subject)return;portraitFocusId=subject.id;
+ }
+ const pose=poses.get(portraitFocusId)!;
+ const view=portraitLabFrame(new THREE.Vector3(pose.x,0,pose.z),world.camera.aspect,world.camera.fov);
+ world.camera.position.lerp(view.position,blend);labControls.focus(view.target);
+}
 function frameOnSwarm(positions:THREE.Vector3[]){
+ if(STATIC_SITE&&world.camera.aspect<.85){
+  const poses=posesAt(),subject=(people() as ArchivedAgent[]).find(agent=>!isSupportAgent(agent)&&poses.has(agent.id));
+  if(subject){portraitFocusId=subject.id;framePortraitReplay();return;}
+ }
  const minX=Math.min(...positions.map(position=>position.x)),maxX=Math.max(...positions.map(position=>position.x)),minZ=Math.min(...positions.map(position=>position.z)),maxZ=Math.max(...positions.map(position=>position.z));
  const centerX=(minX+maxX)/2,centerZ=(minZ+maxZ)/2,spanX=maxX-minX,spanZ=maxZ-minZ,fov=THREE.MathUtils.degToRad(world.camera.fov),horizontalTangent=Math.tan(fov/2)*world.camera.aspect;
  const widthDistance=spanX/Math.max(.1,2*horizontalTangent),projectedHeight=2.6+spanZ*.26,heightDistance=projectedHeight/Math.max(.1,2*Math.tan(fov/2));
@@ -546,7 +571,8 @@ function focusScientist(id:string,fromAutoPin=false){
  const person=world.agentPositions?.().find(agent=>agent.id===id);if(!person)return;
  const focus=person.position.clone().add(new THREE.Vector3(0,2.1,0));
  if(!walking){
-  frameOnScientist(person.position,fromAutoPin);
+  if(STATIC_SITE&&world.camera.aspect<.85){portraitFocusId=id;framePortraitReplay();}
+  else frameOnScientist(person.position,fromAutoPin);
  }else if(walking){
   world.camera.lookAt(focus);const rotation=new THREE.Euler().setFromQuaternion(world.camera.quaternion,'YXZ');yaw=rotation.y;pitch=rotation.x;
  }
@@ -575,7 +601,7 @@ $('camera-mode').onclick=()=>setWalking(!walking);
 $('collapse-bar').onclick=()=>{barManuallyToggled=true;setBarCollapsed(!document.body.classList.contains('bar-collapsed'));};
 setBarCollapsed(compactDock(innerWidth,innerHeight));updateDockAutoCollapse();
 window.addEventListener('resize',()=>{if(!barManuallyToggled)setBarCollapsed(compactDock(innerWidth,innerHeight));updateDockAutoCollapse();});
- $('timeline').oninput=()=>{playing=false;playbackMode='full';$<HTMLSelectElement>('replay-mode').value='full';seek(Number($<HTMLInputElement>('timeline').value));announcedTick=tick;finishCoach('scrub');};
+ $('timeline').oninput=()=>{playing=false;playbackMode='full';$<HTMLSelectElement>('replay-mode').value='full';seek(Number($<HTMLInputElement>('timeline').value));framePortraitReplay();announcedTick=tick;finishCoach('scrub');};
 $<HTMLSelectElement>('replay-mode').onchange=()=>{playbackMode=$<HTMLSelectElement>('replay-mode').value as 'highlights'|'full';const startTick=recording&&STATIC_SITE&&playbackMode==='highlights'?firstScientistTick(recording):0;tick=startTick;highlightElapsed=0;highlightList=recording?highlightStops(recording,startTick):[];seek(startTick);playing=!!recording;renderControls();};
 $('go-live').onclick=()=>{if(!recording?.manifest.live)return;conversation.close();if(walking)setWalking(false);playing=true;seek(recording.manifest.totalTicks);announce();};
 $('pace').onchange=()=>{pace=Number($<HTMLSelectElement>('pace').value);};
@@ -619,14 +645,14 @@ else setInterval(async()=>{if(polling)return;polling=true;const current=recordin
 function updateWorld(time:number){const positions=posesAt(),present=people(),captions=discussionAt(recording?.events||[],tick,present,aliasText,100);world.update(time,{progress:snapshot?.progress||0,boredom:0,running:playing||CINEMA,replay:true,finale:finaleReached(recording,tick),reducedMotion:reducedMotion,agents:present.map(a=>({...a,boredom:a.boredom==null?null:boredomPercent(a.boredom),regime:a.boredomSpectrum?.regime,state:positions.get(a.id)?.atLab?'working':a.state,stationId:positions.get(a.id)?.atTable?'culture':replayStation({...a,state:'working',activity:'experimenting'}),discussionBrief:!CINEMA&&positions.get(a.id)?.atTable?captions.get(a.id)?.brief:undefined,discussionPeers:captions.get(a.id)?.peers,ideaBrief:CINEMA?undefined:ideaBrief(aliasText(a.lastIdea||a.lastQuestion||a.lastObservation||'')),position:finaleReached(recording,tick)?undefined:positions.get(a.id)}))});}
 function blocked(x:number,z:number){const r=.34,b=world.bounds;return x<b.minX+r||x>b.maxX-r||z<b.minZ+r||z>b.maxZ-r||world.colliders.some(c=>x>c.minX-r&&x<c.maxX+r&&z>c.minZ-r&&z<c.maxZ+r);}
 for(const b of document.querySelectorAll<HTMLElement>('[data-move]')){b.onpointerdown=e=>{b.setPointerCapture(e.pointerId);pressed.add(b.dataset.move!);};for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>pressed.delete(b.dataset.move!));}
-window.addEventListener('keydown',e=>{if(e.code==='Escape'){if(bubbleExpanded){bubbleExpanded=false;bubbleRenderKey='';updateDockAutoCollapse();return;}if(bubblePinned||bubbleAgent){dismissBubble();unlock();return;}conversation.close();closeDrawer();unlock();}if(modal()||(e.target instanceof HTMLElement&&e.target.closest('input,select,textarea,[contenteditable=true]')))return;if(e.code==='KeyE'&&!e.repeat&&bubbleAgent){e.preventDefault();expandBubble();return;}if(e.code==='Enter'&&bubbleAgent&&!(e.target instanceof HTMLElement&&e.target.closest('button,a'))){e.preventDefault();expandBubble();}if(['KeyW','KeyA','KeyS','KeyD',...(!walking?['KeyQ','KeyE']:[]),'ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();pressed.add(e.code);});window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',()=>{pressed.clear();drag=false;pointerStart=null;playing=false;renderControls();});
+window.addEventListener('keydown',e=>{if(e.code==='Escape'){if(bubbleExpanded){bubbleExpanded=false;bubbleRenderKey='';updateDockAutoCollapse();return;}if(bubblePinned||bubbleAgent){dismissBubble();unlock();return;}conversation.close();closeDrawer();unlock();}if(modal()||(e.target instanceof HTMLElement&&e.target.closest('input,select,textarea,[contenteditable=true]')))return;if(e.code==='KeyE'&&!e.repeat&&bubbleAgent){e.preventDefault();expandBubble();return;}if(e.code==='Enter'&&bubbleAgent&&!(e.target instanceof HTMLElement&&e.target.closest('button,a'))){e.preventDefault();expandBubble();}if(['KeyW','KeyA','KeyS','KeyD',...(!walking?['KeyQ','KeyE']:[]),'ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){portraitFocusId='';e.preventDefault();}pressed.add(e.code);});window.addEventListener('keyup',e=>pressed.delete(e.code));window.addEventListener('blur',()=>{pressed.clear();drag=false;pointerStart=null;playing=false;renderControls();});
 try{
  world=createWorld();growStarted=performance.now();growActive=true;document.body.classList.add('world-growing');world.grow?.(0);renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance',preserveDrawingBuffer:CINEMA});renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<760?2:1.5));renderer.setSize(innerWidth,innerHeight);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=world.exposure??1;renderer.outputColorSpace=THREE.SRGBColorSpace;$('world').appendChild(renderer.domElement);renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Lab viewport. Pause and walk inside to meet the researchers.');world.camera.rotation.order='YXZ';
  labControls=new LabCameraRig(world.camera);
  setWalking(false);
  renderer.domElement.onclick=()=>{if(walking&&!modal()&&!conversation.open&&!bubblePinned)try{renderer.domElement.requestPointerLock?.()?.catch(()=>{});}catch{}};
-renderer.domElement.onpointerdown=e=>{if(modal())return;drag=true;lastPointer={x:e.clientX,y:e.clientY};pointerStart={x:e.clientX,y:e.clientY,canvas:e.target===renderer.domElement,pointerType:e.pointerType};if(!walking)renderer.domElement.setPointerCapture(e.pointerId);};renderer.domElement.onpointermove=e=>{if(!drag||document.pointerLockElement||modal())return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;if(walking){({yaw,pitch}=mouseLook(yaw,pitch,dx,dy));}else labControls.dragBy(dx,dy);lastPointer={x:e.clientX,y:e.clientY};};renderer.domElement.onpointercancel=()=>{drag=false;pointerStart=null;};window.addEventListener('pointerup',e=>{if(pointerStart?.canvas&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)<10&&!modal()){const camera=world.camera;camera.updateMatrixWorld();let nearest:{id:string;distance:number}|null=null;for(const person of world.agentPositions?.()||[]){if(!people().some(a=>a.id===person.id))continue;const point=person.position.clone().add(new THREE.Vector3(0,2.35,0)),local=point.clone().applyMatrix4(camera.matrixWorldInverse);if(local.z>=0)continue;point.project(camera);const x=(point.x+1)*innerWidth/2,y=(1-point.y)*innerHeight/2,distance=Math.hypot(e.clientX-x,e.clientY-y),threshold=pointerStart.pointerType==='touch'?84:64;if(distance<threshold&&(!nearest||distance<nearest.distance))nearest={id:person.id,distance};}if(nearest)focusScientist(nearest.id);else{bubbleAgent='';bubblePinned=false;bubbleExpanded=false;bubbleRenderKey='';updateDockAutoCollapse();}}pointerStart=null;drag=false;});document.addEventListener('mousemove',e=>{if(document.pointerLockElement&&walking&&!modal()){({yaw,pitch}=mouseLook(yaw,pitch,e.movementX,e.movementY));}});
- const fit=()=>{world.camera.aspect=innerWidth/innerHeight;world.camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);};window.onresize=fit;visualViewport?.addEventListener('resize',fit);addEventListener('orientationchange',fit);
+renderer.domElement.onpointerdown=e=>{if(modal())return;drag=true;lastPointer={x:e.clientX,y:e.clientY};pointerStart={x:e.clientX,y:e.clientY,canvas:e.target===renderer.domElement,pointerType:e.pointerType};if(!walking)renderer.domElement.setPointerCapture(e.pointerId);};renderer.domElement.onpointermove=e=>{if(!drag||document.pointerLockElement||modal())return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;if(walking){({yaw,pitch}=mouseLook(yaw,pitch,dx,dy));}else{portraitFocusId='';labControls.dragBy(dx,dy);}lastPointer={x:e.clientX,y:e.clientY};};renderer.domElement.onpointercancel=()=>{drag=false;pointerStart=null;};window.addEventListener('pointerup',e=>{if(pointerStart?.canvas&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)<10&&!modal()){const camera=world.camera;camera.updateMatrixWorld();let nearest:{id:string;distance:number}|null=null;for(const person of world.agentPositions?.()||[]){if(!people().some(a=>a.id===person.id))continue;const point=person.position.clone().add(new THREE.Vector3(0,2.35,0)),local=point.clone().applyMatrix4(camera.matrixWorldInverse);if(local.z>=0)continue;point.project(camera);const x=(point.x+1)*innerWidth/2,y=(1-point.y)*innerHeight/2,distance=Math.hypot(e.clientX-x,e.clientY-y),threshold=pointerStart.pointerType==='touch'?84:64;if(distance<threshold&&(!nearest||distance<nearest.distance))nearest={id:person.id,distance};}if(nearest)focusScientist(nearest.id);else{bubbleAgent='';bubblePinned=false;bubbleExpanded=false;bubbleRenderKey='';updateDockAutoCollapse();}}pointerStart=null;drag=false;});document.addEventListener('mousemove',e=>{if(document.pointerLockElement&&walking&&!modal()){({yaw,pitch}=mouseLook(yaw,pitch,e.movementX,e.movementY));}});
+ const fit=()=>{world.camera.aspect=innerWidth/innerHeight;if(STATIC_SITE&&!CINEMA)world.camera.fov=innerWidth<760?62:48;world.camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(STATIC_SITE&&experienceStarted&&!CINEMA&&!walking){const positions=[...posesAt().values()].map(pose=>new THREE.Vector3(pose.x,0,pose.z));if(positions.length)frameOnSwarm(positions);}};window.onresize=fit;visualViewport?.addEventListener('resize',fit);addEventListener('orientationchange',fit);
  let previous=performance.now(),lastTick=-1;const direction=new THREE.Vector3();
  function frame(){requestAnimationFrame(frame);const now=performance.now(),dt=Math.min((now-previous)/1000,.1);previous=now;
   if(CINEMA){if(cinema){if(!CINEMA_CAPTURE)cinema.render(((now-cinemaStart)/1000)%cinema.duration);}else renderer.render(world.scene,world.camera);return;}
@@ -639,7 +665,7 @@ renderer.domElement.onpointerdown=e=>{if(modal())return;drag=true;lastPointer={x
    if(Math.floor(tick)!==lastTick){seek(tick);lastTick=Math.floor(tick);announce();}else renderControls();
   }
   const camera=world.camera;
-  if(!walking&&!modal()&&!conversation.open)labControls.update(dt,pressed);
+  if(!walking&&!modal()&&!conversation.open){framePortraitReplay(reducedMotion?1:Math.min(1,dt*5));labControls.update(dt,pressed);}
   if(walking&&!modal()){({yaw,pitch}=keyboardLook(yaw,pitch,dt,pressed));const forward=Number(pressed.has('KeyW'))-Number(pressed.has('KeyS')),side=Number(pressed.has('KeyD'))-Number(pressed.has('KeyA'));if(forward||side){const speed=((pressed.has('ShiftLeft')||pressed.has('ShiftRight'))?5.6:3.5)*dt/Math.hypot(forward,side),dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;if(!blocked(camera.position.x+dx,camera.position.z))camera.position.x+=dx;if(!blocked(camera.position.x,camera.position.z+dz))camera.position.z+=dz;}camera.rotation.set(pitch,yaw,0,'YXZ');}
   updateWorld(tick*(recording?.manifest.tickDurationMs||700)/1000);
   if(experienceStarted&&!coachId&&people().length&&!modal())showNextCoach();

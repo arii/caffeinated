@@ -2,6 +2,11 @@ import * as THREE from 'three';
 // Both lab and ground views use Three's YXZ camera angles.
 export const LOOK_SENSITIVITY=.003;
 export const MAX_LOOK_PITCH=1.2;
+export function portraitLabFrame(subject:THREE.Vector3,aspect:number,fov:number){
+ const tangent=Math.tan(THREE.MathUtils.degToRad(fov/2))*Math.max(.2,aspect);
+ const distance=Math.max(3.8,1.15/(tangent*.8)),direction=subject.z>4?-1:1;
+ return {position:new THREE.Vector3(THREE.MathUtils.clamp(subject.x,-10,10),3.6,THREE.MathUtils.clamp(subject.z+direction*distance,-11.5,11.5)),target:subject.clone().add(new THREE.Vector3(0,1.35,0))};
+}
 export function mouseLook(yaw:number,pitch:number,dx:number,dy:number){
  return {yaw:yaw-dx*LOOK_SENSITIVITY,pitch:THREE.MathUtils.clamp(pitch-dy*LOOK_SENSITIVITY,-MAX_LOOK_PITCH,MAX_LOOK_PITCH)};
 }
