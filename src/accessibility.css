@@ -22,10 +22,10 @@ body.bar-collapsed #timeline{height:44px}
 .status-role,.bubble-heading,.bubble-role,.bubble-mood,.bubble-idea,.bubble-activity,.bubble-card .now-card,.orchestration-legend-note{font-size:12px!important}
 #proximity .bubble-card button{font-size:12px!important}
 .coach-mark button{width:44px;height:44px;min-width:44px;min-height:44px}
+header .top-right,header .header-actions,header .header-actions button{pointer-events:auto}
 @media(max-width:750px) and (orientation:portrait){
  header{justify-content:flex-start}
  .brand{justify-content:flex-start}
- header .top-right,header .header-actions,header .header-actions button{pointer-events:auto}
  body.static-site .sidebar{left:8px;right:8px;transform:none}
  body.static-site .sidebar button{flex:1;min-width:44px;width:auto}
  body.bar-collapsed .replay-bar{grid-template-columns:54px minmax(0,1fr) auto 44px;grid-template-areas:"play timeline round expand";gap:4px;padding:4px}
