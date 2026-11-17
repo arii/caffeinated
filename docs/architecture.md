@@ -3,7 +3,7 @@
 Caffeinated runs **Artificial Scientist Swarms**: groups of LLM agents that
 propose, test and verify research changes against a frozen evaluator, steered
 by a deterministic Boredom Meter. Everything runs on CPU; no model is trained.
-Track 3 check (exploratory): on 18 held-out bixbench_numeric questions a single agent (arm S) scored 0.296 vs 0.056 for the boredom swarm (arm B) over 3 seeds, but that ordering depends on a held-out grader fix made after the winners were known (S 0.074, B 0.056 under the earlier grader). Not significance-tested; see experiments/confirmatory/RESULTS.md. The swarm has not shown a measured benefit over a single agent.
+Track 3 check (exploratory): on 18 held-out bixbench_numeric questions a single agent (arm S) scored 0.296 vs 0.056 for the boredom swarm (arm B) over 3 seeds, but that ordering depends on a held-out grader fix made after the winners were known (S 0.074, B 0.056 under the earlier grader). The reported sign-flip tests are not statistically significant; see [the full comparison](../experiments/confirmatory/RESULTS.md). The swarm has not shown a measured benefit over a single agent.
 
 ```mermaid
 flowchart TB

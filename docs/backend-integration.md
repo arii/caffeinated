@@ -36,7 +36,7 @@ ZIP imports still work exactly as before:
 LAB_RECORDINGS_ZIP=/absolute/path/to/backend-export.zip npm run dev
 ```
 
-ZIPs contain `runs/<id>/manifest.json`, `events.ndjson` and optional `entities/*.json`. The default sample ZIP remains enabled alongside directories. Directory runs win ID collisions (later configured directories win each other); if a directory run is invalid, a ZIP copy remains available. ZIPs are cached at startup, so replacing a ZIP still requires an API restart. Directory changes do not.
+ZIPs contain `runs/<id>/manifest.json`, `events.ndjson` and optional `entities/*.json`. The default `data/replays/ignobel-real-runs.zip` remains enabled alongside directories. Directory runs win ID collisions (later configured directories win each other); if a directory run is invalid, a ZIP copy remains available. ZIPs are cached at startup, so replacing a ZIP still requires an API restart. Directory changes do not.
 
 Inspect these endpoints during integration:
 
@@ -173,4 +173,4 @@ In the browser, check Archive selection, a first proposal/lightbulb, an experime
 | `src/variants/lab.ts` | Robot/world rendering; consumes state, never schedules experiments |
 | `src/main.ts` | Archive selection, cameras, interactions, evidence presentation |
 
-For the broader proposed producer model, see [swarm-viewer-api.md](swarm-viewer-api.md). It includes future `/api/v1` endpoints; this branch currently implements the two `/api/recordings` endpoints described above.
+For the broader proposed producer model, see [swarm-viewer-api.md](swarm-viewer-api.md). It includes future `/api/v1` endpoints; the replay adapter implements recording listing and detail, delta updates at `/api/recordings/{run_id}/delta`, and evidence retrieval at `/api/recordings/{run_id}/artifacts/{artifact_path}`. See `backend/app.py` for the route definitions.

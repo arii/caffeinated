@@ -126,7 +126,7 @@ To build a good profile:
 
 ## 6. Open questions
 
-- **Satiation:** after the best is found, the meter stays in SNAP (exploring) until the budget runs out. A "converged" state for when every cell has been visited and B stays high would save compute.
+- **Satiation:** closed-ended profiles already enter `CONVERGED` when required cells have been covered and the frontier has stalled for three patience windows. The gate then permits exact confirmation of the best. Open-ended profiles disable this rule; calibrating when to stop remains domain-dependent.
 - **Free-text fallback:** for agents that cannot fill in a descriptor, use deterministic shingle/MinHash similarity over a normalized description. It is less faithful than descriptors, so keep it as a fallback only.
 - **Calibration:** set `eps` from replicate runs, and `patience` and `k` from the cost of a single experiment.
 
