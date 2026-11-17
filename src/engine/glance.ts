@@ -47,13 +47,13 @@ const finite=(value:unknown):value is number=>typeof value==='number'&&Number.is
 const clamp=(value:number)=>Math.max(0,Math.min(1,value));
 export interface TileMetric{best:number|null;progress:number|null;kept:number;discarded:number;crashed:number;spark:number[]}
 export interface GateCounts{confirmed:number;tested:number}
-export const gateCountExplanation='Zero loss passed the preregistered gates; tested counts finite candidate results.';
+export const gateCountExplanation='Passed means zero loss on the preregistered checks; test totals exclude the baseline and missing results.';
 export function tileGateCounts(results:readonly GlanceResult[],agentId:string,agentName:string):GateCounts{
  const matching=(r:GlanceResult)=>r.agent===agentId||r.agent===agentName||r.agentId===agentId;
  const rows=results.filter(r=>matching(r)&&outcomeOf(r.status,r.kind)!=='baseline'&&finite(r.value));
  return {confirmed:rows.filter(r=>r.value===0).length,tested:rows.length};
 }
-export function tileGateLabel(counts:GateCounts){return `${counts.confirmed} gate-confirmed / ${counts.tested} tested`;}
+export function tileGateLabel(counts:GateCounts){return `${counts.confirmed} of ${counts.tested} tests passed`;}
 export function staffStripLabel(type:string,events:readonly ReplayEvent[],tick:number){
  const reached=events.filter(e=>e.tick<=tick);
  if(type==='conductor'){

@@ -70,8 +70,9 @@ test('pre-committee tiles count only scored non-baseline rows with zero loss',()
  ];
  const counts=tileGateCounts(rows,'a','Kitchen Physics Lab');
  assert.deepEqual(counts,{confirmed:1,tested:2});
- assert.equal(tileGateLabel(counts),'1 gate-confirmed / 2 tested');
- assert.match(gateCountExplanation,/Zero loss passed the preregistered gates/);
+ assert.equal(tileGateLabel(counts),'1 of 2 tests passed');
+ assert.equal(tileGateLabel({confirmed:0,tested:0}),'0 of 0 tests passed');
+ assert.match(gateCountExplanation,/zero loss on the preregistered checks/);
 });
 
 test('staff strip labels follow reached rounds and critic reviews',()=>{

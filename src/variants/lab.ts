@@ -348,7 +348,8 @@ export function createWorld(): LabWorld {
       w.sign.position.set(w.group.position.x,2.28,w.group.position.z);w.sign.lookAt(camera.position);
       w.activity.position.set(w.group.position.x,2.85,w.group.position.z);
       const moving=!!next||!!a.position?.moving,meterKey=`${a.boredom==null?'-':Math.round(a.boredom)}:${a.regime||''}`;
-      if(w.meterKey!==meterKey){w.meterKey=meterKey;drawMeter(w.meter,a.boredom,regimeLabel(a.regime).label);}
+      w.meter.visible=a.boredom!=null&&Number.isFinite(a.boredom);
+      if(w.meter.visible&&w.meterKey!==meterKey){w.meterKey=meterKey;drawMeter(w.meter,a.boredom,regimeLabel(a.regime).label);}
       w.meter.position.set(w.group.position.x,2.5,w.group.position.z);
       w.group.position.y=finale?(state.reducedMotion?0:.12+Math.abs(Math.sin(time*3+index))*.18):moving?Math.abs(Math.sin(time*fx.bobHz+index))*fx.bob:0;if(finale&&!state.reducedMotion)w.group.rotation.y+=dt*.35;w.group.rotation.x=fx.slump;
       w.zzz.visible=fx.zzz&&!moving;w.zzz.position.set(w.group.position.x+.32,1.95+(state.reducedMotion?0:(time*.35+index*.3)%1*.35),w.group.position.z);(w.zzz.material as THREE.SpriteMaterial).opacity=state.reducedMotion?.9:1-((time*.35+index*.3)%1)*.6;
