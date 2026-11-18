@@ -10,6 +10,11 @@ test('short labels retain descriptive accessible questions and touch devices get
  assert.ok(conversationQuestions.every(q=>q[2].length>=q[1].length));
  assert.equal(scientistHint(true),'Tap a scientist');assert.equal(scientistHint(false),'Click a scientist');
 });
+test('short landscape lets DOING scroll away instead of covering research steps',()=>{
+ const css=readFileSync(new URL('../src/accessibility.css',import.meta.url),'utf8');
+ assert.match(css,/@media\(max-height:500px\) and \(orientation:landscape\)\{[^@]*\.conversation-doing\{position:static\}/);
+ assert.match(css,/@media\(max-height:350px\) and \(orientation:landscape\)\{[^@]*\.conversation-person\{padding-top:0;min-height:44px\}/);
+});
 test('selection ring follows only the inspected robot and clears on close or absent selection',()=>{
  const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  const context={THREE,selectionRing:null,selectedAgent:'scientist',conversation:{open:true},world:{scene:new THREE.Scene(),camera:new THREE.PerspectiveCamera(),agentPositions:()=>[{id:'scientist',position:new THREE.Vector3(2,0,3)}]}};
