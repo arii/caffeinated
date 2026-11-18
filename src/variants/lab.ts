@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {ZONE_BACKGROUND,ZONE_TEXT,zoneLabelView} from '../engine/zoneLabels.ts';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { LabWorld, LabState, Collider } from '../engine/types';
 import {robotAppearance} from '../engine/robots.ts';
@@ -45,9 +46,11 @@ export function createWorld(): LabWorld {
     ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`500 ${size}px sans-serif`;
     lines.forEach((s,i)=>ctx.fillText(s,512,canvas.height/2+(i-(lines.length-1)/2)*size*1.3));
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-    const m=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide});
-    const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);mesh.position.set(x,y,z);mesh.rotation.y=rotation;scene.add(mesh);return mesh;
+    const m=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide,toneMapped:false,fog:false});
+    const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);mesh.position.set(x,y,z);mesh.rotation.y=rotation;mesh.userData.textHeight=size*w/1024;mesh.userData.label=text;scene.add(mesh);return mesh;
   };
+  const zoneLabels:THREE.Mesh[]=[];
+  const zoneLabel=(text:string,x:number,y:number,z:number,w:number,h:number,rotation=0)=>{const mesh=label(text,x,y,z,w,h,ZONE_BACKGROUND,ZONE_TEXT,rotation);mesh.name='zone-label';zoneLabels.push(mesh);return mesh;};
   const speechBubble=(name:string,text:string,peers:string[])=>{
     const canvas=document.createElement('canvas');canvas.width=960;canvas.height=360;
     const ctx=canvas.getContext('2d')!;
@@ -87,7 +90,7 @@ export function createWorld(): LabWorld {
   box(-7.9,2.25,12.7,7.5,4.5,.14,ivory);box(7.9,2.25,12.7,7.5,4.5,.14,ivory);
   for(const x of [-3.9,3.9])box(x,2.25,12.65,.12,4.5,.18,steel);
   box(0,2.25,12.8,7.7,4.5,.025,glass);
-  label('LAB ENVIRONMENT / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,'#f1ecdf','#425859',Math.PI);
+  zoneLabel('LAB ENVIRONMENT / RESEARCH COMMONS',0,4.1,12.55,6.6,.38,Math.PI);
   // Clear plaster ceiling with restrained task-light rails.
   for(const z of [-8,-1,6]) {
     box(0,4.35,z,20,.08,.07,charcoal);
@@ -165,8 +168,7 @@ export function createWorld(): LabWorld {
     const note=box(discussionX+Math.sin(angle)*.87,.979,discussionZ+Math.cos(angle)*.87,.28,.015,.21,paper);note.rotation.y=-angle;
   }
   cylinder(discussionX,.99,discussionZ,.19,.025,amber);
-  label('01   IDEATION ROUNDTABLE',discussionX,2.65,-7.2,4.7,.38);
-  label('SHARED QUESTIONS / GROUP DISCUSSION',discussionX,2.29,-7.19,4.7,.22,'#f5f4ec','#6b817d');
+  zoneLabel('01   IDEATION ROUNDTABLE',discussionX,2.65,-7.2,4.7,.5);
   // Physics: a large multimeter, connected probes, and a small circuit board.
   bench(5.4,-2.8,6.2,1.7);
   const meter=box(5.6,1.44,-2.85,1.08,.88,.30,amber);meter.rotation.x=-.12;
@@ -178,7 +180,7 @@ export function createWorld(): LabWorld {
   box(7.2,1.01,-2.8,.95,.055,.68,sage);
   for(let i=0;i<4;i++){box(6.9+i*.19,1.08,-2.8,.10,.09,.18,charcoal);box(6.9+i*.19,1.04,-2.8,.02,.018,.57,steel);}
   monitor(3.3,-3.08,'PHYSICS / MEASUREMENTS');
-  label('02   PHYSICS / ELECTRICAL BENCH',5.4,.62,-1.935,4.7,.25,'#fafaf6','#425859');
+  zoneLabel('02   PHYSICS / ELECTRICAL BENCH',5.4,.62,-1.935,4.7,.5);
   // Chemistry: colorful reagent bottles and flasks with visible liquid volumes.
   bench(.2,-10.6,5.8,1.5);monitor(-1.5,-10.8,'CHEMISTRY / REACTIONS');
   for(let i=0;i<5;i++){
@@ -186,10 +188,9 @@ export function createWorld(): LabWorld {
     cylinder(x,1.16,z,.13,.35,glass);cylinder(x,1.09,z,.115,.19,color);cylinder(x,1.40,z,.055,.15,glass);cylinder(x,1.49,z,.065,.045,charcoal);
   }
   rack(2.2,-10.9,blue);pipetteStand(.1,-11.05);
-  label('03   CHEMISTRY / REAGENT LAB',.2,2.65,-11.4,5.65,.32);
+  zoneLabel('03   CHEMISTRY / REAGENT LAB',.2,2.65,-11.4,5.65,.5);
   // Rear feature graphic and material sample panels.
-  label('LAB ENVIRONMENT',.15,3.82,-13.32,7.4,.8,'#f1ecdf','#3e5c59');
-  label('A WORKING LAB. A SHARED UNDERSTANDING.',.15,3.22,-13.31,7.4,.24,'#f1ecdf','#84958c');
+  zoneLabel('LAB ENVIRONMENT',.15,3.82,-13.32,7.4,.8);
   for(let i=0;i<5;i++)box(-2.2+i*1.12,2.68,-13.29,.85,.06,.02,i%2?sage:wood);
   // Biology: microscope, culture dishes, and enlarged cellular specimens.
   bench(-7.3,5.4,4.8,1.45);monitor(-8.6,5.18,'BIOLOGY / CELL CULTURES');microscope(-7.15,5.32);
@@ -201,13 +202,13 @@ export function createWorld(): LabWorld {
     }
   }
   rack(-5.55,5.15,blue);
-  label('04   BIOLOGY / CELLS & CULTURES',-7.3,.65,6.145,4.3,.25,'#fafaf6','#425859');
+  zoneLabel('04   BIOLOGY / CELLS & CULTURES',-7.3,.65,6.145,4.3,.5);
   // Tall storage, sink, and wall details.
   for(const z of [-9.9,-7.9,-5.9]){box(10.75,1.22,z,1.4,2.4,1.5,porcelain);box(10.02,1.22,z,.035,2.18,1.35,cabinetry);box(9.98,1.35,z+.42,.035,.43,.035,steel);collider(10.75,z,1.5,1.6);}
-  label('SAMPLE STORAGE',10.0,2.7,-7.9,3.6,.26,'#f1ecdf','#667d74',-Math.PI/2);
+  zoneLabel('SAMPLE STORAGE',10.0,2.7,-7.9,3.6,.26,-Math.PI/2);
   bench(9.3,7.2,3.7,1.35);box(9.5,.99,7.1,.8,.025,.6,steel);box(9.5,1.008,7.1,.63,.015,.46,charcoal);
   line(new THREE.Vector3(9.5,1.0,6.8),new THREE.Vector3(9.5,1.5,6.8),.025,steel);line(new THREE.Vector3(9.5,1.5,6.8),new THREE.Vector3(9.5,1.5,7.05),.025,steel);
-  label('WASH / RESET',9.3,.65,7.89,2.9,.22,'#fafaf6','#425859');
+  zoneLabel('WASH / RESET',9.3,.65,7.89,2.9,.22);
   // Steel stools, with soft sage upholstery.
   for(const [x,z] of [[3.7,-.5],[-7.5,7.7]]){
     cylinder(x,.66,z,.32,.12,sage);cylinder(x,.34,z,.045,.56,steel);
@@ -219,7 +220,7 @@ export function createWorld(): LabWorld {
   cylinder(0,.13,.5,1.85,.26,darkWood);cylinder(0,.52,.5,1.7,.55,wood);
   cylinder(0,.84,.5,1.84,.1,porcelain);cylinder(0,.9,.5,1.62,.035,charcoal);
   collider(0,.5,3.7,3.7);
-  label('RECORDED RESEARCH / AGENT ACTIVITY',0,.64,2.23,2.5,.23,'#f1ecdf','#536b68');
+  zoneLabel('RECORDED RESEARCH / AGENT ACTIVITY',0,.64,2.23,3.8,.5);
   const field=new THREE.Group();field.position.set(0,.95,.5);scene.add(field);
   const fieldPoints:THREE.Mesh[]=[];
   for(let i=0;i<36;i++) {
@@ -238,8 +239,8 @@ export function createWorld(): LabWorld {
     }
     collider(x,-12.7,2.05,.75);
   }
-  label('DATASETS / SHARED KNOWLEDGE',-6.2,3.62,-12.36,2.9,.22);
-  label('MODELS / REFERENCE LIBRARY',6.2,3.62,-12.36,2.9,.22);
+  zoneLabel('DATASETS / SHARED KNOWLEDGE',-6.2,3.62,-12.36,2.9,.22);
+  zoneLabel('MODELS / REFERENCE LIBRARY',6.2,3.62,-12.36,2.9,.22);
 
   // Working agent avatars: cheerful cartoon robots, with hands reaching the tools.
   type Worker={id:string;station:string;head:THREE.Group;arm:THREE.Group;light:THREE.Mesh;group:THREE.Group;sign:THREE.Mesh;path:{x:number;z:number}[];target:string;activity:THREE.Sprite;activityState:string;idea:THREE.Mesh|null;ideaText:string;meter:THREE.Sprite;meterKey:string;zzz:THREE.Sprite;tint:number};
@@ -325,6 +326,7 @@ export function createWorld(): LabWorld {
   const bounds={minX:-11.15,maxX:11.15,minZ:-12.8,maxZ:12.05};
   function update(time:number,state:LabState){
     const dt=Math.max(0,Math.min(.05,time-lastTime));lastTime=time;
+    for(const sign of zoneLabels){const normal=new THREE.Vector3(0,0,1).applyQuaternion(sign.quaternion),view=zoneLabelView(camera,sign.position,normal,sign.userData.textHeight,innerHeight);sign.visible=view.visible;sign.scale.set(view.scale,view.scale,1);}
     field.rotation.y=time*(state.replay||state.running?.025:.006);
     fieldPoints.forEach((p,i)=>{p.visible=i<state.agents.length*4;p.position.y=.15+(i%5)*.11+Math.sin(time*.8+i)*.025;});
     const ids=new Set(state.agents.map(a=>a.id));

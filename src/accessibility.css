@@ -2,6 +2,15 @@
 .replay-heading button,.replay-heading a{pointer-events:auto}
 .sidebar small,.identity .eyebrow,.chip,.status-chip,.regime-chip,.warn-chip,.proxy-chip,.dialog-heading,.results-dialog .dialog-heading,dialog.character-popup .dialog-heading,#console .dialog-heading,kbd,.camera-hint,.orchestration-hint,.status-tile,.status-tile .turn-badge,.status-tile-name,.tile-metric,.panel-caption,.panel-caption>span,.agent-row small,.status-scroll-hint{font-size:12px}
 .replay-controls button,.replay-controls label select,#proximity button{min-height:44px}
+body:not(.bar-collapsed) .replay-controls{flex-wrap:wrap}
+body:not(.bar-collapsed) #tick-label{display:block;order:-1;flex-basis:100%;padding:8px 0;margin:0 0 4px;border-bottom:1px solid #b8ccc8;color:#f4f3ec;font-size:12px}
+body.static-site:not(.bar-collapsed) .replay-bar{max-height:min(420px,calc(100dvh - 86px))}
+body.static-site:not(.bar-collapsed) #status-strip{display:none!important}
+body.static-site:not(.bar-collapsed) .replay-bar :is(.replay-kicker,#replay-title,#camera-mode,#activity-caption,.run-meta,.run-meta span,.replay-controls label,.replay-controls select){font-size:12px}
+.timeline-legend{font-size:12px;color:#e3dbca;margin:6px 0 10px}
+body.bar-collapsed .timeline-legend{display:none}
+#collapse-bar{flex-direction:column;gap:0;padding:3px;font-size:12px;line-height:1.2}
+@media(max-height:500px) and (orientation:landscape){body.static-site:not(.bar-collapsed) .replay-bar{left:106px;right:8px;transform:none;width:auto!important}}
 body.static-site .sidebar small{display:block;font-size:11px;line-height:1.2;letter-spacing:0}
 body.static-site .sidebar button{width:70px;min-width:44px;min-height:44px}
 body.static-site .header-provenance .provenance-badge-chip{display:none}

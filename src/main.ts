@@ -1,3 +1,4 @@
+import {timelineMarkers} from './engine/timelineMarkers';
 import {conversationQuestions,conversationPlacement,scientistHint} from './engine/conversation';
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const mark=(e.target as Element).closest?.<SVGElement>('[data-orch-tick]');if(mark){e.preventDefault();mark.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
 import * as THREE from 'three';
@@ -155,9 +156,10 @@ function renderAgentList(){
 function setBarCollapsed(collapsed:boolean){
  document.body.classList.toggle('bar-collapsed',collapsed);
  $('collapse-bar').setAttribute('aria-expanded',String(!collapsed));
- $('collapse-bar').textContent=collapsed?'▴':'▾';
+ $('collapse-bar').innerHTML=`<span aria-hidden="true">${collapsed?'▴':'▾'}</span><span>${collapsed?'More':'Less'}</span>`;
+ $('collapse-bar').title=collapsed?'Expand playback panel':'Collapse playback panel';
  $('collapse-bar').setAttribute('aria-label',collapsed?'Expand playback panel':'Collapse playback panel');
- $('tick-label').textContent=collapsed?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+ $('tick-label').textContent=collapsed?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Round ${snapshot?.round??0} · tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
 }
 function updateRailState(){
  const active=evidence.open||inspector.open?'open-console':guide.open?'open-guide':conversation.open?'team-drawer':currentDrawer;
@@ -189,12 +191,13 @@ function renderControls(){
    syncBoredomMeter(gauge,value,'Swarm boredom');
    gauge.querySelector<HTMLElement>('span')!.style.width=`${value??0}%`;
    gauge.dataset.tone=value==null?'unknown':value>=65?'high':value>=35?'medium':'low';
+   gauge.title=value==null?'Swarm boredom: not measured':`Swarm boredom: ${value}%`;
   }
  $('open-results').hidden=!recording||(!STATIC_SITE&&!(finaleAutoOpened||finaleReached(recording,tick)));
  const live=liveButton(recording?.manifest,tick,playing,recording?.events||[]);$('go-live').hidden=live.hidden;$('go-live').textContent=live.label;$('go-live').classList.toggle('at-edge',live.atEdge);$('go-live').setAttribute('aria-label',live.atEdge?'Following live':'Jump to the live edge');
  $('play').textContent=playing?'Ⅱ Pause':'▶ Play';$('play').setAttribute('aria-label',playing?'Pause':'Play');
  $('camera-mode').textContent=walking?'Lab view ↗':'Walk inside ↗';$<HTMLButtonElement>('camera-mode').disabled=!recording||playing;
- $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=document.body.classList.contains('bar-collapsed')?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
+ $<HTMLInputElement>('timeline').value=String(tick);$('tick-label').textContent=document.body.classList.contains('bar-collapsed')?recording?.manifest.continuous?'Continuous session':`Round ${snapshot?.round??1}`:`Round ${snapshot?.round??0} · tick ${Math.floor(tick)} / ${recording?.manifest.totalTicks||0}`;
  $<HTMLInputElement>('timeline').setAttribute('aria-valuetext',`Round ${snapshot?.round??1} of ${snapshot?.config.rounds??recording?.manifest.time?.rounds??0}`);
  $<HTMLSelectElement>('replay-mode').value=playbackMode;
  const e=recording&&frameAt(recording.events,tick) as InspectEvent|undefined|null,caption=$('activity-caption'),eid=e?.refs?.experiment_id;
@@ -555,7 +558,7 @@ function frameOnScientist(position:THREE.Vector3,wide=false){
  world.camera.lookAt(focus);labControls.syncFromCamera();
 }
 function framePortraitReplay(blend=1){
- if(!STATIC_SITE||world.camera.aspect>=.85||!portraitFocusId||walking||modal())return;
+ if(!STATIC_SITE||world.camera.aspect>=.85||!portraitFocusId||walking||conversation.open||modal())return;
  const poses=posesAt();
  if(!poses.has(portraitFocusId)){
   const subject=(people() as ArchivedAgent[]).find(agent=>!isSupportAgent(agent)&&poses.has(agent.id));
@@ -630,7 +633,7 @@ async function attachRecording(id:string,preserve=false){
   $('replay-title').textContent=aliasText(taskTitle(data.manifest));
   $('overview-text').textContent=data.manifest.description||(data.manifest.live?'Research as it happens. Follow the swarm from inside the lab.':'Research as it happened. Explore the supplied recording.');
   $('provenance').textContent=data.manifest.description||(data.manifest.live?'Live swarm run':'Source recording · read-only replay');
-  $('timeline-markers').innerHTML=data.events.filter(e=>/experiment.finished|discovery|study.completed|award/.test(e.type)).map(e=>`<i${/discovery|award/.test(e.type)?' class="best"':''} style="left:${e.tick/Math.max(1,data.manifest.totalTicks)*100}%"></i>`).join('');
+  $('timeline-markers').innerHTML=timelineMarkers(data.events,data.manifest.totalTicks,data.frames).map(m=>`<i${m.best?' class="best"':''} title="${rawEsc(m.label)}" style="left:${m.percent}%"></i>`).join('');
   $<HTMLSelectElement>('run-picker').value=id;
   if(!preserve)setWalking(false);
   const target=preserve?reloadTick(savedTick,data.manifest,wasFollowing):openingTick(data.manifest);
@@ -667,7 +670,7 @@ try{
  setWalking(false);
  renderer.domElement.onclick=()=>{if(walking&&!modal()&&!conversation.open&&!bubblePinned)try{renderer.domElement.requestPointerLock?.()?.catch(()=>{});}catch{}};
 renderer.domElement.onpointerdown=e=>{if(modal())return;drag=true;lastPointer={x:e.clientX,y:e.clientY};pointerStart={x:e.clientX,y:e.clientY,canvas:e.target===renderer.domElement,pointerType:e.pointerType};if(!walking)renderer.domElement.setPointerCapture(e.pointerId);};renderer.domElement.onpointermove=e=>{if(!drag||document.pointerLockElement||modal())return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;if(walking){({yaw,pitch}=mouseLook(yaw,pitch,dx,dy));}else{portraitFocusId='';labControls.dragBy(dx,dy);}lastPointer={x:e.clientX,y:e.clientY};};renderer.domElement.onpointercancel=()=>{drag=false;pointerStart=null;};window.addEventListener('pointerup',e=>{if(pointerStart?.canvas&&Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)<10&&!modal()){const camera=world.camera;camera.updateMatrixWorld();let nearest:{id:string;distance:number}|null=null;for(const person of world.agentPositions?.()||[]){if(!people().some(a=>a.id===person.id))continue;const point=person.position.clone().add(new THREE.Vector3(0,2.35,0)),local=point.clone().applyMatrix4(camera.matrixWorldInverse);if(local.z>=0)continue;point.project(camera);const x=(point.x+1)*innerWidth/2,y=(1-point.y)*innerHeight/2,distance=Math.hypot(e.clientX-x,e.clientY-y),threshold=pointerStart.pointerType==='touch'?84:64;if(distance<threshold&&(!nearest||distance<nearest.distance))nearest={id:person.id,distance};}if(nearest)focusScientist(nearest.id);else{bubbleAgent='';bubblePinned=false;bubbleExpanded=false;bubbleRenderKey='';updateDockAutoCollapse();}}pointerStart=null;drag=false;});document.addEventListener('mousemove',e=>{if(document.pointerLockElement&&walking&&!modal()){({yaw,pitch}=mouseLook(yaw,pitch,e.movementX,e.movementY));}});
- const fit=()=>{world.camera.aspect=innerWidth/innerHeight;if(STATIC_SITE&&!CINEMA)world.camera.fov=innerWidth<760?62:48;world.camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(STATIC_SITE&&experienceStarted&&!CINEMA&&!walking){const positions=[...posesAt().values()].map(pose=>new THREE.Vector3(pose.x,0,pose.z));if(positions.length)frameOnSwarm(positions);}};window.onresize=fit;visualViewport?.addEventListener('resize',fit);addEventListener('orientationchange',fit);
+ const fit=()=>{world.camera.aspect=innerWidth/innerHeight;if(STATIC_SITE&&!CINEMA)world.camera.fov=innerWidth<760?62:48;world.camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(STATIC_SITE&&experienceStarted&&!CINEMA&&!walking&&!conversation.open){const positions=[...posesAt().values()].map(pose=>new THREE.Vector3(pose.x,0,pose.z));if(positions.length)frameOnSwarm(positions);}};window.onresize=fit;visualViewport?.addEventListener('resize',fit);addEventListener('orientationchange',fit);
  let previous=performance.now(),lastTick=-1;const direction=new THREE.Vector3();
  function frame(){requestAnimationFrame(frame);const now=performance.now(),dt=Math.min((now-previous)/1000,.1);previous=now;
   if(CINEMA){if(cinema){if(!CINEMA_CAPTURE)cinema.render(((now-cinemaStart)/1000)%cinema.duration);}else renderer.render(world.scene,world.camera);return;}
