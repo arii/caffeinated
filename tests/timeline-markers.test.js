@@ -18,7 +18,11 @@ test('recorded marks have keyboard-operable jump buttons, empty feedback and esc
  assert.doesNotMatch(timelineMarkerList([{...markers[0],label:'<unsafe>'}],v=>String(v).replaceAll('<','&lt;')),/<unsafe>/);
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.match(html,/aria-describedby="timeline-help"/);assert.match(html,/<summary id="timeline-help">/);assert.match(html,/<ol id="timeline-key-events" aria-label="Recorded timeline marks">/);
- const css=readFileSync(new URL('../src/accessibility.css',import.meta.url),'utf8');assert.match(css,/body\.static-site:not\(\.bar-collapsed\) \.replay-bar\{[^}]*overflow:auto/);
+ const css=readFileSync(new URL('../src/accessibility.css',import.meta.url),'utf8');
+ assert.match(css,/body:not\(\.bar-collapsed\) \.replay-bar\{[^}]*overflow:auto/);
+ assert.match(css,/\.timeline-legend ol\{[^}]*max-height:min\(180px,25dvh\);overflow:auto/);
+ assert.match(css,/\.replay-pinned\{position:sticky;top:0/);assert.match(css,/body\.bar-collapsed \.replay-pinned\{display:contents\}/);
+ assert.match(html,/<div class="replay-pinned"><div class="replay-heading">/);
 });
 test('real replay round transitions come from frames when no round events were published',()=>{
  const recording=JSON.parse(gunzipSync(readFileSync(new URL('../docs/recordings/f8fa53cc-6afd-5e98-9596-0c7b8711e718.json.gz',import.meta.url))));
