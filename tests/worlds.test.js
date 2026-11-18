@@ -97,3 +97,27 @@ test('3D boredom badges are hidden until a finite measurement exists and hide ag
   assert.equal(meters.length,1);assert.equal(meters[0].visible,boredom!=null&&Number.isFinite(boredom));
  }
 });
+
+test('nearer nameplates win collisions and hidden nameplates return after separation',()=>{
+ const world=createWorld();world.camera.position.set(0,2.28,8);world.camera.lookAt(0,2.28,0);
+ const agent={role:'worker',state:'working',stationId:'analyzer',boredom:40};
+ const far={...agent,id:'far',name:'Far',position:{x:0,z:0}},near={...agent,id:'near',name:'Near',position:{x:0,z:2}};
+ const state={progress:0,boredom:0,running:false,replay:true,agents:[far,near]};
+ world.update(0,state);
+ const signs=[];world.scene.traverse(o=>{if(o.userData.label==='FAR'||o.userData.label==='NEAR')signs.push(o);});
+ assert.equal(signs.find(s=>s.userData.label==='NEAR').visible,true);
+ assert.equal(signs.find(s=>s.userData.label==='FAR').visible,false);
+ world.update(0,{...state,agents:[{...far,position:{x:3,z:0}},near]});
+ assert.ok(signs.every(sign=>sign.visible));
+});
+
+test('one agent has a separated nameplate, meter and activity stack',()=>{
+ const world=createWorld();world.camera.position.set(0,2.28,8);world.camera.lookAt(0,2.28,0);
+ world.update(0,{progress:0,boredom:0,running:false,replay:true,agents:[{id:'stack',name:'Stack',role:'worker',state:'working',stationId:'analyzer',boredom:40,position:{x:0,z:0}}]});
+ const sign=world.scene.children.find(o=>o.userData.label==='STACK'),meter=world.scene.getObjectByName('boredom-meter');
+ const activity=world.scene.children.find(o=>o.isSprite&&o.visible&&o!==meter);
+ assert.ok(sign.visible&&meter.visible&&activity);
+ const signTop=sign.position.y+sign.geometry.parameters.height*sign.scale.y/2;
+ assert.ok(signTop<meter.position.y-meter.scale.y/2);
+ assert.ok(meter.position.y+meter.scale.y/2<activity.position.y-activity.scale.y/2);
+});

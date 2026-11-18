@@ -8,6 +8,7 @@ import {ROUNDTABLE,stationGoal} from '../engine/labLayout.ts';
 import {affect} from '../engine/affect.ts';
 import {boredomColor,regimeLabel} from '../engine/boredom.ts';
 import {growSchedule} from '../engine/introProgress.ts';
+import {annotationVisibility,type AnnotationRect} from '../engine/annotationLayout.ts';
 
 /** Lab Environment: Daylight instruments and cheerful robot researchers in a warm modular commons. */
 export function createWorld(): LabWorld {
@@ -304,7 +305,7 @@ export function createWorld(): LabWorld {
     box(.12,.93,.19,.20,.045,.015,accent,g);
     const sign=label(name.toUpperCase(),x,2.07,z+.16,.58,.18,'#f4f8fa','#31434b');
     g.userData.ownedMaterials=[shell,joints,robotBlue,orange,outline,faceMaterial,badge.material];g.userData.ownedTextures=[faceTexture,(badge.material as THREE.MeshBasicMaterial).map];
-    const activity=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));activity.scale.set(.8,.8,1);scene.add(activity);
+    const activity=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));activity.scale.set(.42,.42,1);scene.add(activity);
     const meter=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));meter.scale.set(.86,.215,1);meter.name='boredom-meter';scene.add(meter);
     const zzz=new THREE.Sprite(new THREE.SpriteMaterial({map:zzzTexture,transparent:true,depthTest:false}));zzz.scale.set(.5,.5,1);zzz.name='boredom-zzz';zzz.visible=false;scene.add(zzz);
     for(const m of [shell,joints,robotBlue,orange] as THREE.MeshStandardMaterial[])m.userData.baseColor=m.color.clone();
@@ -347,12 +348,12 @@ export function createWorld(): LabWorld {
       const fx=affect(a.boredom,state.reducedMotion),next=w.path[0];
       if(next){const dx=next.x-w.group.position.x,dz=next.z-w.group.position.z,d=Math.hypot(dx,dz);if(d<.07)w.path.shift();else{const speed=Math.min(d,dt*1.8*fx.walk);w.group.position.x+=dx/d*speed;w.group.position.z+=dz/d*speed;w.group.rotation.y=state.reducedMotion?Math.atan2(dx,dz):turnToward(w.group.rotation.y,Math.atan2(dx,dz),Math.max(.02,dt*6*fx.turn));}}
       else w.group.rotation.y=a.position?.heading??(a.stationId==='culture'?Math.atan2(ROUNDTABLE.x-w.group.position.x,ROUNDTABLE.z-w.group.position.z):Math.PI);
-      w.sign.position.set(w.group.position.x,2.28,w.group.position.z);w.sign.lookAt(camera.position);
-      w.activity.position.set(w.group.position.x,2.85,w.group.position.z);
+      w.sign.visible=true;w.sign.position.set(w.group.position.x,2.28,w.group.position.z);w.sign.lookAt(camera.position);
+      w.activity.position.set(w.group.position.x,3.02,w.group.position.z);
       const moving=!!next||!!a.position?.moving,meterKey=`${a.boredom==null?'-':Math.round(a.boredom)}:${a.regime||''}`;
       w.meter.visible=a.boredom!=null&&Number.isFinite(a.boredom);
       if(w.meter.visible&&w.meterKey!==meterKey){w.meterKey=meterKey;drawMeter(w.meter,a.boredom,regimeLabel(a.regime).label);}
-      w.meter.position.set(w.group.position.x,2.5,w.group.position.z);
+      w.meter.position.set(w.group.position.x,2.58,w.group.position.z);
       w.group.position.y=finale?(state.reducedMotion?0:.12+Math.abs(Math.sin(time*3+index))*.18):moving?Math.abs(Math.sin(time*fx.bobHz+index))*fx.bob:0;if(finale&&!state.reducedMotion)w.group.rotation.y+=dt*.35;w.group.rotation.x=fx.slump;
       w.zzz.visible=fx.zzz&&!moving;w.zzz.position.set(w.group.position.x+.32,1.95+(state.reducedMotion?0:(time*.35+index*.3)%1*.35),w.group.position.z);(w.zzz.material as THREE.SpriteMaterial).opacity=state.reducedMotion?.9:1-((time*.35+index*.3)%1)*.6;
       if(Math.abs(w.tint-fx.saturation)>.02){w.tint=fx.saturation;w.group.traverse(o=>{if(o instanceof THREE.Mesh&&o.material instanceof THREE.MeshStandardMaterial&&o.material.userData.baseColor){const base=o.material.userData.baseColor as THREE.Color,grey=base.r*.3+base.g*.59+base.b*.11;o.material.color.setRGB(grey+(base.r-grey)*fx.saturation,grey+(base.g-grey)*fx.saturation,grey+(base.b-grey)*fx.saturation);}});}
@@ -372,6 +373,11 @@ export function createWorld(): LabWorld {
       w.head.rotation.y=Math.sin(time*(fx.level==='frenetic'?.9:.32)+index)*(fx.level==='frenetic'?.12:.055);w.head.rotation.x=(working&&!next?.12:0)+fx.droop;
       w.light.scale.setScalar(working?1+Math.sin(time*2)*.12:1);
     });
+    camera.updateMatrixWorld();
+    const annotations=[...workers.values()].sort((a,b)=>a.group.position.distanceToSquared(camera.position)-b.group.position.distanceToSquared(camera.position)).flatMap(w=>[w.sign,w.meter,w.activity].filter(object=>object.visible));
+    const visibility=annotationVisibility(annotations.map(annotationRect));
+    annotations.forEach((object,index)=>{object.visible=visibility[index];});
+
     // Keep short archive speech legible at either camera height, with separate
     // screen lanes when speakers overlap from the current viewing angle.
     camera.updateMatrixWorld();
@@ -395,6 +401,27 @@ export function createWorld(): LabWorld {
     }
   }
 
+  function annotationRect(object:THREE.Mesh|THREE.Sprite):AnnotationRect|null{
+    object.updateWorldMatrix(true,false);
+    let corners:THREE.Vector3[];
+    if(object instanceof THREE.Sprite){
+      const position=new THREE.Vector3(),scale=new THREE.Vector3(),rotation=new THREE.Quaternion();object.matrixWorld.decompose(position,rotation,scale);
+      corners=[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]].map(([x,y])=>new THREE.Vector3(x*scale.x,y*scale.y,0).applyQuaternion(camera.quaternion).add(position));
+    }else{
+      object.geometry.computeBoundingBox();const bounds=object.geometry.boundingBox!;
+      corners=[[bounds.min.x,bounds.min.y],[bounds.max.x,bounds.min.y],[bounds.max.x,bounds.max.y],[bounds.min.x,bounds.max.y]].map(([x,y])=>new THREE.Vector3(x,y,0).applyMatrix4(object.matrixWorld));
+    }
+    if(corners.some(point=>point.clone().applyMatrix4(camera.matrixWorldInverse).z>=-camera.near))return null;
+    const projected=corners.map(point=>point.project(camera));
+    if(projected.every(point=>point.z>1||point.z< -1))return null;
+    return {
+      left:Math.max(0,Math.min(...projected.map(point=>(point.x+1)*innerWidth/2))),
+      right:Math.min(innerWidth,Math.max(...projected.map(point=>(point.x+1)*innerWidth/2))),
+      top:Math.max(0,Math.min(...projected.map(point=>(1-point.y)*innerHeight/2))),
+      bottom:Math.min(innerHeight,Math.max(...projected.map(point=>(1-point.y)*innerHeight/2))),
+    };
+  }
+
   const roomGroup=new THREE.Group();scene.add(roomGroup);
   const agentObjects=new Set<THREE.Object3D>([...workers.values()].flatMap(w=>[w.group,w.sign,w.activity,w.meter,w.zzz]));
   for(const child of [...scene.children])if(child!==roomGroup&&!agentObjects.has(child))roomGroup.add(child);
@@ -406,7 +433,7 @@ export function createWorld(): LabWorld {
       const value=schedule.agents[index]??1,bounce=value<.88?value/.88*1.08:1.08-(value-.88)/.12*.08;
       worker.group.scale.setScalar(bounce);
       worker.sign.scale.setScalar(bounce);
-      worker.activity.scale.set(.8*bounce,.8*bounce,1);
+      worker.activity.scale.set(.42*bounce,.42*bounce,1);
       worker.meter.scale.set(.86*bounce,.215*bounce,1);
       worker.zzz.scale.set(.5*bounce,.5*bounce,1);
     });
