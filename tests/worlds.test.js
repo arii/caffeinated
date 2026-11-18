@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {Box3,Vector3} from 'three';
+import {Box3,Vector3,FrontSide} from 'three';
 import {ROBOT_APPEARANCES,robotAppearance} from '../src/engine/robots.ts';
 import {createWorld} from '../src/variants/lab.ts';
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
@@ -25,6 +25,15 @@ test('Lab Environment: all stations are reachable and backend roster can change'
   w.update(16,empty);
   w.scene.traverse(o=>{assert.ok(Number.isFinite(o.position.x)&&Number.isFinite(o.position.y)&&Number.isFinite(o.position.z));});
   w.dispose?.();
+});
+
+test('architectural signage is never mirrored or an oversized close foreground obstruction',()=>{
+ const world=createWorld(),signs=[];world.scene.traverse(o=>{if(o.name==='zone-label')signs.push(o)});
+ assert.ok(signs.length>=10);assert.ok(signs.every(s=>s.material.side===FrontSide));
+ const sign=signs.find(s=>s.userData.label==='LAB ENVIRONMENT / RESEARCH COMMONS'),state={progress:0,boredom:0,running:false,agents:[]};
+ world.camera.position.set(0,4.1,13);world.camera.lookAt(0,4.1,0);world.update(0,state);assert.equal(sign.visible,false);
+ world.camera.position.set(0,4.1,12);world.update(0,state);assert.equal(sign.visible,false);
+ world.camera.position.set(0,4.1,4);world.camera.lookAt(sign.position);world.update(0,state);assert.equal(sign.visible,true);
 });
 
 test('paused replay freezes avatar and field poses at the same replay time',()=>{

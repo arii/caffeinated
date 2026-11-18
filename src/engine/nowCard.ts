@@ -8,36 +8,37 @@ export interface WhyContext{name:(id:string|null)=>string;metric?:{name:string;d
 const text=(v:unknown)=>typeof v==='string'&&v.trim()?v.replace(/\s+/g,' ').trim():'';
 const num=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)?v:null;
 const fmt=(v:number)=>String(Number(v.toPrecision(4)));
-const clip=(v:string,n=140)=>v.length>n?v.slice(0,n-1)+'…':v;
+const clip=(v:string,n=140)=>{if(v.length<=n)return v;const end=v.slice(0,n).search(/\s+\S*$/);return end>0?v.slice(0,end)+'…':v;};
 const list=(v:unknown)=>Array.isArray(v)?v.map(x=>text(typeof x==='string'?x:(x as {reason?:string})?.reason||JSON.stringify(x))).filter(Boolean):[];
 
 /** One plain-language line saying why this event happened or what it means. */
-export function eventWhy(e:InspectEvent,c:WhyContext):string{
+export function eventWhy(e:InspectEvent,c:WhyContext,fullText=false):string{
+ const summary=(v:string,n=140)=>fullText?v:clip(v,n);
  const p=e.payload||{},metric=c.metric?.name.replaceAll('_',' ')||'score';
  switch(e.type){
-  case 'verdict.issued':{const why=text(p.why)||text(p.reason);return p.accepted===true?`Critic approved${why?`: ${clip(why)}`:': the rerun reproduced the score'}`:p.accepted===false?`Critic rejected${why?`: ${clip(why)}`:": score didn't reproduce on rerun"}`:text(p.text);}
-  case 'gate.checked':{const reasons=list(p.reasons);if(p.pass===false)return `Novelty gate blocked: ${reasons.length?clip(reasons.join('; ')):'too close to an earlier idea'}`;const prior=Array.isArray(p.prior_art)?p.prior_art.length:0;return p.pass===true?`Novelty gate passed: the idea is new enough${prior?` (checked against ${prior} prior source${prior===1?'':'s'})`:''}`:text(p.text);}
-  case 'experiment.started':return `Testing: ${clip(text(p.description)||text(p.text).replace(/^Testing:\s*/,'')||'a new candidate')}`;
+  case 'verdict.issued':{const why=text(p.why)||text(p.reason);return p.accepted===true?`Critic approved${why?`: ${summary(why)}`:': the rerun reproduced the score'}`:p.accepted===false?`Critic rejected${why?`: ${summary(why)}`:": score didn't reproduce on rerun"}`:text(p.text);}
+  case 'gate.checked':{const reasons=list(p.reasons);if(p.pass===false)return `Novelty gate blocked: ${reasons.length?summary(reasons.join('; ')):'too close to an earlier idea'}`;const prior=Array.isArray(p.prior_art)?p.prior_art.length:0;return p.pass===true?`Novelty gate passed: the idea is new enough${prior?` (checked against ${prior} prior source${prior===1?'':'s'})`:''}`:text(p.text);}
+  case 'experiment.started':return `Testing: ${summary(text(p.description)||text(p.text).replace(/^Testing:\s*/,'')||'a new candidate')}`;
   case 'experiment.finished':{const v=num(p.metric_value),status=text(p.status).toLowerCase(),score=v==null?'':` ${metric} ${fmt(v)}`,best=c.best==null?'':` (best ${fmt(c.best)})`;
    if(/crash|error|fail|timeout/.test(status))return 'Crashed: the experiment failed to run';
    if(/keep|replicated|accept/.test(status)&&!/not_/.test(status))return `Kept:${score||' result'} beats the previous best`;
-   if(v==null&&status)return `${/reject|invalid|block/.test(status)?'Rejected before scoring':'Not scored'}${text(p.text)?`: ${clip(text(p.text))}`:''}`;
+   if(v==null&&status)return `${/reject|invalid|block/.test(status)?'Rejected before scoring':'Not scored'}${text(p.text)?`: ${summary(text(p.text))}`:''}`;
    return status?`Discarded:${score} didn't beat the best${best}`:text(p.text);}
-  case 'agent.assigned':{const role=text(p.role);return role?`Conductor assigned ${role}${text(p.rationale)?`: ${clip(text(p.rationale))}`:''}`:text(p.text);}
-  case 'round.started':{const r=regimeLabel(text(p.regime)).label;return `${e.round?`Round ${e.round} begins`:'New round'}${r?` · ${r}`:''}${text(p.rationale)?`: ${clip(text(p.rationale))}`:''}`;}
+  case 'agent.assigned':{const role=text(p.role);return role?`Conductor assigned ${role}${text(p.rationale)?`: ${summary(text(p.rationale))}`:''}`:text(p.text);}
+  case 'round.started':{const r=regimeLabel(text(p.regime)).label;return `${e.round?`Round ${e.round} begins`:'New round'}${r?` · ${r}`:''}${text(p.rationale)?`: ${summary(text(p.rationale))}`:''}`;}
   case 'boredom.measured':{const b=num(p.B);const r=regimeLabel(text(p.regime)).label;return b==null?text(p.text):`Boredom ${Math.round(b*100)}%${r?` · ${r}`:''}${b>.6?': repeating itself, ready to switch approach':b<.2?': still finding new things':''}`;}
-  case 'hypothesis.proposed':return `Idea: ${clip(text(p.text))}`;
-  case 'question.asked':{const kind=text(p.kind);return `${kind==='recall'?'Recalling memory':kind==='search'||kind==='exa'?'Searching the literature':'Asking'}: ${clip(text(p.text))}`;}
-  case 'observation.received':return `Read: ${clip(text(p.text)||text(p.summary))}`;
-  case 'message.sent':{const to=text(p.to_agent_id)||text(e.refs?.to_agent_id);return `${to?`To ${c.name(to)}`:'Message'}: ${clip(text(p.text))}`;}
-  case 'study.registered':return `Pre-registered: ${clip(text(p.question)||text(p.text))}`;
-  case 'study.result':return clip(text(p.text)||text(p.headline));
-  case 'discovery.made':{const v=num(p.metric_value);return `New best${v==null?'':`: ${metric} ${fmt(v)}`}${text(p.title)?` · ${clip(text(p.title),80)}`:''}`;}
+  case 'hypothesis.proposed':return `Idea: ${summary(text(p.text))}`;
+  case 'question.asked':{const kind=text(p.kind);return `${kind==='recall'?'Recalling memory':kind==='read'?'Reading the source':/^(search|dataset_search|exa)$/.test(kind)?'Searching the literature':'Asking'}: ${summary(text(p.text))}`;}
+  case 'observation.received':return `Read: ${summary(text(p.text)||text(p.summary))}`;
+  case 'message.sent':{const to=text(p.to_agent_id)||text(e.refs?.to_agent_id);return `${to?`To ${c.name(to)}`:'Message'}: ${summary(text(p.text))}`;}
+  case 'study.registered':return `Pre-registered: ${summary(text(p.question)||text(p.text))}`;
+  case 'study.result':return summary(text(p.text)||text(p.headline));
+  case 'discovery.made':{const v=num(p.metric_value);return `New best${v==null?'':`: ${metric} ${fmt(v)}`}${text(p.title)?` · ${summary(text(p.title),80)}`:''}`;}
   default:return '';
  }
 }
 
-export interface AgentNow{activity:string;latest:InspectEvent|null;blocked?:InspectEvent|null;experiment:ExperimentDetail|null;sources:SourceCard[];feed:{tick:number;why:string}[]}
+export interface AgentNow{activity:string;latest:InspectEvent|null;blocked?:InspectEvent|null;experiment:ExperimentDetail|null;sources:SourceCard[];feed:{tick:number;why:string;full?:string;kind?:string}[]}
 /** Everything the run has said about one agent by this tick. */
 export function agentNow(recording:Source|null|undefined,agentId:string,activity:string|undefined,tick:number,c:WhyContext):AgentNow{
  const own=(recording?.events||[]).filter(e=>e.tick<=tick&&e.agentId===agentId);
@@ -46,18 +47,18 @@ export function agentNow(recording:Source|null|undefined,agentId:string,activity
  const experiment=started&&!blocked?experimentDetail(recording,String(started.refs!.experiment_id),tick):null;
  const verdict=experiment&&(recording?.events||[]).filter(e=>e.tick<=tick&&e.type==='verdict.issued'&&e.refs?.experiment_id===experiment.id).at(-1);
  const feedEvents=[...own,...(verdict&&verdict.agentId!==agentId?[verdict]:[])].sort((a,b)=>a.tick-b.tick);
- const feed=feedEvents.map(e=>({tick:e.tick,why:eventWhy(e,c)})).filter(f=>f.why).slice(-6).reverse();
+ const feed=feedEvents.map(e=>({tick:e.tick,why:eventWhy(e,c),full:eventWhy(e,c,true),kind:e.type==='observation.received'||e.type==='question.asked'&&e.payload?.kind==='read'?'Read':e.type==='question.asked'&&/^(search|dataset_search|exa)$/.test(text(e.payload?.kind))?'Search':undefined})).filter(f=>f.why).slice(-6).reverse();
  return {activity:humanizeActivity(activity),latest:own.at(-1)||null,blocked,experiment,sources:sourceCards(recording,tick).filter(s=>s.agentId===agentId).slice(-3).reverse(),feed};
 }
 
-export function nowCardHtml(n:AgentNow,c:WhyContext&{esc:(v:unknown)=>string},metric?:{name:string;direction:string}){
+export function nowCardHtml(n:AgentNow,c:WhyContext&{esc:(v:unknown)=>string},metric?:{name:string;direction:string},showDoing=true){
  const e=c.esc,x=n.experiment,row=(label:string,body:string)=>body?`<div class="now-row"><b>${label}</b><div>${body}</div></div>`:'';
- const doing=n.latest?`${e(n.activity||'working')} · <span class="muted">${e(eventWhy(n.latest,c)||n.latest.type)}</span>`:e(n.activity||'Not active yet');
+ const doing=e(n.activity||'Not active yet');
  const idea=x?`${e(x.idea?.text||x.description||'')}${x.idea?.predictedDelta!=null?` <span class="pill">predicted Δ ${x.idea.predictedDelta>0?'+':''}${fmt(x.idea.predictedDelta)}</span>`:''}${x.descriptor?.mechanism?` <span class="pill">${e(String(x.descriptor.mechanism).replaceAll('_',' '))}${x.descriptor.method?` / ${e(String(x.descriptor.method).replaceAll('_',' '))}`:''}</span>`:''}`:'';
- const sources=n.sources.map(s=>`<button class="chip" data-source="${e(s.id)}">${e(clip(s.title,60))}</button>`).join('');
+ const sources=n.sources.map(s=>`<button class="chip" data-source="${e(s.id)}" title="${e(s.title)}">${e(clip(s.title,60))}</button>`).join('');
  const gate=n.blocked?`<span class="pill bad">blocked</span> ${e(list(n.blocked.payload?.reasons).join('; ')||'Too close to an earlier idea.')}`:x?.gate?`<span class="pill ${x.gate.pass?'ok':'bad'}">${x.gate.pass?'passed':x.gate.pass===false?'blocked':'checked'}</span> ${e(x.gate.reasons.length?x.gate.reasons.join('; '):x.gate.pass?'The idea is new enough to try.':'')}`:x?'<span class="muted">Not checked yet</span>':'';
  const verdict=x?.verdict?`<span class="pill ${/replicat|accept|approv/i.test(x.verdict.verdict||'')&&!/not_/i.test(x.verdict.verdict||'')?'ok':'bad'}">${e(x.verdict.verdict||'verdict')}</span> ${e(x.verdict.why||'')}`:x?.result?'<span class="muted">Waiting for the critic</span>':'';
  const m=metric?.name.replaceAll('_',' ')||'score',better=metric?.direction==='maximize'?'higher':'lower';
  const score=x?.result?`<span class="pill">${e(x.result.status||'done')}</span> ${x.result.metric==null?'':`${e(m)} ${fmt(x.result.metric)}`}${c.best==null?'':` · best so far ${fmt(c.best)} (${better} is better)`}`:x?'<span class="muted">Still running</span>':'';
- return `<div class="now-card">${row('Doing',doing)}${row('Idea',idea)}${row('Read',sources)}${row('Gate',gate)}${row('Score',score)}${row('Critic',verdict)}${x?`<button class="inspect-link" data-experiment="${e(x.id)}">Inspect experiment →</button>`:''}${n.feed.length?`<h4>Why, step by step</h4><ol class="why-feed">${n.feed.map(f=>`<li><span>${f.tick}</span>${e(f.why)}</li>`).join('')}</ol>`:''}</div>`;
+ return `<div class="now-card">${showDoing?row('Doing',doing):''}${row('Idea',idea)}${row('Read',sources)}${row('Gate',gate)}${row('Score',score)}${row('Critic',verdict)}${x?`<button class="inspect-link" data-experiment="${e(x.id)}">Inspect experiment →</button>`:''}${n.feed.length?`<h3>Why, step by step</h3><ol class="why-feed">${n.feed.map(f=>`<li title="${e(f.full||f.why)}">${f.kind?`<span class="step-kind" data-kind="${f.kind}">${f.kind}</span>`:''}${e(f.why)}</li>`).join('')}</ol>`:''}</div>`;
 }
