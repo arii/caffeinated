@@ -1,4 +1,4 @@
-import {timelineMarkers} from './engine/timelineMarkers';
+import {timelineMarkers,timelineMarkerList} from './engine/timelineMarkers';
 import {conversationQuestions,conversationPlacement,scientistHint} from './engine/conversation';
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const mark=(e.target as Element).closest?.<SVGElement>('[data-orch-tick]');if(mark){e.preventDefault();mark.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
 import * as THREE from 'three';
@@ -613,6 +613,7 @@ $('camera-mode').onclick=()=>setWalking(!walking);
 $('collapse-bar').onclick=()=>{barManuallyToggled=true;setBarCollapsed(!document.body.classList.contains('bar-collapsed'));};
 setBarCollapsed(compactDock(innerWidth,innerHeight));updateDockAutoCollapse();
 window.addEventListener('resize',()=>{if(!barManuallyToggled)setBarCollapsed(compactDock(innerWidth,innerHeight));updateDockAutoCollapse();});
+$('timeline-key-events').onclick=e=>{const mark=(e.target as Element).closest<HTMLButtonElement>('[data-marker-tick]');if(!mark)return;const slider=$<HTMLInputElement>('timeline');slider.value=mark.dataset.markerTick!;slider.dispatchEvent(new Event('input',{bubbles:true}));};
  $('timeline').oninput=()=>{playing=false;playbackMode='full';$<HTMLSelectElement>('replay-mode').value='full';seek(Number($<HTMLInputElement>('timeline').value));framePortraitReplay();announcedTick=tick;finishCoach('scrub');};
 $<HTMLSelectElement>('replay-mode').onchange=()=>{playbackMode=$<HTMLSelectElement>('replay-mode').value as 'highlights'|'full';const startTick=recording&&STATIC_SITE&&playbackMode==='highlights'?firstScientistTick(recording):0;tick=startTick;highlightElapsed=0;highlightList=recording?highlightStops(recording,startTick):[];seek(startTick);playing=!!recording;renderControls();};
 $('go-live').onclick=()=>{if(!recording?.manifest.live)return;conversation.close();if(walking)setWalking(false);playing=true;seek(recording.manifest.totalTicks);announce();};
@@ -633,7 +634,9 @@ async function attachRecording(id:string,preserve=false){
   $('replay-title').textContent=aliasText(taskTitle(data.manifest));
   $('overview-text').textContent=data.manifest.description||(data.manifest.live?'Research as it happens. Follow the swarm from inside the lab.':'Research as it happened. Explore the supplied recording.');
   $('provenance').textContent=data.manifest.description||(data.manifest.live?'Live swarm run':'Source recording · read-only replay');
-  $('timeline-markers').innerHTML=timelineMarkers(data.events,data.manifest.totalTicks,data.frames).map(m=>`<i${m.best?' class="best"':''} title="${rawEsc(m.label)}" style="left:${m.percent}%"></i>`).join('');
+  const marks=timelineMarkers(data.events,data.manifest.totalTicks,data.frames);
+  $('timeline-key-events').innerHTML=timelineMarkerList(marks,rawEsc);
+  $('timeline-markers').innerHTML=marks.map(m=>`<i${m.best?' class="best"':''} title="${rawEsc(m.label)}" style="left:${m.percent}%"></i>`).join('');
   $<HTMLSelectElement>('run-picker').value=id;
   if(!preserve)setWalking(false);
   const target=preserve?reloadTick(savedTick,data.manifest,wasFollowing):openingTick(data.manifest);

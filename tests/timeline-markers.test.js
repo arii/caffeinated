@@ -2,13 +2,22 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
-import {timelineMarkers} from '../src/engine/timelineMarkers.ts';
+import {timelineMarkers,timelineMarkerList} from '../src/engine/timelineMarkers.ts';
 test('timeline markers describe real round transitions and key event types',()=>{
  const markers=timelineMarkers([{type:'round.started',tick:10,round:2},{type:'experiment.finished',tick:20},{type:'discovery.made',tick:30},{type:'agent.assigned',tick:5}],100);
  assert.deepEqual(markers.map(m=>m.label),['Round 2 starts · tick 10','Experiment finished · tick 20','New best · tick 30']);
  assert.deepEqual(markers.map(m=>m.percent),[10,20,30]);assert.equal(markers[2].best,true);
  assert.deepEqual(timelineMarkers([],100),[]);assert.deepEqual(timelineMarkers([{type:'round.started',tick:1}],0),[]);
  assert.deepEqual(timelineMarkers([{type:'discovery.made',tick:NaN},{type:'award',tick:-1},{type:'award',tick:101}],100),[]);
+});
+test('recorded marks have keyboard-operable jump buttons, empty feedback and escaped labels',()=>{
+ const markers=timelineMarkers([{type:'round.started',tick:10,round:2}],100);
+ assert.equal(markers[0].tick,10);
+ assert.match(timelineMarkerList(markers,String),/<button type="button" data-marker-tick="10">Round 2 starts · tick 10<\/button>/);
+ assert.equal(timelineMarkerList([],String),'<li>No recorded timeline marks.</li>');
+ assert.doesNotMatch(timelineMarkerList([{...markers[0],label:'<unsafe>'}],v=>String(v).replaceAll('<','&lt;')),/<unsafe>/);
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/aria-describedby="timeline-help"/);assert.match(html,/<summary id="timeline-help">/);assert.match(html,/<ol id="timeline-key-events" aria-label="Recorded timeline marks">/);
 });
 test('real replay round transitions come from frames when no round events were published',()=>{
  const recording=JSON.parse(gunzipSync(readFileSync(new URL('../docs/recordings/f8fa53cc-6afd-5e98-9596-0c7b8711e718.json.gz',import.meta.url))));

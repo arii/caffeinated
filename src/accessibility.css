@@ -8,6 +8,10 @@ body.static-site:not(.bar-collapsed) .replay-bar{max-height:min(420px,calc(100dv
 body.static-site:not(.bar-collapsed) #status-strip{display:none!important}
 body.static-site:not(.bar-collapsed) .replay-bar :is(.replay-kicker,#replay-title,#camera-mode,#activity-caption,.run-meta,.run-meta span,.replay-controls label,.replay-controls select){font-size:12px}
 .timeline-legend{font-size:12px;color:#e3dbca;margin:6px 0 10px}
+.timeline-legend summary{min-height:44px;align-content:center;cursor:pointer}
+.timeline-legend ol{padding-left:22px}
+.timeline-legend li{margin:4px 0}
+.timeline-legend button{min-height:44px;width:100%;padding:8px;text-align:left;white-space:normal;font-size:12px;line-height:1.4;color:#f4f3ec;background:#304b52;border:1px solid #b8ccc8;border-radius:6px}
 body.bar-collapsed .timeline-legend{display:none}
 #collapse-bar{flex-direction:column;gap:0;padding:3px;font-size:12px;line-height:1.2}
 @media(max-height:500px) and (orientation:landscape){body.static-site:not(.bar-collapsed) .replay-bar{left:106px;right:8px;transform:none;width:auto!important}}
