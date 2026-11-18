@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {compactDock,evidenceMetricLabel,metricValueLabel,taskTitle,pickerLabel,pickerOptions,selectedRunSummary} from '../src/engine/runInfo.ts';
 import {formatValue} from '../src/engine/moments.ts';
+import {readFileSync} from 'node:fs';
 
 test('playback dock starts compact at desktop and mobile sizes',()=>{
  assert.equal(compactDock(700,800),true);
@@ -44,4 +45,18 @@ test('selected run summary uses the question/title, measured rounds and status w
  assert.equal(selectedRunSummary(m),'Why do grains separate?\n4 rounds · Stopped');
  assert.equal(selectedRunSummary({...m,title:'',description:'Why do grains separate?'}),'Why do grains separate?\n4 rounds · Stopped');
  assert.equal(selectedRunSummary({...m,time:{rounds:Infinity},title:''}),'Stopped');
+});
+test('real run names distinguish labels and summaries without output paths or duplicate round counts',()=>{
+ const manifests=JSON.parse(readFileSync(new URL('../docs/recordings/index.json',import.meta.url),'utf8'));
+ for(const name of ['new boredom formula','traceability rule']){
+  const m=manifests.find(m=>m.title.includes(name)),label=pickerLabel(m,1),summary=selectedRunSummary(m);
+  assert.match(label,new RegExp(name,'i'));assert.match(summary,new RegExp(name,'i'));
+  assert.equal(label.match(/\d+ rounds/g).length,1);assert.doesNotMatch(label,/real research|\(|out-/i);
+ }
+ const four=manifests.filter(m=>m.time?.rounds===4);
+ assert.equal(four.length,2);assert.notEqual(pickerLabel(four[0],1),pickerLabel(four[1],1));assert.notEqual(selectedRunSummary(four[0]),selectedRunSummary(four[1]));
+ assert.doesNotMatch(pickerLabel(manifests.find(m=>m.title.includes('out-')),1),/out-/);
+ assert.doesNotMatch(pickerLabel(manifests.find(m=>m.title.includes('test run')),1),/Test run/);
+ assert.equal(pickerLabel({title:'',sample:false},1),'Run 1');
+ assert.match(pickerLabel({title:'A special recording',task_title:'Research',sample:false},1),/A special recording/);
 });
