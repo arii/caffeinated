@@ -22,6 +22,8 @@ test('recorded marks have keyboard-operable jump buttons, empty feedback and esc
  assert.match(css,/body:not\(\.bar-collapsed\) \.replay-bar\{[^}]*overflow:auto/);
  assert.match(css,/\.timeline-legend ol\{[^}]*max-height:min\(180px,25dvh\);overflow:auto/);
  assert.match(css,/\.replay-pinned\{position:sticky;top:0/);assert.match(css,/body\.bar-collapsed \.replay-pinned\{display:contents\}/);
+ assert.match(css,/@media\(min-height:700px\)\{[^@]*\.replay-pinned\{position:sticky/);
+ assert.match(css,/@media\(max-height:699px\)\{\.timeline-legend ol\{max-height:none;overflow:visible/);
  assert.match(html,/<div class="replay-pinned"><div class="replay-heading">/);
 });
 test('real replay round transitions come from frames when no round events were published',()=>{

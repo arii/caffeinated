@@ -4,14 +4,19 @@
 .replay-controls button,.replay-controls label select,#proximity button{min-height:44px}
 body:not(.bar-collapsed) .replay-controls{flex-wrap:wrap}
 body:not(.bar-collapsed) #tick-label{display:block;order:-1;flex-basis:100%;padding:8px 0;margin:0 0 4px;border-bottom:1px solid #b8ccc8;color:#f4f3ec;font-size:12px}
-body:not(.bar-collapsed) .replay-bar{max-height:min(680px,calc(100dvh - 86px));overflow:auto;scroll-padding-top:180px}
-.replay-pinned{position:sticky;top:0;z-index:2;background:#1d323d}
+body:not(.bar-collapsed) .replay-bar{max-height:min(680px,calc(100dvh - 86px));overflow:auto}
+.replay-pinned{background:#1d323d}
+@media(min-height:700px){
+ body:not(.bar-collapsed) .replay-bar{scroll-padding-top:180px}
+ .replay-pinned{position:sticky;top:0;z-index:2}
+}
 body.bar-collapsed .replay-pinned{display:contents}
 body.static-site:not(.bar-collapsed) #status-strip{display:none!important}
 body.static-site:not(.bar-collapsed) .replay-bar :is(.replay-kicker,#replay-title,#camera-mode,#activity-caption,.run-meta,.run-meta span,.replay-controls label,.replay-controls select){font-size:12px}
 .timeline-legend{font-size:12px;color:#e3dbca;margin:6px 0 10px}
 .timeline-legend summary{min-height:44px;align-content:center;cursor:pointer}
 .timeline-legend ol{padding:4px 0 4px 22px;max-height:min(180px,25dvh);overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+@media(max-height:699px){.timeline-legend ol{max-height:none;overflow:visible;scrollbar-gutter:auto}}
 .timeline-legend li{margin:4px 0}
 .timeline-legend button{min-height:44px;width:100%;padding:8px;text-align:left;white-space:normal;font-size:12px;line-height:1.4;color:#f4f3ec;background:#304b52;border:1px solid #b8ccc8;border-radius:6px}
 body.bar-collapsed .timeline-legend{display:none}
