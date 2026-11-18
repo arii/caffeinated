@@ -55,3 +55,17 @@ test('a newly blocked idea replaces the previous experiment on the Now card',()=
  assert.match(nowCardHtml(n,c,c.metric),/blocked<\/span> same cell as e1/);
  assert.notEqual(agentNow(r,'w','writing',3,c).experiment,null);
 });
+test('research steps keep one list number, distinguish queries from sources and preserve full text',()=>{
+ const title='A long paper about remarkable granular materials '.repeat(5).trim();
+ const r={events:[{tick:4,type:'question.asked',agentId:'w',payload:{kind:'search',text:title}},{tick:5,type:'observation.received',agentId:'w',payload:{text:title}}]};
+ const n=agentNow(r,'w','searching',6,c),html=nowCardHtml(n,{...c,esc});
+ assert.match(html,/data-kind="Search">Search/);assert.match(html,/data-kind="Read">Read/);
+ assert.ok(html.includes(`title="Read: ${title}"`));assert.doesNotMatch(html,/<li[^>]*><span>\d+<\/span>/);
+ assert.ok(!eventWhy(r.events[0],c).endsWith('granula…'));
+ assert.equal(eventWhy(r.events[1],c,true),`Read: ${title}`);
+ assert.doesNotMatch(nowCardHtml(n,{...c,esc},undefined,false),/<b>Doing<\/b>/);
+ assert.match(eventWhy({...r.events[0],payload:{kind:'dataset_search',text:'bird song'}},c),/^Searching the literature:/);
+ assert.match(eventWhy({...r.events[0],payload:{kind:'read',text:'Bird learning paper'}},c),/^Reading the source:/);
+ assert.equal(nowCardHtml(agentNow(null,'nobody',undefined,0,c),{...c,esc}).includes('why-feed'),false);
+ assert.doesNotThrow(()=>eventWhy({type:'observation.received',payload:{}},c));
+});
