@@ -1,5 +1,7 @@
 # Ig Nobel Prize Winning Artificial Scientist Swarms
 
+> Development is inactive. This repository preserves the SF AI Research Hack project built on November 14-15, 2026, including its recorded results and limitations. The [recorded replay](https://arii.github.io/caffeinated) and [demo](https://arii.github.io/caffeinated/about.html) remain available. For newer work, see [Ariel Anders' portfolio](https://arii.github.io/).
+
 We make autoresearch swarms better by making sure they do not stay bored.
 
 Our hypothesis is that existing AI scientist swarms get stuck because they are bored, trapped in repetitive, low-payoff loops long after returns have diminished. Artificial Scientist Swarms adds a deterministic Boredom Meter grounded in psychology so the swarm does not stay bored. Recomputed from the shared experiment ledger, it tracks stagnation, novelty deficit and overload to detect boredom and force a seeking state, moving from routine exploitation to paradigm breakout. We test this controller on known benchmarks and an Ig Nobel challenge: research that makes you laugh, then think. Agents search via Exa, share memory on past.dev, pre-register real-data tests, and can be ranked by a two-judge committee and final IgJudge.
